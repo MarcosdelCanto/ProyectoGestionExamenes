@@ -1,0 +1,9 @@
+{
+  "recommendations": [
+    "esbenp.prettier-vscode",
+    "dbaeumer.vscode-eslint",
+    "mikestead.dotenv",
+    "christian-kohler.path-intellisense",
+    "oracle-labs.oracle-sqldev"
+  ]
+}

@@ -1,0 +1,30 @@
+{
+  // ✅ Formato automático al guardar
+  "editor.formatOnSave": true,
+  // 🧼 Prettier como formateador por defecto
+  "editor.defaultFormatter": "esbenp.prettier-vscode",
+  // 🛡️ Ejecutar ESLint automáticamente al guardar
+  "editor.codeActionsOnSave": {
+    "source.fixAll.eslint": true
+  },
+  // 📋 Archivos que valida ESLint
+  "eslint.validate": [
+    "javascript",
+    "javascriptreact",
+    "typescript",
+    "typescriptreact"
+  ],
+  // 🔎 Ocultar carpetas innecesarias en el explorador de VS Code
+  "files.exclude": {
+    "**/node_modules": true,
+    "**/dist": true,
+    "**/build": true,
+    "**/.env": true
+  },
+  // 🔧 Otras buenas prácticas
+  "editor.tabSize": 2,
+  "editor.insertSpaces": true,
+  "files.trimTrailingWhitespace": true,
+  "files.insertFinalNewline": true,
+  "files.autoSave": "onWindowChange"
+}
