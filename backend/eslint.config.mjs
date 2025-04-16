@@ -1,31 +1,27 @@
 import js from "@eslint/js";
 import globals from "globals";
-import pluginReact from "eslint-plugin-react";
 import prettier from "eslint-config-prettier";
 import { defineConfig } from "eslint/config";
 
 export default defineConfig([
-  // Configuración básica de JavaScript
+  // 🔹 Reglas recomendadas de JavaScript
   {
-    files: ["**/*.{js,mjs,cjs,jsx}"],
+    files: ["**/*.{js,mjs,cjs}"],
     plugins: { js },
     extends: ["js/recommended"],
   },
 
-  // Configuración del entorno del navegador
+  // 🔹 Configuración del entorno Node.js
   {
-    files: ["**/*.{js,mjs,cjs,jsx}"],
+    files: ["**/*.{js,mjs,cjs}"],
     languageOptions: {
-      globals: globals.browser,
       ecmaVersion: 2021,
       sourceType: "module",
+      globals: globals.node, // 👈 Cambiado de browser a node
     },
   },
 
-  // Configuración para React
-  pluginReact.configs.flat.recommended,
-
-  // 👉 Integración con Prettier para evitar conflictos con ESLint
+  // 🔹 Integración con Prettier
   {
     name: "prettier",
     rules: prettier.rules,
