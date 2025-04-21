@@ -5,7 +5,7 @@
   "editor.defaultFormatter": "esbenp.prettier-vscode",
   // 🛡️ Ejecutar ESLint automáticamente al guardar
   "editor.codeActionsOnSave": {
-    "source.fixAll.eslint": true
+    "source.fixAll.eslint": "explicit"
   },
   // 📋 Archivos que valida ESLint
   "eslint.validate": [
