@@ -16,10 +16,9 @@
   ],
   // 🔎 Ocultar carpetas innecesarias en el explorador de VS Code
   "files.exclude": {
-    "**/node_modules": true,
-    "**/dist": true,
     "**/build": true,
-    "**/.env": true
+    "**/dist": true,
+    "**/node_modules": true
   },
   // 🔧 Otras buenas prácticas
   "editor.tabSize": 2,
