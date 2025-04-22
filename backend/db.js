@@ -3,10 +3,17 @@ import oracledb from 'oracledb';
 import dotenv from 'dotenv';
 dotenv.config();
 
+const walletDir = process.env.TNS_ADMIN || './wallet';
+let pool;
+
+try {
+  oracledb.initOracleClient({ configDir: walletDir });
+} catch (err) {
+  console.warn('Ignore si no usas Oracle Client:', err);
+}
+
 // Para que los resultados vengan como objetos JS
 oracledb.outFormat = oracledb.OUT_FORMAT_OBJECT;
-
-let pool;
 
 // Función para inicializar el pool al arrancar la app
 export async function initDB() {

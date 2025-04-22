@@ -1,10 +1,7 @@
-// const express = require('express');
-// const cors = require('cors');
-// require('dotenv').config();
-// const { initDB } = require('./db');
-import { initDB } from './db.js'; // Asegúrate de que la ruta sea correcta
+import { initDB } from './db.js';
 import cors from 'cors';
 import express from 'express';
+import authRoutes from './routes/auth.routes.js';
 
 const app = express();
 
@@ -17,8 +14,6 @@ app.get('/', (req, res) => {
   res.send('API funcionando 🚀');
 });
 
-initDB();
-
 async function startServer() {
   try {
     await initDB(); // inicializa la conexión
@@ -26,7 +21,7 @@ async function startServer() {
     app.use(express.json());
 
     //   // … middlewares, cors, etc.
-    //   app.use('/api/auth', authRoutes);
+    app.use('/api/auth', authRoutes);
     //   // … tus otras rutas
 
     const PORT = process.env.PORT || 3000;
