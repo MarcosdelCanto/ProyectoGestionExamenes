@@ -1,0 +1,12 @@
+.login-wrapper {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 100vh;
+  width: 100vw; /* 👈 importante: ancho completo */
+  margin: 0;
+  padding: 0;
+  background-color: #f8f9fa;
+  box-sizing: border-box;
+  overflow: hidden;
+}
