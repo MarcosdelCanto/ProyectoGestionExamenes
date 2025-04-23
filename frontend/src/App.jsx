@@ -1,13 +1,16 @@
 // src/App.jsx
 import React from 'react';
-import Login from './pages/Login'; // Asegúrate de que Login.jsx exista en src/pages
+import { Routes, Route } from 'react-router-dom';
+import Login from './pages/Login';
+import HomePage from './pages/HomePage';
 import 'bootstrap/dist/css/bootstrap.min.css';
 
 function App() {
   return (
-    <div>
-      <Login />
-    </div>
+    <Routes>
+      <Route path="/" element={<Login />} />
+      <Route path="/HomePage" element={<HomePage />} />
+    </Routes>
   );
 }
 
