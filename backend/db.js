@@ -3,11 +3,10 @@ import oracledb from 'oracledb';
 import dotenv from 'dotenv';
 dotenv.config();
 
-const walletDir = process.env.TNS_ADMIN || './wallet';
 let pool;
 
 try {
-  oracledb.initOracleClient({ configDir: walletDir });
+  oracledb.initOracleClient({ configDir: process.env.TNS_ADMIN });
 } catch (err) {
   console.warn('Ignore si no usas Oracle Client:', err);
 }
@@ -22,9 +21,9 @@ export async function initDB() {
       user: process.env.DB_USER,
       password: process.env.DB_PASSWORD,
       connectString: process.env.DB_CONNECTSTRING,
-      poolMin: parseInt(process.env.DB_POOL_MIN, 10) || 2,
-      poolMax: parseInt(process.env.DB_POOL_MAX, 10) || 10,
-      poolIncrement: parseInt(process.env.DB_POOL_INCREMENT, 10) || 2,
+      poolMin: +process.env.DB_POOL_MIN,
+      poolMax: +process.env.DB_POOL_MAX,
+      poolIncrement: +process.env.DB_POOL_INCREMENT,
     });
     console.log('✅ Pool de conexiones Oracle creado');
   } catch (err) {
