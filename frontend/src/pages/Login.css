@@ -10,3 +10,8 @@
   box-sizing: border-box;
   overflow: hidden;
 }
+.logo-duoc {
+  width: 100px;
+  height: auto;
+  margin-bottom: 20px;
+}
