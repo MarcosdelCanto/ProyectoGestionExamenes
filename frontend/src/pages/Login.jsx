@@ -1,6 +1,13 @@
 // src/pages/Login.jsx
 import React, { useState } from 'react';
 import './Login.css';
+import logoduoc from '../assets/images/logoduoc.svg.png';
+<img
+  src={logoduoc}
+  alt="Logo Duoc"
+  className="logo-duoc"
+  style={{ width: '150px' }}
+/>;
 
 const Login = () => {
   const [email, setEmail] = useState('');
@@ -18,6 +25,14 @@ const Login = () => {
         className="card p-4 shadow"
         style={{ maxWidth: '400px', width: '100%' }}
       >
+        <div className="text-center">
+          <img
+            src="{logoduoc}"
+            alt="Logo"
+            style={{ width: '150px' }}
+            className="mb-4"
+          ></img>
+        </div>
         <h3 className="text-center mb-4">Iniciar Sesión</h3>
         <form onSubmit={handleSubmit}>
           <div className="mb-3">
