@@ -10,5 +10,10 @@ build/
 
 # Ignorar archivos del sistema
 .DS_Store
- wallet/
- db.js
+
+/backend/db.js/
+
+/backend/wallet/
+
+/backend/wallet/sqlnet.ora
+
