@@ -6,7 +6,10 @@ dotenv.config();
 let pool;
 
 try {
-  oracledb.initOracleClient({ configDir: process.env.TNS_ADMIN });
+  oracledb.initOracleClient({
+    libDir: process.env.OCI_LIB_DIR,
+    configDir: process.env.TNS_ADMIN,
+  });
 } catch (err) {
   console.warn('Ignore si no usas Oracle Client:', err);
 }
@@ -20,7 +23,7 @@ export async function initDB() {
     pool = await oracledb.createPool({
       user: process.env.DB_USER,
       password: process.env.DB_PASSWORD,
-      connectString: process.env.DB_CONNECTSTRING,
+      connectString: process.env.DB_CONNECT,
       poolMin: +process.env.DB_POOL_MIN,
       poolMax: +process.env.DB_POOL_MAX,
       poolIncrement: +process.env.DB_POOL_INCREMENT,
