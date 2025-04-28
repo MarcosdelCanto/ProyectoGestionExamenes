@@ -10,3 +10,10 @@ build/
 
 # Ignorar archivos del sistema
 .DS_Store
+
+backend/db.js
+
+backend/wallet/
+
+
+

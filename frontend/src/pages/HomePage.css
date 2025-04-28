@@ -1,0 +1,27 @@
+.homepage-wrapper {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  width: 100vh;
+  min-height: 100vh;
+  padding: 2rem;
+}
+
+.status-circle {
+  width: 100px;
+  height: 100px;
+  border-radius: 50%;
+  margin: 1rem 0;
+  transition: background-color 0.3s ease;
+}
+
+.status-available {
+  background-color: green;
+}
+.status-pending {
+  background-color: orange;
+}
+.status-confirmed {
+  background-color: red;
+}
