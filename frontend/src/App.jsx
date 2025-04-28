@@ -8,17 +8,14 @@ import PrivateRoute from './components/PrivateRoute';
 
 function App() {
   return (
-    <BrowserRouter>
-      <Routes>
-        {/* Ruta pública de login */}
-        <Route path="/login" element={<Login />} />
-
-        {/* Rutas protegidas */}
-        <Route element={<PrivateRoute />}>
-          <Route path="/" element={<HomePage />} />
-        </Route>
-      </Routes>
-    </BrowserRouter>
+    <Routes>
+      {/* Ruta pública de login */}
+      <Route path="/login" element={<Login />} />
+      {/* Rutas protegidas */}
+      <Route element={<PrivateRoute />}>
+        <Route path="/" element={<HomePage />} />
+      </Route>
+    </Routes>
   );
 }
 

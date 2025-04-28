@@ -1,3 +1,4 @@
+// frontend/src/store/index.js
 import { configureStore } from '@reduxjs/toolkit';
 import statusReducer from './statusSlice';
 import { socketMiddleware } from './socketMiddleware';

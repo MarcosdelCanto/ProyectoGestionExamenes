@@ -22,7 +22,7 @@ async function startServer() {
     const io = new Server(server, {
       cors: { origin: '*' },
     });
-    let currentStatus = 'available'; // Estado inicial
+    let currentStatus = 'disponible'; // Estado inicial
 
     io.on('connection', (socket) => {
       console.log('Cliente conectado:', socket.id);

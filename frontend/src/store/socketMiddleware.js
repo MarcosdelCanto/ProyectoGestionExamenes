@@ -1,20 +1,26 @@
+// frontend/src/store/socketMiddleware.js
 import { io } from 'socket.io-client';
-import { statusUpdate } from './statusSlice';
+import { statusUpdated } from './statusSlice';
 
 const socket = io('http://localhost:3000', { autoConnect: false });
 
 export const socketMiddleware = (storeAPI) => {
-  socket.on('connect', () => console.log('🔗 Socket conectado:', socket.id));
-  socket.on('statusUpdate', (newStatus) => {
-    console.log('📶 status-update recibido en middleware:', newStatus);
-    storeAPI.dispatch(statusUpdate(newStatus));
+  // 1) Suscripciones antes de conectar
+  socket.on('connect', () =>
+    console.log('🔗 [MW] Socket conectado:', socket.id)
+  );
+  socket.on('status-update', (newStatus) => {
+    console.log('📶 [MW] status-update recibido:', newStatus);
+    storeAPI.dispatch(statusUpdated(newStatus));
   });
 
-  // socket.connect();
+  // 2) Conecta
+  socket.connect();
 
   return (next) => (action) => {
     if (action.type === 'status/changeStatus') {
-      socket.emit('changeStatus', action.payload);
+      console.log('🔥 [MW] Emisión change-status:', action.payload);
+      socket.emit('change-status', action.payload);
     }
     return next(action);
   };

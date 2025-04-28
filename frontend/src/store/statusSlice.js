@@ -2,13 +2,12 @@ import { createSlice } from '@reduxjs/toolkit';
 
 const statusSlice = createSlice({
   name: 'status',
-  initialState: 'available', //'available', | 'pending' | 'confirmed'
+  initialState: 'available',
   reducers: {
-    //se usa cuando llega un update del servidor
-    statusUpdate: (_, action) => action.payload,
-    // accion local que dispara el middleware
-    changeStatus: (_, action) => action.payload,
+    statusUpdated: (_, action) => action.payload, // usado por Socket.IO
+    changeStatus: (_, action) => action.payload, // despachado por UI
   },
 });
-export const { statusUpdate, changeStatus } = statusSlice.actions;
+
+export const { statusUpdated, changeStatus } = statusSlice.actions;
 export default statusSlice.reducer;
