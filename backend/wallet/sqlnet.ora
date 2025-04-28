@@ -1,2 +1,0 @@
-WALLET_LOCATION = (SOURCE = (METHOD = FILE) (METHOD_DATA = (DIRECTORY = /Users/citt/Documents/GitHub/ProyectoGestionExamenes/backend/wallet)))
-SSL_SERVER_DN_MATCH = yes
