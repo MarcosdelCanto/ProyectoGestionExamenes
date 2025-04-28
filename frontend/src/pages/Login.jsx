@@ -3,7 +3,6 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { login } from '../services/authService';
 import './Login.css';
-import logoduoc from '../assets/images/logoduoc.svg.png';
 
 const Login = () => {
   const [email_usuario, setEmail] = useState('');
@@ -32,7 +31,11 @@ const Login = () => {
         style={{ maxWidth: '400px', width: '100%' }}
       >
         <div className="text-center mb-4">
-          <img src={logoduoc} alt="Logo Duoc" className="logo-duoc" />
+          <img
+            src="/images/logoduoc.svg.png"
+            alt="Logo Duoc"
+            className="logo-duoc"
+          />
         </div>
         <h3 className="text-center mb-4">Iniciar Sesión</h3>
         {error && <div className="alert alert-danger">{error}</div>}
