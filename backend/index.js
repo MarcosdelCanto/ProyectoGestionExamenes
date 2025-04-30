@@ -1,6 +1,7 @@
 import { initDB } from './db.js';
 import cors from 'cors';
 import express from 'express';
+import moduloRoutes from './routes/modulo.routes.js';
 import authRoutes from './routes/auth.routes.js';
 import userRoutes from './routes/user.routes.js';
 
@@ -22,6 +23,7 @@ async function startServer() {
     app.use(express.json());
     app.use('/api/auth', authRoutes);
     app.use('/api/user', userRoutes);
+    app.use('/api/modulo', moduloRoutes);
 
     const PORT = process.env.PORT || 3000;
     app.listen(PORT, () => console.log(`🚀 Servidor en puerto ${PORT}`));
