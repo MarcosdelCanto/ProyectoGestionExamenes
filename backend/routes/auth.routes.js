@@ -1,14 +1,18 @@
-// routes/auth.routes.js
-
 import express from 'express';
-import { login } from '../controllers/auth.controller.js';
-
+import {
+  login,
+  logout,
+  handleRefreshToken,
+} from '../controllers/auth.controller.js';
 const router = express.Router();
 
-// Ruta de registro (excepcional/administrativa)
-// router.post('/register', register);
-
-// Ruta de login (principal)
+// Login → devuelve access + refresh
 router.post('/login', login);
+
+// Refresh → genera nuevo access
+router.post('/refresh', handleRefreshToken);
+
+// Logout → elimina refresh token
+router.post('/logout', logout);
 
 export default router;

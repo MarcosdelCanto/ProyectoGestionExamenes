@@ -1,18 +1,61 @@
 // src/services/api.js
-import { getToken } from './authService';
+import {
+  getAccessToken,
+  getRefreshToken,
+  logout as doLogout,
+} from './authService';
+
+let isRefreshing = false;
+let queue = [];
+
+// Al terminar el refresh, avisamos a todas las peticiones en cola
+function onRefreshed(newToken) {
+  queue.forEach((cb) => cb(newToken));
+  queue = [];
+}
 
 export async function fetchWithAuth(path, opts = {}) {
-  const token = getToken();
+  let token = getAccessToken();
   if (!token) throw new Error('No autenticado');
-  const headers = {
-    ...(opts.headers || {}),
-    Authorization: `Bearer ${token}`,
-  };
-  const resp = await fetch(path, { ...opts, headers });
-  if (resp.status === 401) {
-    // token inválido/expirado: redirigir al login
-    window.location.href = '/login';
-    return;
+
+  const callApi = (bearer) =>
+    fetch(path, {
+      ...opts,
+      headers: { ...(opts.headers || {}), Authorization: `Bearer ${bearer}` },
+    });
+
+  let resp = await callApi(token);
+  if (resp.status !== 401) return resp;
+
+  // Si ya estamos refrescando, esperamos nuestro turno
+  if (isRefreshing) {
+    return new Promise((resolve) => {
+      queue.push((newToken) => resolve(callApi(newToken)));
+    });
   }
-  return resp;
+
+  // Primer 401 → lanzamos el refresh
+  isRefreshing = true;
+  const refreshToken = getRefreshToken();
+  const r = await fetch('/api/auth/refresh', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ token: refreshToken }),
+  });
+
+  if (!r.ok) {
+    // refresh falló: cerramos sesión
+    doLogout();
+    window.location.href = '/login';
+    return resp;
+  }
+
+  const { accessToken: newToken } = await r.json();
+  localStorage.setItem('accessToken', newToken);
+  token = newToken;
+  isRefreshing = false;
+  onRefreshed(newToken);
+
+  // Reintento de la petición original
+  return callApi(newToken);
 }

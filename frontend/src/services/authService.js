@@ -8,16 +8,23 @@ export async function login(email_usuario, password_usuario) {
     body: JSON.stringify({ email_usuario, password_usuario }),
   });
   if (!resp.ok) throw new Error('Credenciales inválidas');
-  const { token, usuario } = await resp.json();
-  // Guarda el token en localStorage
-  localStorage.setItem('jwt', token);
+  const { accessToken, refreshToken, usuario } = await resp.json();
+
+  // Guarda ambos tokens
+  localStorage.setItem('accessToken', accessToken);
+  localStorage.setItem('refreshToken', refreshToken);
+
   return usuario;
 }
 
-export function getToken() {
-  return localStorage.getItem('jwt');
+export function getAccessToken() {
+  return localStorage.getItem('accessToken');
+}
+export function getRefreshToken() {
+  return localStorage.getItem('refreshToken');
 }
 
 export function logout() {
-  localStorage.removeItem('jwt');
+  localStorage.removeItem('accessToken');
+  localStorage.removeItem('refreshToken');
 }

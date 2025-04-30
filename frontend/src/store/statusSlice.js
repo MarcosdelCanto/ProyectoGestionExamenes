@@ -1,11 +1,22 @@
+// src/store/statusSlice.js
 import { createSlice } from '@reduxjs/toolkit';
 
 const statusSlice = createSlice({
   name: 'status',
-  initialState: 'available',
+  initialState: {
+    status: 'disponible', // estado inicial
+    updaterId: null,
+  },
   reducers: {
-    statusUpdated: (_, action) => action.payload, // usado por Socket.IO
-    changeStatus: (_, action) => action.payload, // despachado por UI
+    // ① Acción para sincronizar con el servidor
+    statusUpdated: (state, { payload: { newStatus, updaterId } }) => {
+      state.status = newStatus;
+      state.updaterId = updaterId;
+    },
+    // ② Acción para iniciar un cambio local (no muta state)
+    changeStatus: () => {
+      /* no-op */
+    },
   },
 });
 

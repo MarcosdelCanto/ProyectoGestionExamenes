@@ -22,19 +22,23 @@ async function startServer() {
     const io = new Server(server, {
       cors: { origin: '*' },
     });
-    let currentStatus = 'disponible'; // Estado inicial
+    let currentStatus = 'disponible';
+    let currentUpdaterId = null;
 
     io.on('connection', (socket) => {
-      console.log('Cliente conectado:', socket.id);
-      console.log(`Estado al conectar: ${currentStatus}`);
-      socket.emit('status-update', currentStatus);
+      socket.emit('status-update', {
+        status: currentStatus,
+        updaterId: currentUpdaterId,
+      });
 
       socket.on('change-status', (newStatus) => {
-        console.log(`${socket.id} cambió a:, ${newStatus}`);
         currentStatus = newStatus;
-        console.log('Nuevo estado global:', currentStatus);
-        io.emit('status-update', currentStatus);
-        console.log('Emitido status-update a todos');
+        currentUpdaterId = socket.id;
+        // 3️⃣ Reenviarlo a TODOS
+        io.emit('status-update', {
+          status: currentStatus,
+          updaterId: socket.id,
+        });
       });
     });
 

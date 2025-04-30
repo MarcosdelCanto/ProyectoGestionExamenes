@@ -1,20 +1,26 @@
+// controllers/auth.controller.js
+
 import { getConnection } from '../db.js';
 import bcrypt from 'bcrypt';
-import { generateToken } from '../utils/jwt.utils.js';
-// const usuariosMock = [];
+import {
+  generateAccessToken,
+  generateRefreshToken,
+  verifyRefreshToken,
+} from '../utils/jwt.utils.js';
+
+let refreshTokens = []; // En memoria; en producción guárdalos en BD
+
 export const login = async (req, res) => {
   const { email_usuario, password_usuario } = req.body;
-  // 1. Validar que vengan email y password
   if (!email_usuario || !password_usuario) {
     return res
       .status(400)
       .json({ mensaje: 'Email y contraseña son obligatorios.' });
   }
+
   let conn;
   try {
-    // 2. Obtener conexión del pool
     conn = await getConnection();
-    // 3. Buscar usuario por email
     const result = await conn.execute(
       `SELECT
          id_usuario, password_usuario AS hash, ROL_id_rol
@@ -22,25 +28,30 @@ export const login = async (req, res) => {
        WHERE email_usuario = :email_usuario`,
       { email_usuario }
     );
-    // 4. Si no existe, 401 Unauthorized
+
     if (result.rows.length === 0) {
       return res.status(401).json({ mensaje: 'Credenciales inválidas.' });
     }
+
     const [{ ID_USUARIO, HASH, ROL_ID_ROL }] = result.rows;
-    // 5. Comparar contraseñas
     const coincide = await bcrypt.compare(password_usuario, HASH);
     if (!coincide) {
       return res.status(401).json({ mensaje: 'Credenciales inválidas.' });
     }
-    // 6. Generar token JWT
-    const token = generateToken({
-      id_usuario: ID_USUARIO,
-      ROL_id_rol: ROL_ID_ROL,
-    });
-    // 7. Enviar respuesta con token y datos de usuario
-    res.status(200).json({
-      mensaje: 'Login exitoso',
-      token,
+
+    // Generar tokens
+    const payload = { id_usuario: ID_USUARIO, ROL_id_rol: ROL_ID_ROL };
+    const accessToken = generateAccessToken(payload);
+    const refreshToken = generateRefreshToken(payload);
+
+    // Guardar refresh token en memoria
+    refreshTokens.push(refreshToken);
+
+    // Devolver ambos tokens y datos de usuario
+    return res.status(200).json({
+      mensaje: 'Login exitoso.',
+      accessToken,
+      refreshToken,
       usuario: {
         id_usuario: ID_USUARIO,
         email_usuario,
@@ -49,7 +60,7 @@ export const login = async (req, res) => {
     });
   } catch (err) {
     console.error('Error en login:', err);
-    res.status(500).json({ mensaje: 'Error del servidor.' });
+    return res.status(500).json({ mensaje: 'Error del servidor.' });
   } finally {
     if (conn) {
       try {
@@ -59,4 +70,30 @@ export const login = async (req, res) => {
       }
     }
   }
+};
+
+// Opcional: manejar refresh
+export const handleRefreshToken = (req, res) => {
+  const { token } = req.body;
+  if (!token || !refreshTokens.includes(token)) {
+    return res.status(401).json({ mensaje: 'Refresh token inválido.' });
+  }
+
+  try {
+    const payload = verifyRefreshToken(token);
+    const newAccessToken = generateAccessToken({
+      id_usuario: payload.id_usuario,
+      ROL_id_rol: payload.ROL_id_rol,
+    });
+    return res.json({ accessToken: newAccessToken });
+  } catch (err) {
+    return res.status(401).json({ mensaje: 'Refresh token expirado.', err });
+  }
+};
+
+// Opcional: logout
+export const logout = (req, res) => {
+  const { token } = req.body;
+  refreshTokens = refreshTokens.filter((t) => t !== token);
+  return res.sendStatus(204);
 };
