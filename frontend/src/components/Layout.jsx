@@ -57,9 +57,7 @@ export default function Layout({ children }) {
           </nav>
           {/* Botón cerrar sesión desktop */}
           <div className="mt-auto">
-            <button onClick={handleLogout} className="btn btn-danger w-100">
-              Cerrar sesión
-            </button>
+            <button className="btn btn-danger w-100">Cerrar sesión</button>
           </div>
         </div>
         {/* Main Content */}
