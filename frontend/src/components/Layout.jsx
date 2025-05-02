@@ -1,6 +1,13 @@
 import { Link } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 
 export default function Layout({ children }) {
+  const navigate = useNavigate();
+  const handleLogout = () => {
+    localStorage.removeItem('token');
+
+    navigate('/login');
+  };
   return (
     <div className="d-flex flex-column w-100" style={{ minHeight: '100vh' }}>
       {/* Header */}
@@ -57,7 +64,9 @@ export default function Layout({ children }) {
           </nav>
           {/* Botón cerrar sesión desktop */}
           <div className="mt-auto">
-            <button className="btn btn-danger w-100">Cerrar sesión</button>
+            <button className="btn btn-danger w-100" onClick={handleLogout}>
+              Cerrar sesión
+            </button>
           </div>
         </div>
         {/* Main Content */}
@@ -111,7 +120,9 @@ export default function Layout({ children }) {
               </Link>
             </nav>
             <div className="mt-auto">
-              <button className="btn btn-danger w-100">Cerrar sesión</button>
+              <button className="btn btn-danger w-100" onClick={handleLogout}>
+                Cerrar sesión
+              </button>
             </div>
           </div>
         </div>

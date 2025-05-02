@@ -34,18 +34,42 @@ function Modal({ title, children, onClose }) {
 }
 
 // Form inside modal for Add/Edit
-function ModuloForm({ initial, onSubmit, onCancel }) {
-  const [nombre, setNombre] = useState(initial?.nombre_modulo || '');
-  const [inicio, setInicio] = useState(initial?.inicio_modulo || '');
-  const [fin, setFin] = useState(initial?.fin_modulo || '');
+function ModuloForm({ initial = {}, onSubmit, onCancel }) {
+  const [nombre, setNombre] = useState('');
+  const [inicio, setInicio] = useState('');
+  const [fin, setFin] = useState('');
+  const [orden, setOrden] = useState('');
+
+  useEffect(() => {
+    setNombre(initial.nombre_modulo ?? initial.NOMBRE_MODULO ?? '');
+    setInicio(initial.inicio_modulo ?? initial.INICIO_MODULO ?? '');
+    setFin(initial.fin_modulo ?? initial.FIN_MODULO ?? '');
+    setOrden(initial.orden ?? initial.ORDEN ?? '');
+  }, [initial]);
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    onSubmit({ nombre_modulo: nombre, inicio_modulo: inicio, fin_modulo: fin });
+    onSubmit({
+      nombre_modulo: nombre,
+      inicio_modulo: inicio,
+      fin_modulo: fin,
+      orden: Number(orden),
+    });
   };
 
   return (
     <form onSubmit={handleSubmit}>
+      <div className="mb-3">
+        <label className="form-label">Orden</label>
+        <input
+          type="number"
+          className="form-control"
+          value={orden}
+          onChange={(e) => setOrden(e.target.value)}
+          min={1}
+          required
+        />
+      </div>
       <div className="mb-3">
         <label className="form-label">Nombre</label>
         <input
@@ -97,8 +121,10 @@ function ModuloForm({ initial, onSubmit, onCancel }) {
 }
 
 export default function ModulosPage() {
+  // helper to extract primary key (handles Oracle uppercase names)
+  const getId = (m) => m.id_modulo ?? m.ID_MODULO;
   const [modulos, setModulos] = useState([]);
-  const [selected, setSelected] = useState(null);
+  const [selectedModule, setSelectedModule] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [modal, setModal] = useState({ type: null, data: null });
@@ -113,6 +139,7 @@ export default function ModulosPage() {
       const res = await fetchAllModulos();
       setModulos(res.data);
       setError('');
+      setSelectedModule(null);
     } catch {
       setError('Error cargando módulos');
     } finally {
@@ -121,28 +148,41 @@ export default function ModulosPage() {
   };
 
   const openModal = (type) => {
-    if ((type === 'edit' || type === 'delete') && !selected) return;
-    const data =
-      type === 'edit' ? modulos.find((m) => m.id_modulo === selected) : null;
-    setModal({ type, data });
+    setError('');
+    if ((type === 'edit' || type === 'delete') && !selectedModule) return;
+    setModal({ type, data: type === 'edit' ? selectedModule : null });
   };
+
   const closeModal = () => setModal({ type: null, data: null });
 
   const handleAdd = async (form) => {
-    await createModulo(form);
-    closeModal();
-    loadModulos();
+    try {
+      await createModulo(form);
+      closeModal();
+      loadModulos();
+    } catch (err) {
+      setError(err.response?.data?.error || 'Error creando módulo');
+    }
   };
+
   const handleEdit = async (form) => {
-    await updateModulo(selected, form);
-    closeModal();
-    loadModulos();
+    try {
+      await updateModulo(getId(selectedModule), form);
+      closeModal();
+      loadModulos();
+    } catch (err) {
+      setError(err.response?.data?.error || 'Error actualizando módulo');
+    }
   };
+
   const handleDelete = async () => {
-    await deleteModulo(selected);
-    closeModal();
-    setSelected(null);
-    loadModulos();
+    try {
+      await deleteModulo(getId(selectedModule));
+      closeModal();
+      loadModulos();
+    } catch {
+      setError('Error eliminando módulo');
+    }
   };
 
   return (
@@ -160,14 +200,14 @@ export default function ModulosPage() {
         <button
           className="btn btn-warning me-2"
           onClick={() => openModal('edit')}
-          disabled={!selected}
+          disabled={!selectedModule}
         >
           Modificar
         </button>
         <button
           className="btn btn-danger"
           onClick={() => openModal('delete')}
-          disabled={!selected}
+          disabled={!selectedModule}
         >
           Eliminar
         </button>
@@ -179,45 +219,46 @@ export default function ModulosPage() {
         <table className="table table-bordered">
           <thead className="table-light">
             <tr>
-              <th>ID</th>
+              <th>Orden</th>
               <th>Nombre</th>
               <th>Inicio</th>
               <th>Fin</th>
             </tr>
           </thead>
           <tbody>
-            {modulos.map((m) => {
-              const id = m.id_modulo ?? m.ID_MODULO;
-              const nombre = m.nombre_modulo ?? m.NOMBRE_MODULO;
-              const inicio = m.inicio_modulo ?? m.INICIO_MODULO;
-              const fin = m.fin_modulo ?? m.FIN_MODULO;
-              const isSel = id === selected;
-              return (
-                <tr
-                  key={id}
-                  onClick={() => setSelected(id)}
-                  className={isSel ? 'table-primary' : ''}
-                  style={{ cursor: 'pointer' }}
-                >
-                  <td>{id}</td>
-                  <td>{nombre}</td>
-                  <td>{inicio}</td>
-                  <td>{fin}</td>
-                </tr>
-              );
-            })}
+            {modulos
+              .sort((a, b) => (a.orden ?? a.ORDEN) - (b.orden ?? b.ORDEN))
+              .map((m) => {
+                const isSel =
+                  selectedModule && getId(selectedModule) === getId(m);
+                return (
+                  <tr
+                    key={getId(m)}
+                    onClick={() => setSelectedModule(m)}
+                    className={isSel ? 'table-primary' : ''}
+                    style={{ cursor: 'pointer' }}
+                  >
+                    <td>{m.orden ?? m.ORDEN}</td>
+                    <td>{m.nombre_modulo ?? m.NOMBRE_MODULO}</td>
+                    <td>{m.inicio_modulo ?? m.INICIO_MODULO}</td>
+                    <td>{m.fin_modulo ?? m.FIN_MODULO}</td>
+                  </tr>
+                );
+              })}
           </tbody>
         </table>
       )}
 
-      {/* Modals */}
       {modal.type === 'add' && (
         <Modal title="Agregar Módulo" onClose={closeModal}>
+          {error && <div className="alert alert-danger mb-2">{error}</div>}
           <ModuloForm onSubmit={handleAdd} onCancel={closeModal} />
         </Modal>
       )}
+
       {modal.type === 'edit' && (
         <Modal title="Modificar Módulo" onClose={closeModal}>
+          {error && <div className="alert alert-danger mb-2">{error}</div>}
           <ModuloForm
             initial={modal.data}
             onSubmit={handleEdit}
@@ -225,8 +266,10 @@ export default function ModulosPage() {
           />
         </Modal>
       )}
+
       {modal.type === 'delete' && (
         <Modal title="Eliminar Módulo" onClose={closeModal}>
+          {error && <div className="alert alert-danger mb-2">{error}</div>}
           <p>¿Confirma eliminar el módulo seleccionado?</p>
           <div className="modal-footer">
             <button className="btn btn-secondary" onClick={closeModal}>
