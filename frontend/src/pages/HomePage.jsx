@@ -50,14 +50,6 @@ export default function HomePage() {
         <p className="text-lg">Tu rol es: {perfil.ROL_ID_ROL}</p>
         {/* Aquí puedes agregar más contenido relacionado con el perfil */}
       </div>
-    </Layout>
-    <div className="homepage-wrapper">
-      <div className="d-flex justify-content-between align-items-center mb-4">
-        <h1>Bienvenido, {perfil.NOMBRE_USUARIO}</h1>
-        <button onClick={handleLogout} className="btn btn-outline-secondary">
-          Cerrar Sesión
-        </button>
-      </div>
       <div>
         <div className={`status-circle status-${status}`} />
         <button onClick={handleClick} disabled={!puedeModificar}>
@@ -68,8 +60,6 @@ export default function HomePage() {
               : 'Ocupado'}
         </button>
       </div>
-
-      <p>Tu rol es: {perfil.ROL_ID_ROL}</p>
-    </div>
+    </Layout>
   );
 }
