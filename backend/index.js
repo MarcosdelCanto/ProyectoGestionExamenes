@@ -6,15 +6,17 @@ import { initDB } from './db.js';
 import moduloRoutes from './routes/modulo.routes.js';
 import authRoutes from './routes/auth.routes.js';
 import userRoutes from './routes/user.routes.js';
+import salaRoutes from './routes/sala.routes.js';
+import sedeRoutes from './routes/sede.routes.js';
+import edificioRoutes from './routes/edificio.routes.js';
 
 const app = express();
+
 app.use(cors());
 app.use(express.json());
 
 // Ruta de prueba
 app.get('/', (req, res) => res.send('API funcionando 🚀'));
-app.use('/api/auth', authRoutes);
-app.use('/api/user', userRoutes);
 
 async function startServer() {
   try {
@@ -35,19 +37,20 @@ async function startServer() {
       socket.on('change-status', (newStatus) => {
         currentStatus = newStatus;
         currentUpdaterId = socket.id;
-        // 3️⃣ Reenviarlo a TODOS
         io.emit('status-update', {
           status: currentStatus,
           updaterId: socket.id,
         });
       });
     });
-    //middlewares
-    app.use(cors());
-    app.use(express.json());
+
+    // Rutas API
     app.use('/api/auth', authRoutes);
     app.use('/api/user', userRoutes);
     app.use('/api/modulo', moduloRoutes);
+    app.use('/api/sala', salaRoutes);
+    app.use('/api/sede', sedeRoutes);
+    app.use('/api/edificio', edificioRoutes);
 
     const PORT = process.env.PORT || 3000;
     server.listen(PORT, () =>
