@@ -3,19 +3,24 @@ import React from 'react';
 import { Routes, Route } from 'react-router-dom';
 import Login from './pages/Login';
 import HomePage from './pages/HomePage';
+import ModulosPage from './pages/ModulosPage';
 import 'bootstrap/dist/css/bootstrap.min.css';
 import PrivateRoute from './components/PrivateRoute';
 
 function App() {
   return (
-    <Routes>
-      {/* Ruta pública de login */}
-      <Route path="/login" element={<Login />} />
-      {/* Rutas protegidas */}
-      <Route element={<PrivateRoute />}>
-        <Route path="/" element={<HomePage />} />
-      </Route>
-    </Routes>
+    <BrowserRouter>
+      <Routes>
+        {/* Ruta pública de login */}
+        <Route path="/login" element={<Login />} />
+
+        {/* Rutas protegidas */}
+        <Route element={<PrivateRoute />}>
+          <Route path="/" element={<HomePage />} />
+          <Route path="/modulos" element={<ModulosPage />} />
+        </Route>
+      </Routes>
+    </BrowserRouter>
   );
 }
 

@@ -6,6 +6,7 @@ import { logout } from '../services/authService';
 import { useNavigate } from 'react-router-dom';
 import './HomePage.css';
 import { socket } from '../store/socketMiddleware';
+import Layout from '../components/Layout';
 
 export default function HomePage() {
   const { status, updaterId } = useSelector((state) => state.status);
@@ -41,6 +42,15 @@ export default function HomePage() {
   if (!perfil) return <p>Cargando perfil…</p>;
 
   return (
+    <Layout>
+      <div className="flex flex-col items-center justify-center min-h-screen bg-gray-100">
+        <h1 className="text-2xl font-bold mb-4">
+          Bienvenido, {perfil.NOMBRE_USUARIO}
+        </h1>
+        <p className="text-lg">Tu rol es: {perfil.ROL_ID_ROL}</p>
+        {/* Aquí puedes agregar más contenido relacionado con el perfil */}
+      </div>
+    </Layout>
     <div className="homepage-wrapper">
       <div className="d-flex justify-content-between align-items-center mb-4">
         <h1>Bienvenido, {perfil.NOMBRE_USUARIO}</h1>
