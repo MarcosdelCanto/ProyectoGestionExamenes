@@ -35,17 +35,17 @@ function Modal({ title, children, onClose }) {
 
 // Form inside modal for Add/Edit
 function ModuloForm({ initial = {}, onSubmit, onCancel }) {
-  const [nombre, setNombre] = useState('');
-  const [inicio, setInicio] = useState('');
-  const [fin, setFin] = useState('');
-  const [orden, setOrden] = useState('');
-
-  useEffect(() => {
-    setNombre(initial.nombre_modulo ?? initial.NOMBRE_MODULO ?? '');
-    setInicio(initial.inicio_modulo ?? initial.INICIO_MODULO ?? '');
-    setFin(initial.fin_modulo ?? initial.FIN_MODULO ?? '');
-    setOrden(initial.orden ?? initial.ORDEN ?? '');
-  }, [initial]);
+  // Initialize once from `initial` prop
+  const [nombre, setNombre] = useState(
+    initial.nombre_modulo ?? initial.NOMBRE_MODULO ?? ''
+  );
+  const [inicio, setInicio] = useState(
+    initial.inicio_modulo ?? initial.INICIO_MODULO ?? ''
+  );
+  const [fin, setFin] = useState(
+    initial.fin_modulo ?? initial.FIN_MODULO ?? ''
+  );
+  const [orden, setOrden] = useState(initial.orden ?? initial.ORDEN ?? '');
 
   const handleSubmit = (e) => {
     e.preventDefault();
@@ -216,37 +216,46 @@ export default function ModulosPage() {
       {loading ? (
         <div>Cargando módulos…</div>
       ) : (
-        <table className="table table-bordered">
-          <thead className="table-light">
-            <tr>
-              <th>Orden</th>
-              <th>Nombre</th>
-              <th>Inicio</th>
-              <th>Fin</th>
-            </tr>
-          </thead>
-          <tbody>
-            {modulos
-              .sort((a, b) => (a.orden ?? a.ORDEN) - (b.orden ?? b.ORDEN))
-              .map((m) => {
-                const isSel =
-                  selectedModule && getId(selectedModule) === getId(m);
-                return (
-                  <tr
-                    key={getId(m)}
-                    onClick={() => setSelectedModule(m)}
-                    className={isSel ? 'table-primary' : ''}
-                    style={{ cursor: 'pointer' }}
-                  >
-                    <td>{m.orden ?? m.ORDEN}</td>
-                    <td>{m.nombre_modulo ?? m.NOMBRE_MODULO}</td>
-                    <td>{m.inicio_modulo ?? m.INICIO_MODULO}</td>
-                    <td>{m.fin_modulo ?? m.FIN_MODULO}</td>
-                  </tr>
-                );
-              })}
-          </tbody>
-        </table>
+        <div
+          className="table-responsive border"
+          style={{
+            maxHeight: '600px',
+            overflowY: 'auto',
+            marginBottom: '1rem',
+          }}
+        >
+          <table className="table table-bordered mb-0">
+            <thead className="table-light position-sticky top-0">
+              <tr>
+                <th style={{ top: 0, zIndex: 1 }}>Orden</th>
+                <th style={{ top: 0, zIndex: 1 }}>Nombre</th>
+                <th style={{ top: 0, zIndex: 1 }}>Inicio</th>
+                <th style={{ top: 0, zIndex: 1 }}>Fin</th>
+              </tr>
+            </thead>
+            <tbody>
+              {modulos
+                .sort((a, b) => (a.orden ?? a.ORDEN) - (b.orden ?? b.ORDEN))
+                .map((m) => {
+                  const isSel =
+                    selectedModule && getId(selectedModule) === getId(m);
+                  return (
+                    <tr
+                      key={getId(m)}
+                      onClick={() => setSelectedModule(m)}
+                      className={isSel ? 'table-primary' : ''}
+                      style={{ cursor: 'pointer' }}
+                    >
+                      <td>{m.orden ?? m.ORDEN}</td>
+                      <td>{m.nombre_modulo ?? m.NOMBRE_MODULO}</td>
+                      <td>{m.inicio_modulo ?? m.INICIO_MODULO}</td>
+                      <td>{m.fin_modulo ?? m.FIN_MODULO}</td>
+                    </tr>
+                  );
+                })}
+            </tbody>
+          </table>
+        </div>
       )}
 
       {modal.type === 'add' && (
