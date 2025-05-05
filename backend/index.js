@@ -6,6 +6,7 @@ import { initDB } from './db.js';
 import moduloRoutes from './routes/modulo.routes.js';
 import authRoutes from './routes/auth.routes.js';
 import userRoutes from './routes/user.routes.js';
+import moduloUsuariosRoutes from './routes/moduloUsuarios.routes.js';
 
 const app = express();
 app.use(cors());
@@ -48,6 +49,7 @@ async function startServer() {
     app.use('/api/auth', authRoutes);
     app.use('/api/user', userRoutes);
     app.use('/api/modulo', moduloRoutes);
+    app.use('/api/moduloUsuarios', moduloUsuariosRoutes);
 
     const PORT = process.env.PORT || 3000;
     server.listen(PORT, () =>
