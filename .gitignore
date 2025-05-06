@@ -13,7 +13,7 @@ build/
 
 backend/db.js
 
-backend/wallet/
+backend/wallet
 
 
 
