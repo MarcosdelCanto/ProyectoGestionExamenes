@@ -118,7 +118,7 @@ function SalaForm({ initial, onSubmit, onCancel }) {
 
 // Formulario para Sedes
 function SedeForm({ initial, onSubmit, onCancel }) {
-  const [nombre, setNombre] = useState(initial?.NOMBRE_SEDE || '');
+  const [nombre, setNombre] = useState(initial?.NOMBRE_SEDE);
 
   const handleSubmit = (e) => {
     e.preventDefault();
@@ -313,10 +313,11 @@ export default function SalasPage() {
         body: JSON.stringify(form),
       });
       if (!response.ok) throw new Error('Error al crear sala');
-      closeModal();
       loadSalas();
+      closeModal();
     } catch (error) {
       setError('Error al crear sala');
+      closeModal();
     }
   };
 
@@ -338,6 +339,7 @@ export default function SalasPage() {
     } catch (error) {
       setError('Error al actualizar sala');
       console.error('Error:', error);
+      closeModal();
     }
   };
 
@@ -351,11 +353,12 @@ export default function SalasPage() {
       );
       if (!response.ok) throw new Error('Error al eliminar sala');
       closeModal();
-      setSelectedSala(null); // Changed from setSelected to setSelectedSala
+      setSelectedSala(null);
       loadSalas();
     } catch (error) {
       setError('Error al eliminar sala');
       console.error('Error:', error);
+      closeModal();
     }
   };
 
@@ -378,10 +381,10 @@ export default function SalasPage() {
 
       closeModal();
       loadSedesYEdificios();
-      setError('');
     } catch (error) {
       console.error('Error:', error);
-      setError(error.message || 'Error al crear edificio');
+      setError('Error al crear edificio');
+      closeModal();
     }
   };
 
@@ -391,9 +394,7 @@ export default function SalasPage() {
         `http://localhost:3000/api/edificio/${selectedEdificio}`,
         {
           method: 'PUT',
-          headers: {
-            'Content-Type': 'application/json',
-          },
+          headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(form),
         }
       );
@@ -410,6 +411,7 @@ export default function SalasPage() {
     } catch (error) {
       console.error('Error:', error);
       setError(error.message || 'Error al actualizar edificio');
+      closeModal();
     }
   };
 
@@ -434,6 +436,7 @@ export default function SalasPage() {
     } catch (error) {
       console.error('Error:', error);
       setError(error.message || 'Error al eliminar edificio');
+      closeModal();
     }
   };
 
@@ -456,10 +459,10 @@ export default function SalasPage() {
 
       closeModal();
       loadSedesYEdificios();
-      setError('');
     } catch (error) {
       console.error('Error:', error);
       setError(error.message || 'Error al crear sede');
+      closeModal();
     }
   };
 
@@ -488,6 +491,7 @@ export default function SalasPage() {
     } catch (error) {
       console.error('Error:', error);
       setError(error.message || 'Error al actualizar sede');
+      closeModal();
     }
   };
 
@@ -512,6 +516,7 @@ export default function SalasPage() {
     } catch (error) {
       console.error('Error:', error);
       setError(error.message || 'Error al eliminar sede');
+      closeModal();
     }
   };
 
@@ -587,7 +592,7 @@ export default function SalasPage() {
               <tbody>
                 {salas.map((s) => (
                   <tr
-                    key={`sala-${s.ID_SALA || Math.random()}`}
+                    key={`sala-${s.ID_SALA}`}
                     onClick={() => s.ID_SALA && setSelectedSala(s.ID_SALA)}
                     className={
                       s.ID_SALA === selectedSala ? 'table-primary' : ''
@@ -800,11 +805,7 @@ export default function SalasPage() {
       )}
 
       {/* Modales para Sedes */}
-      {modal.type === 'add' && modal.entity === 'sede' && (
-        <Modal title="Agregar Sede" onClose={closeModal}>
-          <SedeForm onSubmit={handleAddSede} onCancel={closeModal} />
-        </Modal>
-      )}
+
       {modal.type === 'add' && modal.entity === 'sede' && (
         <Modal title="Agregar Sede" onClose={closeModal}>
           <SedeForm onSubmit={handleAddSede} onCancel={closeModal} />

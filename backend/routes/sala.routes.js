@@ -9,11 +9,10 @@ import {
 
 const router = Router();
 
-// Rutas para las salas
-router.get('/', getAllSalas);        // Obtener todas las salas
-router.get('/:id', getSalaById);     // Obtener una sala por ID
-router.post('/', createSala);        // Crear una nueva sala
-router.put('/:id', updateSala);      // Actualizar una sala por ID
-router.delete('/:id', deleteSala);   // Eliminar una sala por ID
+router.get('/', getAllSalas);
+router.get('/:id', getSalaById);
+router.post('/', createSala);
+router.put('/:id', updateSala);
+router.delete('/:id', deleteSala);
 
 export default router;

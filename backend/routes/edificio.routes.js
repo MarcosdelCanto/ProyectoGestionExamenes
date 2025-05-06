@@ -4,7 +4,7 @@ import {
   getEdificioById,
   createEdificio,
   updateEdificio,
-  deleteEdificio
+  deleteEdificio,
 } from '../controllers/edificio.controller.js';
 
 const router = Router();

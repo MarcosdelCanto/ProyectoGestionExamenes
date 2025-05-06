@@ -1,16 +1,14 @@
 import { getConnection } from '../db.js';
 import oracledb from 'oracledb';
-
 export const getAllSalas = async (req, res) => {
   let conn;
   try {
     conn = await getConnection();
     const result = await conn.execute(
-      `SELECT s.id_sala, s.nombre_sala, s.capacidad_sala, s.edificio_id_edificio,
-              e.nombre_edificio, e.sigla_edificio
-       FROM SALA s
-       JOIN EDIFICIO e ON s.edificio_id_edificio = e.id_edificio
-       ORDER BY s.id_sala`,
+      `SELECT s.id_sala, s.nombre_sala, s.capacidad_sala, s.edificio_id_edificio, e.nombre_edificio, e.sigla_edificio
+      FROM SALA s
+      JOIN EDIFICIO e ON s.edificio_id_edificio = e.id_edificio
+      ORDER BY s.id_sala`,
       [],
       { outFormat: oracledb.OUT_FORMAT_OBJECT }
     );

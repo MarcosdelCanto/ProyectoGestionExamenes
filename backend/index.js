@@ -9,6 +9,10 @@ import userRoutes from './routes/user.routes.js';
 import salaRoutes from './routes/sala.routes.js';
 import sedeRoutes from './routes/sede.routes.js';
 import edificioRoutes from './routes/edificio.routes.js';
+import carreraRoutes from './routes/carrera.routes.js';
+import seccionRoutes from './routes/seccion.routes.js';
+import asignaturaRoutes from './routes/asignatura.routes.js';
+import escuelaRoutes from './routes/escuela.routes.js';
 
 const app = express();
 
@@ -51,6 +55,10 @@ async function startServer() {
     app.use('/api/sala', salaRoutes);
     app.use('/api/sede', sedeRoutes);
     app.use('/api/edificio', edificioRoutes);
+    app.use('/api/carrera', carreraRoutes);
+    app.use('/api/seccion', seccionRoutes);
+    app.use('/api/asignatura', asignaturaRoutes);
+    app.use('/api/escuela', escuelaRoutes);
 
     const PORT = process.env.PORT || 3000;
     server.listen(PORT, () =>
