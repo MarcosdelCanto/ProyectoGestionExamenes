@@ -51,7 +51,7 @@ export const createEscuela = async (req, res) => {
   try {
     conn = await getConnection();
     const result = await conn.execute(
-      `INSERT INTO ESCUELA (id_escuela,nombre_escuela,fecha_actualizacion_escuela, sede_id_sede)
+      `INSERT INTO ESCUELA (id_escuela,nombre_escuela,fecha_creacion_escuela, sede_id_sede)
       VALUES (SEQ_ESCUELA.NEXTVAL, :nombre, SYSTIMESTAMP,:sede_id)
       RETURNING id_escuela INTO :newId`,
       {

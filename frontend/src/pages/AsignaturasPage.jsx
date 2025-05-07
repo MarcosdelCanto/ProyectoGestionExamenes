@@ -1,5 +1,37 @@
 import { useState, useEffect } from 'react';
 import Layout from '../components/Layout';
+import EscuelaForm from '../components/escuelas/EscuelaForm';
+import EscuelaList from '../components/escuelas/EscuelaList';
+import EscuelaActions from '../components/escuelas/EscuelaActions';
+import CarreraForm from '../components/carreras/CarreraForm';
+import CarreraList from '../components/carreras/CarreraList';
+import CarreraActions from '../components/carreras/CarreraActions';
+import AsignaturaForm from '../components/asignaturas/AsignaturaForm';
+import AsignaturaList from '../components/asignaturas/AsignaturaList';
+import AsignaturaActions from '../components/asignaturas/AsignaturaActions';
+import SeccionForm from '../components/secciones/SeccionForm';
+import SeccionList from '../components/secciones/SeccionList';
+import SeccionActions from '../components/secciones/SeccionActions';
+import {
+  AddAsignatura,
+  EditAsignatura,
+  DeleteAsignatura,
+} from '../services/asignaturaService';
+import {
+  AddSeccion,
+  EditSeccion,
+  DeleteSeccion,
+} from '../services/seccionService';
+import {
+  AddCarrera,
+  EditCarrera,
+  DeleteCarrera,
+} from '../services/carreraService';
+import {
+  AddEscuela,
+  EditEscuela,
+  DeleteEscuela,
+} from '../services/escuelaService';
 
 function Modal({ title, children, onClose }) {
   return (
@@ -22,296 +54,6 @@ function Modal({ title, children, onClose }) {
         </div>
       </div>
     </div>
-  );
-}
-
-function SeccionForm({ initial, onSubmit, onCancel }) {
-  const [nombre, setNombre] = useState(initial?.NOMBRE_SECCION || '');
-  const [asignaturaId, setAsignaturaId] = useState(
-    initial?.ASIGNATURA_ID_ASIGNATURA?.toString() || ''
-  );
-  const [asignatura, setAsignatura] = useState([]);
-
-  useEffect(() => {
-    const fetchAsignaturas = async () => {
-      try {
-        const response = await fetch('http://localhost:3000/api/asignatura');
-        const data = await response.json();
-        setAsignatura(data);
-      } catch (error) {
-        console.error('Error al obtener las asignaturas:', error);
-      }
-    };
-
-    fetchAsignaturas();
-  }, []);
-
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    onSubmit({
-      nombre_seccion: nombre,
-      asignatura_id_asignatura: parseInt(asignaturaId),
-    });
-  };
-
-  return (
-    <form onSubmit={handleSubmit}>
-      <div className="mb-3">
-        <label htmlFor="nombre" className="form-label">
-          Nombre de la Sección
-        </label>
-        <input
-          type="text"
-          className="form-control"
-          value={nombre}
-          onChange={(e) => setNombre(e.target.value)}
-          required
-        />
-      </div>
-      <div className="mb-3">
-        <label className="form-label">Asignatura</label>
-        <select
-          className="form-control"
-          value={asignaturaId}
-          onChange={(e) => setAsignaturaId(e.target.value)}
-          required
-        >
-          <option value="" key="default">
-            Seleccione una asignatura
-          </option>
-          {asignatura.map((asignatura) => (
-            <option
-              key={`asignatura-${asignatura.ID_ASIGNATURA}`}
-              value={asignatura.ID_ASIGNATURA}
-            >
-              {asignatura.NOMBRE_ASIGNATURA}
-            </option>
-          ))}
-        </select>
-      </div>
-      <div className="modal-footer">
-        <button type="button" className="btn btn-secondary" onClick={onCancel}>
-          Cancelar
-        </button>
-        <button type="submit" className="btn btn-primary">
-          Guardar
-        </button>
-      </div>
-    </form>
-  );
-}
-
-function AsignaturaForm({ initial, onSubmit, onCancel }) {
-  const [nombre, setNombre] = useState(initial?.NOMBRE_ASIGNATURA || '');
-  const [carreraId, setCarreraId] = useState(
-    initial?.CARRERA_ID_CARRERA?.toString() || ''
-  );
-  const [carrera, setCarrera] = useState([]);
-
-  useEffect(() => {
-    const fetchCarreras = async () => {
-      try {
-        const response = await fetch('http://localhost:3000/api/carrera');
-        const data = await response.json();
-        setCarrera(data);
-      } catch (error) {
-        console.error('Error al obtener las carreras:', error);
-      }
-    };
-    fetchCarreras();
-  }, []);
-
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    onSubmit({
-      nombre_asignatura: nombre,
-      carrera_id_carrera: parseInt(carreraId),
-    });
-  };
-
-  return (
-    <form onSubmit={handleSubmit}>
-      <div className="mb-3">
-        <label htmlFor="nombre" className="form-label">
-          Nombre de la Asignatura
-        </label>
-        <input
-          type="text"
-          className="form-control"
-          value={nombre}
-          onChange={(e) => setNombre(e.target.value)}
-          required
-        />
-      </div>
-      <div className="mb-3">
-        <label className="form-label">Carrera</label>
-        <select
-          className="form-control"
-          value={carreraId}
-          onChange={(e) => setCarreraId(e.target.value)}
-          required
-        >
-          <option value="" key="default">
-            Seleccione una carrera
-          </option>
-          {carrera.map((carrera) => (
-            <option
-              key={`carrera-${carrera.ID_CARRERA}`}
-              value={carrera.ID_CARRERA}
-            >
-              {carrera.NOMBRE_CARRERA}
-            </option>
-          ))}
-        </select>
-      </div>
-      <div className="modal-footer">
-        <button type="button" className="btn btn-secondary" onClick={onCancel}>
-          Cancelar
-        </button>
-        <button type="submit" className="btn btn-primary">
-          Guardar
-        </button>
-      </div>
-    </form>
-  );
-}
-
-function CarreraForm({ initial, onSubmit, onCancel }) {
-  const [nombre, setNombre] = useState(initial?.NOMBRE_CARRERA || '');
-  const [escuelaId, setEscuelaId] = useState(
-    initial?.ESCUELA_ID_ESCUELA?.toString() || ''
-  );
-  const [escuelas, setEscuelas] = useState([]);
-
-  useEffect(() => {
-    const fetchEscuelas = async () => {
-      try {
-        const response = await fetch('http://localhost:3000/api/escuela');
-        const data = await response.json();
-        setEscuelas(data);
-      } catch (error) {
-        console.error('Error al obtener las escuelas:', error);
-      }
-    };
-    fetchEscuelas();
-  }, []);
-
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    onSubmit({
-      nombre_carrera: nombre,
-      escuela_id_escuela: parseInt(escuelaId),
-    });
-  };
-
-  return (
-    <form onSubmit={handleSubmit}>
-      <div className="mb-3">
-        <label className="form-label">Nombre de la Carrera</label>
-        <input
-          type="text"
-          className="form-control"
-          value={nombre}
-          onChange={(e) => setNombre(e.target.value)}
-          required
-        />
-        <label className="form-label">Escuela</label>
-        <select
-          className="form-select"
-          value={escuelaId}
-          onChange={(e) => setEscuelaId(e.target.value)}
-          required
-        >
-          <option value="" key="default">
-            Seleccione una Escuela
-          </option>
-          {escuelas.map((escuela) => (
-            <option
-              key={`escuela-${escuela.ID_ESCUELA}`}
-              value={escuela.ID_ESCUELA}
-            >
-              {escuela.NOMBRE_ESCUELA}
-            </option>
-          ))}
-        </select>
-      </div>
-      <div className="modal-footer">
-        <button type="button" className="btn btn-secondary" onClick={onCancel}>
-          Cancelar
-        </button>
-        <button type="submit" className="btn btn-primary">
-          Guardar
-        </button>
-      </div>
-    </form>
-  );
-}
-
-function EscuelaForm({ initial, onSubmit, onCancel }) {
-  const [nombre, setNombre] = useState(initial?.NOMBRE_ESCUELA);
-  const [sedeId, setSedeId] = useState(initial?.ID_SEDE?.toString());
-  const [sedes, setSedes] = useState([]);
-
-  useEffect(() => {
-    const fetchSedes = async () => {
-      try {
-        const response = await fetch('http://localhost:3000/api/sede');
-        const data = await response.json();
-        setSedes(data);
-      } catch (error) {
-        console.error('Error al obtener las sedes:', error);
-      }
-    };
-    fetchSedes();
-  }, []);
-
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    onSubmit({
-      nombre_escuela: nombre,
-      sede_id_sede: parseInt(sedeId),
-    });
-  };
-
-  return (
-    <form onSubmit={handleSubmit}>
-      <div className="mb-3">
-        <label className="form-label"> Nombre de la Escuela </label>
-        <input
-          type="text"
-          className="form-control"
-          value={nombre}
-          onChange={(e) => setNombre(e.target.value)}
-          required
-        />
-      </div>
-      <div className="mb-3">
-        <label className="form-label">Sede</label>
-        <select
-          className="form-select"
-          value={sedeId}
-          onChange={(e) => setSedeId(e.target.value)}
-          required
-        >
-          <option value="" key="default">
-            Seleccione una sede
-          </option>
-          {sedes.map((sede) => (
-            <option key={`sede-${sede.ID_SEDE}`} value={sede.ID_SEDE}>
-              {sede.NOMBRE_SEDE}
-            </option>
-          ))}
-        </select>
-      </div>
-      <div className="modal-footer">
-        <button type="button" className="btn btn-secondary" onClick={onCancel}>
-          Cancelar
-        </button>
-        <button type="submit" className="btn btn-primary">
-          Guardar
-        </button>
-      </div>
-    </form>
   );
 }
 
@@ -395,35 +137,22 @@ export default function AsignaturasPage() {
   //Manejadores
   const handleAddAsignatura = async (form) => {
     try {
-      const response = await fetch('http://localhost:3000/api/asignatura', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(form),
-      });
-      if (!response.ok) throw new Error('Error al agregar la asignatura');
-      closeModal();
+      await AddAsignatura(form);
       loadData();
+      closeModal();
     } catch (error) {
-      setError('Error al agregar la asignatura');
+      setError('Error al crear asignatura');
       closeModal();
     }
   };
 
   const handleEditAsignatura = async (form) => {
     try {
-      const response = await fetch(
-        `http://localhost:3000/api/asignatura/${selectedAsignatura}`,
-        {
-          method: 'PUT',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(form),
-        }
-      );
-      if (!response.ok) throw new Error('Error al editar la asignatura');
+      await EditAsignatura(selectedAsignatura, form);
       closeModal();
       loadData();
     } catch (error) {
-      setError('Error al editar la asignatura');
+      setError('Error al actualizar asignatura');
       console.error('Error:', error);
       closeModal();
     }
@@ -431,18 +160,12 @@ export default function AsignaturasPage() {
 
   const handleDeleteAsignatura = async () => {
     try {
-      const response = await fetch(
-        `http://localhost:3000/api/asignatura/${selectedAsignatura}`,
-        {
-          method: 'DELETE',
-        }
-      );
-      if (!response.ok) throw new Error('Error al eliminar la asignatura');
+      await DeleteAsignatura(selectedAsignatura);
       closeModal();
       setSelectedAsignatura(null);
       loadData();
     } catch (error) {
-      setError('Error al eliminar la asignatura');
+      setError('Error al eliminar asignatura');
       console.error('Error:', error);
       closeModal();
     }
@@ -450,36 +173,22 @@ export default function AsignaturasPage() {
 
   const handleAddSeccion = async (form) => {
     try {
-      const response = await fetch('http://localhost:3000/api/seccion', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(form),
-      });
-      if (!response.ok) throw new Error('Error al agregar la seccion');
-      closeModal();
+      await AddSeccion(form);
       loadData();
+      closeModal();
     } catch (error) {
-      setError('Error al agregar la seccion');
-      console.error('Error:', error);
+      setError('Error al crear seccion');
       closeModal();
     }
   };
 
   const handleEditSeccion = async (form) => {
     try {
-      const response = await fetch(
-        `http://localhost:3000/api/seccion/${selectedSeccion}`,
-        {
-          method: 'PUT',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(form),
-        }
-      );
-      if (!response.ok) throw new Error('Error al editar la seccion');
+      await EditSeccion(selectedSeccion, form);
       closeModal();
       loadData();
     } catch (error) {
-      setError('Error al editar la seccion');
+      setError('Error al actualizar seccion');
       console.error('Error:', error);
       closeModal();
     }
@@ -487,18 +196,12 @@ export default function AsignaturasPage() {
 
   const handleDeleteSeccion = async () => {
     try {
-      const response = await fetch(
-        `http://localhost:3000/api/seccion/${selectedSeccion}`,
-        {
-          method: 'DELETE',
-        }
-      );
-      if (!response.ok) throw new Error('Error al eliminar la seccion');
+      await DeleteSeccion(selectedSeccion);
       closeModal();
       setSelectedSeccion(null);
       loadData();
     } catch (error) {
-      setError('Error al eliminar la seccion');
+      setError('Error al eliminar seccion');
       console.error('Error:', error);
       closeModal();
     }
@@ -506,35 +209,22 @@ export default function AsignaturasPage() {
 
   const handleAddCarrera = async (form) => {
     try {
-      const response = await fetch('http://localhost:3000/api/carrera', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(form),
-      });
-      if (!response.ok) throw new Error('Error al agregar la carrera');
+      await AddCarrera(form);
       loadData();
       closeModal();
     } catch (error) {
-      console.error(error);
+      setError('Error al crear carrera');
       closeModal();
     }
   };
 
   const handleEditCarrera = async (form) => {
     try {
-      const response = await fetch(
-        `http://localhost:3000/api/carrera/${selectedCarrera}`,
-        {
-          method: 'PUT',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(form),
-        }
-      );
-      if (!response.ok) throw new Error('Error al editar la carrera');
+      await EditCarrera(selectedCarrera, form);
       closeModal();
       loadData();
     } catch (error) {
-      setError('Error al editar la carrera');
+      setError('Error al actualizar carrera');
       console.error('Error:', error);
       closeModal();
     }
@@ -542,18 +232,12 @@ export default function AsignaturasPage() {
 
   const handleDeleteCarrera = async () => {
     try {
-      const response = await fetch(
-        `http://localhost:3000/api/carrera/${selectedCarrera}`,
-        {
-          method: 'DELETE',
-        }
-      );
-      if (!response.ok) throw new Error('Error al eliminar la carrera');
+      await DeleteCarrera(selectedCarrera);
       closeModal();
       setSelectedCarrera(null);
       loadData();
     } catch (error) {
-      setError('Error al eliminar la carrera');
+      setError('Error al eliminar carrera');
       console.error('Error:', error);
       closeModal();
     }
@@ -561,37 +245,22 @@ export default function AsignaturasPage() {
 
   const handleAddEscuela = async (form) => {
     try {
-      const response = await fetch('http://localhost:3000/api/escuela', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(form),
-      });
-      if (!response.ok) throw new Error('Error al agregar la escuela');
-      closeModal();
+      await AddEscuela(form);
       loadData();
+      closeModal();
     } catch (error) {
-      setError('Error al agregar la escuela');
-      console.error('Error:', error);
+      setError('Error al crear escuela');
       closeModal();
     }
   };
 
   const handleEditEscuela = async (form) => {
     try {
-      const response = await fetch(
-        `http://localhost:3000/api/escuela/${selectedEscuela}`,
-        {
-          method: 'PUT',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(form),
-        }
-      );
-
-      if (!response.ok) throw new Error('Error al editar la escuela');
+      await EditEscuela(selectedEscuela, form);
       closeModal();
       loadData();
     } catch (error) {
-      setError('Error al editar la escuela');
+      setError('Error al actualizar escuela');
       console.error('Error:', error);
       closeModal();
     }
@@ -599,19 +268,12 @@ export default function AsignaturasPage() {
 
   const handleDeleteEscuela = async () => {
     try {
-      const response = await fetch(
-        `http://localhost:3000/api/escuela/${selectedEscuela}`,
-        {
-          method: 'DELETE',
-        }
-      );
-      if (!response.ok) throw new Error('Error al eliminar la escuela');
-
+      await DeleteEscuela(selectedEscuela);
       closeModal();
       setSelectedEscuela(null);
       loadData();
     } catch (error) {
-      setError('Error al eliminar la escuela');
+      setError('Error al eliminar escuela');
       console.error('Error:', error);
       closeModal();
     }
@@ -619,7 +281,7 @@ export default function AsignaturasPage() {
 
   return (
     <Layout>
-      <h1 className="mb-4">Administración de Asignaturas</h1>
+      <h1 className="mb-4">Gestion Administrativa</h1>
       {error && <div className="alert alert-danger">{error}</div>}
 
       <ul className="nav nav-tabs mb-3">
@@ -659,390 +321,223 @@ export default function AsignaturasPage() {
 
       {activeTab === 'asignaturas' && (
         <>
-          <div className="mb-3">
-            <button
-              className="btn btn-success me-2"
-              onClick={() => openModal('add', 'asignatura')}
-            >
-              Agregar Asignatura
-            </button>
-            <button
-              className="btn btn-warning me-2"
-              onClick={() => openModal('edit', 'asignatura')}
-              disabled={!selectedAsignatura}
-            >
-              Modificar Asignatura
-            </button>
-            <button
-              className="btn btn-danger"
-              onClick={() => openModal('delete', 'asignatura')}
-              disabled={!selectedAsignatura}
-            >
-              Eliminar Asignatura
-            </button>
-          </div>
-
-          {loading ? (
-            <div> Cargando ... </div>
-          ) : (
-            <table className="table table-bordered">
-              <thead className="table-ligth">
-                <tr>
-                  <th>ID</th>
-                  <th>Nombre</th>
-                  <th>Carrera</th>
-                </tr>
-              </thead>
-              <tbody>
-                {asignaturas.map((a) => (
-                  <tr
-                    key={`sala-${a.ID_ASIGNATURA}`}
-                    onClick={() =>
-                      a.ID_ASIGNATURA && setSelectedAsignatura(a.ID_ASIGNATURA)
-                    }
-                    className={
-                      a.ID_ASIGNATURA === selectedAsignatura
-                        ? 'table-primary'
-                        : ''
-                    }
-                    style={{ cursor: 'pointer' }}
-                  >
-                    <td>{a.ID_ASIGNATURA || 'N/A'}</td>
-                    <td>{a.NOMBRE_ASIGNATURA || 'N/A'}</td>
-                    <td>{a.NOMBRE_CARRERA || 'N/A'}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          )}
+          <AsignaturaActions
+            onAdd={() => openModal('add', 'asignatura')}
+            onEdit={() => openModal('edit', 'asignatura')}
+            onDelete={() => openModal('delete', 'asignatura')}
+            selectedAsignatura={selectedAsignatura}
+          />
+          <AsignaturaList
+            asignaturas={asignaturas}
+            selectedAsignatura={selectedAsignatura}
+            onSelectAsignatura={setSelectedAsignatura}
+            loading={loading}
+          />
         </>
+      )}
+
+      {modal.type && modal.entity === 'asignatura' && (
+        <Modal
+          title={
+            modal.type === 'add'
+              ? 'Agregar Asignatura'
+              : modal.type === 'edit'
+                ? 'Editar Asignatura'
+                : 'Eliminar Asignatura'
+          }
+          onClose={closeModal}
+        >
+          {modal.type === 'delete' ? (
+            <div>
+              <p>¿Está seguro de que desea eliminar esta asignatura?</p>
+              <div className="modal-footer">
+                <button className="btn btn-secondary" onClick={closeModal}>
+                  Cancelar
+                </button>
+                <button
+                  className="btn btn-danger"
+                  onClick={handleDeleteAsignatura}
+                >
+                  Eliminar
+                </button>
+              </div>
+            </div>
+          ) : (
+            <AsignaturaForm
+              initial={modal.data}
+              onSubmit={
+                modal.type === 'add'
+                  ? handleAddAsignatura
+                  : handleEditAsignatura
+              }
+              onCancel={closeModal}
+            />
+          )}
+        </Modal>
       )}
 
       {activeTab === 'secciones' && (
         <>
-          <div className="mb-3">
-            <button
-              className="btn btn-success me-2"
-              onClick={() => openModal('add', 'seccion')}
-            >
-              Agregar Seccion
-            </button>
-            <button
-              className="btn btn-warning me-2"
-              onClick={() => openModal('edit', 'seccion')}
-              disabled={!selectedSeccion}
-            >
-              Modificar Seccion
-            </button>
-            <button
-              className="btn btn-danger"
-              onClick={() => openModal('delete', 'seccion')}
-              disabled={!selectedSeccion}
-            >
-              Eliminar Seccion
-            </button>
-          </div>
-
-          <table className="table table-bordered">
-            <thead className="table-light">
-              <tr>
-                <th>ID</th>
-                <th>Nombre</th>
-                <th>Asignatura</th>
-                <th>Profesor</th>
-                <th>Carrera</th>
-              </tr>
-            </thead>
-            <tbody>
-              {secciones.map((s) => (
-                <tr
-                  key={`seccion-${s.ID_SECCION}`}
-                  onClick={() => setSelectedSeccion(s.ID_SECCION)}
-                  className={
-                    s.ID_SECCION === selectedSeccion ? 'table-primary' : ''
-                  }
-                  style={{ cursor: 'pointer' }}
-                >
-                  <td>{s.ID_SECCION || 'N/A'}</td>
-                  <td>{s.NOMBRE_SECCION || 'N/A'}</td>
-                  <td>{s.ASIGNATURA_ID_ASIGNATURA || 'N/A'}</td>
-                  <td>{s.PROFESOR_ID_PROFESOR || 'N/A'}</td>
-                  <td>{s.CARRERA_ID_CARRERA || 'N/A'}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+          <SeccionActions
+            onAdd={() => openModal('add', 'seccion')}
+            onEdit={() => openModal('edit', 'seccion')}
+            onDelete={() => openModal('delete', 'seccion')}
+            selectedSeccion={selectedSeccion}
+          />
+          <SeccionList
+            secciones={secciones}
+            selectedSeccion={selectedSeccion}
+            onSelectSeccion={setSelectedSeccion}
+            loading={loading}
+          />
         </>
+      )}
+
+      {modal.type && modal.entity === 'seccion' && (
+        <Modal
+          title={
+            modal.type === 'add'
+              ? 'Agregar Sección'
+              : modal.type === 'edit'
+                ? 'Editar Sección'
+                : 'Eliminar Sección'
+          }
+          onClose={closeModal}
+        >
+          {modal.type === 'delete' ? (
+            <div>
+              <p>¿Está seguro de que desea eliminar esta sección?</p>
+              <div className="modal-footer">
+                <button className="btn btn-secondary" onClick={closeModal}>
+                  Cancelar
+                </button>
+                <button
+                  className="btn btn-danger"
+                  onClick={handleDeleteSeccion}
+                >
+                  Eliminar
+                </button>
+              </div>
+            </div>
+          ) : (
+            <SeccionForm
+              initial={modal.data}
+              onSubmit={
+                modal.type === 'add' ? handleAddSeccion : handleEditSeccion
+              }
+              onCancel={closeModal}
+            />
+          )}
+        </Modal>
       )}
 
       {activeTab === 'carreras' && (
         <>
-          <div className="mb-3">
-            <button
-              className="btn btn-success me-2"
-              onClick={() => openModal('add', 'carrera')}
-            >
-              Agregar Carrera
-            </button>
-            <button
-              className="btn btn-warning me-2"
-              onClick={() => openModal('edit', 'carrera')}
-              disabled={!selectedCarrera}
-            >
-              Modificar Carrera
-            </button>
-            <button
-              className="btn btn-danger"
-              onClick={() => openModal('delete', 'carrera')}
-              disabled={!selectedCarrera}
-            >
-              Eliminar Carrera
-            </button>
-          </div>
-
-          <table className="table table-bordered">
-            <thead className="table-light">
-              <tr>
-                <th>ID</th>
-                <th>Nombre</th>
-                <th>Escuela</th>
-              </tr>
-            </thead>
-            <tbody>
-              {carreras.map((c) => (
-                <tr
-                  key={`carrera-${c.ID_CARRERA}`}
-                  onClick={() => setSelectedCarrera(c.ID_CARRERA)}
-                  className={
-                    c.ID_CARRERA === selectedCarrera ? 'table-primary' : ''
-                  }
-                  style={{ cursor: 'pointer' }}
-                >
-                  <td>{c.ID_CARRERA || 'N/A'}</td>
-                  <td>{c.NOMBRE_CARRERA || 'N/A'}</td>
-                  <td>{c.NOMBRE_ESCUELA || 'N/A'}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+          <CarreraActions
+            onAdd={() => openModal('add', 'carrera')}
+            onEdit={() => openModal('edit', 'carrera')}
+            onDelete={() => openModal('delete', 'carrera')}
+            selectedCarrera={selectedCarrera}
+          />
+          <CarreraList
+            carreras={carreras}
+            selectedCarrera={selectedCarrera}
+            onSelectCarrera={setSelectedCarrera}
+            loading={loading}
+          />
         </>
+      )}
+
+      {modal.type && modal.entity === 'carrera' && (
+        <Modal
+          title={
+            modal.type === 'add'
+              ? 'Agregar Carrera'
+              : modal.type === 'edit'
+                ? 'Editar Carrera'
+                : 'Eliminar Carrera'
+          }
+          onClose={closeModal}
+        >
+          {modal.type === 'delete' ? (
+            <div>
+              <p>¿Está seguro de que desea eliminar esta carrera?</p>
+              <div className="modal-footer">
+                <button className="btn btn-secondary" onClick={closeModal}>
+                  Cancelar
+                </button>
+                <button
+                  className="btn btn-danger"
+                  onClick={handleDeleteCarrera}
+                >
+                  Eliminar
+                </button>
+              </div>
+            </div>
+          ) : (
+            <CarreraForm
+              initial={modal.data}
+              onSubmit={
+                modal.type === 'add' ? handleAddCarrera : handleEditCarrera
+              }
+              onCancel={closeModal}
+            />
+          )}
+        </Modal>
       )}
 
       {activeTab === 'escuelas' && (
         <>
-          <div className="mb-3">
-            <button
-              className="btn btn-success me-2"
-              onClick={() => openModal('add', 'escuela')}
-            >
-              Agregar Escuela
-            </button>
-            <button
-              className="btn btn-warning me-2"
-              onClick={() => openModal('edit', 'escuela')}
-              disabled={!selectedEscuela}
-            >
-              Modificar Escuela
-            </button>
-            <button
-              className="btn btn-danger"
-              onClick={() => openModal('delete', 'escuela')}
-              disabled={!selectedEscuela}
-            >
-              Eliminar Escuela
-            </button>
-          </div>
-
-          <table className="table table-bordered">
-            <thead className="table-light">
-              <tr>
-                <th>ID</th>
-                <th>Nombre</th>
-                <th>Sede</th>
-              </tr>
-            </thead>
-            <tbody>
-              {escuelas.map((e) => (
-                <tr
-                  key={`escuela-${e.ID_ESCUELA}`}
-                  onClick={() => setSelectedEscuela(e.ID_ESCUELA)}
-                  className={
-                    e.ID_ESCUELA === selectedEscuela ? 'table-primary' : ''
-                  }
-                  style={{ cursor: 'pointer' }}
-                >
-                  <td>{e.ID_ESCUELA || 'N/A'}</td>
-                  <td>{e.NOMBRE_ESCUELA || 'N/A'}</td>
-                  <td>{e.NOMBRE_SEDE || 'N/A'}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+          <EscuelaActions
+            onAdd={() => openModal('add', 'escuela')}
+            onEdit={() => openModal('edit', 'escuela')}
+            onDelete={() => openModal('delete', 'escuela')}
+            selectedEscuela={selectedEscuela}
+          />
+          <EscuelaList
+            escuelas={escuelas}
+            selectedEscuela={selectedEscuela}
+            onSelectEscuela={setSelectedEscuela}
+            loading={loading}
+          />
         </>
       )}
 
-      {/* Modales */}
-
-      {modal.type === 'add' && modal.entity === 'asignatura' && (
-        <Modal title="Agregar Asignatura" onClose={closeModal}>
-          <AsignaturaForm
-            onSubmit={handleAddAsignatura}
-            onCancel={closeModal}
-          />
-        </Modal>
-      )}
-
-      {modal.type === 'edit' && modal.entity === 'asignatura' && (
-        <Modal title="Editar Asignatura" onClose={closeModal}>
-          <AsignaturaForm
-            onSubmit={handleEditAsignatura}
-            initial={modal.data}
-            onCancel={closeModal}
-          />
-        </Modal>
-      )}
-
-      {modal.type === 'delete' && modal.entity === 'asignatura' && (
-        <Modal title="Eliminar Asignatura" onClose={closeModal}>
-          <div className="modal-body">
-            <p>¿Esta seguro de que desea eliminar esta asignatura?</p>
-            <div className="modal-footer">
-              <button
-                type="button"
-                className="btn btn-secondary"
-                onClick={closeModal}
-              >
-                Cancelar
-              </button>
-              <button
-                type="button"
-                className="btn btn-danger"
-                onClick={handleDeleteAsignatura}
-              >
-                Eliminar
-              </button>
+      {modal.type && modal.entity === 'escuela' && (
+        <Modal
+          title={
+            modal.type === 'add'
+              ? 'Agregar Escuela'
+              : modal.type === 'edit'
+                ? 'Editar Escuela'
+                : 'Eliminar Escuela'
+          }
+          onClose={closeModal}
+        >
+          {modal.type === 'delete' ? (
+            <div>
+              <p>¿Está seguro de que desea eliminar esta escuela?</p>
+              <div className="modal-footer">
+                <button className="btn btn-secondary" onClick={closeModal}>
+                  Cancelar
+                </button>
+                <button
+                  className="btn btn-danger"
+                  onClick={handleDeleteEscuela}
+                >
+                  Eliminar
+                </button>
+              </div>
             </div>
-          </div>
-        </Modal>
-      )}
-
-      {modal.type === 'add' && modal.entity === 'seccion' && (
-        <Modal title="Agregar Seccion" onClose={closeModal}>
-          <SeccionForm onSubmit={handleAddSeccion} onCancel={closeModal} />
-        </Modal>
-      )}
-
-      {modal.type === 'edit' && modal.entity === 'seccion' && (
-        <Modal title="Editar Seccion" onClose={closeModal}>
-          <SeccionForm
-            onSubmit={handleEditSeccion}
-            initial={modal.data}
-            onCancel={closeModal}
-          />
-        </Modal>
-      )}
-
-      {modal.type === 'delete' && modal.entity === 'seccion' && (
-        <Modal title="Eliminar Seccion" onClose={closeModal}>
-          <div className="modal-body">
-            <p>¿Esta seguro de que desea eliminar esta seccion?</p>
-            <div className="modal-footer">
-              <button
-                type="button"
-                className="btn btn-secondary"
-                onClick={closeModal}
-              >
-                Cancelar
-              </button>
-              <button
-                type="button"
-                className="btn btn-danger"
-                onClick={handleDeleteSeccion}
-              >
-                Eliminar
-              </button>
-            </div>
-          </div>
-        </Modal>
-      )}
-
-      {modal.type === 'add' && modal.entity === 'carrera' && (
-        <Modal title="Agregar Carrera" onClose={closeModal}>
-          <CarreraForm onSubmit={handleAddCarrera} onCancel={closeModal} />
-        </Modal>
-      )}
-
-      {modal.type === 'edit' && modal.entity === 'carrera' && (
-        <Modal title="Editar Carrera" onClose={closeModal}>
-          <CarreraForm
-            initial={modal.data}
-            onSubmit={handleEditCarrera}
-            onCancel={closeModal}
-          />
-        </Modal>
-      )}
-
-      {modal.type === 'delete' && modal.entity === 'carrera' && (
-        <Modal title="Eliminar Carrera" onClose={closeModal}>
-          <div className="modal-body">
-            <p>¿Esta seguro de que desea eliminar esta carrera?</p>
-            <div className="modal-footer">
-              <button
-                type="button"
-                className="btn btn-secondary"
-                onClick={closeModal}
-              >
-                Cancelar
-              </button>
-              <button
-                type="button"
-                className="btn btn-danger"
-                onClick={handleDeleteCarrera}
-              >
-                Eliminar
-              </button>
-            </div>
-          </div>
-        </Modal>
-      )}
-
-      {modal.type === 'add' && modal.entity === 'escuela' && (
-        <Modal title="Agregar Escuela" onClose={closeModal}>
-          <EscuelaForm onSubmit={handleAddEscuela} onCancel={closeModal} />
-        </Modal>
-      )}
-
-      {modal.type === 'edit' && modal.entity === 'escuela' && (
-        <Modal title="Editar Escuela" onClose={closeModal}>
-          <EscuelaForm
-            onSubmit={handleEditEscuela}
-            initial={modal.data}
-            onCancel={closeModal}
-          />
-        </Modal>
-      )}
-
-      {modal.type === 'delete' && modal.entity === 'escuela' && (
-        <Modal title="Eliminar Escuela" onClose={closeModal}>
-          <div className="modal-body">
-            <p>¿Esta seguro de que desea eliminar esta escuela?</p>
-            <div className="modal-footer">
-              <button
-                type="button"
-                className="btn btn-secondary"
-                onClick={closeModal}
-              >
-                Cancelar
-              </button>
-              <button
-                type="button"
-                className="btn btn-danger"
-                onClick={handleDeleteEscuela}
-              >
-                Eliminar
-              </button>
-            </div>
-          </div>
+          ) : (
+            <EscuelaForm
+              initial={modal.data}
+              onSubmit={
+                modal.type === 'add' ? handleAddEscuela : handleEditEscuela
+              }
+              onCancel={closeModal}
+            />
+          )}
         </Modal>
       )}
     </Layout>

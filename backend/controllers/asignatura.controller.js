@@ -51,8 +51,8 @@ export const createAsignatura = async (req, res) => {
     conn = await getConnection();
     const result = await conn.execute(
       `INSERT INTO ASIGNATURA (id_asignatura, nombre_asignatura, carrera_id_carrera)
-      VALUES (SEQ_SECCION.NEXTVAL, :nombre, :carrera)
-      RETURNING id_asignatura INTO :newId,`,
+      VALUES (SEQ_ASIGNATURA.NEXTVAL, :nombre, :carrera)
+      RETURNING id_asignatura INTO :newId`,
       {
         nombre: nombre_asignatura,
         carrera: carrera_id_carrera,

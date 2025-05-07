@@ -1,5 +1,21 @@
 import { useState, useEffect } from 'react';
 import Layout from '../components/Layout';
+import SalaForm from '../components/salas/SalaForm';
+import SalaList from '../components/salas/SalaList';
+import SalaActions from '../components/salas/SalaActions';
+import EdificioForm from '../components/edificios/EdificioForm';
+import EdificioList from '../components/edificios/EdificioList';
+import EdificioActions from '../components/edificios/EdificioActions';
+import SedeForm from '../components/sedes/SedeForm';
+import SedeList from '../components/sedes/SedeList';
+import SedeActions from '../components/sedes/SedeActions';
+import { AddSala, EditSala, DeleteSala } from '../services/salaService';
+import {
+  AddEdificio,
+  EditEdificio,
+  DeleteEdificio,
+} from '../services/edificioService';
+import { AddSede, EditSede, DeleteSede } from '../services/sedeService';
 
 // Componente Modal Bootstrap
 function Modal({ title, children, onClose }) {
@@ -27,209 +43,6 @@ function Modal({ title, children, onClose }) {
   );
 }
 
-// Formulario dentro del modal para Agregar/Editar
-// En la función SalaForm
-function SalaForm({ initial, onSubmit, onCancel }) {
-  const [nombre, setNombre] = useState(initial?.NOMBRE_SALA || '');
-  const [capacidad, setCapacidad] = useState(initial?.CAPACIDAD_SALA || '');
-  const [edificioId, setEdificioId] = useState(
-    initial?.EDIFICIO_ID_EDIFICIO?.toString() || ''
-  );
-  const [edificios, setEdificios] = useState([]);
-
-  useEffect(() => {
-    // Cargar la lista de edificios cuando el componente se monte
-    const fetchEdificios = async () => {
-      try {
-        const response = await fetch('http://localhost:3000/api/edificio');
-        const data = await response.json();
-        setEdificios(data);
-      } catch (error) {
-        console.error('Error al cargar edificios:', error);
-      }
-    };
-    fetchEdificios();
-  }, []);
-
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    onSubmit({
-      nombre_sala: nombre,
-      capacidad_sala: parseInt(capacidad),
-      edificio_id_edificio: parseInt(edificioId),
-    });
-  };
-
-  return (
-    <form onSubmit={handleSubmit}>
-      <div className="mb-3">
-        <label className="form-label">Nombre de la Sala</label>
-        <input
-          type="text"
-          className="form-control"
-          value={nombre}
-          onChange={(e) => setNombre(e.target.value)}
-          required
-        />
-      </div>
-      <div className="mb-3">
-        <label className="form-label">Capacidad</label>
-        <input
-          type="number"
-          className="form-control"
-          value={capacidad}
-          onChange={(e) => setCapacidad(e.target.value)}
-          min="1"
-          required
-        />
-      </div>
-      <div className="mb-3">
-        <label className="form-label">Edificio</label>
-        <select
-          className="form-select"
-          value={edificioId}
-          onChange={(e) => setEdificioId(e.target.value)}
-          required
-        >
-          <option value="" key="default">
-            Seleccione un edificio
-          </option>
-          {edificios.map((edificio) => (
-            <option
-              key={`edificio-${edificio.ID_EDIFICIO}`}
-              value={edificio.ID_EDIFICIO}
-            >
-              {edificio.SIGLA_EDIFICIO} - {edificio.NOMBRE_EDIFICIO}
-            </option>
-          ))}
-        </select>
-      </div>
-      <div className="modal-footer">
-        <button type="button" className="btn btn-secondary" onClick={onCancel}>
-          Cancelar
-        </button>
-        <button type="submit" className="btn btn-primary">
-          Guardar
-        </button>
-      </div>
-    </form>
-  );
-}
-
-// Formulario para Sedes
-function SedeForm({ initial, onSubmit, onCancel }) {
-  const [nombre, setNombre] = useState(initial?.NOMBRE_SEDE);
-
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    onSubmit({
-      nombre_sede: nombre,
-    });
-  };
-
-  return (
-    <form onSubmit={handleSubmit}>
-      <div className="mb-3">
-        <label className="form-label">Nombre de la Sede</label>
-        <input
-          type="text"
-          className="form-control"
-          value={nombre}
-          onChange={(e) => setNombre(e.target.value)}
-          required
-        />
-      </div>
-      <div className="modal-footer">
-        <button type="button" className="btn btn-secondary" onClick={onCancel}>
-          Cancelar
-        </button>
-        <button type="submit" className="btn btn-primary">
-          Guardar
-        </button>
-      </div>
-    </form>
-  );
-}
-
-// Formulario para Edificios
-function EdificioForm({ initial, onSubmit, onCancel }) {
-  const [nombre, setNombre] = useState(initial?.NOMBRE_EDIFICIO || '');
-  const [sigla, setSigla] = useState(initial?.SIGLA_EDIFICIO || '');
-  const [sedeId, setSedeId] = useState(initial?.SEDE_ID_SEDE || '');
-  const [sedes, setSedes] = useState([]);
-
-  useEffect(() => {
-    const fetchSedes = async () => {
-      try {
-        const response = await fetch('http://localhost:3000/api/sede');
-        const data = await response.json();
-        setSedes(data);
-      } catch (error) {
-        console.error('Error al cargar sedes:', error);
-      }
-    };
-    fetchSedes();
-  }, []);
-
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    onSubmit({
-      nombre_edificio: nombre,
-      sigla_edificio: sigla,
-      sede_id_sede: parseInt(sedeId),
-    });
-  };
-
-  return (
-    <form onSubmit={handleSubmit}>
-      <div className="mb-3">
-        <label className="form-label">Nombre del Edificio</label>
-        <input
-          type="text"
-          className="form-control"
-          value={nombre}
-          onChange={(e) => setNombre(e.target.value)}
-          required
-        />
-      </div>
-      <div className="mb-3">
-        <label className="form-label">Sigla</label>
-        <input
-          type="text"
-          className="form-control"
-          value={sigla}
-          onChange={(e) => setSigla(e.target.value)}
-          required
-        />
-      </div>
-      <div className="mb-3">
-        <label className="form-label">Sede</label>
-        <select
-          className="form-select"
-          value={sedeId}
-          onChange={(e) => setSedeId(e.target.value)}
-          required
-        >
-          <option value="">Seleccione una sede</option>
-          {sedes.map((sede) => (
-            <option key={`sede-${sede.ID_SEDE}`} value={sede.ID_SEDE}>
-              {sede.NOMBRE_SEDE}
-            </option>
-          ))}
-        </select>
-      </div>
-      <div className="modal-footer">
-        <button type="button" className="btn btn-secondary" onClick={onCancel}>
-          Cancelar
-        </button>
-        <button type="submit" className="btn btn-primary">
-          Guardar
-        </button>
-      </div>
-    </form>
-  );
-}
-
 export default function SalasPage() {
   const [salas, setSalas] = useState([]);
   const [edificios, setEdificios] = useState([]);
@@ -244,39 +57,27 @@ export default function SalasPage() {
 
   // Efectos
   useEffect(() => {
-    loadSalas();
-    loadSedesYEdificios();
+    loadData();
   }, []);
 
-  // Funciones de carga
-  const loadSalas = async () => {
-    setLoading(true);
+  const loadData = async () => {
     try {
-      const response = await fetch('http://localhost:3000/api/sala');
-      const data = await response.json();
-      setSalas(data);
-      setError('');
-    } catch (error) {
-      setError('Error cargando salas');
-      console.error('Error:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const loadSedesYEdificios = async () => {
-    try {
-      const [sedesRes, edificiosRes] = await Promise.all([
-        fetch('http://localhost:3000/api/sede'),
+      const [salasDataRes, edificiosDataRes, sedesDataRes] = await Promise.all([
+        fetch('http://localhost:3000/api/sala'),
         fetch('http://localhost:3000/api/edificio'),
+        fetch('http://localhost:3000/api/sede'),
       ]);
-      const sedesData = await sedesRes.json();
-      const edificiosData = await edificiosRes.json();
-      setSedes(sedesData);
+      const salasData = await salasDataRes.json();
+      const edificiosData = await edificiosDataRes.json();
+      const sedesData = await sedesDataRes.json();
+      setSalas(salasData);
       setEdificios(edificiosData);
+      setSedes(sedesData);
     } catch (error) {
       console.error('Error al cargar datos:', error);
-      setError('Error al cargar datos de sedes y edificios');
+      setError('Error al cargar datos');
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -305,15 +106,10 @@ export default function SalasPage() {
   const closeModal = () => setModal({ type: null, data: null });
 
   // Manejadores para salas
-  const handleAdd = async (form) => {
+  const handleAddSala = async (form) => {
     try {
-      const response = await fetch('http://localhost:3000/api/sala', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(form),
-      });
-      if (!response.ok) throw new Error('Error al crear sala');
-      loadSalas();
+      await AddSala(form);
+      loadData();
       closeModal();
     } catch (error) {
       setError('Error al crear sala');
@@ -321,21 +117,11 @@ export default function SalasPage() {
     }
   };
 
-  const handleEdit = async (form) => {
+  const handleEditSala = async (form) => {
     try {
-      const response = await fetch(
-        `http://localhost:3000/api/sala/${selectedSala}`,
-        {
-          method: 'PUT',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify(form),
-        }
-      );
-      if (!response.ok) throw new Error('Error al actualizar sala');
+      await EditSala(selectedSala, form);
       closeModal();
-      loadSalas();
+      loadData();
     } catch (error) {
       setError('Error al actualizar sala');
       console.error('Error:', error);
@@ -343,18 +129,12 @@ export default function SalasPage() {
     }
   };
 
-  const handleDelete = async () => {
+  const handleDeleteSala = async () => {
     try {
-      const response = await fetch(
-        `http://localhost:3000/api/sala/${selectedSala}`,
-        {
-          method: 'DELETE',
-        }
-      );
-      if (!response.ok) throw new Error('Error al eliminar sala');
+      await DeleteSala(selectedSala);
       closeModal();
       setSelectedSala(null);
-      loadSalas();
+      loadData();
     } catch (error) {
       setError('Error al eliminar sala');
       console.error('Error:', error);
@@ -366,23 +146,10 @@ export default function SalasPage() {
 
   const handleAddEdificio = async (form) => {
     try {
-      const response = await fetch('http://localhost:3000/api/edificio', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(form),
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || 'Error al crear edificio');
-      }
-
+      await AddEdificio(form);
+      loadData();
       closeModal();
-      loadSedesYEdificios();
     } catch (error) {
-      console.error('Error:', error);
       setError('Error al crear edificio');
       closeModal();
     }
@@ -390,52 +157,25 @@ export default function SalasPage() {
 
   const handleEditEdificio = async (form) => {
     try {
-      const response = await fetch(
-        `http://localhost:3000/api/edificio/${selectedEdificio}`,
-        {
-          method: 'PUT',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(form),
-        }
-      );
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || 'Error al actualizar edificio');
-      }
-
+      await EditEdificio(selectedEdificio, form);
       closeModal();
-      loadSedesYEdificios();
-      setSelectedEdificio(null);
-      setError('');
+      loadData();
     } catch (error) {
+      setError('Error al actualizar edificio');
       console.error('Error:', error);
-      setError(error.message || 'Error al actualizar edificio');
       closeModal();
     }
   };
 
   const handleDeleteEdificio = async () => {
     try {
-      const response = await fetch(
-        `http://localhost:3000/api/edificio/${selectedEdificio}`,
-        {
-          method: 'DELETE',
-        }
-      );
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || 'Error al eliminar edificio');
-      }
-
+      await DeleteEdificio(selectedEdificio);
       closeModal();
       setSelectedEdificio(null);
-      loadSedesYEdificios();
-      setError('');
+      loadData();
     } catch (error) {
+      setError('Error al eliminar edificio');
       console.error('Error:', error);
-      setError(error.message || 'Error al eliminar edificio');
       closeModal();
     }
   };
@@ -444,78 +184,36 @@ export default function SalasPage() {
 
   const handleAddSede = async (form) => {
     try {
-      const response = await fetch('http://localhost:3000/api/sede', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(form),
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || 'Error al crear sede');
-      }
-
+      await AddSede(form);
+      loadData();
       closeModal();
-      loadSedesYEdificios();
     } catch (error) {
-      console.error('Error:', error);
-      setError(error.message || 'Error al crear sede');
+      setError('Error al crear sede');
       closeModal();
     }
   };
 
   const handleEditSede = async (form) => {
     try {
-      const response = await fetch(
-        `http://localhost:3000/api/sede/${selectedSede}`,
-        {
-          method: 'PUT',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify(form),
-        }
-      );
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || 'Error al actualizar sede');
-      }
-
+      await EditSede(selectedSede, form);
       closeModal();
-      loadSedesYEdificios();
-      setSelectedSede(null);
-      setError('');
+      loadData();
     } catch (error) {
+      setError('Error al actualizar sede');
       console.error('Error:', error);
-      setError(error.message || 'Error al actualizar sede');
       closeModal();
     }
   };
 
   const handleDeleteSede = async () => {
     try {
-      const response = await fetch(
-        `http://localhost:3000/api/sede/${selectedSede}`,
-        {
-          method: 'DELETE',
-        }
-      );
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || 'Error al eliminar sede');
-      }
-
+      await DeleteSede(selectedSede);
       closeModal();
       setSelectedSede(null);
-      loadSedesYEdificios();
-      setError('');
+      loadData();
     } catch (error) {
+      setError('Error al eliminar sede');
       console.error('Error:', error);
-      setError(error.message || 'Error al eliminar sede');
       closeModal();
     }
   };
@@ -554,295 +252,156 @@ export default function SalasPage() {
 
       {activeTab === 'salas' && (
         <>
-          <div className="mb-3">
-            <button
-              className="btn btn-success me-2"
-              onClick={() => openModal('add', 'sala')}
-            >
-              Agregar
-            </button>
-            <button
-              className="btn btn-warning me-2"
-              onClick={() => openModal('edit', 'sala')}
-              disabled={!selectedSala}
-            >
-              Modificar
-            </button>
-            <button
-              className="btn btn-danger"
-              onClick={() => openModal('delete', 'sala')}
-              disabled={!selectedSala}
-            >
-              Eliminar
-            </button>
-          </div>
-
-          {loading ? (
-            <div>Cargando salas...</div>
-          ) : (
-            <table className="table table-bordered">
-              <thead className="table-light">
-                <tr>
-                  <th>ID</th>
-                  <th>Nombre</th>
-                  <th>Capacidad</th>
-                  <th>Edificio</th>
-                </tr>
-              </thead>
-              <tbody>
-                {salas.map((s) => (
-                  <tr
-                    key={`sala-${s.ID_SALA}`}
-                    onClick={() => s.ID_SALA && setSelectedSala(s.ID_SALA)}
-                    className={
-                      s.ID_SALA === selectedSala ? 'table-primary' : ''
-                    }
-                    style={{ cursor: 'pointer' }}
-                  >
-                    <td>{s.ID_SALA || 'N/A'}</td>
-                    <td>{s.NOMBRE_SALA || 'N/A'}</td>
-                    <td>{s.CAPACIDAD_SALA || 'N/A'}</td>
-                    <td>
-                      {s.SIGLA_EDIFICIO
-                        ? `${s.SIGLA_EDIFICIO} - ${s.NOMBRE_EDIFICIO}`
-                        : s.NOMBRE_EDIFICIO || 'N/A'}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          )}
+          <SalaActions
+            onAdd={() => openModal('add', 'sala')}
+            onEdit={() => openModal('edit', 'sala')}
+            onDelete={() => openModal('delete', 'sala')}
+            selectedSala={selectedSala}
+          />
+          <SalaList
+            salas={salas}
+            selectedSala={selectedSala}
+            onSelectSala={setSelectedSala}
+            loading={loading}
+          />
         </>
+      )}
+
+      {modal.type && modal.entity === 'sala' && (
+        <Modal
+          title={
+            modal.type === 'add'
+              ? 'Agregar Sala'
+              : modal.type === 'edit'
+                ? 'Editar Sala'
+                : 'Eliminar Sala'
+          }
+          onClose={closeModal}
+        >
+          {modal.type === 'delete' ? (
+            <div>
+              <p>¿Está seguro de que desea eliminar esta sala?</p>
+              <div className="modal-footer">
+                <button className="btn btn-secondary" onClick={closeModal}>
+                  Cancelar
+                </button>
+                <button className="btn btn-danger" onClick={handleDeleteSala}>
+                  Eliminar
+                </button>
+              </div>
+            </div>
+          ) : (
+            <SalaForm
+              initial={modal.data}
+              onSubmit={modal.type === 'add' ? handleAddSala : handleEditSala}
+              onCancel={closeModal}
+            />
+          )}
+        </Modal>
       )}
 
       {activeTab === 'edificios' && (
         <>
-          <div className="mb-3">
-            <button
-              className="btn btn-success me-2"
-              onClick={() => openModal('add', 'edificio')}
-            >
-              Agregar Edificio
-            </button>
-            <button
-              className="btn btn-warning me-2"
-              onClick={() => openModal('edit', 'edificio')}
-              disabled={!selectedEdificio}
-            >
-              Modificar Edificio
-            </button>
-            <button
-              className="btn btn-danger"
-              onClick={() => openModal('delete', 'edificio')}
-              disabled={!selectedEdificio}
-            >
-              Eliminar Edificio
-            </button>
-          </div>
-
-          <table className="table table-bordered">
-            <thead className="table-light">
-              <tr>
-                <th>ID</th>
-                <th>Nombre</th>
-                <th>Sigla</th>
-                <th>Sede</th>
-              </tr>
-            </thead>
-            <tbody>
-              {edificios.map((e) => (
-                <tr
-                  key={`edificio-${e.ID_EDIFICIO}`}
-                  onClick={() => setSelectedEdificio(e.ID_EDIFICIO)}
-                  className={
-                    e.ID_EDIFICIO === selectedEdificio ? 'table-primary' : ''
-                  }
-                  style={{ cursor: 'pointer' }}
-                >
-                  <td>{e.ID_EDIFICIO}</td>
-                  <td>{e.NOMBRE_EDIFICIO}</td>
-                  <td>{e.SIGLA_EDIFICIO}</td>
-                  <td>{e.NOMBRE_SEDE}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+          <EdificioActions
+            onAdd={() => openModal('add', 'edificio')}
+            onEdit={() => openModal('edit', 'edificio')}
+            onDelete={() => openModal('delete', 'edificio')}
+            selectedEdificio={selectedEdificio}
+          />
+          <EdificioList
+            edificios={edificios}
+            selectedEdificio={selectedEdificio}
+            onSelectEdificio={setSelectedEdificio}
+            loading={loading}
+          />
         </>
+      )}
+
+      {modal.type && modal.entity === 'edificio' && (
+        <Modal
+          title={
+            modal.type === 'add'
+              ? 'Agregar Edificio'
+              : modal.type === 'edit'
+                ? 'Editar Edificio'
+                : 'Eliminar Edificio'
+          }
+          onClose={closeModal}
+        >
+          {modal.type === 'delete' ? (
+            <div>
+              <p>¿Está seguro de que desea eliminar este edificio?</p>
+              <div className="modal-footer">
+                <button className="btn btn-secondary" onClick={closeModal}>
+                  Cancelar
+                </button>
+                <button
+                  className="btn btn-danger"
+                  onClick={handleDeleteEdificio}
+                >
+                  Eliminar
+                </button>
+              </div>
+            </div>
+          ) : (
+            <EdificioForm
+              initial={modal.data}
+              onSubmit={
+                modal.type === 'add' ? handleAddEdificio : handleEditEdificio
+              }
+              onCancel={closeModal}
+            />
+          )}
+        </Modal>
       )}
 
       {activeTab === 'sedes' && (
         <>
-          <div className="mb-3">
-            <button
-              className="btn btn-success me-2"
-              onClick={() => openModal('add', 'sede')}
-            >
-              Agregar Sede
-            </button>
-            <button
-              className="btn btn-warning me-2"
-              onClick={() => openModal('edit', 'sede')}
-              disabled={!selectedSede}
-            >
-              Modificar
-            </button>
-            <button
-              className="btn btn-danger"
-              onClick={() => openModal('delete', 'sede')}
-              disabled={!selectedSede}
-            >
-              Eliminar
-            </button>
-          </div>
-
-          <table className="table table-bordered">
-            <thead className="table-light">
-              <tr>
-                <th>ID</th>
-                <th>Nombre</th>
-              </tr>
-            </thead>
-            <tbody>
-              {sedes.map((s) => (
-                <tr
-                  key={`sede-${s.ID_SEDE}`}
-                  onClick={() => setSelectedSede(s.ID_SEDE)}
-                  className={s.ID_SEDE === selectedSede ? 'table-primary' : ''}
-                  style={{ cursor: 'pointer' }}
-                >
-                  <td>{s.ID_SEDE}</td>
-                  <td>{s.NOMBRE_SEDE}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+          <SedeActions
+            onAdd={() => openModal('add', 'sede')}
+            onEdit={() => openModal('edit', 'sede')}
+            onDelete={() => openModal('delete', 'sede')}
+            selectedSede={selectedSede}
+          />
+          <SedeList
+            sedes={sedes}
+            selectedSede={selectedSede}
+            onSelectSede={setSelectedSede}
+            loading={loading}
+          />
         </>
       )}
 
-      {/* Modales */}
-
-      {/* Modales para Salas */}
-      {modal.type === 'add' && modal.entity === 'sala' && (
-        <Modal title="Agregar Sala" onClose={closeModal}>
-          <SalaForm onSubmit={handleAdd} onCancel={closeModal} />
-        </Modal>
-      )}
-
-      {modal.type === 'edit' && modal.entity === 'sala' && (
-        <Modal title="Modificar Sala" onClose={closeModal}>
-          <SalaForm
-            initial={modal.data}
-            onSubmit={handleEdit}
-            onCancel={closeModal}
-          />
-        </Modal>
-      )}
-
-      {modal.type === 'delete' && modal.entity === 'sala' && (
-        <Modal title="Eliminar Sala" onClose={closeModal}>
-          <div className="modal-body">
-            <p>¿Está seguro que desea eliminar esta sala?</p>
-            <div className="modal-footer">
-              <button
-                type="button"
-                className="btn btn-secondary"
-                onClick={closeModal}
-              >
-                Cancelar
-              </button>
-              <button
-                type="button"
-                className="btn btn-danger"
-                onClick={handleDelete}
-              >
-                Eliminar
-              </button>
+      {modal.type && modal.entity === 'sede' && (
+        <Modal
+          title={
+            modal.type === 'add'
+              ? 'Agregar Sede'
+              : modal.type === 'edit'
+                ? 'Editar Sede'
+                : 'Eliminar Sede'
+          }
+          onClose={closeModal}
+        >
+          {modal.type === 'delete' ? (
+            <div>
+              <p>¿Está seguro de que desea eliminar esta sede?</p>
+              <div className="modal-footer">
+                <button className="btn btn-secondary" onClick={closeModal}>
+                  Cancelar
+                </button>
+                <button className="btn btn-danger" onClick={handleDeleteSede}>
+                  Eliminar
+                </button>
+              </div>
             </div>
-          </div>
-        </Modal>
-      )}
-
-      {/* Modales para Edificios */}
-
-      {modal.type === 'add' && modal.entity === 'edificio' && (
-        <Modal title="Agregar Edificio" onClose={closeModal}>
-          <EdificioForm onSubmit={handleAddEdificio} onCancel={closeModal} />
-        </Modal>
-      )}
-
-      {modal.type === 'edit' && modal.entity === 'edificio' && (
-        <Modal title="Modificar Edificio" onClose={closeModal}>
-          <EdificioForm
-            initial={modal.data}
-            onSubmit={handleEditEdificio}
-            onCancel={closeModal}
-          />
-        </Modal>
-      )}
-
-      {modal.type === 'delete' && modal.entity === 'edificio' && (
-        <Modal title="Eliminar Edificio" onClose={closeModal}>
-          <div className="modal-body">
-            <p>¿Está seguro que desea eliminar este edificio?</p>
-            <div className="modal-footer">
-              <button
-                type="button"
-                className="btn btn-secondary"
-                onClick={closeModal}
-              >
-                Cancelar
-              </button>
-              <button
-                type="button"
-                className="btn btn-danger"
-                onClick={handleDeleteEdificio}
-              >
-                Eliminar
-              </button>
-            </div>
-          </div>
-        </Modal>
-      )}
-
-      {/* Modales para Sedes */}
-
-      {modal.type === 'add' && modal.entity === 'sede' && (
-        <Modal title="Agregar Sede" onClose={closeModal}>
-          <SedeForm onSubmit={handleAddSede} onCancel={closeModal} />
-        </Modal>
-      )}
-
-      {modal.type === 'edit' && modal.entity === 'sede' && (
-        <Modal title="Modificar Sede" onClose={closeModal}>
-          <SedeForm
-            initial={modal.data}
-            onSubmit={handleEditSede}
-            onCancel={closeModal}
-          />
-        </Modal>
-      )}
-
-      {modal.type === 'delete' && modal.entity === 'sede' && (
-        <Modal title="Eliminar Sede" onClose={closeModal}>
-          <div className="modal-body">
-            <p>¿Está seguro que desea eliminar esta sede?</p>
-            <div className="modal-footer">
-              <button
-                type="button"
-                className="btn btn-secondary"
-                onClick={closeModal}
-              >
-                Cancelar
-              </button>
-              <button
-                type="button"
-                className="btn btn-danger"
-                onClick={handleDeleteSede}
-              >
-                Eliminar
-              </button>
-            </div>
-          </div>
+          ) : (
+            <SedeForm
+              initial={modal.data}
+              onSubmit={modal.type === 'add' ? handleAddSede : handleEditSede}
+              onCancel={closeModal}
+            />
+          )}
         </Modal>
       )}
     </Layout>
