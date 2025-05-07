@@ -897,7 +897,7 @@ export default function AsignaturasPage() {
           <AsignaturaForm
             onSubmit={handleEditAsignatura}
             initial={modal.data}
-            onClose={closeModal}
+            onCancel={closeModal}
           />
         </Modal>
       )}
