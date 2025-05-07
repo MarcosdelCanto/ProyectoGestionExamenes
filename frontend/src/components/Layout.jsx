@@ -45,6 +45,9 @@ export default function Layout({ children }) {
             <Link to="/salas" className="nav-link text-dark">
               Salas
             </Link>
+            <Link to="/asignaturas" className="nav-link text-dark">
+              Asignaturas
+            </Link>
             <Link to="/modulos" className="nav-link text-dark">
               Modulos
             </Link>
@@ -96,6 +99,9 @@ export default function Layout({ children }) {
               </Link>
               <Link to="/salas" className="nav-link text-dark">
                 Salas
+              </Link>
+              <Link to="/asignaturas" className="nav-link text-dark">
+                Asignaturas
               </Link>
               <Link to="/modulos" className="nav-link text-dark">
                 Modulos

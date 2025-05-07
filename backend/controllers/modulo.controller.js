@@ -33,7 +33,7 @@ export const getModuloById = async (req, res) => {
       [id],
       { outFormat: oracledb.OUT_FORMAT_OBJECT }
     );
-    if (result.rows.lenght === 0)
+    if (result.rows.length === 0)
       return res.status(404).json({ error: 'Módulo no encontrado' });
     res.json(result.rows[0]);
   } catch (err) {
