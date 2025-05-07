@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { changeStatus } from '../store/statusSlice';
 import { useDispatch, useSelector } from 'react-redux';
-import { fetchWithAuth } from '../services/api';
+import api from '../services/api';
 import { logout } from '../services/authService';
 import { useNavigate } from 'react-router-dom';
 import './HomePage.css';
@@ -15,9 +15,10 @@ export default function HomePage() {
   const navigate = useNavigate();
 
   useEffect(() => {
-    fetchWithAuth('/api/user/profile')
-      .then((res) => res.json())
-      .then((data) => setPerfil(data.perfil))
+    api('/user/profile')
+      .then((res) => {
+        setPerfil(res.data.perfil);
+      })
       .catch((err) => {
         console.error('Error obteniendo perfil:', err);
         logout();

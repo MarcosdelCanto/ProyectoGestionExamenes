@@ -5,6 +5,7 @@ export default function UsuarioForm({ initial, onSave, onClose }) {
   const [nombre, setNombre] = useState('');
   const [email, setEmail] = useState('');
   const [rolId, setRolId] = useState('');
+  const [password, setPassword] = useState('');
   const [roles, setRoles] = useState([]);
 
   useEffect(() => {
@@ -18,7 +19,7 @@ export default function UsuarioForm({ initial, onSave, onClose }) {
 
   const submit = (e) => {
     e.preventDefault();
-    onSave({ nombre_usuario: nombre, email_usuario: email, rol_id_rol: rolId });
+    onSave({ nombre, email, rolId, password });
   };
 
   return (
@@ -69,6 +70,18 @@ export default function UsuarioForm({ initial, onSave, onClose }) {
                   ))}
                 </select>
               </div>
+              {initial && (
+                <div className="mb-3">
+                  <label className="form-label">Nueva Contraseña</label>
+                  <input
+                    type="text"
+                    className="form-control"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    placeholder="Dejar vacío para no cambiar contraseña"
+                  />
+                </div>
+              )}
             </div>
             <div className="modal-footer">
               <button

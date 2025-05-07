@@ -23,6 +23,9 @@ export function getAccessToken() {
 export function getRefreshToken() {
   return localStorage.getItem('refreshToken');
 }
+export function setAccessToken(token) {
+  localStorage.setItem('accessToken', token);
+}
 
 export function logout() {
   localStorage.removeItem('accessToken');

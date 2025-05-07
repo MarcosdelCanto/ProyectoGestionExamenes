@@ -5,6 +5,7 @@ import {
   createUsuario,
   updateUsuario,
   deleteUsuario,
+  resetPassword,
   importUsuarios,
 } from '../controllers/moduloUsuarios.controller.js';
 import { authMiddleware } from '../middlewares/auth.middleware.js';
@@ -22,5 +23,6 @@ router.post('/', createUsuario);
 router.put('/:id_usuario', updateUsuario);
 router.delete('/:id_usuario', deleteUsuario);
 router.post('/import', upload.single('file'), importUsuarios);
+router.put('/:id_usuario', resetPassword);
 
 export default router;

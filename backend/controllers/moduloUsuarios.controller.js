@@ -29,6 +29,7 @@ export const listUsuarios = async (req, res, next) => {
       `SELECT u.ID_USUARIO,
               u.NOMBRE_USUARIO,
               u.EMAIL_USUARIO,
+              u.PASSWORD_USUARIO,
               r.NOMBRE_ROL
          FROM USUARIO u
          JOIN ROL r ON u.ROL_ID_ROL = r.ID_ROL`
@@ -54,13 +55,20 @@ export const createUsuario = async (req, res, next) => {
          (ID_USUARIO, NOMBRE_USUARIO, EMAIL_USUARIO, PASSWORD_USUARIO,
           FECHA_CREA_USUARIO, ROL_ID_ROL)
        VALUES
-         (USUARIO_SEQ.NEXTVAL, :n, :e, :p, SYSTIMESTAMP, :r)`,
+         (SEQ_USUARIO.NEXTVAL, :n, :e, :p, SYSTIMESTAMP, :r)`,
       { n: nombre_usuario, e: email_usuario, p: hashedPassword, r: rol_id_rol },
       { autoCommit: true }
     );
     await conn.close();
+
+    res.status(201).json({
+      message: 'Usuario creado correctamente',
+      password: plainPassword,
+    });
   } catch (error) {
-    console.error('Error al crear usuario:', error);
+    if (error.errorNum === 1) {
+      return res.status(409).json({ message: 'El email ya está en uso' });
+    }
     next(error);
   }
 };
@@ -69,19 +77,34 @@ export const createUsuario = async (req, res, next) => {
 export const updateUsuario = async (req, res, next) => {
   try {
     const { id_usuario } = req.params;
-    const { nombre_usuario, email_usuario, rol_id_rol } = req.body;
+    const { nombre_usuario, email_usuario, rol_id_rol, password } = req.body;
     const conn = await getConnection();
-    await conn.execute(
-      `UPDATE USUARIO
+
+    // Si se proporciona una nueva contraseña, la hasheamos
+    let hashedPassword = null;
+    if (password) {
+      hashedPassword = await bcrypt.hash(password, 10);
+    }
+    // se construye la consulta de actualización dinamicamente
+    const query = `
+      UPDATE USUARIO
          SET NOMBRE_USUARIO = :n,
              EMAIL_USUARIO = :e,
              ROL_ID_ROL = :r,
-             FECHA_ACTU_USUARIO = SYSTIMESTAMP
-       WHERE ID_USUARIO = :id`,
-      { n: nombre_usuario, e: email_usuario, r: rol_id_rol, id: id_usuario },
-      { autoCommit: true }
-    );
+             ${hashedPassword ? 'PASSWORD_USUARIO = :p,' : ''}
+              FECHA_ACTU_USUARIO = SYSTIMESTAMP
+        WHERE ID_USUARIO = :id
+    `;
+    const params = {
+      n: nombre_usuario,
+      e: email_usuario,
+      r: rol_id_rol,
+      ...(hashedPassword && { p: hashedPassword }),
+      id: id_usuario,
+    };
+    await conn.execute(query, params, { autoCommit: true });
     await conn.close();
+
     res.json({ message: 'Usuario actualizado correctamente' });
   } catch (error) {
     console.error('Error al actualizar usuario:', error);
@@ -103,6 +126,32 @@ export const deleteUsuario = async (req, res, next) => {
     res.json({ message: 'Usuario eliminado correctamente' });
   } catch (error) {
     console.error('Error al eliminar usuario:', error);
+    next(error);
+  }
+};
+
+// funcion para resetear la contraseña de un usuario
+export const resetPassword = async (req, res, next) => {
+  try {
+    const { id_usuario } = req.params;
+    const plainPassword = crypto.randomBytes(8).toString('hex');
+    const hashedPassword = await bcrypt.hash(plainPassword, 10);
+    const conn = await getConnection();
+    await conn.execute(
+      `UPDATE USUARIO
+         SET PASSWORD_USUARIO = :p,
+             FECHA_ACTU_USUARIO = SYSTIMESTAMP
+       WHERE ID_USUARIO = :id`,
+      { p: hashedPassword, id: id_usuario },
+      { autoCommit: true }
+    );
+    await conn.close();
+    res.json({
+      message: 'Contraseña reseteada correctamente',
+      password: plainPassword,
+    });
+  } catch (error) {
+    console.error('Error al resetear contraseña:', error);
     next(error);
   }
 };

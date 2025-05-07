@@ -1,4 +1,4 @@
-import api from './api';
+import api from './api.js';
 
 export const listUsuarios = () =>
   api.get('/moduloUsuarios').then((res) => res.data);
@@ -23,3 +23,6 @@ export const importUsuarios = (file) => {
 // Función para obtener los roles
 export const getRoles = () =>
   api.get('/moduloUsuarios/roles').then((res) => res.data);
+// Función para restablecer la contraseña de un usuario
+export const resetPassword = (id) =>
+  api.put(`/moduloUsuarios/${id}/password`).then((res) => res.data);
