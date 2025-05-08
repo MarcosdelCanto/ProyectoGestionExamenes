@@ -13,6 +13,7 @@ export default function UsuarioForm({ initial, onSave, onClose }) {
       setNombre(initial.NOMBRE_USUARIO);
       setEmail(initial.EMAIL_USUARIO);
       setRolId(initial.ROL_ID_ROL);
+      setPassword(initial.PASSWORD_USUARIO);
     }
     getRoles().then((r) => setRoles(r));
   }, []);
@@ -76,7 +77,7 @@ export default function UsuarioForm({ initial, onSave, onClose }) {
                   <input
                     type="text"
                     className="form-control"
-                    value={password}
+                    value={''}
                     onChange={(e) => setPassword(e.target.value)}
                     placeholder="Dejar vacío para no cambiar contraseña"
                   />
