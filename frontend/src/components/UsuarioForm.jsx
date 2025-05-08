@@ -10,6 +10,7 @@ export default function UsuarioForm({ initial, onSave, onClose }) {
 
   useEffect(() => {
     if (initial) {
+      console.log(initial);
       setNombre(initial.NOMBRE_USUARIO);
       setEmail(initial.EMAIL_USUARIO);
       setRolId(initial.ROL_ID_ROL);
@@ -77,7 +78,6 @@ export default function UsuarioForm({ initial, onSave, onClose }) {
                   <input
                     type="text"
                     className="form-control"
-                    value={''}
                     onChange={(e) => setPassword(e.target.value)}
                     placeholder="Dejar vacío para no cambiar contraseña"
                   />

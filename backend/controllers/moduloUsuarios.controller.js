@@ -77,13 +77,14 @@ export const createUsuario = async (req, res, next) => {
 export const updateUsuario = async (req, res, next) => {
   try {
     const { id_usuario } = req.params;
-    const { nombre_usuario, email_usuario, rol_id_rol, password } = req.body;
+    const { nombre_usuario, email_usuario, rol_id_rol, password_usuario } =
+      req.body;
     const conn = await getConnection();
-
+    console.log('Datos recibidos:', req.body);
     // Si se proporciona una nueva contraseña, la hasheamos
     let hashedPassword = null;
-    if (password) {
-      hashedPassword = await bcrypt.hash(password, 10);
+    if (password_usuario) {
+      hashedPassword = await bcrypt.hash(password_usuario, 10);
     }
     // se construye la consulta de actualización dinamicamente
     const query = `
@@ -105,7 +106,11 @@ export const updateUsuario = async (req, res, next) => {
     await conn.execute(query, params, { autoCommit: true });
     await conn.close();
 
-    res.json({ message: 'Usuario actualizado correctamente' });
+    console.log(req.body.password_usuario);
+
+    res.json({
+      message: `Usuario actualizado correctamente con la contraseña: ${password_usuario}`,
+    });
   } catch (error) {
     console.error('Error al actualizar usuario:', error);
     next(error);

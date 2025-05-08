@@ -31,11 +31,12 @@ export default function UsuariosPage() {
     fetch();
   }, []);
 
-  const onSave = async ({ nombre, email, rolId }) => {
+  const onSave = async ({ nombre, email, rolId, password }) => {
     const payload = {
       nombre_usuario: nombre,
       email_usuario: email,
       rol_id_rol: rolId,
+      password_usuario: password,
     };
     try {
       let result;
@@ -50,7 +51,7 @@ export default function UsuariosPage() {
       setMsgModal({
         tittle: 'Usuario guardado',
         body: editing
-          ? 'El usuario ha sido actualizado correctamente'
+          ? `El usuario ha sido actualizado correctamente con contraseña: ${password}`
           : `Usuario creado con contraseña: ${result.password}`,
       });
     } catch (err) {
