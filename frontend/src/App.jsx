@@ -4,6 +4,7 @@ import { Routes, Route, BrowserRouter } from 'react-router-dom';
 import Login from './pages/Login';
 import HomePage from './pages/HomePage';
 import ModulosPage from './pages/ModulosPage';
+import UsuariosPage from './pages/UsuariosPage';
 import 'bootstrap/dist/css/bootstrap.min.css';
 import PrivateRoute from './components/PrivateRoute';
 import SalasPage from './pages/SalasPage';
@@ -24,6 +25,7 @@ function App() {
           <Route path="/modulos" element={<ModulosPage />} />
           <Route path="/salas" element={<SalasPage />} />
           <Route path="/asignaturas" element={<AsignaturasPage />} />
+          <Route path="/usuarios" element={<UsuariosPage />} />
         </Route>
       </Routes>
     </BrowserRouter>

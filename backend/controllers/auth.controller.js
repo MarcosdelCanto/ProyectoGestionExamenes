@@ -1,5 +1,5 @@
 // controllers/auth.controller.js
-
+import oracledb from 'oracledb';
 import { getConnection } from '../db.js';
 import bcrypt from 'bcrypt';
 import {
@@ -12,6 +12,10 @@ let refreshTokens = []; // En memoria; en producción guárdalos en BD
 
 export const login = async (req, res) => {
   const { email_usuario, password_usuario } = req.body;
+  // Log para verificar los datos recibidos
+  console.log('Email recibido:', email_usuario);
+  console.log('Contraseña recibida:', password_usuario);
+
   if (!email_usuario || !password_usuario) {
     return res
       .status(400)
@@ -26,15 +30,28 @@ export const login = async (req, res) => {
          id_usuario, password_usuario AS hash, ROL_id_rol
        FROM USUARIO
        WHERE email_usuario = :email_usuario`,
-      { email_usuario }
+      { email_usuario },
+      { outFormat: oracledb.OUT_FORMAT_OBJECT }
     );
+
+    // Log para verificar si el usuario existe
+    console.log('Resultado de la consulta:', result.rows);
 
     if (result.rows.length === 0) {
       return res.status(401).json({ mensaje: 'Credenciales inválidas.' });
     }
 
-    const [{ ID_USUARIO, HASH, ROL_ID_ROL }] = result.rows;
+    const row = result.rows[0];
+    const { ID_USUARIO, HASH, ROL_ID_ROL } = row;
+
+    // Log para verificar el hash recuperado
+    console.log('Hash recuperado de la base de datos:', HASH);
+
     const coincide = await bcrypt.compare(password_usuario, HASH);
+
+    // Log para verificar el resultado de la comparación
+    console.log('¿La contraseña coincide?', coincide);
+
     if (!coincide) {
       return res.status(401).json({ mensaje: 'Credenciales inválidas.' });
     }

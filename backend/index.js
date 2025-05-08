@@ -13,6 +13,7 @@ import carreraRoutes from './routes/carrera.routes.js';
 import seccionRoutes from './routes/seccion.routes.js';
 import asignaturaRoutes from './routes/asignatura.routes.js';
 import escuelaRoutes from './routes/escuela.routes.js';
+import moduloUsuariosRoutes from './routes/moduloUsuarios.routes.js';
 
 const app = express();
 
@@ -59,6 +60,7 @@ async function startServer() {
     app.use('/api/seccion', seccionRoutes);
     app.use('/api/asignatura', asignaturaRoutes);
     app.use('/api/escuela', escuelaRoutes);
+    app.use('/api/moduloUsuarios', moduloUsuariosRoutes);
 
     const PORT = process.env.PORT || 3000;
     server.listen(PORT, () =>

@@ -1,61 +1,83 @@
 // src/services/api.js
+import axios from 'axios';
 import {
   getAccessToken,
   getRefreshToken,
-  logout as doLogout,
+  setAccessToken,
+  logout,
 } from './authService';
 
+const baseURL = import.meta.env.VITE_API_URL || 'http://localhost:3000/api';
+const api = axios.create({ baseURL });
+
+// Interceptor para añadir el token de acceso a cada petición
+api.interceptors.request.use(
+  (config) => {
+    const token = getAccessToken();
+    if (token) {
+      config.headers.Authorization = `Bearer ${token}`;
+    }
+    return config;
+  },
+  (error) => Promise.reject(error)
+);
+
+// response interceptor al 401 refresh token y reintentar la petición
+
 let isRefreshing = false;
-let queue = [];
+let failedQueue = [];
 
-// Al terminar el refresh, avisamos a todas las peticiones en cola
-function onRefreshed(newToken) {
-  queue.forEach((cb) => cb(newToken));
-  queue = [];
-}
-
-export async function fetchWithAuth(path, opts = {}) {
-  let token = getAccessToken();
-  if (!token) throw new Error('No autenticado');
-
-  const callApi = (bearer) =>
-    fetch(path, {
-      ...opts,
-      headers: { ...(opts.headers || {}), Authorization: `Bearer ${bearer}` },
-    });
-
-  let resp = await callApi(token);
-  if (resp.status !== 401) return resp;
-
-  // Si ya estamos refrescando, esperamos nuestro turno
-  if (isRefreshing) {
-    return new Promise((resolve) => {
-      queue.push((newToken) => resolve(callApi(newToken)));
-    });
-  }
-
-  // Primer 401 → lanzamos el refresh
-  isRefreshing = true;
-  const refreshToken = getRefreshToken();
-  const r = await fetch('/api/auth/refresh', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ token: refreshToken }),
+const processQueue = (error, token = null) => {
+  failedQueue.forEach((prom) => {
+    if (error) prom.reject(error);
+    else prom.resolve(token);
   });
+  failedQueue = [];
+};
 
-  if (!r.ok) {
-    // refresh falló: cerramos sesión
-    doLogout();
-    window.location.href = '/login';
-    return resp;
+api.interceptors.response.use(
+  (response) => response,
+  async (error) => {
+    const { config, response } = error;
+    if (response?.status === 401 && !config._retry) {
+      config._retry = true;
+
+      if (isRefreshing) {
+        // Estamos refrescando: encolamos la petición
+        return new Promise((resolve, reject) => {
+          failedQueue.push({ resolve, reject });
+        }).then((token) => {
+          config.headers.Authorization = `Bearer ${token}`;
+          return api(config);
+        });
+      }
+
+      isRefreshing = true;
+      try {
+        // Llamada al endpoint de refresh
+        const { data } = await axios.post(`${baseURL}/auth/refresh`, {
+          token: getRefreshToken(),
+        });
+        const newToken = data.accessToken;
+        setAccessToken(newToken);
+        api.defaults.headers.common.Authorization = `Bearer ${newToken}`;
+        processQueue(null, newToken);
+
+        // Reintenta la petición original
+        config.headers.Authorization = `Bearer ${newToken}`;
+        return api(config);
+      } catch (e) {
+        processQueue(e, null);
+        logout();
+        window.location.href = '/login';
+        return Promise.reject(e);
+      } finally {
+        isRefreshing = false;
+      }
+    }
+
+    return Promise.reject(error);
   }
+);
 
-  const { accessToken: newToken } = await r.json();
-  localStorage.setItem('accessToken', newToken);
-  token = newToken;
-  isRefreshing = false;
-  onRefreshed(newToken);
-
-  // Reintento de la petición original
-  return callApi(newToken);
-}
+export default api;

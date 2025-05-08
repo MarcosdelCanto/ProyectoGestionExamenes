@@ -7,3 +7,5 @@ export const store = configureStore({
   reducer: { status: statusReducer },
   middleware: (getDefault) => getDefault().concat(socketMiddleware),
 });
+
+export default store;
