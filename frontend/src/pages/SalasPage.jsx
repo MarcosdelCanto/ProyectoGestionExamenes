@@ -52,6 +52,7 @@ export default function SalasPage() {
   const [selectedSede, setSelectedSede] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [success, setSuccess] = useState('');
   const [modal, setModal] = useState({ type: null, data: null });
   const [activeTab, setActiveTab] = useState('salas');
 
@@ -111,6 +112,7 @@ export default function SalasPage() {
       await AddSala(form);
       loadData();
       closeModal();
+      setSuccess('Sala creada con éxito');
     } catch (error) {
       setError('Error al crear sala');
       closeModal();
@@ -222,6 +224,7 @@ export default function SalasPage() {
     <Layout>
       <h1 className="mb-4">Gestión de Espacios</h1>
       {error && <div className="alert alert-danger">{error}</div>}
+      {success && <div className="alert alert-success">{success}</div>}
 
       <ul className="nav nav-tabs mb-3">
         <li className="nav-item">
