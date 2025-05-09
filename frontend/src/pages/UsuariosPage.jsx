@@ -8,8 +8,8 @@ import {
   importUsuarios,
   resetPassword,
 } from '../services/usuarioService';
-import UsuarioTable from '../components/UsuarioTable';
-import UsuarioForm from '../components/UsuarioForm';
+import UsuarioTable from '../components/usuarios/UsuarioTable';
+import UsuarioForm from '../components/usuarios/UsuarioForm';
 import CSVUpload from '../components/CSVUpload';
 
 export default function UsuariosPage() {

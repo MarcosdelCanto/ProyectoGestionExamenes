@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { getRoles } from '../services/usuarioService';
+import { getRoles } from '../../services/usuarioService';
 
 export default function UsuarioForm({ initial, onSave, onClose }) {
   const [nombre, setNombre] = useState('');
