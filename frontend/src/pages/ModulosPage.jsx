@@ -219,7 +219,7 @@ export default function ModulosPage() {
         <div
           className="table-responsive border"
           style={{
-            maxHeight: '600px',
+            maxHeight: '60vh',
             overflowY: 'auto',
             marginBottom: '1rem',
           }}

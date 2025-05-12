@@ -17,6 +17,21 @@ import {
 } from '../services/edificioService';
 import { AddSede, EditSede, DeleteSede } from '../services/sedeService';
 
+const alertStyle = {
+  animation: 'fadeInOut 5s ease-in-out',
+  WebkitAnimation: 'fadeInOut 5s ease-in-out',
+  opacity: 1,
+};
+
+const keyframes = `
+  @keyframes fadeInOut {
+    0% { opacity: 0; transform: translateY(-20px); }
+    10% { opacity: 1; transform: translateY(0); }
+    90% { opacity: 1; transform: translateY(0); }
+    100% { opacity: 0; transform: translateY(-20px); }
+  }
+`;
+
 // Componente Modal Bootstrap
 function Modal({ title, children, onClose }) {
   return (
@@ -113,8 +128,14 @@ export default function SalasPage() {
       loadData();
       closeModal();
       setSuccess('Sala creada con éxito');
+      setTimeout(() => {
+        setSuccess('');
+      }, 5000);
     } catch (error) {
       setError('Error al crear sala');
+      setTimeout(() => {
+        setError('');
+      }, 5000);
       closeModal();
     }
   };
@@ -122,11 +143,18 @@ export default function SalasPage() {
   const handleEditSala = async (form) => {
     try {
       await EditSala(selectedSala, form);
-      closeModal();
       loadData();
+      closeModal();
+      setSuccess('Sala actualizada con éxito');
+      setTimeout(() => {
+        setSuccess('');
+      }, 5000);
     } catch (error) {
       setError('Error al actualizar sala');
       console.error('Error:', error);
+      setTimeout(() => {
+        setError('');
+      }, 5000);
       closeModal();
     }
   };
@@ -134,12 +162,19 @@ export default function SalasPage() {
   const handleDeleteSala = async () => {
     try {
       await DeleteSala(selectedSala);
+      loadData();
       closeModal();
       setSelectedSala(null);
-      loadData();
+      setSuccess('Sala eliminada con éxito');
+      setTimeout(() => {
+        setSuccess('');
+      }, 5000);
     } catch (error) {
       setError('Error al eliminar sala');
       console.error('Error:', error);
+      setTimeout(() => {
+        setError('');
+      }, 5000);
       closeModal();
     }
   };
@@ -151,8 +186,15 @@ export default function SalasPage() {
       await AddEdificio(form);
       loadData();
       closeModal();
+      setSuccess('Edificio creado con éxito');
+      setTimeout(() => {
+        setSuccess('');
+      }, 5000);
     } catch (error) {
       setError('Error al crear edificio');
+      setTimeout(() => {
+        setError('');
+      }, 5000);
       closeModal();
     }
   };
@@ -160,11 +202,18 @@ export default function SalasPage() {
   const handleEditEdificio = async (form) => {
     try {
       await EditEdificio(selectedEdificio, form);
-      closeModal();
       loadData();
+      closeModal();
+      setSuccess('Edificio actualizado con éxito');
+      setTimeout(() => {
+        setSuccess('');
+      }, 5000);
     } catch (error) {
       setError('Error al actualizar edificio');
       console.error('Error:', error);
+      setTimeout(() => {
+        setError('');
+      }, 5000);
       closeModal();
     }
   };
@@ -172,12 +221,19 @@ export default function SalasPage() {
   const handleDeleteEdificio = async () => {
     try {
       await DeleteEdificio(selectedEdificio);
+      loadData();
       closeModal();
       setSelectedEdificio(null);
-      loadData();
+      setSuccess('Edificio eliminado con éxito');
+      setTimeout(() => {
+        setSuccess('');
+      }, 5000);
     } catch (error) {
       setError('Error al eliminar edificio');
       console.error('Error:', error);
+      setTimeout(() => {
+        setError('');
+      }, 5000);
       closeModal();
     }
   };
@@ -189,8 +245,15 @@ export default function SalasPage() {
       await AddSede(form);
       loadData();
       closeModal();
+      setSuccess('Sede creada con éxito');
+      setTimeout(() => {
+        setSuccess('');
+      }, 5000);
     } catch (error) {
       setError('Error al crear sede');
+      setTimeout(() => {
+        setError('');
+      }, 5000);
       closeModal();
     }
   };
@@ -200,9 +263,16 @@ export default function SalasPage() {
       await EditSede(selectedSede, form);
       closeModal();
       loadData();
+      setSuccess('Sede actualizada con éxito');
+      setTimeout(() => {
+        setSuccess('');
+      }, 5000);
     } catch (error) {
       setError('Error al actualizar sede');
       console.error('Error:', error);
+      setTimeout(() => {
+        setError('');
+      }, 5000);
       closeModal();
     }
   };
@@ -210,21 +280,38 @@ export default function SalasPage() {
   const handleDeleteSede = async () => {
     try {
       await DeleteSede(selectedSede);
+      loadData();
       closeModal();
       setSelectedSede(null);
+      setSuccess('Sede eliminada con éxito');
+      setTimeout(() => {
+        setSuccess('');
+      }, 5000);
       loadData();
     } catch (error) {
       setError('Error al eliminar sede');
       console.error('Error:', error);
+      setTimeout(() => {
+        setError('');
+      }, 5000);
       closeModal();
     }
   };
 
   return (
     <Layout>
+      <style>{keyframes}</style>
       <h1 className="mb-4">Gestión de Espacios</h1>
-      {error && <div className="alert alert-danger">{error}</div>}
-      {success && <div className="alert alert-success">{success}</div>}
+      {error && (
+        <div className="alert alert-danger" style={alertStyle}>
+          {error}
+        </div>
+      )}
+      {success && (
+        <div className="alert alert-success" style={alertStyle}>
+          {success}
+        </div>
+      )}
 
       <ul className="nav nav-tabs mb-3">
         <li className="nav-item">
