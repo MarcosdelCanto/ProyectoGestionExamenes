@@ -33,6 +33,21 @@ import {
   DeleteEscuela,
 } from '../services/escuelaService';
 
+const alertStyle = {
+  animation: 'fadeInOut 5s ease-in-out',
+  WebkitAnimation: 'fadeInOut 5s ease-in-out',
+  opacity: 1,
+};
+
+const keyframes = `
+  @keyframes fadeInOut {
+    0% { opacity: 0; transform: translateY(-20px); }
+    10% { opacity: 1; transform: translateY(0); }
+    90% { opacity: 1; transform: translateY(0); }
+    100% { opacity: 0; transform: translateY(-20px); }
+  }
+`;
+
 function Modal({ title, children, onClose }) {
   return (
     <div
@@ -67,6 +82,7 @@ export default function AsignaturasPage() {
   const [selectedCarrera, setSelectedCarrera] = useState(null);
   const [selectedEscuela, setSelectedEscuela] = useState(null);
   const [loading, setLoading] = useState(false);
+  const [success, setSuccess] = useState('');
   const [error, setError] = useState('');
   const [modal, setModal] = useState({ type: null, data: null });
   const [activeTab, setActiveTab] = useState('asignaturas');
@@ -140,8 +156,15 @@ export default function AsignaturasPage() {
       await AddAsignatura(form);
       loadData();
       closeModal();
+      setSuccess('Asignatura creada con éxito');
+      setTimeout(() => {
+        setSuccess('');
+      }, 5000);
     } catch (error) {
       setError('Error al crear asignatura');
+      setTimeout(() => {
+        setError('');
+      }, 5000);
       closeModal();
     }
   };
@@ -149,11 +172,18 @@ export default function AsignaturasPage() {
   const handleEditAsignatura = async (form) => {
     try {
       await EditAsignatura(selectedAsignatura, form);
-      closeModal();
       loadData();
+      closeModal();
+      setSuccess('Asignatura actualizada con éxito');
+      setTimeout(() => {
+        setSuccess('');
+      }, 5000);
     } catch (error) {
       setError('Error al actualizar asignatura');
       console.error('Error:', error);
+      setTimeout(() => {
+        setError('');
+      }, 5000);
       closeModal();
     }
   };
@@ -161,12 +191,19 @@ export default function AsignaturasPage() {
   const handleDeleteAsignatura = async () => {
     try {
       await DeleteAsignatura(selectedAsignatura);
+      loadData();
       closeModal();
       setSelectedAsignatura(null);
-      loadData();
+      setSuccess('Asignaura eliminada con éxito');
+      setTimeout(() => {
+        setSuccess('');
+      }, 5000);
     } catch (error) {
       setError('Error al eliminar asignatura');
       console.error('Error:', error);
+      setTimeout(() => {
+        setError('');
+      }, 5000);
       closeModal();
     }
   };
@@ -176,8 +213,15 @@ export default function AsignaturasPage() {
       await AddSeccion(form);
       loadData();
       closeModal();
+      setSuccess('Sección creada con éxito');
+      setTimeout(() => {
+        setSuccess('');
+      }, 5000);
     } catch (error) {
       setError('Error al crear seccion');
+      setTimeout(() => {
+        setError('');
+      }, 5000);
       closeModal();
     }
   };
@@ -185,10 +229,17 @@ export default function AsignaturasPage() {
   const handleEditSeccion = async (form) => {
     try {
       await EditSeccion(selectedSeccion, form);
-      closeModal();
       loadData();
+      closeModal();
+      setSuccess('Sección actualizada con éxito');
+      setTimeout(() => {
+        setSuccess('');
+      }, 5000);
     } catch (error) {
       setError('Error al actualizar seccion');
+      setTimeout(() => {
+        setError('');
+      }, 5000);
       console.error('Error:', error);
       closeModal();
     }
@@ -197,12 +248,19 @@ export default function AsignaturasPage() {
   const handleDeleteSeccion = async () => {
     try {
       await DeleteSeccion(selectedSeccion);
+      loadData();
       closeModal();
       setSelectedSeccion(null);
-      loadData();
+      setSuccess('Sección eliminada con éxito');
+      setTimeout(() => {
+        setSuccess('');
+      }, 5000);
     } catch (error) {
       setError('Error al eliminar seccion');
       console.error('Error:', error);
+      setTimeout(() => {
+        setError('');
+      }, 5000);
       closeModal();
     }
   };
@@ -212,8 +270,15 @@ export default function AsignaturasPage() {
       await AddCarrera(form);
       loadData();
       closeModal();
+      setSuccess('Carrera creada con éxito');
+      setTimeout(() => {
+        setSuccess('');
+      }, 5000);
     } catch (error) {
       setError('Error al crear carrera');
+      setTimeout(() => {
+        setError('');
+      }, 5000);
       closeModal();
     }
   };
@@ -221,11 +286,18 @@ export default function AsignaturasPage() {
   const handleEditCarrera = async (form) => {
     try {
       await EditCarrera(selectedCarrera, form);
-      closeModal();
       loadData();
+      closeModal();
+      setSuccess('Carrera actualizada con éxito');
+      setTimeout(() => {
+        setSuccess('');
+      }, 5000);
     } catch (error) {
       setError('Error al actualizar carrera');
       console.error('Error:', error);
+      setTimeout(() => {
+        setError('');
+      }, 5000);
       closeModal();
     }
   };
@@ -233,12 +305,19 @@ export default function AsignaturasPage() {
   const handleDeleteCarrera = async () => {
     try {
       await DeleteCarrera(selectedCarrera);
+      loadData();
       closeModal();
       setSelectedCarrera(null);
-      loadData();
+      setSuccess('Carrera eliminada con éxito');
+      setTimeout(() => {
+        setSuccess('');
+      }, 5000);
     } catch (error) {
       setError('Error al eliminar carrera');
       console.error('Error:', error);
+      setTimeout(() => {
+        setError('');
+      }, 5000);
       closeModal();
     }
   };
@@ -248,8 +327,15 @@ export default function AsignaturasPage() {
       await AddEscuela(form);
       loadData();
       closeModal();
+      setSuccess('Escuela creada con éxito');
+      setTimeout(() => {
+        setSuccess('');
+      }, 5000);
     } catch (error) {
       setError('Error al crear escuela');
+      setTimeout(() => {
+        setError('');
+      }, 5000);
       closeModal();
     }
   };
@@ -257,11 +343,18 @@ export default function AsignaturasPage() {
   const handleEditEscuela = async (form) => {
     try {
       await EditEscuela(selectedEscuela, form);
-      closeModal();
       loadData();
+      closeModal();
+      setSuccess('Escuela actualizada con éxito');
+      setTimeout(() => {
+        setSuccess('');
+      }, 5000);
     } catch (error) {
       setError('Error al actualizar escuela');
       console.error('Error:', error);
+      setTimeout(() => {
+        setError('');
+      }, 5000);
       closeModal();
     }
   };
@@ -269,20 +362,37 @@ export default function AsignaturasPage() {
   const handleDeleteEscuela = async () => {
     try {
       await DeleteEscuela(selectedEscuela);
+      loadData();
       closeModal();
       setSelectedEscuela(null);
-      loadData();
+      setSuccess('Escuela eliminada con éxito');
+      setTimeout(() => {
+        setSuccess('');
+      }, 5000);
     } catch (error) {
       setError('Error al eliminar escuela');
       console.error('Error:', error);
+      setTimeout(() => {
+        setError('');
+      }, 5000);
       closeModal();
     }
   };
 
   return (
     <Layout>
+      <style>{keyframes}</style>
       <h1 className="mb-4">Gestion Administrativa</h1>
-      {error && <div className="alert alert-danger">{error}</div>}
+      {error && (
+        <div className="alert alert-danger" style={alertStyle}>
+          {error}
+        </div>
+      )}
+      {success && (
+        <div className="alert alert-success" style={alertStyle}>
+          {success}
+        </div>
+      )}
 
       <ul className="nav nav-tabs mb-3">
         <li className="nav-item">
