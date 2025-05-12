@@ -10,6 +10,21 @@ import ModuloTable from '../components/modulos/ModuloTable';
 import ModuloForm from '../components/modulos/ModuloForm';
 import ModuloActions from '../components/modulos/ModuloActions';
 
+const alertStyle = {
+  animation: 'fadeInOut 5s ease-in-out',
+  WebkitAnimation: 'fadeInOut 5s ease-in-out',
+  opacity: 1,
+};
+
+const keyframes = `
+  @keyframes fadeInOut {
+    0% { opacity: 0; transform: translateY(-20px); }
+    10% { opacity: 1; transform: translateY(0); }
+    90% { opacity: 1; transform: translateY(0); }
+    100% { opacity: 0; transform: translateY(-20px); }
+  }
+`;
+
 // Bootstrap Modal component
 function Modal({ title, children, onClose }) {
   return (
@@ -41,6 +56,7 @@ export default function ModulosPage() {
   const [selectedModule, setSelectedModule] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [success, setSuccess] = useState('');
   const [modal, setModal] = useState({ type: null, data: null });
 
   useEffect(() => {
@@ -72,37 +88,64 @@ export default function ModulosPage() {
   const handleAdd = async (form) => {
     try {
       await createModulo(form);
+      setSuccess('Modulo añadido con éxito');
+      setTimeout(() => {
+        setSuccess('');
+      }, 5000);
       closeModal();
       loadModulos();
     } catch (err) {
       setError(err.response?.data?.error || 'Error creando módulo');
+      setTimeout(() => {
+        setError('');
+      }, 5000);
     }
   };
 
   const handleEdit = async (form) => {
     try {
       await updateModulo(selectedModule.id_modulo, form);
+      setSuccess('Modulo actualizado con éxito');
+      setTimeout(() => {
+        setSuccess('');
+      }, 5000);
       closeModal();
       loadModulos();
     } catch (err) {
       setError(err.response?.data?.error || 'Error actualizando módulo');
+      setTimeout(() => {
+        setError('');
+      }, 5000);
     }
   };
 
   const handleDelete = async () => {
     try {
       await deleteModulo(selectedModule.id_modulo);
+      setSuccess('Modulo Eliminado con éxito');
       closeModal();
       loadModulos();
     } catch {
       setError('Error eliminando módulo');
+      setTimeOut(() => {
+        setError('');
+      }, 5000);
     }
   };
 
   return (
     <Layout>
       <h1 className="mb-4">Gestión de Módulos</h1>
-      {error && <div className="alert alert-danger">{error}</div>}
+      {error && (
+        <div className="alert alert-danger" style={alertStyle}>
+          {error}
+        </div>
+      )}
+      {success && (
+        <div className="alert alert-success" style={alertStyle}>
+          {success}
+        </div>
+      )}
 
       <ModuloActions
         onAdd={() => openModal('add')}
