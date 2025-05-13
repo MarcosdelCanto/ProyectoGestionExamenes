@@ -42,6 +42,7 @@ export default function ModulosPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [modal, setModal] = useState({ type: null, data: null });
+  const getId = (m) => m.id_modulo ?? m.ID_MODULO;
 
   useEffect(() => {
     loadModulos();
@@ -52,8 +53,8 @@ export default function ModulosPage() {
     try {
       const res = await fetchAllModulos();
       setModulos(res.data);
-      setError('');
       setSelectedModule(null);
+      setError('');
     } catch {
       setError('Error cargando módulos');
     } finally {
@@ -64,6 +65,7 @@ export default function ModulosPage() {
   const openModal = (type) => {
     setError('');
     if ((type === 'edit' || type === 'delete') && !selectedModule) return;
+    setError('');
     setModal({ type, data: type === 'edit' ? selectedModule : null });
   };
 
@@ -72,8 +74,8 @@ export default function ModulosPage() {
   const handleAdd = async (form) => {
     try {
       await createModulo(form);
-      closeModal();
       loadModulos();
+      closeModal();
     } catch (err) {
       setError(err.response?.data?.error || 'Error creando módulo');
     }
@@ -81,7 +83,7 @@ export default function ModulosPage() {
 
   const handleEdit = async (form) => {
     try {
-      await updateModulo(selectedModule.id_modulo, form);
+      await updateModulo(selectedModule, form);
       closeModal();
       loadModulos();
     } catch (err) {
@@ -91,8 +93,9 @@ export default function ModulosPage() {
 
   const handleDelete = async () => {
     try {
-      await deleteModulo(selectedModule.id_modulo);
+      await deleteModulo(selectedModule);
       closeModal();
+      setSelectedModule(null);
       loadModulos();
     } catch {
       setError('Error eliminando módulo');
@@ -108,7 +111,7 @@ export default function ModulosPage() {
         onAdd={() => openModal('add')}
         onEdit={() => openModal('edit')}
         onDelete={() => openModal('delete')}
-        disabled={!selectedModule}
+        selectedModule={selectedModule}
       />
 
       {loading ? (
@@ -116,8 +119,8 @@ export default function ModulosPage() {
       ) : (
         <ModuloTable
           modulos={modulos}
-          selectedModule={selectedModule}
-          onSelect={setSelectedModule}
+          selectedId={getId(selectedModule)}
+          onSelectModule={setSelectedModule}
         />
       )}
 

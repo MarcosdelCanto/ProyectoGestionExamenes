@@ -1,4 +1,9 @@
-function AsignaturaList({ asignaturas, selectedAsignatura, onSelectAsignatura, loading }) {
+function AsignaturaList({
+  asignaturas,
+  selectedAsignatura,
+  onSelectAsignatura,
+  loading,
+}) {
   if (loading) {
     return <div>Cargando...</div>;
   }
@@ -17,7 +22,9 @@ function AsignaturaList({ asignaturas, selectedAsignatura, onSelectAsignatura, l
           <tr
             key={`asignatura-${a.ID_ASIGNATURA}`}
             onClick={() => onSelectAsignatura(a.ID_ASIGNATURA)}
-            className={a.ID_ASIGNATURA === selectedAsignatura ? 'table-primary' : ''}
+            className={
+              a.ID_ASIGNATURA === selectedAsignatura ? 'table-primary' : ''
+            }
             style={{ cursor: 'pointer' }}
           >
             <td>{a.ID_ASIGNATURA || 'N/A'}</td>
