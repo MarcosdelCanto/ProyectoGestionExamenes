@@ -1,39 +1,23 @@
-import axios from 'axios';
+import api from './api';
 
-const api = axios.create({ baseURL: 'http://localhost:3000/api/carrera' });
-
-export const fetchAllCarreras = () => api.get('/');
-export const fetchCarreraById = (id) => api.get(`/${id}`);
-export const createCarrera = (data) => api.post('/', data);
-export const updateCarrera = (id, data) => api.put(`/${id}`, data);
-export const deleteCarrera = (id) => api.delete(`/${id}`);
+export const fetchAllCarreras = () => api.get('/carrera');
+export const fetchCarreraById = (id) => api.get(`/carrera/${id}`);
+export const createCarrera = (data) => api.post('/carrera/', data);
+export const updateCarrera = (id, data) => api.put(`/carrera/${id}`, data);
+export const deleteCarrera = (id) => api.delete(`/carrera/${id}`);
 
 export const AddCarrera = async (form) => {
-  const response = await fetch('http://localhost:3000/api/carrera', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(form),
-  });
-  if (!response.ok) throw new Error('Error al crear carrera');
-  return response.json();
+  const response = await api.post('/carrera', form);
+  if (!response.data) throw new Error('Error al crear carrera');
+  return response.data;
 };
 export const EditCarrera = async (selectedCarrera, form) => {
-  const response = await fetch(
-    `http://localhost:3000/api/carrera/${selectedCarrera}`,
-    {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(form),
-    }
-  );
-  if (!response.ok) throw new Error('Error al actualizar carrera');
-  return response.json();
+  const response = await api.put(`/carrera/${selectedCarrera}`, form);
+  if (!response.data) throw new Error('Error al actualizar carrera');
+  return response.data;
 };
 export const DeleteCarrera = async (selectedCarrera) => {
-  const response = await fetch(
-    `http://localhost:3000/api/carrera/${selectedCarrera}`,
-    { method: 'DELETE' }
-  );
-  if (!response.ok) throw new Error('Error al eliminar carrera');
-  return response.json();
+  const response = await api.delete(`/carrera/${selectedCarrera}`);
+  if (!response.data) throw new Error('Error al eliminar carrera');
+  return response.data;
 };

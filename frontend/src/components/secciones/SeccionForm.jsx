@@ -4,20 +4,29 @@ function SeccionForm({ initial, onSubmit, onCancel }) {
   const [asignaturaId, setAsignaturaId] = useState(
     initial?.ASIGNATURA_ID_ASIGNATURA?.toString() || ''
   );
+  const [jornadaId, setJornadaId] = useState(
+    initial?.JORNADA_ID_JORNADA?.toString() || ''
+  );
   const [asignatura, setAsignatura] = useState([]);
+  const [jornada, setJornada] = useState([]);
 
   useEffect(() => {
-    const fetchAsignaturas = async () => {
+    const fetchData = async () => {
       try {
-        const response = await fetch('http://localhost:3000/api/asignatura');
-        const data = await response.json();
-        setAsignatura(data);
+        const [asignaturasRes, jornadasRes] = await Promise.all([
+          fetch('http://localhost:3000/api/asignatura'),
+          fetch('http://localhost:3000/api/jornada'),
+        ]);
+        const asignaturasData = await asignaturasRes.json();
+        const jornadasData = await jornadasRes.json();
+        setAsignatura(asignaturasData);
+        setJornada(jornadasData);
       } catch (error) {
-        console.error('Error al obtener las asignaturas:', error);
+        console.error('Error al obtener datos:', error);
       }
     };
 
-    fetchAsignaturas();
+    fetchData();
   }, []);
 
   const handleSubmit = (e) => {
@@ -25,6 +34,7 @@ function SeccionForm({ initial, onSubmit, onCancel }) {
     onSubmit({
       nombre_seccion: nombre,
       asignatura_id_asignatura: parseInt(asignaturaId),
+      jornada_id_jornada: parseInt(jornadaId),
     });
   };
 
@@ -59,6 +69,27 @@ function SeccionForm({ initial, onSubmit, onCancel }) {
               value={asignatura.ID_ASIGNATURA}
             >
               {asignatura.NOMBRE_ASIGNATURA}
+            </option>
+          ))}
+        </select>
+      </div>
+      <div className="mb-3">
+        <label className="form-label">Jornada</label>
+        <select
+          className="form-control"
+          value={jornadaId}
+          onChange={(e) => setJornadaId(e.target.value)}
+          required
+        >
+          <option value="" key="default">
+            Seleccione una jornada
+          </option>
+          {jornada.map((jornada) => (
+            <option
+              key={`jornada-${jornada.ID_JORNADA}`}
+              value={jornada.ID_JORNADA}
+            >
+              {jornada.NOMBRE_JORNADA}
             </option>
           ))}
         </select>

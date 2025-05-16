@@ -9,6 +9,7 @@ import 'bootstrap/dist/css/bootstrap.min.css';
 import PrivateRoute from './components/PrivateRoute';
 import SalasPage from './pages/SalasPage';
 import AsignaturasPage from './pages/AsignaturasPage';
+import ExamenesPage from './pages/ExamenesPage';
 
 function App() {
   return (
@@ -26,6 +27,7 @@ function App() {
           <Route path="/salas" element={<SalasPage />} />
           <Route path="/asignaturas" element={<AsignaturasPage />} />
           <Route path="/usuarios" element={<UsuariosPage />} />
+          <Route path="/examenes" element={<ExamenesPage />} />
         </Route>
       </Routes>
     </BrowserRouter>

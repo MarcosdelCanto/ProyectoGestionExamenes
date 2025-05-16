@@ -4,7 +4,10 @@ const API = '/api';
 export async function login(email_usuario, password_usuario) {
   const resp = await fetch(`${API}/auth/login`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${getAccessToken()}`,
+    },
     body: JSON.stringify({ email_usuario, password_usuario }),
   });
   if (!resp.ok) throw new Error('Credenciales inválidas');

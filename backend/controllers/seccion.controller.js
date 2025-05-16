@@ -5,9 +5,10 @@ export const getAllSecciones = async (req, res) => {
   try {
     conn = await getConnection();
     const result = await conn.execute(
-      `SELECT s.id_seccion, s.nombre_seccion, s.asignatura_id_asignatura, a.nombre_asignatura
+      `SELECT s.id_seccion, s.nombre_seccion, s.asignatura_id_asignatura, a.nombre_asignatura, j.nombre_jornada
       FROM SECCION s
       JOIN ASIGNATURA a ON s.asignatura_id_asignatura = a.id_asignatura
+      JOIN JORNADA j ON s.jornada_id_jornada = j.id_jornada
       ORDER BY s.id_seccion`,
       [],
       { outFormat: oracledb.OUT_FORMAT_OBJECT }
@@ -46,17 +47,19 @@ export const getSeccionById = async (req, res) => {
 };
 
 export const createSeccion = async (req, res) => {
-  const { nombre_seccion, asignatura_id_asignatura } = req.body;
+  const { nombre_seccion, asignatura_id_asignatura, jornada_id_jornada } =
+    req.body;
   let conn;
   try {
     conn = await getConnection();
     const result = await conn.execute(
-      `INSERT INTO SECCION (id_seccion,nombre_seccion, asignatura_id_asignatura)
-      VALUES (SEQ_SECCION.NEXTVAL, :nombre, :asignatura)
+      `INSERT INTO SECCION (id_seccion,nombre_seccion, asignatura_id_asignatura, jornada_id_jornada)
+      VALUES (SEQ_SECCION.NEXTVAL, :nombre, :asignatura, :jornada)
       RETURNING id_seccion INTO :newId`,
       {
         nombre: nombre_seccion,
         asignatura: asignatura_id_asignatura,
+        jornada: jornada_id_jornada,
         newId: { dir: oracledb.BIND_OUT, type: oracledb.NUMBER },
       }
     );
