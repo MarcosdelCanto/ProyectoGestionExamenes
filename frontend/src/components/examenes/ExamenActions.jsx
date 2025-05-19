@@ -1,25 +1,24 @@
-function ModuloActions({ onAdd, onEdit, onDelete, selectedModulo }) {
+function ExamenActions({ onAdd, onEdit, onDelete, selectedExamen }) {
   return (
     <div className="mb-3">
       <button className="btn btn-success me-2" onClick={() => onAdd()}>
-        Agregar
+        Agregar Examen
       </button>
       <button
         className="btn btn-warning me-2"
         onClick={() => onEdit()}
-        disabled={!selectedModulo}
+        disabled={!selectedExamen}
       >
-        Modificar
+        Modificar Examen
       </button>
       <button
         className="btn btn-danger"
         onClick={() => onDelete()}
-        disabled={!selectedModulo}
+        disabled={!selectedExamen}
       >
-        Eliminar
+        Eliminar Examen
       </button>
     </div>
   );
 }
-
-export default ModuloActions;
+export default ExamenActions;

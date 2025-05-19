@@ -7,7 +7,8 @@ export const authMiddleware = (req, res, next) => {
     if (!authHeader) {
       return res.status(401).json({ mensaje: 'Token no proporcionado.' });
     }
-    const userPayload = verifyAccessToken(authHeader);
+    const token = authHeader.split(' ')[1];
+    const userPayload = verifyAccessToken(token);
     req.user = userPayload;
     next();
   } catch (err) {

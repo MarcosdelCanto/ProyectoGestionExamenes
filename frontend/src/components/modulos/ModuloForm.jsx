@@ -1,16 +1,27 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 
-export default function ModuloForm({ initial = {}, onSubmit, onCancel }) {
-  const [nombre, setNombre] = useState(
-    initial.nombre_modulo ?? initial.NOMBRE_MODULO ?? ''
+function ModuloForm({ initial, onSubmit, onCancel }) {
+  const [nombre, setNombre] = useState(initial?.NOMBRE_MODULO || '');
+  const [inicio, setInicio] = useState(initial?.INICIO_MODULO || '');
+  const [fin, setFin] = useState(initial?.FIN_MODULO || '');
+  const [orden, setOrden] = useState(initial?.ORDEN || '');
+  const [estadoId, setEstadoId] = useState(
+    initial?.ESTADO_ID_ESTADO?.toString() || ''
   );
-  const [inicio, setInicio] = useState(
-    initial.inicio_modulo ?? initial.INICIO_MODULO ?? ''
-  );
-  const [fin, setFin] = useState(
-    initial.fin_modulo ?? initial.FIN_MODULO ?? ''
-  );
-  const [orden, setOrden] = useState(initial.orden ?? initial.ORDEN ?? '');
+  const [estados, setEstados] = useState([]);
+
+  useEffect(() => {
+    const fetchEstados = async () => {
+      try {
+        const response = await fetch('http://localhost:3000/api/estado');
+        const data = await response.json();
+        setEstados(data);
+      } catch (error) {
+        console.error('Error al obtener los estados:', error);
+      }
+    };
+    fetchEstados();
+  }, []);
 
   const handleSubmit = (e) => {
     e.preventDefault();
@@ -18,7 +29,8 @@ export default function ModuloForm({ initial = {}, onSubmit, onCancel }) {
       nombre_modulo: nombre,
       inicio_modulo: inicio,
       fin_modulo: fin,
-      orden: Number(orden),
+      orden: parseInt(orden),
+      estado_id_estado: parseInt(estadoId),
     });
   };
 
@@ -31,7 +43,7 @@ export default function ModuloForm({ initial = {}, onSubmit, onCancel }) {
           className="form-control"
           value={orden}
           onChange={(e) => setOrden(e.target.value)}
-          min={1}
+          min="1"
           required
         />
       </div>
@@ -73,6 +85,22 @@ export default function ModuloForm({ initial = {}, onSubmit, onCancel }) {
           required
         />
       </div>
+      <div className="mb-3">
+        <label className="form-label">Estado</label>
+        <select
+          className="form-select"
+          value={estadoId}
+          onChange={(e) => setEstadoId(e.target.value)}
+          required
+        >
+          <option value="">Seleccione un estado</option>
+          {estados.map((estado) => (
+            <option key={`estado-${estado.ID_ESTADO}`} value={estado.ID_ESTADO}>
+              {estado.NOMBRE_ESTADO}
+            </option>
+          ))}
+        </select>
+      </div>
       <div className="modal-footer">
         <button type="button" className="btn btn-secondary" onClick={onCancel}>
           Cancelar
@@ -84,3 +112,5 @@ export default function ModuloForm({ initial = {}, onSubmit, onCancel }) {
     </form>
   );
 }
+
+export default ModuloForm;

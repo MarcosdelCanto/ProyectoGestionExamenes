@@ -1,14 +1,29 @@
 import { useState, useEffect } from 'react';
 import Layout from '../components/Layout';
-import {
-  fetchAllModulos,
-  createModulo,
-  updateModulo,
-  deleteModulo,
-} from '../services/moduloService';
 import ModuloTable from '../components/modulos/ModuloTable';
 import ModuloForm from '../components/modulos/ModuloForm';
-import ModuloActions from '../components/modulos/ModuloActions';
+import ModuloActions from '../components/modulos/moduloActions';
+import {
+  fetchAllModulos,
+  AddModulo,
+  EditModulo,
+  DeleteModulo,
+} from '../services/moduloService';
+
+const alertStyle = {
+  animation: 'fadeInOut 5s ease-in-out',
+  WebkitAnimation: 'fadeInOut 5s ease-in-out',
+  opacity: 1,
+};
+
+const keyframes = `
+  @keyframes fadeInOut {
+    0% { opacity: 0; transform: translateY(-20px); }
+    10% { opacity: 1; transform: translateY(0); }
+    90% { opacity: 1; transform: translateY(0); }
+    100% { opacity: 0; transform: translateY(-20px); }
+  }
+`;
 
 // Bootstrap Modal component
 function Modal({ title, children, onClose }) {
@@ -38,11 +53,12 @@ function Modal({ title, children, onClose }) {
 
 export default function ModulosPage() {
   const [modulos, setModulos] = useState([]);
-  const [selectedModule, setSelectedModule] = useState(null);
+  const [selectedModulo, setSelectedModulo] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [success, setSuccess] = useState('');
   const [modal, setModal] = useState({ type: null, data: null });
-  const getId = (m) => m.id_modulo ?? m.ID_MODULO;
+  const [activeTab, setActiveTab] = useState('modulos');
 
   useEffect(() => {
     loadModulos();
@@ -53,8 +69,8 @@ export default function ModulosPage() {
     try {
       const res = await fetchAllModulos();
       setModulos(res.data);
-      setSelectedModule(null);
       setError('');
+      setSelectedModulo(null);
     } catch {
       setError('Error cargando módulos');
     } finally {
@@ -62,95 +78,150 @@ export default function ModulosPage() {
     }
   };
 
-  const openModal = (type) => {
-    setError('');
-    if ((type === 'edit' || type === 'delete') && !selectedModule) return;
-    setError('');
-    setModal({ type, data: type === 'edit' ? selectedModule : null });
+  const openModal = (type, entity) => {
+    let data = null;
+    if (type === 'edit' || type === 'delete') {
+      switch (entity) {
+        case 'modulo':
+          if (!selectedModulo) return;
+          data = modulos.find((m) => m.id_modulo === selectedModulo);
+          break;
+      }
+    }
+    setModal({ type, entity, data });
   };
 
   const closeModal = () => setModal({ type: null, data: null });
 
-  const handleAdd = async (form) => {
+  const handleAddModulo = async (form) => {
     try {
-      await createModulo(form);
+      await AddModulo(form);
+      setSuccess('Modulo añadido con éxito');
+      setTimeout(() => {
+        setSuccess('');
+      }, 5000);
+      closeModal();
       loadModulos();
       closeModal();
     } catch (err) {
-      setError(err.response?.data?.error || 'Error creando módulo');
+      setError('Error creando módulo');
+      setTimeout(() => {
+        setError('');
+      }, 5000);
+      closeModal();
     }
   };
 
-  const handleEdit = async (form) => {
+  const handleEditModulo = async (form) => {
     try {
-      await updateModulo(selectedModule, form);
+      await EditModulo(selectedModulo, form);
+      setSuccess('Modulo actualizado con éxito');
+      setTimeout(() => {
+        setSuccess('');
+      }, 5000);
       closeModal();
       loadModulos();
     } catch (err) {
-      setError(err.response?.data?.error || 'Error actualizando módulo');
+      setError('Error actualizando módulo');
+      setTimeout(() => {
+        setError('');
+      }, 5000);
+      closeModal();
     }
   };
 
-  const handleDelete = async () => {
+  const handleDeleteModulo = async () => {
     try {
-      await deleteModulo(selectedModule);
+      await DeleteModulo(selectedModulo);
+      setSuccess('Modulo Eliminado con éxito');
+      setTimeout(() => {
+        setSuccess('');
+      }, 5000);
       closeModal();
       setSelectedModule(null);
       loadModulos();
     } catch {
       setError('Error eliminando módulo');
+      setTimeOut(() => {
+        setError('');
+      }, 5000);
+      closeModal();
     }
   };
 
   return (
     <Layout>
+      <style>{keyframes}</style>
       <h1 className="mb-4">Gestión de Módulos</h1>
-      {error && <div className="alert alert-danger">{error}</div>}
-
-      <ModuloActions
-        onAdd={() => openModal('add')}
-        onEdit={() => openModal('edit')}
-        onDelete={() => openModal('delete')}
-        selectedModule={selectedModule}
-      />
-
-      {loading ? (
-        <div>Cargando módulos…</div>
-      ) : (
-        <ModuloTable
-          modulos={modulos}
-          selectedId={getId(selectedModule)}
-          onSelectModule={setSelectedModule}
-        />
+      {error && (
+        <div className="alert alert-danger" style={alertStyle}>
+          {error}
+        </div>
+      )}
+      {success && (
+        <div className="alert alert-success" style={alertStyle}>
+          {success}
+        </div>
       )}
 
-      {modal.type === 'add' && (
-        <Modal title="Agregar Módulo" onClose={closeModal}>
-          <ModuloForm onSubmit={handleAdd} onCancel={closeModal} />
-        </Modal>
-      )}
-
-      {modal.type === 'edit' && (
-        <Modal title="Modificar Módulo" onClose={closeModal}>
-          <ModuloForm
-            initial={modal.data}
-            onSubmit={handleEdit}
-            onCancel={closeModal}
+      <ul className="nav nav-tabs mb-3">
+        <li className="nav-item">
+          <button
+            className={`nav-link ${activeTab === 'modulos' ? 'active' : ''}`}
+            onClick={() => setActiveTab('modulos')}
+          >
+            Módulos
+          </button>
+        </li>
+      </ul>
+      {activeTab === 'modulos' && (
+        <>
+          <ModuloActions
+            onAdd={() => openModal('add', 'modulo')}
+            onEdit={() => openModal('edit', 'modulo')}
+            onDelete={() => openModal('delete', 'modulo')}
+            selectedModulo={selectedModulo}
           />
-        </Modal>
+          <ModuloTable
+            modulos={modulos}
+            selectedModulo={selectedModulo}
+            onSelectModulo={setSelectedModulo}
+          />
+        </>
       )}
 
-      {modal.type === 'delete' && (
-        <Modal title="Eliminar Módulo" onClose={closeModal}>
-          <p>¿Confirma eliminar el módulo seleccionado?</p>
-          <div className="modal-footer">
-            <button className="btn btn-secondary" onClick={closeModal}>
-              Cancelar
-            </button>
-            <button className="btn btn-danger" onClick={handleDelete}>
-              Eliminar
-            </button>
-          </div>
+      {modal.type && modal.entity === 'modulo' && (
+        <Modal
+          title={
+            modal.type === 'add'
+              ? 'Agregar Modulo'
+              : modal.type === 'edit'
+                ? 'Editar Modulo'
+                : 'Eliminar Modulo'
+          }
+          onClose={closeModal}
+        >
+          {modal.type === 'delete' ? (
+            <div>
+              <p>¿Confirma eliminar el módulo seleccionado?</p>
+              <div className="modal-footer">
+                <button className="btn btn-secondary" onClick={closeModal}>
+                  Cancelar
+                </button>
+                <button className="btn btn-danger" onClick={handleDeleteModulo}>
+                  Eliminar
+                </button>
+              </div>
+            </div>
+          ) : (
+            <ModuloForm
+              initial={modal.data}
+              onSubmit={
+                modal.type === 'add' ? handleAddModulo : handleEditModulo
+              }
+              onCancel={closeModal}
+            />
+          )}
         </Modal>
       )}
     </Layout>

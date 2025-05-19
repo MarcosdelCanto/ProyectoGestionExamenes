@@ -17,20 +17,21 @@ planificador-examenes/
 
 ## 🚀 Tecnologías utilizadas
 
-| Área        | Herramientas                             |
-|-------------|------------------------------------------|
-| Frontend    | React, Vite                              |
-| Backend     | Node.js, Express                         |
-| Base de datos | Oracle (conexión en desarrollo)         |
-| Estilo de código | ESLint, Prettier                     |
+| Área                 | Herramientas                    |
+| -------------------- | ------------------------------- |
+| Frontend             | React, Vite                     |
+| Backend              | Node.js, Express                |
+| Base de datos        | Oracle (conexión en desarrollo) |
+| Estilo de código     | ESLint, Prettier                |
 | Control de versiones | Git, GitHub                     |
-| Editor recomendado | Visual Studio Code                |
+| Editor recomendado   | Visual Studio Code, Trae        |
 
 ---
 
 ## ⚙️ Configuración inicial
 
 ### 🔹 Requisitos
+
 - Node.js y npm instalados
 - Visual Studio Code (opcional, pero recomendado)
 - Oracle Database (en preparación)
