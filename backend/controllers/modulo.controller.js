@@ -5,7 +5,7 @@ export const getAllModulos = async (req, res) => {
   try {
     conn = await getConnection();
     const result = await conn.execute(
-      `SELECT m.id_modulo, m.nombre_modulo, m.inicio_modulo, m.fin_modulo, m.orden, e.nombre_estado
+      `SELECT m.id_modulo, m.nombre_modulo, m.inicio_modulo, m.fin_modulo, m.orden, m.estado_id_estado, e.nombre_estado
        FROM MODULO m
        JOIN ESTADO e ON m.estado_id_estado = e.id_estado
        ORDER BY orden`,
@@ -27,7 +27,7 @@ export const getModuloById = async (req, res) => {
   try {
     conn = await getConnection();
     const result = await conn.execute(
-      `SELECT m.*, e.nombre_estado
+      `SELECT m.*, e.nombre_estado, e.id_estado
       FROM MODULO m
       JOIN ESTADO e ON m.estado_id_estado = e.id_estado
       WHERE m.id_modulo = :id`,
@@ -93,12 +93,12 @@ export const updateModulo = async (req, res) => {
            estado_id_estado = :estado_id
        WHERE id_modulo = :id`,
       {
-        orden: orden,
+        orden: Number(orden),
         nombre: nombre_modulo,
         inicio: inicio_modulo,
         fin: fin_modulo,
-        id,
-        estado_id: estado_id_estado,
+        id: Number(id),
+        estado_id: Number(estado_id_estado),
       }
     );
     if (result.rowsAffected === 0)
@@ -122,7 +122,7 @@ export const deleteModulo = async (req, res) => {
   try {
     conn = await getConnection();
     const result = await conn.execute(
-      `DELETE FROM MUDULO WHERE id_modulo = :id`,
+      `DELETE FROM MODULO WHERE id_modulo = :id`,
       [id]
     );
     if (result.rowsAffected === 0)

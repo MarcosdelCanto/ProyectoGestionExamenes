@@ -6,10 +6,10 @@ function ModuloForm({ initial, onSubmit, onCancel }) {
   const [fin, setFin] = useState(initial?.FIN_MODULO || '');
   const [orden, setOrden] = useState(initial?.ORDEN || '');
   const [estadoId, setEstadoId] = useState(
-    initial?.ESTADO_ID_ESTADO?.toString() || ''
+    initial?.ESTADO_ID_ESTADO ? String(initial?.ESTADO_ID_ESTADO) : ''
   );
   const [estados, setEstados] = useState([]);
-
+  console.log(estadoId);
   useEffect(() => {
     const fetchEstados = async () => {
       try {
@@ -88,12 +88,14 @@ function ModuloForm({ initial, onSubmit, onCancel }) {
       <div className="mb-3">
         <label className="form-label">Estado</label>
         <select
-          className="form-select"
+          className="form-control"
           value={estadoId}
           onChange={(e) => setEstadoId(e.target.value)}
           required
         >
-          <option value="">Seleccione un estado</option>
+          <option value="" key="default">
+            Seleccione un estado
+          </option>
           {estados.map((estado) => (
             <option key={`estado-${estado.ID_ESTADO}`} value={estado.ID_ESTADO}>
               {estado.NOMBRE_ESTADO}
