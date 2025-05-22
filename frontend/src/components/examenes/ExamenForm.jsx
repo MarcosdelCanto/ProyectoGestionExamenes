@@ -132,7 +132,7 @@ function ExamenForm({ initial, onSubmit, onCancel }) {
               key={`seccion-${seccion.ID_SECCION}`}
               value={seccion.ID_SECCION}
             >
-              {seccion.NOMBRE_SECCION}
+              {seccion.NOMBRE_SECCION} - {seccion.NOMBRE_ASIGNATURA}
             </option>
           ))}
         </select>

@@ -6,7 +6,6 @@ function AsignaturaForm({ initial, onSubmit, onCancel }) {
     initial?.CARRERA_ID_CARRERA?.toString() || ''
   );
   const [carrera, setCarrera] = useState([]);
-
   useEffect(() => {
     const fetchCarreras = async () => {
       try {

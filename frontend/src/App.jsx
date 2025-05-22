@@ -10,6 +10,7 @@ import PrivateRoute from './components/PrivateRoute';
 import SalasPage from './pages/SalasPage';
 import AsignaturasPage from './pages/AsignaturasPage';
 import ExamenesPage from './pages/ExamenesPage';
+import CalendarioPage from './pages/CalendarioPage';
 
 function App() {
   return (
@@ -28,6 +29,7 @@ function App() {
           <Route path="/asignaturas" element={<AsignaturasPage />} />
           <Route path="/usuarios" element={<UsuariosPage />} />
           <Route path="/examenes" element={<ExamenesPage />} />
+          <Route path="/calendario" element={<CalendarioPage />} />
         </Route>
       </Routes>
     </BrowserRouter>

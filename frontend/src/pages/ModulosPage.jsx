@@ -3,12 +3,7 @@ import Layout from '../components/Layout';
 import ModuloTable from '../components/modulos/ModuloTable';
 import ModuloForm from '../components/modulos/ModuloForm';
 import ModuloActions from '../components/modulos/moduloActions';
-import {
-  fetchAllModulos,
-  AddModulo,
-  EditModulo,
-  DeleteModulo,
-} from '../services/moduloService';
+import { AddModulo, EditModulo, DeleteModulo } from '../services/moduloService';
 
 const alertStyle = {
   animation: 'fadeInOut 5s ease-in-out',
@@ -53,6 +48,7 @@ function Modal({ title, children, onClose }) {
 
 export default function ModulosPage() {
   const [modulos, setModulos] = useState([]);
+  const [estados, setEstados] = useState([]);
   const [selectedModulo, setSelectedModulo] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -67,12 +63,24 @@ export default function ModulosPage() {
   const loadModulos = async () => {
     setLoading(true);
     try {
-      const res = await fetchAllModulos();
-      setModulos(res.data);
+      const [modulosRes, estadosRes] = await Promise.all([
+        fetch('http://localhost:3000/api/modulo'),
+        fetch('http://localhost:3000/api/estado'),
+      ]);
+
+      if (!modulosRes.ok || !estadosRes.ok)
+        throw new Error('Error en la respuesta');
+
+      const modulosData = await modulosRes.json();
+      const estadosData = await estadosRes.json();
+
+      setModulos(modulosData);
+      setEstados(estadosData);
       setError('');
-      setSelectedModulo(null);
-    } catch {
-      setError('Error cargando módulos');
+    } catch (err) {
+      console.error('Error:', err);
+      setError('Error cargando datos: ' + err.message);
+      setTimeout(() => setError(''), 5000);
     } finally {
       setLoading(false);
     }
@@ -84,7 +92,7 @@ export default function ModulosPage() {
       switch (entity) {
         case 'modulo':
           if (!selectedModulo) return;
-          data = modulos.find((m) => m.id_modulo === selectedModulo);
+          data = modulos.find((m) => m.ID_MODULO === selectedModulo);
           break;
       }
     }
@@ -137,12 +145,13 @@ export default function ModulosPage() {
       setTimeout(() => {
         setSuccess('');
       }, 5000);
+      setSelectedModulo(null);
       closeModal();
       setSelectedModule(null);
       loadModulos();
     } catch {
       setError('Error eliminando módulo');
-      setTimeOut(() => {
+      setTimeout(() => {
         setError('');
       }, 5000);
       closeModal();
