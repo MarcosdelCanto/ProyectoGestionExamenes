@@ -80,8 +80,6 @@ export const updateUsuario = async (req, res, next) => {
     const { nombre_usuario, email_usuario, rol_id_rol, password_usuario } =
       req.body;
     const conn = await getConnection();
-    console.log('Datos recibidos:', req.body);
-    // Si se proporciona una nueva contraseña, la hasheamos
     let hashedPassword = null;
     if (password_usuario) {
       hashedPassword = await bcrypt.hash(password_usuario, 10);
@@ -105,8 +103,6 @@ export const updateUsuario = async (req, res, next) => {
     };
     await conn.execute(query, params, { autoCommit: true });
     await conn.close();
-
-    console.log(req.body.password_usuario);
 
     res.json({
       message: `Usuario actualizado correctamente con la contraseña: ${password_usuario}`,

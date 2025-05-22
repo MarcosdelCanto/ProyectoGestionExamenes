@@ -9,7 +9,6 @@ function ModuloForm({ initial, onSubmit, onCancel }) {
     initial?.ESTADO_ID_ESTADO ? String(initial?.ESTADO_ID_ESTADO) : ''
   );
   const [estados, setEstados] = useState([]);
-  console.log(estadoId);
   useEffect(() => {
     const fetchEstados = async () => {
       try {

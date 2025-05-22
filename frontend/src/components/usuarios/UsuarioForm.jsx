@@ -10,7 +10,6 @@ export default function UsuarioForm({ initial, onSave, onClose }) {
 
   useEffect(() => {
     if (initial) {
-      console.log(initial);
       setNombre(initial.NOMBRE_USUARIO);
       setEmail(initial.EMAIL_USUARIO);
       setRolId(initial.ROL_ID_ROL);

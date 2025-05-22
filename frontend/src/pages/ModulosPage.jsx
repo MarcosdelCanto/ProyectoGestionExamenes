@@ -93,7 +93,6 @@ export default function ModulosPage() {
         case 'modulo':
           if (!selectedModulo) return;
           data = modulos.find((m) => m.ID_MODULO === selectedModulo);
-          console.log(data);
           break;
       }
     }
