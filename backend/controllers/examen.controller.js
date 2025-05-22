@@ -7,11 +7,12 @@ export const getAllExamenes = async (req, res) => {
     conn = await getConnection();
     const result = await conn.execute(
       `SELECT  e.id_examen, e.nombre_examen, e.inscritos_examen, e.tipo_procesamiento_examen, e.plataforma_prose_examen,
-        e.situacion_evaluativa_examen, e.cantidad_modulos_examen, s.nombre_seccion, a.nombre_asignatura, es.nombre_estado
+        e.situacion_evaluativa_examen, e.cantidad_modulos_examen, s.nombre_seccion, a.nombre_asignatura, es.nombre_estado, e.seccion_id_seccion, e.estado_id_estado
       FROM    EXAMEN e
       JOIN    SECCION s ON e.seccion_id_seccion = s.id_seccion
       JOIN    ASIGNATURA a ON s.asignatura_id_asignatura = a.id_asignatura
-      JOIN    ESTADO es ON e.estado_id_estado = es.id_estado`,
+      JOIN    ESTADO es ON e.estado_id_estado = es.id_estado
+      ORDER BY e.id_examen`,
       [],
       { outFormat: oracledb.OUT_FORMAT_OBJECT }
     );
@@ -61,6 +62,7 @@ export const createExamen = async (req, res) => {
     seccion_id_seccion,
     estado_id_estado,
   } = req.body;
+  console.log(req.body);
   let conn;
   try {
     if (
@@ -101,7 +103,7 @@ export const createExamen = async (req, res) => {
 
     const result = await conn.execute(
       `INSERT INTO EXAMEN (id_examen, nombre_examen, inscritos_examen, tipo_procesamiento_examen, plataforma_prose_examen, situacion_evaluativa_examen, cantidad_modulos_examen, seccion_id_seccion, estado_id_estado)
-      VALUES (:nombre, :inscritos, :tipo_procesamiento, :plataforma_prose_examen, :situacion_evaluativa, :cantidad_modulos, :seccion_id_seccion, :estado_id_estado)`,
+      VALUES (SEQ_EXAMEN.NEXTVAL, :nombre, :inscritos, :tipo_procesamiento, :plataforma_prose_examen, :situacion_evaluativa, :cantidad_modulos, :seccion_id_seccion, :estado_id_estado) RETURNING id_examen INTO :newId`,
       {
         nombre: nombre_examen,
         inscritos: inscritos_examen,
