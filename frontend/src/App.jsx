@@ -11,6 +11,7 @@ import SalasPage from './pages/SalasPage';
 import AsignaturasPage from './pages/AsignaturasPage';
 import ExamenesPage from './pages/ExamenesPage';
 import CalendarioPage from './pages/CalendarioPage';
+import CargaDatosPage from './pages/CargaDatosPage';
 
 function App() {
   return (
@@ -30,6 +31,7 @@ function App() {
           <Route path="/usuarios" element={<UsuariosPage />} />
           <Route path="/examenes" element={<ExamenesPage />} />
           <Route path="/calendario" element={<CalendarioPage />} />
+          <Route path="/carga-datos" element={<CargaDatosPage />} />
         </Route>
       </Routes>
     </BrowserRouter>
