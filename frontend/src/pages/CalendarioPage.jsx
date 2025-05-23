@@ -32,6 +32,7 @@ export default function CalendarioPage() {
 
   return (
     <Layout>
+      <style>{`.fc .fc-timegrid-slot { height: 30px !important; }`}</style>
       <div className="container mt-4">
         <div
           style={{

@@ -5,46 +5,22 @@ import bootstrap5Plugin from '@fullcalendar/bootstrap5';
 import interactionPlugin from '@fullcalendar/interaction';
 import { Card } from 'react-bootstrap';
 import 'bootstrap/dist/css/bootstrap.min.css';
+import { fetchAllModulos } from '../services/moduloService';
 
-// --- Función para generar los businessHours BASADA EN EL PENSUM ---
-function getPensumScheduleBlocks() {
+function getModuloScheduleBlocks(modulos) {
+  // Convierte los módulos en bloques para FullCalendar
   const days = [1, 2, 3, 4, 5, 6];
-  const pensumBlocksDefinition = [
-    { startTime: '08:01:00', endTime: '08:40:00' },
-    { startTime: '08:41:00', endTime: '09:20:00' },
-    { startTime: '09:31:00', endTime: '10:10:00' },
-    { startTime: '10:11:00', endTime: '10:50:00' },
-    { startTime: '11:01:00', endTime: '11:40:00' },
-    { startTime: '11:41:00', endTime: '12:20:00' },
-    { startTime: '12:31:00', endTime: '13:10:00' },
-    { startTime: '13:11:00', endTime: '13:50:00' },
-    { startTime: '14:01:00', endTime: '14:40:00' },
-    { startTime: '14:41:00', endTime: '15:20:00' },
-    { startTime: '15:31:00', endTime: '16:10:00' },
-    { startTime: '16:11:00', endTime: '16:50:00' },
-    { startTime: '17:01:00', endTime: '17:40:00' },
-    { startTime: '17:41:00', endTime: '18:20:00' },
-    { startTime: '18:31:00', endTime: '19:00:00' },
-    { startTime: '19:11:00', endTime: '19:50:00' },
-    { startTime: '19:51:00', endTime: '20:30:00' },
-    { startTime: '20:41:00', endTime: '21:20:00' },
-    { startTime: '21:21:00', endTime: '22:00:00' },
-    { startTime: '22:01:00', endTime: '22:50:00' },
-    { startTime: '22:51:00', endTime: '23:30:00' },
-  ];
-  return pensumBlocksDefinition.map((block) => ({
+  return modulos.map((modulo) => ({
     daysOfWeek: days,
-    startTime: block.startTime,
-    endTime: block.endTime,
+    startTime: modulo.INICIO_MODULO,
+    endTime: modulo.FIN_MODULO,
   }));
 }
-
 // Función auxiliar para convertir "HH:MM:SS" a minutos desde la medianoche
 const timeToMinutes = (timeStr) => {
   const [hours, minutes] = timeStr.split(':').map(Number);
   return hours * 60 + minutes;
 };
-
 // Función auxiliar para obtener la duración de un evento en milisegundos
 const getEventDurationMs = (eventInstance, draggedEl) => {
   // Para eventos existentes de FullCalendar que se están moviendo (eventDrop)
@@ -85,13 +61,27 @@ const getEventDurationMs = (eventInstance, draggedEl) => {
   );
   return 40 * 60 * 1000; // Fallback a 40 minutos
 };
-
 // --- Componente Principal del Calendario ---
-export function AgendaSemanal() {
-  const businessHoursData = useMemo(getPensumScheduleBlocks, []);
+export function AgendaSemanal({ salaId }) {
+  const [modulos, setModulos] = useState([]);
+  const [businessHoursData, setBusinessHoursData] = useState([]);
   const calendarRef = useRef(null);
-
   const [calendarEvents, setCalendarEvents] = useState([]);
+
+  useEffect(() => {
+    // Cargar los módulos desde la API
+    fetchAllModulos()
+      .then((res) => {
+        const data = res.data || res; // según cómo responda tu API
+        setModulos(data);
+        setBusinessHoursData(getModuloScheduleBlocks(data));
+      })
+      .catch((err) => {
+        setModulos([]);
+        setBusinessHoursData([]);
+        console.error('Error al cargar módulos:', err);
+      });
+  }, []);
 
   const calendarEventConstraint = {
     startTime: '08:01:00',
@@ -380,10 +370,10 @@ export function AgendaSemanal() {
               center: 'title',
               right: 'timeGridWeek,timeGridDay',
             }}
-            slotDuration="00:30:00"
-            slotLabelInterval="00:30:00"
-            snapDuration="00:40:00" // Ajuste visual cada 10 min (relativo a 08:01), la lógica de drop/receive ajusta al bloque.
-            slotMinTime="08:01:00"
+            slotDuration="00:40:00"
+            slotLabelInterval="00:40:00"
+            snapDuration="00:01:00" // Ajuste visual cada 10 min (relativo a 08:01), la lógica de drop/receive ajusta al bloque.
+            slotMinTime="08:00:00"
             slotMaxTime="23:30:00"
             allDaySlot={false}
             height={700}
