@@ -1,0 +1,146 @@
+/* Estilos generales para la página de Usuarios */
+.usuarios-page-container {
+  padding-top: 1.5rem; /* Espacio superior */
+  padding-bottom: 1.5rem; /* Espacio inferior */
+}
+
+.usuarios-page-container h2 {
+  margin-bottom: 1.5rem; /* Espacio debajo del título principal */
+  color: #333; /* Color de texto oscuro para el título */
+}
+
+/* Título personalizado */
+.page-title-custom {
+  color: #0d6efd; /* Color primario de Bootstrap por defecto */
+  /* Otros estilos que quieras añadir o sobrescribir */
+}
+
+/* Nueva clase para el título de la página con estilo mejorado */
+.page-title {
+  color: #337ab7; /* Un azul personalizado, por ejemplo */
+  font-size: 2.5rem; /* Tamaño de fuente más grande */
+  font-weight: bold; /* Texto en negrita */
+  margin-bottom: 2rem; /* Más espacio debajo */
+  padding-bottom: 0.5rem; /* Espacio para la línea inferior */
+  border-bottom: 2px solid #eeeeee; /* Una línea sutil debajo */
+  display: inline-block; /* Para que el borde solo ocupe el ancho del texto */
+}
+
+/* Puedes añadir un efecto hover si quieres */
+.page-title:hover {
+  color: #23527c; /* Un azul un poco más oscuro al pasar el mouse */
+}
+
+/* Contenedor para acciones y filtros */
+.actions-filters-container {
+  margin-bottom: 1.5rem;
+  display: flex;
+  flex-wrap: wrap; /* Permite que los elementos se envuelvan en pantallas pequeñas */
+  justify-content: space-between; /* Espacio entre UsuarioActions y UsuarioFilter */
+  align-items: flex-start; /* Alinea los items al inicio de su contenedor */
+}
+
+/* Ajustes específicos para UsuarioActions y UsuarioFilter si es necesario */
+/* Por ejemplo, si quieres que UsuarioFilter ocupe menos espacio o se alinee diferente */
+.usuario-actions-wrapper {
+  /* Estilos para el contenedor de acciones si es necesario */
+  margin-bottom: 1.5rem; /* Espacio antes del filtro */
+}
+
+.usuario-filter-wrapper {
+  width: 100%; /* Hace que el contenedor del filtro ocupe todo el ancho */
+  margin-bottom: 1.5rem; /* Espacio antes de la tabla */
+}
+
+/* Estilos para la tabla de usuarios */
+.usuario-table {
+  /* Bootstrap ya aplica muchos estilos, pero puedes añadir más aquí si es necesario */
+  /* Por ejemplo, un borde sutil o sombra */
+  box-shadow: 0 0 10px rgba(0, 0, 0, 0.05);
+}
+
+/* Estilos para el componente de paginación */
+.pagination-container {
+  display: flex;
+  justify-content: center; /* Centra la paginación */
+  margin-top: 1.5rem;
+}
+
+/* Estilos para el modal de mensajes (msgModal) */
+/* Estos estilos ya están inline en tu JSX, pero podrías moverlos aquí */
+.modal.fade.show.custom-msg-modal {
+  /* Añade una clase custom si quieres más control */
+  display: block;
+  background-color: rgba(0, 0, 0, 0.5);
+}
+
+.custom-msg-modal .modal-content {
+  border-radius: 0.5rem; /* Bordes redondeados */
+}
+
+.custom-msg-modal .modal-header {
+  border-bottom: 1px solid #dee2e6;
+}
+
+.custom-msg-modal .modal-footer {
+  border-top: 1px solid #dee2e6;
+}
+
+/* Media queries para responsividad */
+
+/* Para pantallas medianas y más pequeñas, apilar acciones y filtros */
+@media (max-width: 991.98px) {
+  /* Antes del breakpoint 'lg' de Bootstrap */
+  .actions-filters-container {
+    flex-direction: column; /* Apila los elementos verticalmente */
+    align-items: stretch; /* Hace que los elementos ocupen todo el ancho */
+  }
+
+  .usuario-actions-wrapper,
+  .usuario-filter-wrapper {
+    width: 100%; /* Ocupan todo el ancho disponible */
+    margin-bottom: 1rem; /* Espacio entre ellos cuando están apilados */
+  }
+}
+
+/* Para pantallas muy pequeñas, podrías querer ajustar más cosas */
+@media (max-width: 575.98px) {
+  /* Antes del breakpoint 'sm' de Bootstrap */
+  .usuarios-page-container h2 {
+    font-size: 1.75rem; /* Título un poco más pequeño */
+  }
+
+  /* Podrías querer que los botones en UsuarioActions ocupen todo el ancho */
+  .usuario-actions-wrapper .btn-group .btn {
+    /* flex-grow: 1; */ /* Descomenta si quieres que los botones se estiren */
+  }
+}
+
+/* Estilos para los botones responsivos (iconos) - ya definidos en responsive-buttons.css */
+/* Si no tienes un archivo separado, puedes incluirlos aquí */
+.btn-responsive-text {
+  display: inline-block; /* Por defecto, el texto es visible */
+}
+
+/* Cuando la pantalla sea más pequeña que este ancho (ej. 768px) */
+@media (max-width: 767.98px) {
+  .btn-responsive-text {
+    display: none; /* Oculta el texto, dejando solo el icono */
+  }
+}
+
+.usuario-action-buttons .btn {
+  /* Target los botones dentro del nuevo contenedor */
+  margin-right: 0.5rem; /* Espacio a la derecha de cada botón */
+}
+
+.usuario-action-buttons .btn:last-child {
+  margin-right: 0; /* Elimina el margen del último botón */
+}
+
+/* O, si prefieres usar gap con flexbox en el contenedor de botones: */
+.usuario-action-buttons {
+  display: flex; /* Asegúrate de que sea un contenedor flex */
+  gap: 0.5rem; /* Espacio entre los elementos hijos flex */
+  flex-wrap: wrap; /* Para que se envuelvan si no caben */
+}

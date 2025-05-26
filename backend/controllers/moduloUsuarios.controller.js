@@ -1,8 +1,6 @@
 import { getConnection } from '../db.js';
 import bcrypt from 'bcrypt';
 import crypto from 'crypto';
-import fs from 'fs';
-import csvParser from 'csv-parser';
 
 //lista todos los roles
 export const listRoles = async (req, res, next) => {
@@ -30,6 +28,7 @@ export const listUsuarios = async (req, res, next) => {
               u.NOMBRE_USUARIO,
               u.EMAIL_USUARIO,
               u.PASSWORD_USUARIO,
+              u.ROL_ID_ROL,
               r.NOMBRE_ROL
          FROM USUARIO u
          JOIN ROL r ON u.ROL_ID_ROL = r.ID_ROL`
@@ -153,47 +152,6 @@ export const resetPassword = async (req, res, next) => {
     });
   } catch (error) {
     console.error('Error al resetear contraseña:', error);
-    next(error);
-  }
-};
-
-// funcion para cargar usuarios desde un archivo CSV
-export const importUsuarios = async (req, res, next) => {
-  try {
-    const rows = [];
-    fs.createReadStream(req.file.path)
-      .pipe(csvParser())
-      .on('data', (row) => rows.push(row))
-      .on('end', async () => {
-        const conn = await getConnection();
-        for (const { NOMBRE_USUARIO, EMAIL_USUARIO, ROL_ID_ROL } of rows) {
-          const plainPassword = crypto.randomBytes(8).toString('hex');
-          const hashedPassword = await bcrypt.hash(plainPassword, 10);
-          await conn.execute(
-            `INSERT INTO USUARIO
-               (ID_USUARIO, NOMBRE_USUARIO, EMAIL_USUARIO, PASSWORD_USUARIO,
-                FECHA_CREA_USUARIO, ROL_ID_ROL)
-             VALUES
-               (USUARIO_SEQ.NEXTVAL, :n, :e, :p, SYSTIMESTAMP, :r)`,
-            {
-              n: NOMBRE_USUARIO,
-              e: EMAIL_USUARIO,
-              p: hashedPassword,
-              r: ROL_ID_ROL,
-            },
-            { autoCommit: true }
-          );
-        }
-        await conn.commit();
-        await conn.close();
-        fs.unlinkSync(req.file.path); // Eliminar el archivo CSV después de procesarlo
-        res.json({
-          message: 'Usuarios importados correctamente',
-          count: rows.length,
-        });
-      });
-  } catch (error) {
-    console.error('Error al importar usuarios:', error);
     next(error);
   }
 };

@@ -17,11 +17,18 @@ import examenRoutes from './routes/examen.routes.js';
 import estadoRoutes from './routes/estado.routes.js';
 import jornadaRoutes from './routes/jornada.routes.js';
 import moduloUsuariosRoutes from './routes/moduloUsuarios.routes.js';
+import cargaRoutes from './routes/carga.routes.js';
+import cargaAlumnoRoutes from './routes/cargaAlumno.routes.js';
+import cargaDocenteRoutes from './routes/cargaDocente.routes.js'; // Nueva importación
+import rolesRouter from './routes/rol.routes.js';
 
 const app = express();
 
 app.use(cors());
-app.use(express.json());
+//app.use(express.json());
+// Aumentamos el límite para aceptar payloads de hasta 50MB (puedes ajustar este valor)
+app.use(express.json({ limit: '50mb' }));
+app.use(express.urlencoded({ limit: '50mb', extended: true }));
 
 // Ruta de prueba
 app.get('/', (req, res) => res.send('API funcionando 🚀'));
@@ -55,6 +62,7 @@ async function startServer() {
     // Rutas API
     app.use('/api/auth', authRoutes);
     app.use('/api/user', userRoutes);
+    app.use('/api/usuarios', userRoutes);
     app.use('/api/modulo', moduloRoutes);
     app.use('/api/sala', salaRoutes);
     app.use('/api/sede', sedeRoutes);
@@ -67,6 +75,10 @@ async function startServer() {
     app.use('/api/jornada', jornadaRoutes);
     app.use('/api/estado', estadoRoutes);
     app.use('/api/moduloUsuarios', moduloUsuariosRoutes);
+    app.use('/api/carga', cargaRoutes);
+    app.use('/api/roles', rolesRouter);
+    app.use('/api/cargaAlumno', cargaAlumnoRoutes);
+    app.use('/api/cargaDocente', cargaDocenteRoutes); // Nuevas rutas
 
     const PORT = process.env.PORT || 3000;
     server.listen(PORT, () =>
