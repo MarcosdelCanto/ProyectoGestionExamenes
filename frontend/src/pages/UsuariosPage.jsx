@@ -256,7 +256,7 @@ export default function UsuariosPage() {
   return (
     <>
       <Layout>
-        <div className="container-fluid mt-4 usuarios-page-container">
+        <div className="container-fluid usuarios-page-container">
           {/* Combinando Bootstrap con una clase personalizada */}
           <h2 className="display-5 page-title-custom mb-4">
             <i className="bi bi-person-lines-fill me-3"></i>
