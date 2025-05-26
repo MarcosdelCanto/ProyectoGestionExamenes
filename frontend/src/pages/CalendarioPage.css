@@ -1,33 +1,186 @@
-/* CalendarioPage.css */
-
-/*
-  Paso 1: Cambiar el fondo de los bloques no hábiles a blanco.
-  Usamos `!important` para asegurar que nuestro estilo sobrescriba
-  los estilos por defecto de FullCalendar, que son muy específicos.
-*/
-.fc-non-business {
-  background-color: white !important;
+/* Variables de color */
+:root {
+  --primary-color: #2c3e50;
+  --secondary-color: #34495e;
+  --accent-color: #27ae60;
+  --light-gray: #ecf0f1;
+  --disabled-gray: #95a5a6;
+  --white: #ffffff;
+  --text-dark: #2c3e50;
 }
 
-/*
-  Paso 2: Ocultar las delgadas líneas horizontales que dividen los slots.
-  Al quitarlas DENTRO de los bloques no hábiles, el área blanca se ve como un solo espacio
-  unificado, dando la ilusión de que el bloque es más compacto.
-  Esta regla oculta TODAS las líneas menores para un look más limpio.
-*/
-.fc .fc-timegrid-slot-minor {
-  border-top-style: none !important;
-}
-
-/*
-  Estilo para las etiquetas de rango horario que creamos.
-  Esto asegura que el texto "08:01 - 08:40" se vea bien.
-*/
-.custom-slot-label-range {
-  font-size: 0.8em;
+/* Título principal */
+.titulo {
+  font-size: 1.5rem;
+  font-weight: bold;
+  margin-bottom: 1rem;
+  color: var(--primary-color);
   text-align: center;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  padding: 0 2px;
+}
+
+/* Layout: lateral + detalle */
+.container-lateral {
+  float: left;
+  width: 300px;
+  padding: 1rem;
+  background: var(--light-gray);
+  box-shadow: 2px 0 5px rgba(0, 0, 0, 0.1);
+}
+.details-section {
+  /* margin-left: 320px; */
+  float: right;
+  width: calc(100% - 320px);
+  padding: 1rem;
+  background: var(--white);
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+/* Wrapper para scroll horizontal en la tabla */
+.details-section .table-wrapper {
+  overflow-x: auto;
+  margin-top: 1rem;
+}
+
+/* Sección de búsqueda */
+.search-section h2 {
+  margin: 1rem 0 0.5rem;
+  color: var(--primary-color);
+  font-size: 1.1rem;
+}
+.search-section input[type='search'],
+.search-section input[type='date'] {
+  width: 100%;
+  padding: 0.4rem 0.6rem;
+  margin-bottom: 0.5rem;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+}
+
+/* Listados de salas/exámenes */
+.search-box {
+  max-height: 200px;
+  overflow-y: auto;
+  margin-bottom: 1rem;
+}
+.tabla-seleccion {
+  width: 100%;
+  border-collapse: collapse;
+}
+.tabla-seleccion th,
+.tabla-seleccion td {
+  border: 1px solid #ddd;
+  padding: 0.5rem;
+  text-align: left;
+}
+.fila-seleccionada {
+  background: rgba(39, 174, 96, 0.2);
+}
+.icono {
+  cursor: pointer;
+  color: var(--primary-color);
+}
+.icono-reservado {
+  color: var(--disabled-gray);
+}
+
+/* Tabla de disponibilidad */
+.details-section table {
+  width: 100%;
+  border-collapse: collapse;
+  table-layout: fixed;
+  background: none;
+  color: var(--white);
+  box-shadow: none;
+}
+.details-section th,
+.details-section td {
+  border: 1px solid var(--secondary-color);
+  padding: 0.5rem;
+  vertical-align: middle;
+}
+.details-section th {
+  background: var(--light-gray);
+  color: var(--text-dark);
+  font-weight: 600;
+  text-align: center;
+}
+.details-section th[colspan] h2,
+.details-section th[colspan] h3 {
+  margin: 0.2rem 0;
+}
+
+/* Columnas fijas */
+.details-section th:nth-child(1),
+.details-section td:nth-child(1) {
+  width: 40px;
+}
+.details-section th:nth-child(2),
+.details-section td:nth-child(2) {
+  width: 80px;
+}
+
+/* Ocultar únicamente celdas vacías */
+.details-section th:empty,
+.details-section td:empty {
+  display: none;
+}
+
+/* Celdas de módulo y horario */
+.numero-modulo {
+  background: #fff;
+  font-weight: bold;
+  color: var(--secondary-color);
+}
+.horario-modulo {
+  background: var(--light-gray);
+  color: var(--text-dark);
+  font-size: 0.85rem;
+  line-height: 1.2;
+}
+
+/* Estados de celda */
+.disponible {
+  background: var(--white);
+}
+.reservado {
+  background: var(--disabled-gray);
+  color: var(--white);
+  font-size: 0.85rem;
+  line-height: 1.2;
+}
+
+/* Botones de selección */
+.disponible button,
+.boton-modulo-seleccionado {
+  width: 100%;
+  padding: 0.4rem 0;
+  border: none;
+  border-radius: 4px;
+  font-size: 0.9rem;
+  cursor: pointer;
+}
+.disponible button {
+  background: var(--accent-color);
+  color: var(--white);
+}
+.disponible button:disabled {
+  background: var(--disabled-gray);
+  cursor: not-allowed;
+}
+.boton-modulo-seleccionado {
+  background: #c0392b; /* rojo oscuro para seleccionado */
+  color: var(--white);
+}
+
+/* Botón Confirmar Reserva */
+.details-section > button {
+  margin-top: 1rem;
+  padding: 0.6rem 1.2rem;
+  font-size: 1rem;
+  background: var(--accent-color);
+  color: var(--white);
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
 }
