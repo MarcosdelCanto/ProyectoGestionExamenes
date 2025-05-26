@@ -4,9 +4,10 @@ import { useDispatch, useSelector } from 'react-redux';
 import api from '../services/api';
 import { logout } from '../services/authService';
 import { useNavigate } from 'react-router-dom';
-import './HomePage.css';
+import './HomePage.css'; // ¡Ahora este archivo es fundamental!
 import { socket } from '../store/socketMiddleware';
 import Layout from '../components/Layout';
+import { FaUserCircle } from 'react-icons/fa';
 
 export default function HomePage() {
   const { status, updaterId } = useSelector((state) => state.status);
@@ -28,7 +29,6 @@ export default function HomePage() {
 
   const puedeModificar = status === 'disponible' || socket.id === updaterId;
 
-  // Handlers que despachan el cambio de estado
   const handleClick = () => {
     const next = status === 'disponible' ? 'pendiente' : 'confirmada';
     dispatch(changeStatus(next));
@@ -40,26 +40,77 @@ export default function HomePage() {
     navigate('/login');
   };
 
-  if (!perfil) return <p>Cargando perfil…</p>;
+  const formatDate = (dateString) => {
+    if (!dateString) return 'No disponible';
+    const date = new Date(dateString);
+    // Check if the date is valid by checking if getTime() returns a number
+    if (isNaN(date.getTime())) {
+      return 'Fecha inválida';
+    }
+    return date.toLocaleDateString('es-CL', {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric',
+    });
+  };
+
+  if (!perfil) {
+    return (
+      <Layout>
+        <div className="loading-container">
+          <p>Cargando perfil…</p>
+        </div>
+      </Layout>
+    );
+  }
 
   return (
     <Layout>
-      <div className="flex flex-col items-center justify-center min-h-screen bg-gray-100">
-        <h1 className="text-2xl font-bold mb-4">
-          Bienvenido, {perfil.NOMBRE_USUARIO}
-        </h1>
-        <p className="text-lg">Tu rol es: {perfil.ROL_ID_ROL}</p>
-        {/* Aquí puedes agregar más contenido relacionado con el perfil */}
-      </div>
-      <div>
-        <div className={`status-circle status-${status}`} />
-        <button onClick={handleClick} disabled={!puedeModificar}>
-          {status === 'disponible'
-            ? 'Ocupar'
-            : status === 'pendiente'
-              ? 'Confirmar'
-              : 'Ocupado'}
-        </button>
+      <div className="profile-page-container">
+        <div className="profile-card">
+          {/* Sección del Ícono/Imagen (Izquierda) */}
+          <div className="profile-card-icon-section">
+            <FaUserCircle className="profile-icon" />
+            <p className="profile-role">
+              {perfil.NOMBRE_ROL || `Rol ID: ${perfil.ROL_ID_ROL}`}
+            </p>
+          </div>
+
+          {/* Sección de la Información (Derecha) */}
+          <div className="profile-card-info-section">
+            <h1 className="profile-name">{perfil.NOMBRE_USUARIO}</h1>
+            <p className="profile-email">{perfil.EMAIL_USUARIO}</p>
+
+            <div className="profile-details">
+              <div className="profile-detail-row">
+                <strong className="profile-detail-label">Rol:</strong>
+                <span className="profile-detail-value">
+                  {perfil.NOMBRE_ROL || perfil.ROL_ID_ROL}
+                </span>
+              </div>
+              <div className="profile-detail-row">
+                <strong className="profile-detail-label">
+                  Registrado desde:
+                </strong>
+                <span className="profile-detail-value">
+                  {formatDate(perfil.FECHA_CREACION)}
+                </span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Sección de estado y botón */}
+        <div className="status-section">
+          <div className={`status-circle status-${status}`} />
+          <button onClick={handleClick} disabled={!puedeModificar}>
+            {status === 'disponible'
+              ? 'Ocupar'
+              : status === 'pendiente'
+                ? 'Confirmar'
+                : 'Ocupado'}
+          </button>
+        </div>
       </div>
     </Layout>
   );

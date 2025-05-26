@@ -6,6 +6,7 @@ import HomePage from './pages/HomePage';
 import ModulosPage from './pages/ModulosPage';
 import UsuariosPage from './pages/UsuariosPage';
 import 'bootstrap/dist/css/bootstrap.min.css';
+import 'bootstrap-icons/font/bootstrap-icons.css';
 import PrivateRoute from './components/PrivateRoute';
 import SalasPage from './pages/SalasPage';
 import AsignaturasPage from './pages/AsignaturasPage';

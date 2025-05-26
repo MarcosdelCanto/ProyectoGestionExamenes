@@ -1,21 +1,136 @@
-.homepage-wrapper {
+/* Estilos generales del contenedor de la página */
+.profile-page-container {
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  width: 100vh;
   min-height: 100vh;
-  padding: 2rem;
+  background-color: #f3f4f6;
+  padding: 1rem;
 }
 
+/* Contenedor principal de la tarjeta de perfil */
+.profile-card {
+  background-color: #ffffff;
+  border-radius: 0.75rem;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+  width: 100%;
+  max-width: 42rem;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+/* Sección izquierda con el ícono y el gradiente */
+.profile-card-icon-section {
+  background-image: linear-gradient(to bottom right, #001b35, #04417c);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 1.5rem;
+  color: white;
+  text-align: center;
+}
+
+/* Estilo del ícono de usuario con fondo blanco */
+.profile-icon {
+  font-size: 5rem; /* Ajustamos el tamaño del ícono interno */
+  color: #fff;
+  background-color: #1f2937;
+  /* Aquí está la magia: */
+  border-radius: 50%; /* Para que el fondo sea un círculo perfecto */
+  width: 8rem; /* Ancho fijo para el círculo */
+  height: 8rem; /* Alto fijo para el círculo */
+
+  /* Usamos flexbox para centrar perfectamente el ícono dentro del círculo */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 0.75rem;
+}
+
+.profile-role {
+  font-size: 0.875rem;
+  font-weight: 500;
+}
+
+/* Sección derecha con la información del usuario */
+.profile-card-info-section {
+  padding: 1.5rem;
+  color: #374151;
+  flex-grow: 1;
+}
+
+.profile-name {
+  font-size: 1.875rem;
+  font-weight: bold;
+  color: #1f2937;
+  text-align: center;
+}
+
+.profile-email {
+  font-size: 1rem;
+  color: #2563eb;
+  margin-top: 0.25rem;
+  text-align: center;
+}
+
+/* Contenedor de los detalles (Rol, Miembro desde) */
+.profile-details {
+  border-top: 1px solid #d1d5db;
+  padding-top: 1rem;
+  margin-top: 1rem;
+}
+
+.profile-detail-row {
+  display: flex;
+  align-items: center;
+  margin-top: 0.5rem;
+}
+
+.profile-detail-label {
+  width: 130px;
+  font-size: 0.875rem;
+  font-weight: bold;
+}
+
+.profile-detail-value {
+  font-size: 0.875rem;
+}
+
+/* Sección de estado y botones */
+.status-section {
+  margin-top: 2rem;
+  text-align: center;
+}
+
+.logout-section {
+  margin-top: 1rem;
+}
+
+.logout-button {
+  background-color: #ef4444;
+  color: white;
+  font-weight: bold;
+  padding: 0.5rem 1rem;
+  border: none;
+  border-radius: 0.375rem;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.logout-button:hover {
+  background-color: #b91c1c;
+}
+
+/* Estilos para el círculo de estado que ya tenías */
 .status-circle {
-  width: 100px;
-  height: 100px;
+  width: 20px;
+  height: 20px;
   border-radius: 50%;
-  margin: 1rem 0;
-  transition: background-color 0.3s ease;
+  margin: 0 auto 1rem;
 }
-
 .status-disponible {
   background-color: green;
 }
@@ -24,4 +139,58 @@
 }
 .status-confirmada {
   background-color: red;
+}
+
+/* --- RESPONSIVIDAD PARA ESCRITORIO --- */
+/* Se aplica en pantallas de 768px o más anchas */
+@media (min-width: 768px) {
+  .profile-card {
+    flex-direction: row;
+    align-items: stretch;
+  }
+
+  .profile-card-icon-section {
+    width: 33.33%;
+    border-top-left-radius: 0.75rem;
+    border-bottom-left-radius: 0.75rem;
+    border-top-right-radius: 0;
+  }
+
+  .profile-name,
+  .profile-email {
+    text-align: left;
+  }
+}
+
+/* Contenedor de carga */
+.loading-container {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+}
+/* En HomePage.css */
+.logout-section {
+  margin-top: 20px; /* Espacio arriba del botón de logout */
+  text-align: center; /* Centra el botón si el contenedor es de bloque */
+}
+
+.logout-button {
+  padding: 10px 20px;
+  background-color: #f44336; /* Un color rojo para logout */
+  color: white;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+  font-size: 1rem;
+  transition: background-color 0.3s ease;
+}
+
+.logout-button:hover {
+  background-color: #d32f2f;
+}
+
+.logout-button:disabled {
+  background-color: #ccc;
+  cursor: not-allowed;
 }

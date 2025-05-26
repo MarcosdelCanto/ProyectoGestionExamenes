@@ -1,0 +1,33 @@
+/* CalendarioPage.css */
+
+/*
+  Paso 1: Cambiar el fondo de los bloques no hábiles a blanco.
+  Usamos `!important` para asegurar que nuestro estilo sobrescriba
+  los estilos por defecto de FullCalendar, que son muy específicos.
+*/
+.fc-non-business {
+  background-color: white !important;
+}
+
+/*
+  Paso 2: Ocultar las delgadas líneas horizontales que dividen los slots.
+  Al quitarlas DENTRO de los bloques no hábiles, el área blanca se ve como un solo espacio
+  unificado, dando la ilusión de que el bloque es más compacto.
+  Esta regla oculta TODAS las líneas menores para un look más limpio.
+*/
+.fc .fc-timegrid-slot-minor {
+  border-top-style: none !important;
+}
+
+/*
+  Estilo para las etiquetas de rango horario que creamos.
+  Esto asegura que el texto "08:01 - 08:40" se vea bien.
+*/
+.custom-slot-label-range {
+  font-size: 0.8em;
+  text-align: center;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  padding: 0 2px;
+}

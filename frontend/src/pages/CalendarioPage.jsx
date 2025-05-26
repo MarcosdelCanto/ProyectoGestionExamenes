@@ -1,72 +1,85 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react'; // Importar useState
+import {
+  DndContext,
+  closestCenter,
+  KeyboardSensor,
+  PointerSensor,
+  useSensor,
+  useSensors,
+} from '@dnd-kit/core';
+import {
+  arrayMove,
+  SortableContext,
+  sortableKeyboardCoordinates,
+  verticalListSortingStrategy,
+} from '@dnd-kit/sortable';
 import Layout from '../components/Layout';
-import AgendaSemanal from '../components/AgendaSemanal';
-import ListaExamenesExternos from '../components/ListaExamenesExternos';
+import { AgendaSemanal } from '../components/AgendaSemanal';
 
-export default function CalendarioPage() {
-  const [salas, setSalas] = useState([]);
-  const [salaSeleccionada, setSalaSeleccionada] = useState('');
-  const [loading, setLoading] = useState(true);
-  const [examenes, setExamenes] = useState([]); // <-- Agrega este estado
+// Define o importa 'datosIniciales'
+// Ejemplo de definición:
+const datosIniciales = [
+  { id: '1', contenido: 'Elemento 1' },
+  { id: '2', contenido: 'Elemento 2' },
+  { id: '3', contenido: 'Elemento 3' },
+];
 
-  useEffect(() => {
-    // Cargar las salas desde la API
-    fetch('http://localhost:3000/api/sala')
-      .then((res) => res.json())
-      .then((data) => {
-        setSalas(data);
-        setLoading(false);
-      })
-      .catch(() => setLoading(false));
-  }, []);
+function CalendarioPage() {
+  const [items, setItems] = useState(datosIniciales);
 
-  useEffect(() => {
-    // Cargar los exámenes desde la API
-    fetch('http://localhost:3000/api/examen')
-      .then((res) => res.json())
-      .then((data) => {
-        setExamenes(data);
-      })
-      .catch(() => setExamenes([]));
-  }, []);
+  // Sensores para detectar el input (puntero y teclado para accesibilidad)
+  const sensors = useSensors(
+    useSensor(PointerSensor),
+    useSensor(KeyboardSensor, {
+      coordinateGetter: sortableKeyboardCoordinates,
+    })
+  );
+
+  function handleDragEnd(event) {
+    const { active, over } = event;
+
+    if (active.id !== over.id) {
+      setItems((prevItems) => {
+        const oldIndex = prevItems.findIndex((item) => item.id === active.id);
+        const newIndex = prevItems.findIndex((item) => item.id === over.id);
+
+        // arrayMove es una función útil de @dnd-kit/sortable
+        return arrayMove(prevItems, oldIndex, newIndex);
+      });
+    }
+  }
 
   return (
     <Layout>
-      <div className="container mt-4">
-        <div
-          style={{
-            display: 'flex',
-            alignItems: 'flex-start',
-            gap: '2rem',
-          }}
+      <div className="App">
+        <h1>Examenes</h1>
+        <DndContext
+          sensors={sensors}
+          collisionDetection={closestCenter}
+          onDragEnd={handleDragEnd}
         >
-          <div style={{ flex: 1 }}>
-            {salaSeleccionada && <AgendaSemanal salaId={salaSeleccionada} />}
-          </div>
-          <div style={{ minWidth: '260px' }}>
-            {loading ? (
-              <p>Cargando salas...</p>
-            ) : (
-              <div className="mb-3">
-                <label className="form-label">Selecciona una sala:</label>
-                <select
-                  className="form-select"
-                  value={salaSeleccionada}
-                  onChange={(e) => setSalaSeleccionada(e.target.value)}
-                >
-                  <option value="">-- Selecciona --</option>
-                  {salas.map((sala) => (
-                    <option key={sala.ID_SALA} value={sala.ID_SALA}>
-                      {sala.NOMBRE_SALA}
-                    </option>
-                  ))}
-                </select>
-              </div>
-            )}
-            <ListaExamenesExternos examenes={examenes} />
-          </div>
-        </div>
+          <table>
+            <thead>
+              <tr>
+                <th>Contenido</th>
+              </tr>
+            </thead>
+            <tbody>
+              <SortableContext
+                items={items.map((item) => item.id)}
+                strategy={verticalListSortingStrategy}
+              >
+                {items.map((item) => (
+                  <AgendaSemanal key={item.id} id={item.id}>
+                    <td>{item.contenido}</td>
+                  </AgendaSemanal>
+                ))}
+              </SortableContext>
+            </tbody>
+          </table>
+        </DndContext>
       </div>
     </Layout>
   );
 }
+export default CalendarioPage;
