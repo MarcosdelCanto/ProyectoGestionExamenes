@@ -16,7 +16,7 @@ function UsuarioList({
   }
 
   return (
-    <table className="table table-hover">
+    <table className="table resposive-table table-hover">
       <thead className="table-light">
         <tr>
           <th style={{ width: '5%' }} className="text-center align-middle">
