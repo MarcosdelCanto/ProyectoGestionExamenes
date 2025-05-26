@@ -3,12 +3,14 @@ import * as XLSX from 'xlsx';
 import { Modal, Button, Form, Alert, Table, Spinner } from 'react-bootstrap';
 import cargaDocenteService from '../../services/cargaDocenteService';
 import cargaAlumnoService from '../../services/cargaAlumnoService';
+import cargaSalaService from '../../services/cargaSalaService';
 import { fetchAllRoles } from '../../services/rolService';
 
 const VALID_FILE_EXTENSIONS = ['.xlsx', '.xls'];
 const MAX_PREVIEW_ROWS = 5;
 const ROL_DOCENTE_ID = '2';
 const ROL_ALUMNO_ID = '3';
+const SALA_OPTION = 'sala'; // New option for rooms
 
 export default function UserBulkUploadModal({
   onSuccess: onUploadProcessSuccess, // Esta es para refrescar la lista
@@ -17,7 +19,7 @@ export default function UserBulkUploadModal({
 }) {
   const [show, setShow] = useState(false);
   const [roles, setRoles] = useState([]);
-  const [selectedRole, setSelectedRole] = useState('');
+  const [selectedOption, setSelectedOption] = useState('');
   const [file, setFile] = useState(null);
   const [fileName, setFileName] = useState('');
   const [jsonData, setJsonData] = useState(null);
@@ -117,8 +119,8 @@ export default function UserBulkUploadModal({
   }, [file]);
 
   const handleUpload = async () => {
-    if (!selectedRole) {
-      setError('Selecciona un rol.');
+    if (!selectedOption) {
+      setError('Selecciona una opción.');
       return;
     }
     if (!dataForUpload) {
@@ -129,17 +131,19 @@ export default function UserBulkUploadModal({
     setError('');
 
     try {
-      let responseData; // Este objeto debe venir del backend con { inserted, updated, ignored, errors?, associations_created? }
-      if (selectedRole === ROL_ALUMNO_ID) {
+      let responseData;
+      if (selectedOption === ROL_ALUMNO_ID) {
         responseData = await cargaAlumnoService.subirAlumnos(dataForUpload);
-      } else if (selectedRole === ROL_DOCENTE_ID) {
+      } else if (selectedOption === ROL_DOCENTE_ID) {
         responseData = await cargaDocenteService.subirUsuariosPorRol(
           dataForUpload,
-          selectedRole
+          selectedOption
         );
+      } else if (selectedOption === SALA_OPTION) {
+        responseData = await cargaSalaService.subirSalas(dataForUpload);
       } else {
         setError(
-          `El Rol ID ${selectedRole} no tiene un método de carga masiva definido.`
+          `La opción ${selectedOption} no tiene un método de carga masiva definido.`
         );
         setIsUploading(false);
         return;
@@ -148,21 +152,19 @@ export default function UserBulkUploadModal({
       console.log(
         'UserBulkUploadModal: responseData from backend:',
         responseData
-      ); // Para depurar
-      onUploadResult?.({ type: 'summary', data: responseData }); // ¡Llamada crucial!
+      );
+      onUploadResult?.({ type: 'summary', data: responseData });
 
       setShow(false);
       clearAllModalState();
-      onUploadProcessSuccess?.(); // Llama a la función para refrescar la lista en el padre
+      onUploadProcessSuccess?.();
     } catch (e) {
       const errorMessage =
         e.response?.data?.error ||
         e.response?.data?.message ||
         e.message ||
-        'Error al cargar usuarios.';
-      setError(errorMessage); // Error se muestra dentro del modal
-      // Opcionalmente, si quieres que el padre también sepa del error para una alerta externa:
-      // onUploadResult?.({ type: 'error', message: errorMessage });
+        'Error al cargar datos.';
+      setError(errorMessage);
     } finally {
       setIsUploading(false);
     }
@@ -191,23 +193,22 @@ export default function UserBulkUploadModal({
         show={show}
         onHide={() => {
           setShow(false);
-          // No es necesario limpiar estados aquí si se hace al abrir o al completar
         }}
         size="lg"
         backdrop="static"
       >
         <Modal.Header closeButton>
-          <Modal.Title>Carga Masiva de Usuarios</Modal.Title>
+          <Modal.Title>Carga Masiva</Modal.Title>
         </Modal.Header>
         <Modal.Body>
           <Form.Group className="mb-3">
-            <Form.Label>1. Selecciona Rol</Form.Label>
+            <Form.Label>1. Selecciona Tipo de Carga</Form.Label>
             <Form.Select
-              value={selectedRole}
-              onChange={(e) => setSelectedRole(e.target.value)}
+              value={selectedOption}
+              onChange={(e) => setSelectedOption(e.target.value)}
               disabled={isLoading || isUploading || !!file}
             >
-              <option value="">-- Elige un rol --</option>
+              <option value="">-- Elige una opción --</option>
               {roles.map(
                 (r) =>
                   (String(r.ID_ROL) === ROL_DOCENTE_ID ||
@@ -217,6 +218,7 @@ export default function UserBulkUploadModal({
                     </option>
                   )
               )}
+              <option value={SALA_OPTION}>Salas</option>
             </Form.Select>
           </Form.Group>
           <Form.Group controlId="file-input" className="mb-3">
@@ -248,7 +250,7 @@ export default function UserBulkUploadModal({
               <Button
                 variant="success"
                 onClick={handleUpload}
-                disabled={isUploading || !selectedRole}
+                disabled={isUploading || !selectedOption}
               >
                 {isUploading ? (
                   <Spinner animation="border" size="sm" />
@@ -257,7 +259,7 @@ export default function UserBulkUploadModal({
                 )}
               </Button>
             )}
-            {(file || selectedRole) && (
+            {(file || selectedOption) && (
               <Button
                 variant="outline-secondary"
                 onClick={() => {
