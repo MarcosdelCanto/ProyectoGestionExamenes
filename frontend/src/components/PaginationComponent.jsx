@@ -18,7 +18,7 @@ function PaginationComponent({
   }
 
   return (
-    <div className="d-flex justify-content-center mt-3">
+    <div className="d-flex justify-content-center">
       <Pagination>
         {pageNumbers.map((number) => (
           <Pagination.Item
