@@ -80,7 +80,7 @@ async function startServer() {
     app.use('/api/roles', rolesRouter);
     app.use('/api/cargaAlumno', cargaAlumnoRoutes);
     app.use('/api/cargaDocente', cargaDocenteRoutes);
-    app.use('/api/calendarioRoutes', calendarioRoutes);
+    app.use('/api', calendarioRoutes);
 
     const PORT = process.env.PORT || 3000;
     server.listen(PORT, () =>

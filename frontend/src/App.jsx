@@ -1,6 +1,8 @@
 // src/App.jsx
 import React from 'react';
 import { Routes, Route, BrowserRouter } from 'react-router-dom';
+import { DndProvider } from 'react-dnd';
+import { HTML5Backend } from 'react-dnd-html5-backend';
 import Login from './pages/Login';
 import HomePage from './pages/HomePage';
 import ModulosPage from './pages/ModulosPage';
@@ -19,22 +21,24 @@ function App() {
     <BrowserRouter
       future={{ v7_startTransition: true, v7_relativeSplatPath: true }}
     >
-      <Routes>
-        {/* Ruta pública de login */}
-        <Route path="/login" element={<Login />} />
+      <DndProvider backend={HTML5Backend}>
+        <Routes>
+          {/* Ruta pública de login */}
+          <Route path="/login" element={<Login />} />
 
-        {/* Rutas protegidas */}
-        <Route element={<PrivateRoute />}>
-          <Route path="/" element={<HomePage />} />
-          <Route path="/modulos" element={<ModulosPage />} />
-          <Route path="/salas" element={<SalasPage />} />
-          <Route path="/asignaturas" element={<AsignaturasPage />} />
-          <Route path="/usuarios" element={<UsuariosPage />} />
-          <Route path="/examenes" element={<ExamenesPage />} />
-          <Route path="/calendario" element={<CalendarioPage />} />
-          <Route path="/carga-datos" element={<CargaDatosPage />} />
-        </Route>
-      </Routes>
+          {/* Rutas protegidas */}
+          <Route element={<PrivateRoute />}>
+            <Route path="/" element={<HomePage />} />
+            <Route path="/modulos" element={<ModulosPage />} />
+            <Route path="/salas" element={<SalasPage />} />
+            <Route path="/asignaturas" element={<AsignaturasPage />} />
+            <Route path="/usuarios" element={<UsuariosPage />} />
+            <Route path="/examenes" element={<ExamenesPage />} />
+            <Route path="/calendario" element={<CalendarioPage />} />
+            <Route path="/carga-datos" element={<CargaDatosPage />} />
+          </Route>
+        </Routes>
+      </DndProvider>
     </BrowserRouter>
   );
 }
