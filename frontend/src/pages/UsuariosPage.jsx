@@ -42,18 +42,26 @@ export default function UsuariosPage() {
   const loadRoles = async () => {
     try {
       const rolesData = await fetchAllRoles();
-      setRoles(rolesData.data || []); // Asegúrate que rolesData.data es el array
+      console.log('Respuesta de fetchAllRoles en UsuariosPage:', rolesData); // LOG 1: ¿Qué devuelve el servicio?
+      if (rolesData && rolesData.length > 0) {
+        setRoles(rolesData);
+        console.log('Estado de roles actualizado en UsuariosPage:', rolesData); // LOG 2: ¿Se actualiza el estado?
+      } else {
+        console.warn(
+          'No se encontraron roles o la respuesta está vacía en UsuariosPage.'
+        );
+        setRoles([]);
+      }
     } catch (error) {
-      console.error('Error cargando roles:', error);
-      setRoles([]); // En caso de error, un array vacío
+      console.error('Error crítico cargando roles en UsuariosPage:', error);
+      setRoles([]);
     }
   };
 
   useEffect(() => {
+    loadRoles(); // Asegúrate que esto se llama
     fetchUsuarios();
-    loadRoles(); // Cargar roles al montar el componente
-    // No es necesario setCurrentPage(1) aquí si fetchUsuarios ya lo hace.
-  }, []);
+  }, []); // Dependencias vacías para que se ejecute al montar
 
   useEffect(() => {
     // Timer para limpiar el resultado de la carga masiva después de un tiempo
@@ -253,155 +261,155 @@ export default function UsuariosPage() {
   // Cambiar de página
   const paginate = (pageNumber) => setCurrentPage(pageNumber);
 
+  console.log('Estado de roles ANTES de renderizar UsuarioFilter:', roles); // LOG 3: ¿Qué valor tiene el estado roles aquí?
+
   return (
-    <>
-      <Layout>
-        <div className="container-fluid usuarios-page-container">
-          {/* Combinando Bootstrap con una clase personalizada */}
-          <p className="display-5 page-title-custom mb-2">
-            <i className="bi bi-person-lines-fill me-3"></i>
-            Gestión de Usuarios
-          </p>
-          <hr></hr>
-          {/* Aquí se mostrarían las alertas de carga masiva */}
-          {bulkUploadResult && (
-            <Alert
-              variant={
-                // Si tienes un campo 'errors' en tu bulkUploadResult, puedes usarlo para cambiar el variant
-                // Por ejemplo: bulkUploadResult.errors && bulkUploadResult.errors.length > 0 ? 'warning' : 'info'
-                // O simplemente 'info' o 'success' si solo manejas resúmenes exitosos aquí
-                bulkUploadResult.message ? 'success' : 'info' // Ajusta según la estructura de bulkUploadResult
-              }
-              className="mb-3"
-              onClose={() => setBulkUploadResult(null)}
-              dismissible
-            >
-              {bulkUploadResult.message ? (
-                <p>{bulkUploadResult.message}</p>
-              ) : (
-                <>
-                  Resumen de la carga: Nuevos:{' '}
-                  {bulkUploadResult.inserted !== undefined
-                    ? bulkUploadResult.inserted
-                    : 'N/A'}{' '}
-                  | Actualizados:{' '}
-                  {bulkUploadResult.updated !== undefined
-                    ? bulkUploadResult.updated
-                    : 'N/A'}{' '}
-                  | Ignorados:{' '}
-                  {bulkUploadResult.ignored !== undefined
-                    ? bulkUploadResult.ignored
-                    : 'N/A'}
-                  {bulkUploadResult.associations_created !== undefined && (
-                    <>
-                      {' | '}Asociaciones Creadas:{' '}
-                      {bulkUploadResult.associations_created !== undefined
-                        ? bulkUploadResult.associations_created
-                        : 'N/A'}
-                    </>
+    <Layout>
+      <div className="container-fluid usuarios-page-container">
+        {/* Combinando Bootstrap con una clase personalizada */}
+        <p className="display-5 page-title-custom mb-2">
+          <i className="bi bi-person-lines-fill me-3"></i>
+          Gestión de Usuarios
+        </p>
+        <hr></hr>
+        {/* Aquí se mostrarían las alertas de carga masiva */}
+        {bulkUploadResult && (
+          <Alert
+            variant={
+              // Si tienes un campo 'errors' en tu bulkUploadResult, puedes usarlo para cambiar el variant
+              // Por ejemplo: bulkUploadResult.errors && bulkUploadResult.errors.length > 0 ? 'warning' : 'info'
+              // O simplemente 'info' o 'success' si solo manejas resúmenes exitosos aquí
+              bulkUploadResult.message ? 'success' : 'info' // Ajusta según la estructura de bulkUploadResult
+            }
+            className="mb-3"
+            onClose={() => setBulkUploadResult(null)}
+            dismissible
+          >
+            {bulkUploadResult.message ? (
+              <p>{bulkUploadResult.message}</p>
+            ) : (
+              <>
+                Resumen de la carga: Nuevos:{' '}
+                {bulkUploadResult.inserted !== undefined
+                  ? bulkUploadResult.inserted
+                  : 'N/A'}{' '}
+                | Actualizados:{' '}
+                {bulkUploadResult.updated !== undefined
+                  ? bulkUploadResult.updated
+                  : 'N/A'}{' '}
+                | Ignorados:{' '}
+                {bulkUploadResult.ignored !== undefined
+                  ? bulkUploadResult.ignored
+                  : 'N/A'}
+                {bulkUploadResult.associations_created !== undefined && (
+                  <>
+                    {' | '}Asociaciones Creadas:{' '}
+                    {bulkUploadResult.associations_created !== undefined
+                      ? bulkUploadResult.associations_created
+                      : 'N/A'}
+                  </>
+                )}
+                {/* Si tu backend devuelve un array de errores detallados en bulkUploadResult.errors */}
+                {bulkUploadResult.errors &&
+                  bulkUploadResult.errors.length > 0 && (
+                    <div className="mt-2">
+                      <strong>Detalles de errores/ignorados:</strong>
+                      <ul
+                        style={{
+                          maxHeight: '100px',
+                          overflowY: 'auto',
+                          fontSize: '0.9em',
+                        }}
+                      >
+                        {bulkUploadResult.errors.map((errDetail, index) => (
+                          <li key={index}>
+                            {errDetail.idDocente ||
+                              errDetail.idAlumno ||
+                              `Fila ${errDetail.fila || index + 1}`}
+                            : {errDetail.email || ''} - {errDetail.error}
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
                   )}
-                  {/* Si tu backend devuelve un array de errores detallados en bulkUploadResult.errors */}
-                  {bulkUploadResult.errors &&
-                    bulkUploadResult.errors.length > 0 && (
-                      <div className="mt-2">
-                        <strong>Detalles de errores/ignorados:</strong>
-                        <ul
-                          style={{
-                            maxHeight: '100px',
-                            overflowY: 'auto',
-                            fontSize: '0.9em',
-                          }}
-                        >
-                          {bulkUploadResult.errors.map((errDetail, index) => (
-                            <li key={index}>
-                              {errDetail.idDocente ||
-                                errDetail.idAlumno ||
-                                `Fila ${errDetail.fila || index + 1}`}
-                              : {errDetail.email || ''} - {errDetail.error}
-                            </li>
-                          ))}
-                        </ul>
-                      </div>
-                    )}
-                </>
-              )}
-            </Alert>
-          )}
+              </>
+            )}
+          </Alert>
+        )}
 
-          {/* Acciones en su propia sección */}
-          <div className="usuario-actions-wrapper mb-3">
-            <UsuarioActions
-              onAdd={handleAddUsuario}
-              onEdit={handleEditUsuario}
-              onDelete={handleDeleteSelectedUsuarios}
-              selectedUsuarios={selectedUsuarios}
-              isLoadingList={loading}
-              isProcessingAction={isProcessingAction}
-              onBulkUploadComplete={handleUploadProcessComplete} // Para refrescar la lista
-              onUploadResult={handleBulkUploadDataResult} // Para obtener los datos del resumen y mostrar la alerta
-            />
-          </div>
-
-          {/* Filtro en su propia sección, ocupando todo el ancho */}
-          <div className="usuario-filter-wrapper">
-            {' '}
-            {/* Este wrapper ahora puede ser width: 100% */}
-            <UsuarioFilter
-              roles={roles}
-              onFilterChange={handleFilterChange}
-              currentFilters={filters}
-            />
-          </div>
-
-          {loading ? (
-            <p>Cargando…</p>
-          ) : (
-            // Aplicar clase a la tabla si es necesario (Bootstrap ya lo hace bien)
-            <UsuarioTable
-              usuarios={currentUsuarios} // Pasar solo los usuarios de la página actual
-              selectedUsuarios={selectedUsuarios}
-              onToggleUsuarioSelection={handleToggleUsuarioSelection}
-              onToggleSelectAll={handleToggleSelectAll}
-              onEdit={(u) => {
-                setEditing(u);
-                setSelectedUsuarios([u]); // Al editar desde una tabla con botones de fila, seleccionamos solo ese
-                setShowForm(true);
-              }}
-              onDelete={onDelete}
-              handleResetPassword={handleResetPassword}
-              className="usuario-table" // Opcional, si necesitas más especificidad
-            />
-          )}
-          {!loading && filteredUsuarios.length > itemsPerPage && (
-            // Aplicar clase al contenedor de paginación
-            <div className="pagination-container">
-              <PaginationComponent
-                itemsPerPage={itemsPerPage}
-                totalItems={filteredUsuarios.length}
-                paginate={paginate}
-                currentPage={currentPage}
-              />
-            </div>
-          )}
-          {showForm && (
-            <UsuarioForm
-              initial={editing}
-              onClose={() => {
-                setShowForm(false);
-                setEditing(null);
-                // No es necesario limpiar selectedUsuario aquí, ya que la selección es independiente del formulario
-              }}
-              onSave={onSave}
-            />
-          )}
+        {/* Acciones en su propia sección */}
+        <div className="usuario-actions-wrapper mb-3">
+          <UsuarioActions
+            onAdd={handleAddUsuario}
+            onEdit={handleEditUsuario}
+            onDelete={handleDeleteSelectedUsuarios}
+            selectedUsuarios={selectedUsuarios}
+            isLoadingList={loading}
+            isProcessingAction={isProcessingAction}
+            onBulkUploadComplete={handleUploadProcessComplete} // Para refrescar la lista
+            onUploadResult={handleBulkUploadDataResult} // Para obtener los datos del resumen y mostrar la alerta
+          />
         </div>
-      </Layout>
+
+        {/* Filtro en su propia sección, ocupando todo el ancho */}
+        <div className="usuario-filter-wrapper">
+          {' '}
+          {/* Este wrapper ahora puede ser width: 100% */}
+          <UsuarioFilter
+            roles={roles} // Así se pasan los roles
+            onFilterChange={handleFilterChange}
+            currentFilters={filters}
+          />
+        </div>
+
+        {loading ? (
+          <p>Cargando…</p>
+        ) : (
+          // Aplicar clase a la tabla si es necesario (Bootstrap ya lo hace bien)
+          <UsuarioTable
+            usuarios={currentUsuarios} // Pasar solo los usuarios de la página actual
+            selectedUsuarios={selectedUsuarios}
+            onToggleUsuarioSelection={handleToggleUsuarioSelection}
+            onToggleSelectAll={handleToggleSelectAll}
+            onEdit={(u) => {
+              setEditing(u);
+              setSelectedUsuarios([u]); // Al editar desde una tabla con botones de fila, seleccionamos solo ese
+              setShowForm(true);
+            }}
+            onDelete={onDelete}
+            handleResetPassword={handleResetPassword}
+            className="usuario-table" // Opcional, si necesitas más especificidad
+          />
+        )}
+        {!loading && filteredUsuarios.length > itemsPerPage && (
+          // Aplicar clase al contenedor de paginación
+          <div className="pagination-container">
+            <PaginationComponent
+              itemsPerPage={itemsPerPage}
+              totalItems={filteredUsuarios.length}
+              paginate={paginate}
+              currentPage={currentPage}
+            />
+          </div>
+        )}
+        {showForm && (
+          <UsuarioForm
+            initial={editing}
+            onClose={() => {
+              setShowForm(false);
+              setEditing(null);
+              // No es necesario limpiar selectedUsuario aquí, ya que la selección es independiente del formulario
+            }}
+            onSave={onSave}
+          />
+        )}
+      </div>
 
       {msgModal && (
         <div
           className="modal fade show custom-msg-modal" // Añade tu clase custom
           tabIndex="-1"
-          // style={{ display: 'block', backgroundColor: 'rgba(0,0,0,0.5)' }} // Puedes quitar los estilos inline
+          style={{ display: 'block', backgroundColor: 'rgba(0,0,0,0.5)' }} // Puedes quitar los estilos inline
         >
           <div className="modal-dialog modal-dialog-centered">
             <div className="modal-content">
@@ -411,13 +419,17 @@ export default function UsuariosPage() {
                   type="button"
                   className="btn-close"
                   onClick={() => setMsgModal(null)}
-                />
-              </div>
+                  aria-label="Close" // Es buena práctica añadir aria-label para accesibilidad
+                />{' '}
+                {/* CORREGIDO: Botón auto-cerrado */}
+              </div>{' '}
+              {/* CORREGIDO: div del header cierra después del botón */}
               <div className="modal-body">
                 <p>{msgModal.body}</p>
               </div>
               <div className="modal-footer">
                 <button
+                  type="button" // Es buena práctica especificar el type para botones
                   className="btn btn-primary"
                   onClick={() => setMsgModal(null)}
                 >
@@ -428,6 +440,6 @@ export default function UsuariosPage() {
           </div>
         </div>
       )}
-    </>
+    </Layout>
   );
 }

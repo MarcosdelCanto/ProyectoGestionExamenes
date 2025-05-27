@@ -180,7 +180,7 @@ function RolesPage() {
               {' '}
               {/* Clase de UsuariosPage */}
               <i className="bi bi-shield-lock-fill me-3"></i>
-              Gestión de Roles
+              Gestión de Roles y Accesos
             </p>
           </Col>
         </Row>

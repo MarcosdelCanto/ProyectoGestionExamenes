@@ -25,17 +25,19 @@ export default function UserBulkUploadModal({
   const [isLoading, setIsLoading] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
   const [error, setError] = useState('');
-  // const [success, setSuccess(''); // Ya no se maneja aquí, se pasa por onUploadResult
-  // const [summary, setSummary] = useState(null); // Ya no se maneja aquí, se pasa por onUploadResult
 
   useEffect(() => {
     fetchAllRoles()
       .then((r) => {
-        if (r.data && r.data.length > 0) {
-          setRoles(r.data);
+        if (r && r.length > 0) {
+          // CORREGIDO
+          setRoles(r); // CORREGIDO
         } else {
           // Considera si setError aquí es lo mejor o si el padre debe manejarlo
-          console.error('No se encontraron roles para cargar.');
+          console.error(
+            'No se encontraron roles para cargar. La respuesta fue:',
+            r
+          ); // Mejor log para depurar
           setRoles([]);
         }
       })
@@ -43,6 +45,8 @@ export default function UserBulkUploadModal({
         console.error('Error fetching roles:', err);
         // Considera si setError aquí es lo mejor
         setRoles([]);
+        // Podrías querer mostrar un error al usuario aquí también si la carga de roles falla
+        // setError('No se pudieron cargar los roles necesarios para la carga masiva.');
       });
   }, []);
 
