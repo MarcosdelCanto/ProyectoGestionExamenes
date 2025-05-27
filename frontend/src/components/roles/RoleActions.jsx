@@ -19,7 +19,7 @@ function RoleActions({
           className="me-2 mb-2 btn-icon-only-candidate"
           title="Crear Nuevo Rol"
         >
-          <i className="bi bi-plus-circle"></i>
+          <i className="bi bi-plus-lg"></i>
           <span className="btn-responsive-text ms-2">Crear Nuevo Rol</span>
         </Button>
         <Button
