@@ -4,6 +4,7 @@ import ModuloTable from '../components/modulos/ModuloTable';
 import ModuloForm from '../components/modulos/ModuloForm';
 import ModuloActions from '../components/modulos/moduloActions';
 import { AddModulo, EditModulo, DeleteModulo } from '../services/moduloService';
+import PaginationComponent from '../components/PaginationComponent'; // Importar PaginationComponent
 
 const alertStyle = {
   animation: 'fadeInOut 5s ease-in-out',
@@ -56,6 +57,10 @@ export default function ModulosPage() {
   const [modal, setModal] = useState({ type: null, data: null });
   const [activeTab, setActiveTab] = useState('modulos');
 
+  // Estados para paginación
+  const [itemsPerPage, setItemsPerPage] = useState(10); // O el número que prefieras
+  const [currentPageModulos, setCurrentPageModulos] = useState(1);
+
   useEffect(() => {
     loadModulos();
   }, []);
@@ -76,6 +81,7 @@ export default function ModulosPage() {
 
       setModulos(modulosData);
       setEstados(estadosData);
+      setCurrentPageModulos(1); // Resetear paginación al cargar datos
       setError('');
     } catch (err) {
       console.error('Error:', err);
@@ -156,10 +162,27 @@ export default function ModulosPage() {
     }
   };
 
+  // Función de paginación para módulos
+  const paginateModulos = (pageNumber) => setCurrentPageModulos(pageNumber);
+
+  // Calcular datos para la página actual de módulos
+  const indexOfLastModulo = currentPageModulos * itemsPerPage;
+  const indexOfFirstModulo = indexOfLastModulo - itemsPerPage;
+  const currentModulos = modulos.slice(indexOfFirstModulo, indexOfLastModulo);
+
   return (
     <Layout>
       <style>{keyframes}</style>
-      <h1 className="mb-4">Gestión de Módulos</h1>
+      <div>
+        <p className="display-5 page-title-custom mb-2">
+          {' '}
+          {/* Clase de UsuariosPage */}
+          <i className="bi bi-stack me-3"></i>{' '}
+          {/* Ícono cambiado para módulos */}
+          Gestión de Módulos {/* Título cambiado */}
+        </p>
+      </div>
+      <hr />
       {error && (
         <div className="alert alert-danger" style={alertStyle}>
           {error}
@@ -171,7 +194,7 @@ export default function ModulosPage() {
         </div>
       )}
 
-      <ul className="nav nav-tabs mb-3">
+      {/*<ul className="nav nav-tabs mb-3">
         <li className="nav-item">
           <button
             className={`nav-link ${activeTab === 'modulos' ? 'active' : ''}`}
@@ -180,7 +203,7 @@ export default function ModulosPage() {
             Módulos
           </button>
         </li>
-      </ul>
+      </ul>*/}
       {activeTab === 'modulos' && (
         <>
           <ModuloActions
@@ -190,10 +213,19 @@ export default function ModulosPage() {
             selectedModulo={selectedModulo}
           />
           <ModuloTable
-            modulos={modulos}
+            modulos={currentModulos} // Usar datos paginados
             selectedModulo={selectedModulo}
             onSelectModulo={setSelectedModulo}
+            loading={loading} // Pasar el estado de carga
           />
+          {!loading && modulos.length > itemsPerPage && (
+            <PaginationComponent
+              itemsPerPage={itemsPerPage}
+              totalItems={modulos.length}
+              paginate={paginateModulos}
+              currentPage={currentPageModulos}
+            />
+          )}
         </>
       )}
 

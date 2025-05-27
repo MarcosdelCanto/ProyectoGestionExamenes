@@ -60,11 +60,19 @@ function CargaDatosPage() {
   return (
     <Layout>
       <style>{keyframes}</style>
-      <Container fluid className="pt-3 px-4">
+      <Container fluid>
         <Row>
           <Col>
-            <h1 className="mb-4">Carga Masiva de Datos</h1>
-
+            <div>
+              <p className="display-5 page-title-custom mb-2">
+                {' '}
+                {/* Clase de UsuariosPage */}
+                <i className="bi bi-cloud-upload-fill me-3"></i>{' '}
+                {/* Ícono cambiado */}
+                Carga Masiva de Datos {/* Título cambiado */}
+              </p>
+            </div>
+            <hr />
             {pageError && (
               <Alert
                 variant="danger"
