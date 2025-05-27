@@ -14,7 +14,7 @@ export const fetchAllRoles = async () => {
     // return response.data;
     // Si tu API los devuelve dentro de un objeto como { data: [...] }:
   } catch (error) {
-    console.error('Error fetching roles:', error);
+    //console.error('Error fetching roles:', error);
     throw error;
   }
 };

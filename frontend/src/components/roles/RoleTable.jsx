@@ -4,8 +4,6 @@ import { Table, Button, Alert } from 'react-bootstrap';
 
 function RoleTable({
   roles,
-  onEditRole,
-  onDeleteRole,
   isLoading,
   selectedRole, // Nueva prop
   onSelectRole, // Nueva prop
@@ -41,11 +39,7 @@ function RoleTable({
       }}
     >
       <Table striped bordered hover responsive="sm" className="mb-0">
-        {' '}
-        {/* mb-0 como en ModuloTable */}
         <thead className="table-light position-sticky top-0">
-          {' '}
-          {/* Encabezado fijo */}
           <tr>
             <th>ID</th>
             <th>Nombre del Rol</th>
@@ -62,8 +56,6 @@ function RoleTable({
               } // Resaltar fila seleccionada
               style={{ cursor: 'pointer' }}
             >
-              {' '}
-              {/* Pequeño ajuste para consistencia en el formato de la key */}
               <td>{role.ID_ROL}</td>
               <td>{role.NOMBRE_ROL}</td>
               {/* Celda de Acciones eliminada */}

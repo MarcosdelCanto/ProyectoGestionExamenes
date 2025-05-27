@@ -174,16 +174,14 @@ function RolesPage() {
       <Container fluid>
         {' '}
         {/* Similar a usuarios-page-container */}
-        <Row className="mb-3 align-items-center">
-          <Col>
-            <p className="display-5 page-title-custom">
-              {' '}
-              {/* Clase de UsuariosPage */}
-              <i className="bi bi-shield-lock-fill me-3"></i>
-              Gestión de Roles y Accesos
-            </p>
-          </Col>
-        </Row>
+        <div>
+          <p className="display-5 page-title-custom mb-2">
+            {' '}
+            {/* Clase de UsuariosPage */}
+            <i className="bi bi-shield-lock-fill me-3"></i>
+            Gestión de Roles y Accesos
+          </p>
+        </div>
         <hr />
         {error && (
           <Alert variant="danger" onClose={() => setError(null)} dismissible>
