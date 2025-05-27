@@ -1,31 +1,48 @@
-// src/components/roles/RoleForm.jsx
 import React, { useState, useEffect } from 'react';
-import { Modal, Button, Form as BootstrapForm, Alert } from 'react-bootstrap'; // Usar Form de react-bootstrap
+import {
+  Modal,
+  Button,
+  Form as BootstrapForm,
+  Alert,
+  FormCheck,
+} from 'react-bootstrap';
+import {
+  fetchAllPermisos,
+  fetchPermisosByRol,
+} from '../../services/permisoService';
 
 function RoleForm({
-  show, // Prop para controlar la visibilidad del modal
-  onHide, // Prop para cerrar el modal
+  show,
+  onHide,
   onSubmit,
-  currentRole, // Para saber si estamos editando o creando
-  initialData, // Datos iniciales para el formulario (cuando se edita)
+  currentRole,
+  initialData,
   isProcessing,
-  error, // Error a mostrar en el modal
+  error,
 }) {
   const [formData, setFormData] = useState({
     NOMBRE_ROL: '',
-    // DESCRIPCION_ROL: '', // Campo eliminado
+    permisos: [],
   });
+  const [allPermisos, setAllPermisos] = useState([]);
 
   useEffect(() => {
-    if (initialData) {
-      setFormData({
-        NOMBRE_ROL: initialData.NOMBRE_ROL || '',
-        // DESCRIPCION_ROL: initialData.DESCRIPCION_ROL || '', // Campo eliminado
-      });
-    } else {
-      setFormData({ NOMBRE_ROL: '' }); // Reset para creación, solo con NOMBRE_ROL
-    }
-  }, [initialData, show]); // Resetear el formulario si initialData cambia o el modal se muestra/oculta
+    const loadPermisos = async () => {
+      const permisos = await fetchAllPermisos();
+      setAllPermisos(permisos);
+
+      if (currentRole) {
+        const permisosRol = await fetchPermisosByRol(currentRole.ID_ROL);
+        setFormData({
+          NOMBRE_ROL: currentRole.NOMBRE_ROL || '',
+          permisos: permisosRol.map((p) => p.ID_PERMISO),
+        });
+      } else {
+        setFormData({ NOMBRE_ROL: '', permisos: [] });
+      }
+    };
+    loadPermisos();
+  }, [currentRole, show]);
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
@@ -35,6 +52,15 @@ function RoleForm({
   const handleSubmitForm = (e) => {
     e.preventDefault();
     onSubmit(formData); // Pass formData to the parent's submit handler
+  };
+
+  const handlePermisoChange = (idPermiso) => {
+    setFormData((prev) => ({
+      ...prev,
+      permisos: prev.permisos.includes(idPermiso)
+        ? prev.permisos.filter((id) => id !== idPermiso)
+        : [...prev.permisos, idPermiso],
+    }));
   };
 
   return (
@@ -66,6 +92,29 @@ function RoleForm({
             />
           </BootstrapForm.Group>
           {/* Grupo del formulario para Descripción eliminado */}
+        </Modal.Body>
+        <Modal.Body>
+          {error && (
+            <Alert variant="danger" onClose={onHide} dismissible>
+              {error}
+            </Alert>
+          )}
+
+          <BootstrapForm.Group className="mb-3">
+            <BootstrapForm.Label>Permisos:</BootstrapForm.Label>
+            <div className="ms-3">
+              {allPermisos.map((permiso) => (
+                <FormCheck
+                  key={permiso.ID_PERMISO}
+                  type="checkbox"
+                  id={`permiso-${permiso.ID_PERMISO}`}
+                  label={permiso.NOMBRE_PERMISO}
+                  checked={formData.permisos.includes(permiso.ID_PERMISO)}
+                  onChange={() => handlePermisoChange(permiso.ID_PERMISO)}
+                />
+              ))}
+            </div>
+          </BootstrapForm.Group>
         </Modal.Body>
         <Modal.Footer>
           <Button variant="secondary" onClick={onHide} disabled={isProcessing}>

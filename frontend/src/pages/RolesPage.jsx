@@ -89,13 +89,17 @@ function RolesPage() {
 
     setIsProcessing(true);
     try {
+      // En la función handleSubmitForm, modifica la llamada a updateRole/createRole:
       if (currentRoleForSubmit) {
-        // Si estamos editando
-        await updateRole(currentRoleForSubmit.ID_ROL, formDataFromForm);
-        setSuccessMessage('Rol actualizado exitosamente.');
+        await updateRole(currentRoleForSubmit.ID_ROL, {
+          NOMBRE_ROL: formDataFromForm.NOMBRE_ROL,
+          permisos: formDataFromForm.permisos,
+        });
       } else {
-        await createRole(formDataFromForm);
-        setSuccessMessage('Rol creado exitosamente.');
+        await createRole({
+          NOMBRE_ROL: formDataFromForm.NOMBRE_ROL,
+          permisos: formDataFromForm.permisos,
+        });
       }
       loadRoles();
       handleCloseModal();
