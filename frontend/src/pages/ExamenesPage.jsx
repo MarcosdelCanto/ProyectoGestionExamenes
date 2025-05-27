@@ -152,7 +152,15 @@ export default function ExamenesPage() {
   return (
     <Layout>
       <style>{keyframes}</style>
-      <h1 className="mb-4">Gestión de Exámenes</h1>
+      {/* Título de la página actualizado */}
+      <div>
+        <p className="display-5 page-title-custom mb-2">
+          <i className="bi bi-file-earmark-text-fill me-3"></i>{' '}
+          {/* Ícono para gestión de exámenes */}
+          Gestión de Exámenes
+        </p>
+      </div>
+      <hr /> {/* Separador */}
       {error && (
         <div className="alert alert-danger" style={alertStyle}>
           {error}
@@ -173,7 +181,6 @@ export default function ExamenesPage() {
           </button>
         </li>
       </ul>
-
       {activeTab === 'examenes' && (
         <>
           <ExamenActions
@@ -190,7 +197,6 @@ export default function ExamenesPage() {
           />
         </>
       )}
-
       {modal.type && modal.entity === 'examen' && (
         <Modal
           title={

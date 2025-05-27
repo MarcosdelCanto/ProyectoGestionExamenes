@@ -16,6 +16,7 @@ import {
   DeleteEdificio,
 } from '../services/edificioService';
 import { AddSede, EditSede, DeleteSede } from '../services/sedeService';
+import PaginationComponent from '../components/PaginationComponent'; // Asegúrate de que la ruta sea correcta
 
 const alertStyle = {
   animation: 'fadeInOut 5s ease-in-out',
@@ -71,12 +72,19 @@ export default function SalasPage() {
   const [modal, setModal] = useState({ type: null, data: null });
   const [activeTab, setActiveTab] = useState('salas');
 
+  // Estados para paginación
+  const [itemsPerPage, setItemsPerPage] = useState(10); // O el número que prefieras
+  const [currentPageSalas, setCurrentPageSalas] = useState(1);
+  const [currentPageEdificios, setCurrentPageEdificios] = useState(1);
+  const [currentPageSedes, setCurrentPageSedes] = useState(1);
+
   // Efectos
   useEffect(() => {
     loadData();
   }, []);
 
   const loadData = async () => {
+    setLoading(true); // Mover setLoading(true) al inicio
     try {
       const [salasDataRes, edificiosDataRes, sedesDataRes] = await Promise.all([
         fetch('http://localhost:3000/api/sala'),
@@ -89,6 +97,10 @@ export default function SalasPage() {
       setSalas(salasData);
       setEdificios(edificiosData);
       setSedes(sedesData);
+      // Resetear paginación al cargar datos
+      setCurrentPageSalas(1);
+      setCurrentPageEdificios(1);
+      setCurrentPageSedes(1);
     } catch (error) {
       console.error('Error al cargar datos:', error);
       setError('Error al cargar datos');
@@ -298,10 +310,47 @@ export default function SalasPage() {
     }
   };
 
+  // Funciones de paginación
+  const paginateSalas = (pageNumber) => setCurrentPageSalas(pageNumber);
+  const paginateEdificios = (pageNumber) => setCurrentPageEdificios(pageNumber);
+  const paginateSedes = (pageNumber) => setCurrentPageSedes(pageNumber);
+
+  // Calcular datos para la página actual
+  const indexOfLastSala = currentPageSalas * itemsPerPage;
+  const indexOfFirstSala = indexOfLastSala - itemsPerPage;
+  const currentSalas = salas.slice(indexOfFirstSala, indexOfLastSala);
+
+  const indexOfLastEdificio = currentPageEdificios * itemsPerPage;
+  const indexOfFirstEdificio = indexOfLastEdificio - itemsPerPage;
+  const currentEdificios = edificios.slice(
+    indexOfFirstEdificio,
+    indexOfLastEdificio
+  );
+
+  const indexOfLastSede = currentPageSedes * itemsPerPage;
+  const indexOfFirstSede = indexOfLastSede - itemsPerPage;
+  const currentSedes = sedes.slice(indexOfFirstSede, indexOfLastSede);
+
+  const handleSetTab = (tabName) => {
+    setActiveTab(tabName);
+    // Opcional: resetear la página al cambiar de pestaña
+    // if (tabName === 'salas') setCurrentPageSalas(1);
+    // if (tabName === 'edificios') setCurrentPageEdificios(1);
+    // if (tabName === 'sedes') setCurrentPageSedes(1);
+  };
+
   return (
     <Layout>
       <style>{keyframes}</style>
-      <h1 className="mb-4">Gestión de Espacios</h1>
+      {/* Título de la página actualizado */}
+      <div>
+        <p className="display-5 page-title-custom mb-2">
+          <i className="bi bi-door-open-fill me-3"></i>{' '}
+          {/* Ícono para gestión de espacios/salas */}
+          Gestión de Espacios
+        </p>
+      </div>
+      <hr /> {/* Separador */}
       {error && (
         <div className="alert alert-danger" style={alertStyle}>
           {error}
@@ -312,12 +361,11 @@ export default function SalasPage() {
           {success}
         </div>
       )}
-
       <ul className="nav nav-tabs mb-3">
         <li className="nav-item">
           <button
             className={`nav-link ${activeTab === 'salas' ? 'active' : ''}`}
-            onClick={() => setActiveTab('salas')}
+            onClick={() => handleSetTab('salas')}
           >
             Salas
           </button>
@@ -325,7 +373,7 @@ export default function SalasPage() {
         <li className="nav-item">
           <button
             className={`nav-link ${activeTab === 'edificios' ? 'active' : ''}`}
-            onClick={() => setActiveTab('edificios')}
+            onClick={() => handleSetTab('edificios')}
           >
             Edificios
           </button>
@@ -333,13 +381,12 @@ export default function SalasPage() {
         <li className="nav-item">
           <button
             className={`nav-link ${activeTab === 'sedes' ? 'active' : ''}`}
-            onClick={() => setActiveTab('sedes')}
+            onClick={() => handleSetTab('sedes')}
           >
             Sedes
           </button>
         </li>
       </ul>
-
       {activeTab === 'salas' && (
         <>
           <SalaActions
@@ -349,14 +396,21 @@ export default function SalasPage() {
             selectedSala={selectedSala}
           />
           <SalaList
-            salas={salas}
+            salas={currentSalas} // Usar datos paginados
             selectedSala={selectedSala}
             onSelectSala={setSelectedSala}
             loading={loading}
           />
+          {!loading && salas.length > itemsPerPage && (
+            <PaginationComponent
+              itemsPerPage={itemsPerPage}
+              totalItems={salas.length}
+              paginate={paginateSalas}
+              currentPage={currentPageSalas}
+            />
+          )}
         </>
       )}
-
       {modal.type && modal.entity === 'sala' && (
         <Modal
           title={
@@ -389,7 +443,6 @@ export default function SalasPage() {
           )}
         </Modal>
       )}
-
       {activeTab === 'edificios' && (
         <>
           <EdificioActions
@@ -399,14 +452,21 @@ export default function SalasPage() {
             selectedEdificio={selectedEdificio}
           />
           <EdificioList
-            edificios={edificios}
+            edificios={currentEdificios} // Usar datos paginados
             selectedEdificio={selectedEdificio}
             onSelectEdificio={setSelectedEdificio}
             loading={loading}
           />
+          {!loading && edificios.length > itemsPerPage && (
+            <PaginationComponent
+              itemsPerPage={itemsPerPage}
+              totalItems={edificios.length}
+              paginate={paginateEdificios}
+              currentPage={currentPageEdificios}
+            />
+          )}
         </>
       )}
-
       {modal.type && modal.entity === 'edificio' && (
         <Modal
           title={
@@ -444,7 +504,6 @@ export default function SalasPage() {
           )}
         </Modal>
       )}
-
       {activeTab === 'sedes' && (
         <>
           <SedeActions
@@ -454,14 +513,21 @@ export default function SalasPage() {
             selectedSede={selectedSede}
           />
           <SedeList
-            sedes={sedes}
+            sedes={currentSedes} // Usar datos paginados
             selectedSede={selectedSede}
             onSelectSede={setSelectedSede}
             loading={loading}
           />
+          {!loading && sedes.length > itemsPerPage && (
+            <PaginationComponent
+              itemsPerPage={itemsPerPage}
+              totalItems={sedes.length}
+              paginate={paginateSedes}
+              currentPage={currentPageSedes}
+            />
+          )}
         </>
       )}
-
       {modal.type && modal.entity === 'sede' && (
         <Modal
           title={
