@@ -35,11 +35,8 @@ function AsignaturaList({
               />
             </th>
             <th className="align-middle">ID</th>
-            <th className="align-middle">Código</th>
             <th className="align-middle">Nombre</th>
-            <th className="align-middle">Créditos</th>
             <th className="align-middle">Carrera</th>
-            {/* Agrega más encabezados si es necesario */}
           </tr>
         </thead>
         <tbody>
@@ -73,10 +70,8 @@ function AsignaturaList({
                 />
               </td>
               <td>{a.ID_ASIGNATURA}</td>
-              <td>{a.CODIGO_ASIGNATURA}</td>
               <td>{a.NOMBRE_ASIGNATURA}</td>
-              <td>{a.CREDITOS_ASIGNATURA}</td>
-              <td>{a.NOMBRE_CARRERA || a.CARRERA_ID_CARRERA}</td>{' '}
+              <td>{a.NOMBRE_CARRERA || a.CARRERA_ID_CARRERA}</td>
               {/* Muestra nombre de carrera si está disponible */}
               {/* Renderiza más celdas si es necesario */}
             </tr>
