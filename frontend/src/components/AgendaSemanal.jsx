@@ -45,9 +45,7 @@ const DraggableExamRow = ({ exam, onSelect }) => {
       ref={dragRef}
       style={{ opacity: isDragging ? 0.5 : 1, cursor: 'grab' }}
       className={
-        exam.ID_Examen === onSelect.selectedExam?.ID_Examen
-          ? 'fila-seleccionada'
-          : ''
+        exam.ID_Examen === selectedExam?.ID_EXAMEN ? 'fila-seleccionada' : ''
       }
       onClick={() => onSelect(exam)}
     >
@@ -55,7 +53,7 @@ const DraggableExamRow = ({ exam, onSelect }) => {
       <td>{exam.Asignatura?.Nombre_Asignatura}</td>
       <td>{exam.Cantidad_Modulos}</td>
       <td>
-        {exam.ID_Estado === 3 ? (
+        {exam.ID_ESTADO === 3 ? (
           <FaCircle className="icono-reservado" />
         ) : (
           <FaArrowCircleRight
@@ -87,7 +85,7 @@ const CalendarCell = ({
       drop: ({ exam }) => {
         setSelectedExam(exam);
         setFechaSeleccionada(new Date(fecha));
-        seleccionarModulo(fecha, modulo.Numero);
+        seleccionarModulo(fecha, modulo.ORDEN);
       },
       collect: (m) => ({ isOver: m.isOver(), canDrop: m.canDrop() }),
     }),
@@ -102,17 +100,17 @@ const CalendarCell = ({
 
   const reserva = reservas.find(
     (r) =>
-      r.ID_Sala === selectedSala?.ID_Sala &&
+      r.ID_SALA === selectedSala?.ID_SALA &&
       r.Fecha === fecha &&
-      r.Modulos.some((m) => m.ID_Modulo === modulo.ID_Modulo)
+      r.Modulos.some((m) => m.ID_MODULO === modulo.ID_MODULO)
   );
   if (reserva) {
     return (
       <td ref={dropRef} style={highlight} className="reservado">
         <div>
-          <span className="detalle">{reserva.Examen?.Nombre_Examen}</span>
+          <span className="detalle">{reserva.Examen?.NOMBRE_EXAMEN}</span>
           <span className="info-reserva">
-            {reserva.Examen?.Seccion?.Nombre_Seccion}
+            {reserva.Examen?.Seccion?.SECCION_ID_SECCION}
           </span>
         </div>
       </td>
@@ -120,12 +118,12 @@ const CalendarCell = ({
   }
 
   const estaSel = modulosSeleccionados.some(
-    (m) => m.fecha === fecha && m.numero === modulo.Numero
+    (m) => m.fecha === fecha && m.ORDEN === modulo.ORDEN
   );
   return (
     <td ref={dropRef} style={highlight} className="disponible">
       <button
-        onClick={() => seleccionarModulo(fecha, modulo.Numero)}
+        onClick={() => seleccionarModulo(fecha, modulo.ORDEN)}
         disabled={!selectedSala || !selectedExam}
         className={estaSel ? 'boton-modulo-seleccionado' : ''}
       >
@@ -149,112 +147,41 @@ export function AgendaSemanal() {
 
   useEffect(() => {
     // Datos simulados para maqueta
-    const salasData = [
-      {
-        ID_Sala: 1,
-        Codigo_sala: 'S101',
-        Nombre_sala: 'Sala Alpha',
-        Capacidad: 50,
-        Edificio: { Nombre_Edificio: 'Edificio Principal' },
-        ID_Estado: 1,
-      },
-      {
-        ID_Sala: 2,
-        Codigo_sala: 'S102',
-        Nombre_sala: 'Sala Beta',
-        Capacidad: 30,
-        Edificio: { Nombre_Edificio: 'Edificio Anexo' },
-        ID_Estado: 1,
-      },
-      {
-        ID_Sala: 3,
-        Codigo_sala: 'S201',
-        Nombre_sala: 'Sala Gamma',
-        Capacidad: 100,
-        Edificio: { Nombre_Edificio: 'Edificio Principal' },
-        ID_Estado: 2,
-      },
-    ];
-    const examenesData = [
-      {
-        ID_Examen: 1,
-        Nombre_Examen: 'Parcial 1',
-        Seccion: {
-          Nombre_Seccion: 'Mat-01',
-          Usuarios: [{ Nombre: 'Prof. Turing' }],
-        },
-        Asignatura: { Nombre_Asignatura: 'Cálculo I' },
-        ID_Estado: 4,
-        Cantidad_Modulos: 2,
-      },
-      {
-        ID_Examen: 2,
-        Nombre_Examen: 'Final',
-        Seccion: {
-          Nombre_Seccion: 'Fis-02',
-          Usuarios: [{ Nombre: 'Prof. Newton' }],
-        },
-        Asignatura: { Nombre_Asignatura: 'Física General' },
-        ID_Estado: 3,
-        Cantidad_Modulos: 1,
-      },
-      {
-        ID_Examen: 3,
-        Nombre_Examen: 'Quiz Semanal',
-        Seccion: {
-          Nombre_Seccion: 'Qui-03',
-          Usuarios: [{ Nombre: 'Prof. Curie' }],
-        },
-        Asignatura: { Nombre_Asignatura: 'Química Orgánica' },
-        ID_Estado: 4,
-        Cantidad_Modulos: 1,
-      },
-    ];
-    const modulosData = [
-      {
-        ID_Modulo: 1,
-        Numero: 1,
-        Hora_inicio: '08:00:00',
-        Hora_final: '09:30:00',
-      },
-      {
-        ID_Modulo: 2,
-        Numero: 2,
-        Hora_inicio: '09:45:00',
-        Hora_final: '11:15:00',
-      },
-      {
-        ID_Modulo: 3,
-        Numero: 3,
-        Hora_inicio: '11:30:00',
-        Hora_final: '13:00:00',
-      },
-      {
-        ID_Modulo: 4,
-        Numero: 4,
-        Hora_inicio: '14:00:00',
-        Hora_final: '15:30:00',
-      },
-      {
-        ID_Modulo: 5,
-        Numero: 5,
-        Hora_inicio: '15:45:00',
-        Hora_final: '17:15:00',
-      },
-    ];
+    const fetchData = async () => {
+      try {
+        const [salasRes, examenesRes, modulosRes] = await Promise.all([
+          fetch('http://localhost:3000/api/salas'),
+          fetch('http://localhost:3000/api/examenes'),
+          fetch('http://localhost:3000/api/modulos'),
+        ]);
+
+        if (!salasRes.ok || !examenesRes.ok || !modulosRes.ok) {
+          throw new Error('Error en alguna respuesta de la API');
+        }
+
+        const [salasData, examenesData, modulosData] = await Promise.all([
+          salasRes.json(),
+          examenesRes.json(),
+          modulosRes.json(),
+        ]);
+        setSalas(salasData);
+        setExamenes(examenesData);
+        setModulos(modulosData);
+      } catch (error) {
+        console.error('Error al cargar datos:', error);
+        // Datos simulados en caso de error
+      }
+    };
     const hoy = format(new Date(), 'yyyy-MM-dd');
     const reservasData = [
       {
         ID_Reserva: 1,
-        ID_Sala: 3,
+        ID_SALA: 3,
         Fecha: hoy,
-        Examen: examenesData[1],
-        Modulos: [{ ID_Modulo: 1 }, { ID_Modulo: 2 }],
+        Modulos: [{ ID_MODULO: 1 }, { ID_MODULO: 2 }],
       },
     ];
-    setSalas(salasData);
-    setExamenes(examenesData);
-    setModulos(modulosData);
+    fetchData();
     setReservas(reservasData);
   }, []);
 
@@ -267,10 +194,10 @@ export function AgendaSemanal() {
     () =>
       salas.filter(
         (s) =>
-          s.Codigo_sala.toLowerCase().includes(searchTerm.toLowerCase()) ||
-          s.Nombre_sala.toLowerCase().includes(searchTerm.toLowerCase()) ||
-          s.Capacidad.toString().includes(searchTerm) ||
-          s.Edificio?.Nombre_Edificio.toLowerCase().includes(
+          s.COD_SALA.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          s.NOMBRE_SALA.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          s.CAPACIDAD_SALA.toString().includes(searchTerm) ||
+          s.EDIFICIO?.NOMBRE_SALA.toLowerCase().includes(
             searchTerm.toLowerCase()
           )
       ),
@@ -281,13 +208,13 @@ export function AgendaSemanal() {
     () =>
       examenes.filter(
         (ex) =>
-          (ex.Seccion?.Nombre_Seccion.toLowerCase().includes(
+          (ex.SECCION?.NOMBRE_SECCION.toLowerCase().includes(
             searchTermExamen.toLowerCase()
           ) ||
-            ex.Asignatura?.Nombre_Asignatura.toLowerCase().includes(
+            ex.ASIGNATURA?.NOMBRE_ASIGNATURA.toLowerCase().includes(
               searchTermExamen.toLowerCase()
             )) &&
-          ex.ID_Estado !== 3
+          ex.ID_ESTADO !== 3
       ),
     [examenes, searchTermExamen]
   );
@@ -302,10 +229,10 @@ export function AgendaSemanal() {
     (sala) => {
       setSalas((prev) =>
         prev.map((s) =>
-          s.ID_Sala === sala.ID_Sala
-            ? { ...s, ID_Estado: 2 }
-            : s.ID_Sala === selectedSala?.ID_Sala
-              ? { ...s, ID_Estado: 1 }
+          s.ID_SALA === sala.ID_SALA
+            ? { ...s, ID_ESTADO: 2 }
+            : s.ID_SALA === selectedSala?.ID_SALA
+              ? { ...s, ID_ESTADO: 1 }
               : s
         )
       );
@@ -316,7 +243,7 @@ export function AgendaSemanal() {
   );
 
   const manejarSeleccionExamen = useCallback((ex) => {
-    setSelectedExam((prev) => (prev?.ID_Examen === ex.ID_Examen ? null : ex));
+    setSelectedExam((prev) => (prev?.ID_EXAMEN === ex.ID_EXAMEN ? null : ex));
     setModulosSeleccionados([]);
   }, []);
 
@@ -339,9 +266,9 @@ export function AgendaSemanal() {
           if (idx !== -1) {
             return prev.filter((_, i) => i !== idx);
           }
-          if (prev.length >= (selectedExam?.Cantidad_Modulos || 1)) {
+          if (prev.length >= (selectedExam?.CANTIDAD_MODULOS_EXAMENES || 1)) {
             alert(
-              `Este examen requiere ${selectedExam.Cantidad_Modulos} módulo(s). Ya has seleccionado el máximo.`
+              `Este examen requiere ${selectedExam.CANTIDAD_MODULOS_EXAMENES} módulo(s). Ya has seleccionado el máximo.`
             );
             return prev;
           }
@@ -375,10 +302,10 @@ export function AgendaSemanal() {
     }
     return {
       Fecha: modulosSeleccionados[0].fecha,
-      ID_Sala: selectedSala.ID_Sala,
-      ID_Examen: selectedExam.ID_Examen,
+      ID_SALA: selectedSala.ID_SALA,
+      ID_Examen: selectedExam.ID_EXAMEN,
       Modulos: modulosSeleccionados.map((m) => ({
-        ID_Modulo: modulos.find((x) => x.Numero === m.numero)?.ID_Modulo,
+        ID_Modulo: modulos.find((x) => x.Numero === m.numero)?.ID_MODULO,
       })),
     };
   }, [selectedSala, selectedExam, modulosSeleccionados, modulos]);
@@ -388,15 +315,15 @@ export function AgendaSemanal() {
     if (!estructura) return;
     setExamenes((prev) =>
       prev.map((e) =>
-        e.ID_Examen === estructura.ID_Examen ? { ...e, ID_Estado: 3 } : e
+        e.ID_EXAMEN === estructura.ID_EXAMEN ? { ...e, ESTADO_ID_ESTADO: 3 } : e
       )
     );
     setReservas((prev) => [
       ...prev,
       {
         ...estructura,
-        ID_Reserva: Date.now(),
-        Examen: examenes.find((e2) => e2.ID_Examen === estructura.ID_Examen),
+        ID_RESERVA: Date.now(),
+        Examen: examenes.find((e2) => e2.ID_EXAMEN === estructura.ID_EXAMEN),
       },
     ]);
     setModulosSeleccionados([]);
@@ -419,16 +346,16 @@ export function AgendaSemanal() {
 
   const renderFilasTabla = () =>
     modulos.map((modulo) => (
-      <tr key={modulo.ID_Modulo}>
-        <td className="numero-modulo">{modulo.Numero}</td>
+      <tr key={modulo.ID_MODULO}>
+        <td className="orden-modulo">{modulo.ORDEN}</td>
         <td className="horario-modulo">
-          {format(new Date(`1970-01-01T${modulo.Hora_inicio}`), 'HH:mm')}
+          {format(new Date(`1970-01-01T${modulo.INICIO_MODULO}`), 'HH:mm')}
           <br />
-          {format(new Date(`1970-01-01T${modulo.Hora_final}`), 'HH:mm')}
+          {format(new Date(`1970-01-01T${modulo.FIN_MODULO}`), 'HH:mm')}
         </td>
         {fechasDeLaSemana.map(({ fecha }) => (
           <CalendarCell
-            key={`${fecha}-${modulo.ID_Modulo}`}
+            key={`${fecha}-${modulo.ID_MODULO}`}
             fecha={fecha}
             modulo={modulo}
             selectedSala={selectedSala}
@@ -482,20 +409,20 @@ export function AgendaSemanal() {
                   {filteredSalas
                     .filter(
                       (s) =>
-                        s.ID_Estado === 1 || s.ID_Sala === selectedSala?.ID_Sala
+                        s.ID_ESTADO === 1 || s.ID_SALA === selectedSala?.ID_SALA
                     )
                     .map((sala) => (
                       <tr
-                        key={sala.ID_Sala}
+                        key={sala.ID_SALA}
                         className={
-                          sala.ID_Sala === selectedSala?.ID_Sala
+                          sala.ID_SALA === selectedSala?.ID_SALA
                             ? 'fila-seleccionada'
                             : ''
                         }
                       >
-                        <td>{sala.Codigo_sala}</td>
-                        <td>{sala.Nombre_sala}</td>
-                        <td>{sala.Edificio?.Nombre_Edificio}</td>
+                        <td>{sala.COD_SALA}</td>
+                        <td>{sala.NOMBRE_SALA}</td>
+                        <td>{sala.EDIFICIO?.NOMBRE_EDIFICIO}</td>
                         <td>
                           <FaArrowCircleRight
                             onClick={() => manejarSeleccionSala(sala)}
@@ -534,9 +461,9 @@ export function AgendaSemanal() {
                 <tbody>
                   {filteredExamenes.map((ex) => (
                     <DraggableExamRow
-                      key={ex.ID_Examen}
+                      key={ex.ID_EXAMEN}
                       exam={ex}
-                      onSelect={(exam) => manejarSeleccionExamen(exam)}
+                      onSelect={manejarSeleccionExamen}
                       selectedExam={selectedExam}
                     />
                   ))}
@@ -556,14 +483,14 @@ export function AgendaSemanal() {
                 <tr>
                   <th colSpan={fechasDeLaSemana.length + 2}>
                     <h2>
-                      Sala: {selectedSala.Nombre_sala} (Capacidad:{' '}
-                      {selectedSala.Capacidad})
+                      Sala: {selectedSala.NOMBRE_SALA} (Capacidad:{' '}
+                      {selectedSala.CAPACIDAD_SALA})
                     </h2>
                     {selectedExam && (
                       <h3>
-                        Examen: {selectedExam.Asignatura?.Nombre_Asignatura} -{' '}
-                        {selectedExam.Seccion?.Nombre_Seccion} (
-                        {selectedExam.Cantidad_Modulos} módulos)
+                        Examen: {selectedExam.ASIGNATURA?.NOMBRE_ASIGNATURA} -{' '}
+                        {selectedExam.SECCION?.NOMBRE_SECCION} (
+                        {selectedExam.CANTIDAD_MODULOS_EXAMENES} módulos)
                       </h3>
                     )}
                   </th>
@@ -574,7 +501,7 @@ export function AgendaSemanal() {
             </table>
             {selectedExam &&
               modulosSeleccionados.length ===
-                (selectedExam.Cantidad_Modulos || 0) && (
+                (selectedExam.CANTIDAD_MODULOS_EXAMENES || 0) && (
                 <button onClick={enviarReserva}>Confirmar Reserva</button>
               )}
           </>
