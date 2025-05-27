@@ -1,13 +1,24 @@
 import { Link } from 'react-router-dom';
 import { useNavigate } from 'react-router-dom';
+import { getCurrentUser, logout as authLogout } from '../services/authService'; // Importamos logout y getCurrentUser
+import { ROLES } from '../constants/roles'; // Importar desde el archivo de constantes
 
 export default function Layout({ children }) {
   const navigate = useNavigate();
-  const handleLogout = () => {
-    localStorage.removeItem('token');
+  const currentUser = getCurrentUser();
 
+  const handleLogout = () => {
+    authLogout(); // Usamos la función logout del servicio de autenticación
     navigate('/login');
   };
+
+  const canAccess = (allowedRoles) => {
+    if (!currentUser || !currentUser.isAuthenticated || !currentUser.rol) {
+      return false;
+    }
+    return allowedRoles.includes(currentUser.rol);
+  };
+
   return (
     <div className="d-flex flex-column w-100" style={{ minHeight: '100vh' }}>
       {/* Header */}
@@ -54,30 +65,70 @@ export default function Layout({ children }) {
         </div>
         <div className="offcanvas-body p-3 d-flex flex-column">
           <nav className="nav flex-column mb-auto">
-            <Link to="/" className="nav-link fw-bold text-dark">
-              Inicio{' '}
-            </Link>
-            <Link to="/calendario" className="nav-link text-dark">
-              Calendario
-            </Link>
-            <Link to="/examenes" className="nav-link text-dark">
-              Exámenes
-            </Link>
-            <Link to="/salas" className="nav-link text-dark">
-              Salas
-            </Link>
-            <Link to="/asignaturas" className="nav-link text-dark">
-              Asignaturas
-            </Link>
-            <Link to="/modulos" className="nav-link text-dark">
-              Modulos
-            </Link>
-            <Link to="/usuarios" className="nav-link text-dark">
-              Usuarios
-            </Link>
-            <Link to="/carga-datos" className="nav-link text-primary text-dark">
-              Carga de datos
-            </Link>
+            {/* Rutas accesibles para CUALQUIER ROL AUTENTICADO */}
+            {canAccess([
+              ROLES.ADMIN,
+              ROLES.DIRECTOR,
+              ROLES.PROFESOR,
+              ROLES.ESTUDIANTE,
+            ]) && (
+              <>
+                <Link to="/" className="nav-link fw-bold text-dark">
+                  Inicio
+                </Link>
+                <Link to="/calendario" className="nav-link text-dark">
+                  Calendario
+                </Link>
+              </>
+            )}
+
+            {/* Rutas para Directores (Gestores) y Administradores */}
+            {canAccess([ROLES.ADMIN, ROLES.DIRECTOR]) && (
+              <>
+                <Link to="/examenes" className="nav-link text-dark">
+                  Exámenes
+                </Link>
+                <Link to="/salas" className="nav-link text-dark">
+                  Salas
+                </Link>
+                <Link to="/asignaturas" className="nav-link text-dark">
+                  Asignaturas
+                </Link>
+                <Link to="/modulos" className="nav-link text-dark">
+                  Módulos
+                </Link>
+              </>
+            )}
+
+            {/* Rutas solo para Administradores */}
+            {canAccess([ROLES.ADMIN]) && (
+              <>
+                <Link to="/usuarios" className="nav-link text-dark">
+                  Usuarios
+                </Link>
+                <Link to="/carga-datos" className="nav-link text-dark">
+                  Carga de datos
+                </Link>
+                <Link to="/roles" className="nav-link text-dark">
+                  {' '}
+                  {/* Enlace al mantenedor de roles */}
+                  Gestión de Roles
+                </Link>
+              </>
+            )}
+
+            {/* Ejemplo: Si tuvieras un enlace solo para profesores */}
+            {/* {canAccess([ROLES.PROFESOR]) && (
+              <Link to="/mis-calificaciones" className="nav-link text-dark">
+                Mis Calificaciones
+              </Link>
+            )} */}
+            {/* Ejemplo: Si tuvieras un enlace solo para estudiantes */}
+            {/* {canAccess([ROLES.ESTUDIANTE]) && (
+              <Link to="/mis-cursos" className="nav-link text-dark">
+                Mis Cursos
+              </Link>
+            )} */}
           </nav>
           <div className="mt-auto">
             <button className="btn btn-danger w-100" onClick={handleLogout}>

@@ -24,8 +24,9 @@ export const login = async (req, res) => {
     conn = await getConnection();
     const result = await conn.execute(
       `SELECT
-         id_usuario, password_usuario AS hash, ROL_id_rol
-       FROM USUARIO
+         u.id_usuario, u.password_usuario AS hash, u.ROL_id_rol,r.NOMBRE_ROL
+       FROM USUARIO U
+       JOIN ROL R ON U.ROL_id_rol = R.id_rol
        WHERE email_usuario = :email_usuario`,
       { email_usuario },
       { outFormat: oracledb.OUT_FORMAT_OBJECT }
@@ -36,7 +37,7 @@ export const login = async (req, res) => {
     }
 
     const row = result.rows[0];
-    const { ID_USUARIO, HASH, ROL_ID_ROL } = row;
+    const { ID_USUARIO, HASH, ROL_ID_ROL, NOMBRE_ROL } = row;
 
     const coincide = await bcrypt.compare(password_usuario, HASH);
 
@@ -45,7 +46,11 @@ export const login = async (req, res) => {
     }
 
     // Generar tokens
-    const payload = { id_usuario: ID_USUARIO, ROL_id_rol: ROL_ID_ROL };
+    const payload = {
+      id_usuario: ID_USUARIO,
+      ROL_id_rol: ROL_ID_ROL,
+      nombre_rol: NOMBRE_ROL,
+    };
     const accessToken = generateAccessToken(payload);
     const refreshToken = generateRefreshToken(payload);
 
@@ -60,7 +65,9 @@ export const login = async (req, res) => {
       usuario: {
         id_usuario: ID_USUARIO,
         email_usuario,
-        ROL_id_rol: ROL_ID_ROL,
+        rol: ROL_ID_ROL,
+        nombre_rol: NOMBRE_ROL,
+        // Puedes agregar más campos del usuario si es necesario
       },
     });
   } catch (err) {
@@ -88,7 +95,8 @@ export const handleRefreshToken = (req, res) => {
     const payload = verifyRefreshToken(token);
     const newAccessToken = generateAccessToken({
       id_usuario: payload.id_usuario,
-      ROL_id_rol: payload.ROL_id_rol,
+      rol: payload.ROL_id_rol,
+      nombre_rol: payload.nombre_rol,
     });
     return res.json({ accessToken: newAccessToken });
   } catch (err) {
