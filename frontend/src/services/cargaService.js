@@ -15,6 +15,11 @@ const subirDatosCargaMasiva = (datos, sedeId) =>
       throw err;
     });
 
+export const subirCargaMasivaSalas = async (data) => {
+  const response = await api.post('/cargaSala', data);
+  return response.data;
+};
+
 export default {
   subirDatosCargaMasiva,
 };
