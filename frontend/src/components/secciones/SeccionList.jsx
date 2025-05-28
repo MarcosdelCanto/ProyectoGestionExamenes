@@ -17,10 +17,8 @@ function SeccionList({
 
   return (
     <div className="table-responsive">
-      {' '}
       {/* Envolver en table-responsive si no lo está ya */}
       <table className="table table-hover table-bordered">
-        {' '}
         {/* table-hover para consistencia */}
         <thead className="table-light">
           <tr>
@@ -39,12 +37,9 @@ function SeccionList({
             </th>
             <th className="align-middle">ID</th>
             <th className="align-middle">Nombre</th>
-            <th className="align-middle">Asignatura ID</th>{' '}
-            {/* Ajustar según el nombre real del campo */}
-            <th className="align-middle">Profesor ID</th>{' '}
-            {/* Ajustar según el nombre real del campo */}
-            <th className="align-middle">Carrera ID</th>{' '}
-            {/* Ajustar según el nombre real del campo */}
+            <th className="align-middle">Asignatura ID</th>
+            <th className="align-middle">Profesor ID</th>
+            <th className="align-middle">Carrera ID</th>
           </tr>
         </thead>
         <tbody>
