@@ -25,6 +25,7 @@ import cargaSalaRoutes from './routes/cargaSala.routes.js';
 import permisoRoutes from './routes/permiso.routes.js';
 import usuarioCarreraRoutes from './routes/usuarioCarrera.routes.js';
 import usuarioSeccionRoutes from './routes/usuarioSeccion.routes.js';
+import calendarioRoutes from './routes/calendario.routes.js'; // Importa las rutas de calendario
 
 const app = express();
 
@@ -87,6 +88,8 @@ async function startServer() {
     app.use('/api/permisos', permisoRoutes);
     app.use('/api/usuario-carreras', usuarioCarreraRoutes); // Ruta para asociaciones usuario-carrera
     app.use('/api/usuario-secciones', usuarioSeccionRoutes); // Ruta para asociaciones usuario-seccion
+    app.use('/api/cargaDocente', cargaDocenteRoutes);
+    app.use('/api', calendarioRoutes);
 
     const PORT = process.env.PORT || 3000;
     server.listen(PORT, () =>
