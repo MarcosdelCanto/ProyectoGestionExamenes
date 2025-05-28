@@ -8,7 +8,6 @@ import './HomePage.css'; // ¡Ahora este archivo es fundamental!
 import { socket } from '../store/socketMiddleware';
 import Layout from '../components/Layout';
 import { FaUserCircle } from 'react-icons/fa';
-import { Dashboard } from '../components/dashboard';
 
 export default function HomePage() {
   const { status, updaterId } = useSelector((state) => state.status);
@@ -67,8 +66,8 @@ export default function HomePage() {
 
   return (
     <Layout>
-      <div className="w-full">
-        <div className="profile-card ">
+      <div className="profile-page-container">
+        <div className="profile-card">
           {/* Sección del Ícono/Imagen (Izquierda) */}
           <div className="profile-card-icon-section">
             <FaUserCircle className="profile-icon" />
@@ -100,21 +99,18 @@ export default function HomePage() {
             </div>
           </div>
         </div>
-        <hr></hr> {/* Asegura que este contenedor pueda usar el ancho */}
-        <div className="text-center my-4">
-          <Dashboard />
+
+        {/* Sección de estado y botón */}
+        <div className="status-section">
+          <div className={`status-circle status-${status}`} />
+          <button onClick={handleClick} disabled={!puedeModificar}>
+            {status === 'disponible'
+              ? 'Ocupar'
+              : status === 'pendiente'
+                ? 'Confirmar'
+                : 'Ocupado'}
+          </button>
         </div>
-      </div>
-      {/* Sección de estado y botón */}
-      <div className="status-section">
-        <div className={`status-circle status-${status}`} />
-        <button onClick={handleClick} disabled={!puedeModificar}>
-          {status === 'disponible'
-            ? 'Ocupar'
-            : status === 'pendiente'
-              ? 'Confirmar'
-              : 'Ocupado'}
-        </button>
       </div>
     </Layout>
   );
