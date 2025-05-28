@@ -17,10 +17,8 @@ function SeccionList({
 
   return (
     <div className="table-responsive">
-      {' '}
       {/* Envolver en table-responsive si no lo está ya */}
       <table className="table table-hover table-bordered">
-        {' '}
         {/* table-hover para consistencia */}
         <thead className="table-light">
           <tr>

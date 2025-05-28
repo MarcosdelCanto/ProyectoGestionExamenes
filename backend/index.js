@@ -22,6 +22,9 @@ import cargaAlumnoRoutes from './routes/cargaAlumno.routes.js';
 import cargaDocenteRoutes from './routes/cargaDocente.routes.js'; // Nueva importación
 import rolesRouter from './routes/rol.routes.js';
 import calendarioRoutes from './routes/calendario.routes.js'; // Importa las rutas de calendario
+import usuarioCarreraRoutes from './routes/usuarioCarrera.routes.js'; // Nueva importación
+import usuarioSeccionRoutes from './routes/usuarioSeccion.routes.js'; // Nueva importación
+import permisosRoutes from './routes/permiso.routes.js'; // Nueva importación
 
 const app = express();
 
@@ -80,7 +83,10 @@ async function startServer() {
     app.use('/api/roles', rolesRouter);
     app.use('/api/cargaAlumno', cargaAlumnoRoutes);
     app.use('/api/cargaDocente', cargaDocenteRoutes);
-    app.use('/api/calendarioRoutes', calendarioRoutes);
+    app.use('/api/usuario-carreras', usuarioCarreraRoutes); // Nueva ruta para usuario-carrera
+    app.use('/api/usuario-secciones', usuarioSeccionRoutes); // Nueva ruta para usuario-sección
+    app.use('/api/permisos', permisosRoutes);
+    app.use('/api', calendarioRoutes);
 
     const PORT = process.env.PORT || 3000;
     server.listen(PORT, () =>

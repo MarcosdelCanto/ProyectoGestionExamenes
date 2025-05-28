@@ -8,12 +8,6 @@ function AsignaturaList({
   onToggleSelectAll, // Nueva función para seleccionar/deseleccionar todo
   loading,
 }) {
-function AsignaturaList({
-  asignaturas,
-  selectedAsignatura,
-  onSelectAsignatura,
-  loading,
-}) {
   if (loading) {
     return <div>Cargando asignaturas...</div>;
   }
@@ -41,9 +35,8 @@ function AsignaturaList({
               />
             </th>
             <th className="align-middle">ID</th>
-            <th className="align-middle">Código</th>
             <th className="align-middle">Nombre</th>
-            {/* Agrega más encabezados si es necesario */}
+            <th className="align-middle">Carrera</th>
           </tr>
         </thead>
         <tbody>
@@ -90,4 +83,3 @@ function AsignaturaList({
 }
 
 export default AsignaturaList;
-

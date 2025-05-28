@@ -17,7 +17,7 @@ export default function ModuloTable({
         marginBottom: '1rem',
       }}
     >
-      <table className="table table-bordered table-hover table-striped mb-0">
+      <table className="table table-hover table-bordered">
         <thead className="table-light position-sticky top-0">
           <tr>
             <th>Orden</th>

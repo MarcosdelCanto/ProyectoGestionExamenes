@@ -19,7 +19,7 @@ function UsuarioCarreraTable({
 
   return (
     <Table bordered hover responsive>
-      <thead>
+      <thead class="table-light position-sticky top-0">
         <tr>
           <th style={{ width: '5%' }} className="text-center align-middle">
             <input
