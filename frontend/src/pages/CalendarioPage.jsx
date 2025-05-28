@@ -1,6 +1,5 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react'; // Quitar useEffect, useMemo, useRef si ya no se usan aquí
 import AgendaSemanal from '../components/calendario/AgendaSemanal';
-import ExamenSelector from '../components/calendario/ExamenSelector';
 import Layout from '../components/Layout';
 import './CalendarioPage.css';
 
@@ -13,96 +12,58 @@ import {
   useSensor,
   useSensors,
 } from '@dnd-kit/core';
-// closestCenter es un algoritmo de colisión, puedes probar otros como pointerWithin
 
-export function CalendarioPage() {
-  const [examenes, setExamenes] = useState([]);
-  const [isLoadingExamenes, setIsLoadingExamenes] = useState(true);
+export default function CalendarioPage() {
+  // Los estados de examenes, salas, selectedSalaCalendario, etc., se moverán a AgendaSemanal
   const [draggedExamenData, setDraggedExamenData] = useState(null);
   const [dropTargetCellData, setDropTargetCellData] = useState(null);
 
-  // Sensores para dnd-kit (para interacciones de puntero y teclado)
   const sensors = useSensors(
     useSensor(PointerSensor, {
-      activationConstraint: {
-        // Pequeño retraso para evitar que el D&D se active con un simple clic en Swiper
-        // Ajusta o elimina si causa problemas con Swiper
-        delay: 100,
-        tolerance: 5,
-      },
+      activationConstraint: { delay: 100, tolerance: 5 },
     }),
     useSensor(KeyboardSensor)
   );
 
-  useEffect(() => {
-    async function loadExamenes() {
-      setIsLoadingExamenes(true);
-      try {
-        const res = await fetch('/api/examenes'); // <-- TU ENDPOINT REAL AQUÍ
-        if (!res.ok) {
-          const errorData = await res.text(); // O res.json() si tu API devuelve JSON en errores
-          throw new Error(
-            `Error al cargar exámenes: ${res.status} ${errorData}`
-          );
-        }
-        const data = await res.json();
-        setExamenes(data);
-      } catch (err) {
-        console.error('Error cargando exámenes:', err);
-        setExamenes([]); // Considera un mejor manejo de errores
-      } finally {
-        setIsLoadingExamenes(false);
-      }
-    }
-    loadExamenes();
-  }, []);
+  // La carga de datos (examenes, salas) se hará dentro de AgendaSemanal
+  // useEffect(() => { ... loadData ... }, []); // Ya no aquí
 
   const handleDragEnd = (event) => {
     const { active, over } = event;
-
-    // Limpiar estados previos en caso de que no se suelte sobre un destino válido
     setDraggedExamenData(null);
     setDropTargetCellData(null);
-
     if (
       over &&
       active.data.current?.type === 'examen' &&
       over.data.current?.type === 'celda-calendario'
     ) {
-      setDraggedExamenData(active.data.current.examen); // El objeto examen completo
-      setDropTargetCellData(over.data.current); // { type, fecha, modulo }
+      // Es importante que active.data.current.examen contenga el objeto examen completo
+      setDraggedExamenData(active.data.current.examen);
+      setDropTargetCellData(over.data.current); // Esto debería ser { fecha, modulo }
     }
   };
 
-  // Función para que AgendaSemanal notifique que ha procesado el drop
   const handleDropProcessed = () => {
     setDraggedExamenData(null);
     setDropTargetCellData(null);
   };
 
+  // handleSelectSala y filteredSalas ya no son necesarios aquí
+
   return (
     <Layout>
-      {/* DndContext envuelve todos los componentes que participan en D&D */}
       <DndContext
         sensors={sensors}
-        collisionDetection={closestCenter} // O prueba con pointerWithin
+        collisionDetection={closestCenter}
         onDragEnd={handleDragEnd}
       >
-        <div className="page-calendario">
-          <ExamenSelector
-            examenes={examenes}
-            isLoadingExamenes={isLoadingExamenes}
-            // ...otras props para filtros
-          />
+        <div className="container-fluid mt-3 calendario-page-container">
+          {/* AgendaSemanal ahora es el componente principal que organiza su interior */}
           <AgendaSemanal
-            // Pasar los datos del D&D y la callback
             draggedExamen={draggedExamenData}
             dropTargetCell={dropTargetCellData}
             onDropProcessed={handleDropProcessed}
-            // Pasar la lista de examenes si AgendaSemanal la necesita para la lógica de drop
-            // (ej. para obtener el objeto examen completo si solo se pasara el ID)
-            // Pero como ya pasamos el objeto examen completo en draggedExamenData, no sería estrictamente necesario
-            // examenesOriginales={examenes}
+            // Ya no se pasa externalSelectedSala desde aquí
           />
         </div>
       </DndContext>
