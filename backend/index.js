@@ -22,9 +22,6 @@ import cargaAlumnoRoutes from './routes/cargaAlumno.routes.js';
 import cargaDocenteRoutes from './routes/cargaDocente.routes.js';
 import rolesRouter from './routes/rol.routes.js';
 import cargaSalaRoutes from './routes/cargaSala.routes.js';
-import permisoRoutes from './routes/permiso.routes.js';
-import usuarioCarreraRoutes from './routes/usuarioCarrera.routes.js';
-import usuarioSeccionRoutes from './routes/usuarioSeccion.routes.js';
 
 const app = express();
 
@@ -84,9 +81,6 @@ async function startServer() {
     app.use('/api/cargaAlumno', cargaAlumnoRoutes);
     app.use('/api/cargaDocente', cargaDocenteRoutes);
     app.use('/api/cargaSala', cargaSalaRoutes);
-    app.use('/api/permisos', permisoRoutes);
-    app.use('/api/usuario-carreras', usuarioCarreraRoutes); // Ruta para asociaciones usuario-carrera
-    app.use('/api/usuario-secciones', usuarioSeccionRoutes); // Ruta para asociaciones usuario-seccion
 
     const PORT = process.env.PORT || 3000;
     server.listen(PORT, () =>

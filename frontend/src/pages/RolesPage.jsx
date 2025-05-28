@@ -176,6 +176,8 @@ function RolesPage() {
   return (
     <Layout>
       <Container fluid>
+        {' '}
+        {/* Similar a usuarios-page-container */}
         <div>
           <p className="display-5 page-title-custom mb-2">
             {' '}

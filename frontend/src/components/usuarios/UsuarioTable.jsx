@@ -1,25 +1,18 @@
 import React from 'react';
-import { Button } from 'react-bootstrap'; // Importar Button
 
-function UsuarioTable({
+function UsuarioList({
   usuarios,
   selectedUsuarios,
   onToggleUsuarioSelection,
   onToggleSelectAll,
-  onShowUserCarreras, // Nueva prop
-  onShowUserSecciones, // Nueva prop
   loading,
 }) {
-  // Mostrar "cargando" solo si no hay datos aún y isLoading es true
-  if (loading && (!usuarios || usuarios.length === 0)) {
-    return (
-      <div className="text-center p-3">
-        <div className="spinner-border text-primary" role="status">
-          <span className="visually-hidden">Cargando Usuarios...</span>
-        </div>
-        <p className="mt-2">Cargando Usuarios...</p>
-      </div>
-    );
+  if (loading) {
+    return <div>Cargando usuarios...</div>;
+  }
+
+  if (!usuarios || usuarios.length === 0) {
+    return <div>No hay usuarios para mostrar.</div>;
   }
 
   return (
@@ -42,7 +35,6 @@ function UsuarioTable({
           <th className="align-middle">Nombre</th>
           <th className="align-middle">Email</th>
           <th className="align-middle">Rol</th>
-          <th className="align-middle text-center">Asociaciones</th>
         </tr>
       </thead>
       <tbody>
@@ -51,11 +43,10 @@ function UsuarioTable({
             key={`usuario-${u.ID_USUARIO}`}
             onClick={() => onToggleUsuarioSelection(u)}
             className={`align-middle ${
-              // No aplicar table-primary directamente en la fila por el click
               selectedUsuarios.find((su) => su.ID_USUARIO === u.ID_USUARIO)
                 ? 'table-primary'
                 : ''
-            } `}
+            }`}
             style={{ cursor: 'pointer' }}
           >
             <td className="text-center">
@@ -77,39 +68,6 @@ function UsuarioTable({
             <td>{u.NOMBRE_USUARIO}</td>
             <td>{u.EMAIL_USUARIO}</td>
             <td>{u.NOMBRE_ROL}</td>
-            <td className="text-center">
-              {/* Solo mostrar iconos si el rol es elegible para alguna asociación */}
-              {(u.NOMBRE_ROL === 'COORDINADOR' ||
-                u.NOMBRE_ROL === 'DIRECTOR') && (
-                <Button
-                  variant="outline-info"
-                  size="sm"
-                  className="me-1"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    onShowUserCarreras(u);
-                  }}
-                  title="Ver Carreras Asociadas"
-                >
-                  <i className="bi bi-diagram-3"></i>{' '}
-                  {/* Icono para carreras */}
-                </Button>
-              )}
-              {(u.NOMBRE_ROL === 'ALUMNO' || u.NOMBRE_ROL === 'DOCENTE') && (
-                <Button
-                  variant="outline-success"
-                  size="sm"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    onShowUserSecciones(u);
-                  }}
-                  title="Ver Secciones Asociadas"
-                >
-                  <i className="bi bi-list-task"></i>{' '}
-                  {/* Icono para secciones */}
-                </Button>
-              )}
-            </td>
           </tr>
         ))}
       </tbody>
@@ -117,4 +75,4 @@ function UsuarioTable({
   );
 }
 
-export default UsuarioTable;
+export default UsuarioList;
