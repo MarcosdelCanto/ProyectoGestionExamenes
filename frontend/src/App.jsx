@@ -15,7 +15,6 @@ import CalendarioPage from './pages/CalendarioPage';
 import CargaDatosPage from './pages/CargaDatosPage';
 import UnauthorizedPage from './pages/UnauthorizedPage'; // Nueva página
 import RolesPage from './pages/RolesPage'; // Importar la nueva página de Roles
-import { ROLES } from './constants/roles'; // Importar desde el archivo de constantes
 
 function App() {
   return (
