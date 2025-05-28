@@ -20,22 +20,20 @@
 
 /* Layout: lateral + detalle */
 .container-lateral {
+  float: left;
   width: 300px;
-  height: 100vh; /* scrollará independientemente */
   padding: 1rem;
   background: var(--light-gray);
   box-shadow: 2px 0 5px rgba(0, 0, 0, 0.1);
-  overflow-y: auto;
 }
 .details-section {
   /* margin-left: 320px; */
-  flex: 1; /* ocupa el resto del ancho */
-  height: 100vh; /* scrollará independientemente */
+  float: right;
+  width: calc(100% - 320px);
   padding: 1rem;
   background: var(--white);
   border-radius: 8px;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-  overflow-y: auto;
 }
 
 /* Wrapper para scroll horizontal en la tabla */
@@ -185,27 +183,4 @@
   border: none;
   border-radius: 4px;
   cursor: pointer;
-}
-.agenda-container {
-  display: flex;
-  height: 100vh;
-}
-.page-calendario {
-  display: flex;
-  flex-direction: column;
-  height: 100vh;
-  background: var(--light-gray);
-}
-
-.page-title {
-  margin: 1rem 0;
-  font-size: 1.75rem;
-  text-align: center;
-  color: var(--primary-color);
-}
-
-.page-calendario > .agenda-container {
-  flex: 1;
-  margin: 0 1rem 1rem;
-  /* El componente AgendaSemanal ya gestiona su propio layout con .agenda-container */
 }
