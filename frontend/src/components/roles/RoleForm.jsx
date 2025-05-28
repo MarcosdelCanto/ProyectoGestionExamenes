@@ -109,7 +109,6 @@ function RoleForm({
                   type="checkbox"
                   id={`permiso-${permiso.ID_PERMISO}`}
                   label={permiso.NOMBRE_PERMISO}
-                  title={permiso.DESCRIPCION_PERMISO}
                   checked={formData.permisos.includes(permiso.ID_PERMISO)}
                   onChange={() => handlePermisoChange(permiso.ID_PERMISO)}
                 />
