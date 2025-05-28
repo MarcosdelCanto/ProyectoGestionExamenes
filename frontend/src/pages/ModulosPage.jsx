@@ -116,6 +116,7 @@ export default function ModulosPage() {
       }, 5000);
       closeModal();
       loadModulos();
+      closeModal();
     } catch (err) {
       setError('Error creando módulo');
       setTimeout(() => {
@@ -152,6 +153,7 @@ export default function ModulosPage() {
       }, 5000);
       setSelectedModulo(null);
       closeModal();
+      setSelectedModule(null);
       loadModulos();
     } catch {
       setError('Error eliminando módulo');
