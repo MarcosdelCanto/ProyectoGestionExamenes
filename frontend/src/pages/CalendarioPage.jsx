@@ -13,7 +13,7 @@ import {
   useSensors,
 } from '@dnd-kit/core';
 
-export default function CalendarioPage() {
+export function CalendarioPage() {
   // Los estados de examenes, salas, selectedSalaCalendario, etc., se moverán a AgendaSemanal
   const [draggedExamenData, setDraggedExamenData] = useState(null);
   const [dropTargetCellData, setDropTargetCellData] = useState(null);
