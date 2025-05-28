@@ -62,7 +62,7 @@
 .pagination-container {
   display: flex;
   justify-content: center; /* Centra la paginación */
-  /* margin-top: 1.5rem;*/
+  margin-top: 1.5rem;
 }
 
 /* Estilos para el modal de mensajes (msgModal) */
@@ -110,9 +110,9 @@
   }
 
   /* Podrías querer que los botones en UsuarioActions ocupen todo el ancho */
-  .usuario-actions-wrapper .btn-group .btn {
-    /* flex-grow: 1; */ /* Descomenta si quieres que los botones se estiren */
-  }
+  /* .usuario-actions-wrapper .btn-group .btn {
+    flex-grow: 1;
+  } */
 }
 
 /* Estilos para los botones responsivos (iconos) - ya definidos en responsive-buttons.css */

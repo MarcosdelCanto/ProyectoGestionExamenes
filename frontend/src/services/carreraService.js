@@ -1,6 +1,16 @@
 import api from './api';
 
-export const fetchAllCarreras = () => api.get('/carrera');
+//export const fetchAllCarreras = () => api.get('/carrera');
+export const fetchAllCarreras = async () => {
+  try {
+    const response = await api.get('/carrera'); // Ajusta el endpoint si es necesario
+    return response.data;
+  } catch (error) {
+    console.error('Error fetching carreras:', error);
+    throw error;
+  }
+};
+
 export const fetchCarreraById = (id) => api.get(`/carrera/${id}`);
 export const createCarrera = (data) => api.post('/carrera/', data);
 export const updateCarrera = (id, data) => api.put(`/carrera/${id}`, data);

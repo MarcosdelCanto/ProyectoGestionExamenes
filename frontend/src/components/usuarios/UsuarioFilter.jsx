@@ -3,6 +3,8 @@ import React from 'react';
 import { Card, Form, Row, Col, Button } from 'react-bootstrap';
 
 function UsuarioFilter({ roles, onFilterChange, currentFilters }) {
+  console.log('Roles recibidos en UsuarioFilter:', roles); // <--- AÑADE ESTO
+
   return (
     <Card className="mb-3 shadow-sm">
       <Card.Body>

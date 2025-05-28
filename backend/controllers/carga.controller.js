@@ -246,23 +246,35 @@ export const handleCargaMasiva = async (req, res) => {
           fila
         );
       } else {
+        // VALIDATION: Check if DOCENTE already exists by RUT
+        const docenteExists = await conn.execute(
+          'SELECT COUNT(*) AS total FROM ADMIN.USUARIO WHERE ID_DOCENTE = :rutDocente',
+          { rutDocente },
+          { outFormat: oracledb.OUT_FORMAT_OBJECT }
+        );
+        if (docenteExists.rows[0].TOTAL > 0) {
+          console.warn(
+            `ADVERTENCIA (Carga Masiva): El DOCENTE con RUT ${rutDocente} ya existe. Fila omitida.`,
+            fila
+          );
+          continue; // Skip this row
+        }
         const nombreCompletoDocente = String(
-          fila['Instruct.(den.)'] ?? '' // String() is fine here if the result of ?? can be non-string
+          fila['Instruct.(den.)'] ?? ''
         ).trim();
         // Generar un email más válido, aunque simple. Considera una mejor estrategia.
         const emailUsuarioGenerado = `${rutDocente.replace(/[^0-9kK]+/g, '')}@docente.duoc.cl`;
-
         idUsuario = await obtenerOInsertar(
           conn,
-          'SELECT ID_USUARIO FROM ADMIN.USUARIO WHERE EMAIL_USUARIO = :email', // Asumiendo que el email es único
-          'INSERT INTO ADMIN.USUARIO (ID_USUARIO, NOMBRE_USUARIO, EMAIL_USUARIO, PASSWORD_USUARIO, FECHA_CREA_USUARIO, ROL_ID_ROL,ID_DOCENTE) VALUES (SEQ_USUARIO.NEXTVAL, :nombre, :email, :password, SYSTIMESTAMP, :rol, :rutDocente) RETURNING ID_USUARIO INTO :newId', // Eliminado ESTADO_ID_ESTADO si no existe
+          'SELECT ID_USUARIO FROM ADMIN.USUARIO WHERE EMAIL_USUARIO = :email',
+          'INSERT INTO ADMIN.USUARIO (ID_USUARIO, NOMBRE_USUARIO, EMAIL_USUARIO, PASSWORD_USUARIO, FECHA_CREA_USUARIO, ROL_ID_ROL,ID_DOCENTE) VALUES (SEQ_USUARIO.NEXTVAL, :nombre, :email, :password, SYSTIMESTAMP, :rol, :rutDocente) RETURNING ID_USUARIO INTO :newId',
           { email: emailUsuarioGenerado },
           {
             nombre: nombreCompletoDocente,
             email: emailUsuarioGenerado,
             password: await bcrypt.hash(rutDocente, 10),
             rol: ROL_DOCENTE_ID,
-            rutDocente: rutDocente, // Añadir rutDocente para el bind :rutDocente
+            rutDocente: rutDocente,
           }
         );
         // console.log(

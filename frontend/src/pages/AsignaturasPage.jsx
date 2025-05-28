@@ -32,6 +32,7 @@ import {
   EditEscuela,
   DeleteEscuela,
 } from '../services/escuelaService';
+import PaginationComponent from '../components/PaginationComponent'; // Importar PaginationComponent
 
 const alertStyle = {
   animation: 'fadeInOut 5s ease-in-out',
@@ -77,15 +78,23 @@ export default function AsignaturasPage() {
   const [asignaturas, setAsignaturas] = useState([]);
   const [carreras, setCarreras] = useState([]);
   const [escuelas, setEscuelas] = useState([]);
-  const [selectedSeccion, setSelectedSeccion] = useState(null);
-  const [selectedAsignatura, setSelectedAsignatura] = useState(null);
-  const [selectedCarrera, setSelectedCarrera] = useState(null);
-  const [selectedEscuela, setSelectedEscuela] = useState(null);
+  const [selectedAsignaturas, setSelectedAsignaturas] = useState([]);
+  const [selectedCarreras, setSelectedCarreras] = useState([]);
+  // const [selectedEscuela, setSelectedEscuela] = useState(null); // REEMPLAZADO
+  const [selectedEscuelas, setSelectedEscuelas] = useState([]); // NUEVO ESTADO
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState('');
   const [error, setError] = useState('');
-  const [modal, setModal] = useState({ type: null, data: null });
+  const [modal, setModal] = useState({ type: null, entity: null, data: null });
   const [activeTab, setActiveTab] = useState('asignaturas');
+  const [selectedSecciones, setSelectedSecciones] = useState([]);
+
+  // Estados para paginación
+  const [itemsPerPage, setItemsPerPage] = useState(10);
+  const [currentPageAsignaturas, setCurrentPageAsignaturas] = useState(1);
+  const [currentPageSecciones, setCurrentPageSecciones] = useState(1);
+  const [currentPageCarreras, setCurrentPageCarreras] = useState(1);
+  const [currentPageEscuelas, setCurrentPageEscuelas] = useState(1);
 
   useEffect(() => {
     loadData();
@@ -111,6 +120,12 @@ export default function AsignaturasPage() {
       setAsignaturas(asignaturasData);
       setCarreras(carrerasData);
       setEscuelas(escuelasData);
+
+      setCurrentPageAsignaturas(1);
+      setCurrentPageSecciones(1);
+      setCurrentPageCarreras(1);
+      setCurrentPageEscuelas(1);
+      setError('');
     } catch (error) {
       console.error('Error al cargar los datos:', error);
       setError(
@@ -121,90 +136,225 @@ export default function AsignaturasPage() {
     }
   };
 
+  const closeModal = () => setModal({ type: null, entity: null, data: null });
+
   const openModal = (type, entity) => {
     let data = null;
-    if (type === 'edit' || type === 'delete') {
+    if (type === 'edit') {
       switch (entity) {
         case 'asignatura':
-          if (!selectedAsignatura) return;
-          data = asignaturas.find(
-            (a) => a.ID_ASIGNATURA === selectedAsignatura
-          );
+          if (selectedAsignaturas.length !== 1) {
+            setError('Por favor, seleccione una única asignatura para editar.');
+            setTimeout(() => setError(''), 5000);
+            return;
+          }
+          data = selectedAsignaturas[0];
           break;
         case 'seccion':
-          if (!selectedSeccion) return;
-          data = secciones.find((s) => s.ID_SECCION === selectedSeccion);
+          if (selectedSecciones.length !== 1) {
+            setError('Por favor, seleccione una única sección para editar.');
+            setTimeout(() => setError(''), 5000);
+            return;
+          }
+          data = selectedSecciones[0];
           break;
         case 'carrera':
-          if (!selectedCarrera) return;
-          data = carreras.find((c) => c.ID_CARRERA === selectedCarrera);
+          if (selectedCarreras.length !== 1) {
+            setError('Por favor, seleccione una única carrera para editar.');
+            setTimeout(() => setError(''), 5000);
+            return;
+          }
+          data = selectedCarreras[0];
           break;
         case 'escuela':
-          if (!selectedEscuela) return;
-          data = escuelas.find((e) => e.ID_ESCUELA === selectedEscuela);
+          if (selectedEscuelas.length !== 1) {
+            setError('Por favor, seleccione una única escuela para editar.');
+            setTimeout(() => setError(''), 5000);
+            return;
+          }
+          data = selectedEscuelas[0];
+          break;
+        default:
+          break;
+      }
+    } else if (type === 'delete') {
+      switch (entity) {
+        case 'asignatura':
+          if (selectedAsignaturas.length === 0) {
+            setError(
+              'Por favor, seleccione al menos una asignatura para eliminar.'
+            );
+            setTimeout(() => setError(''), 5000);
+            return;
+          }
+          break;
+        case 'seccion':
+          if (selectedSecciones.length === 0) {
+            setError(
+              'Por favor, seleccione al menos una sección para eliminar.'
+            );
+            setTimeout(() => setError(''), 5000);
+            return;
+          }
+          break;
+        case 'carrera':
+          if (selectedCarreras.length === 0) {
+            setError(
+              'Por favor, seleccione al menos una carrera para eliminar.'
+            );
+            setTimeout(() => setError(''), 5000);
+            return;
+          }
+          break;
+        case 'escuela':
+          if (selectedEscuelas.length === 0) {
+            setError(
+              'Por favor, seleccione al menos una escuela para eliminar.'
+            );
+            setTimeout(() => setError(''), 5000);
+            return;
+          }
+          break;
+        default:
           break;
       }
     }
     setModal({ type, entity, data });
   };
 
-  const closeModal = () => setModal({ type: null, data: null });
-
-  //Manejadores
-  const handleAddAsignatura = async (form) => {
+  // --- Funciones CRUD para Escuela ---
+  const handleAddEscuela = async (form) => {
     try {
-      await AddAsignatura(form);
+      await AddEscuela(form);
       loadData();
       closeModal();
-      setSuccess('Asignatura creada con éxito');
-      setTimeout(() => {
-        setSuccess('');
-      }, 5000);
+      setSuccess('Escuela agregada con éxito');
+      setTimeout(() => setSuccess(''), 5000);
     } catch (error) {
-      setError('Error al crear asignatura');
-      setTimeout(() => {
-        setError('');
-      }, 5000);
+      setError('Error al agregar escuela');
+      console.error('Error:', error);
+      setTimeout(() => setError(''), 5000);
       closeModal();
     }
   };
 
-  const handleEditAsignatura = async (form) => {
+  const handleEditEscuela = async (form) => {
     try {
-      await EditAsignatura(selectedAsignatura, form);
+      if (selectedEscuelas.length !== 1) {
+        setError(
+          'Error: Debe haber exactamente una escuela seleccionada para editar.'
+        );
+        setTimeout(() => setError(''), 5000);
+        return;
+      }
+      await EditEscuela(selectedEscuelas[0].ID_ESCUELA, form);
       loadData();
       closeModal();
-      setSuccess('Asignatura actualizada con éxito');
-      setTimeout(() => {
-        setSuccess('');
-      }, 5000);
+      setSuccess('Escuela actualizada con éxito');
+      setSelectedEscuelas([]); // Limpiar selección
+      setTimeout(() => setSuccess(''), 5000);
     } catch (error) {
-      setError('Error al actualizar asignatura');
+      setError('Error al actualizar escuela');
       console.error('Error:', error);
-      setTimeout(() => {
-        setError('');
-      }, 5000);
+      setTimeout(() => setError(''), 5000);
       closeModal();
     }
   };
 
-  const handleDeleteAsignatura = async () => {
+  const handleDeleteEscuela = async () => {
+    if (selectedEscuelas.length === 0) {
+      setError('No hay escuelas seleccionadas para eliminar.');
+      setTimeout(() => setError(''), 5000);
+      closeModal();
+      return;
+    }
     try {
-      await DeleteAsignatura(selectedAsignatura);
+      for (const escuela of selectedEscuelas) {
+        await DeleteEscuela(escuela.ID_ESCUELA);
+      }
       loadData();
       closeModal();
-      setSelectedAsignatura(null);
-      setSuccess('Asignaura eliminada con éxito');
-      setTimeout(() => {
-        setSuccess('');
-      }, 5000);
+      setSuccess(
+        `${selectedEscuelas.length} escuela(s) eliminada(s) con éxito`
+      );
+      setSelectedEscuelas([]); // Limpiar selección
+      setTimeout(() => setSuccess(''), 5000);
     } catch (error) {
-      setError('Error al eliminar asignatura');
+      setError('Error al eliminar escuela(s)');
       console.error('Error:', error);
-      setTimeout(() => {
-        setError('');
-      }, 5000);
+      setTimeout(() => setError(''), 5000);
       closeModal();
+    }
+  };
+
+  // --- Funciones de selección para Escuela ---
+  const handleToggleEscuelaSelection = (escuelaToToggle) => {
+    setSelectedEscuelas((prevSelected) => {
+      const isSelected = prevSelected.find(
+        (e) => e.ID_ESCUELA === escuelaToToggle.ID_ESCUELA
+      );
+      if (isSelected) {
+        return prevSelected.filter(
+          (e) => e.ID_ESCUELA !== escuelaToToggle.ID_ESCUELA
+        );
+      }
+      return [...prevSelected, escuelaToToggle];
+    });
+  };
+
+  const handleToggleSelectAllEscuelas = () => {
+    // currentEscuelas son las visibles en la paginación actual
+    if (selectedEscuelas.length === currentEscuelas.length) {
+      setSelectedEscuelas([]);
+    } else {
+      setSelectedEscuelas([...currentEscuelas]);
+    }
+  };
+
+  // --- Funciones CRUD y de selección para Asignatura (ya implementadas) ---
+  const handleToggleAsignaturaSelection = (asignaturaToToggle) => {
+    setSelectedAsignaturas((prevSelected) => {
+      const isSelected = prevSelected.find(
+        (a) => a.ID_ASIGNATURA === asignaturaToToggle.ID_ASIGNATURA
+      );
+      if (isSelected) {
+        return prevSelected.filter(
+          (a) => a.ID_ASIGNATURA !== asignaturaToToggle.ID_ASIGNATURA
+        );
+      }
+      return [...prevSelected, asignaturaToToggle];
+    });
+  };
+
+  const handleToggleSelectAllAsignaturas = () => {
+    // currentAsignaturas son las visibles en la paginación actual
+    if (selectedAsignaturas.length === currentAsignaturas.length) {
+      setSelectedAsignaturas([]);
+    } else {
+      setSelectedAsignaturas([...currentAsignaturas]);
+    }
+  };
+
+  // --- Funciones CRUD y de selección para Seccion (ya implementadas) ---
+  const handleToggleSeccionSelection = (seccionToToggle) => {
+    setSelectedSecciones((prevSelected) => {
+      const isSelected = prevSelected.find(
+        (s) => s.ID_SECCION === seccionToToggle.ID_SECCION
+      );
+      if (isSelected) {
+        return prevSelected.filter(
+          (s) => s.ID_SECCION !== seccionToToggle.ID_SECCION
+        );
+      }
+      return [...prevSelected, seccionToToggle];
+    });
+  };
+
+  const handleToggleSelectAllSecciones = () => {
+    if (selectedSecciones.length === currentSecciones.length) {
+      setSelectedSecciones([]);
+    } else {
+      setSelectedSecciones([...currentSecciones]);
     }
   };
 
@@ -228,10 +378,18 @@ export default function AsignaturasPage() {
 
   const handleEditSeccion = async (form) => {
     try {
-      await EditSeccion(selectedSeccion, form);
+      if (selectedSecciones.length !== 1) {
+        setError(
+          'Error: Debe haber exactamente una sección seleccionada para editar.'
+        );
+        setTimeout(() => setError(''), 5000);
+        return;
+      }
+      await EditSeccion(selectedSecciones[0].ID_SECCION, form); // Usar el ID de la sección seleccionada
       loadData();
       closeModal();
       setSuccess('Sección actualizada con éxito');
+      setSelectedSecciones([]); // Limpiar selección
       setTimeout(() => {
         setSuccess('');
       }, 5000);
@@ -246,22 +404,60 @@ export default function AsignaturasPage() {
   };
 
   const handleDeleteSeccion = async () => {
+    if (selectedSecciones.length === 0) {
+      setError('No hay secciones seleccionadas para eliminar.');
+      setTimeout(() => setError(''), 5000);
+      closeModal();
+      return;
+    }
+
     try {
-      await DeleteSeccion(selectedSeccion);
+      // Asumimos que DeleteSeccion puede tomar un ID.
+      // Si tu backend soporta borrado masivo, puedes enviar todos los IDs.
+      // Por ahora, lo haremos uno por uno.
+      for (const seccion of selectedSecciones) {
+        await DeleteSeccion(seccion.ID_SECCION);
+      }
       loadData();
       closeModal();
-      setSelectedSeccion(null);
-      setSuccess('Sección eliminada con éxito');
+      setSuccess(
+        `${selectedSecciones.length} sección(es) eliminada(s) con éxito`
+      );
+      setSelectedSecciones([]); // Limpiar selección
       setTimeout(() => {
         setSuccess('');
       }, 5000);
     } catch (error) {
-      setError('Error al eliminar seccion');
+      setError('Error al eliminar sección(es)');
       console.error('Error:', error);
       setTimeout(() => {
         setError('');
       }, 5000);
       closeModal();
+    }
+  };
+
+  // --- Funciones CRUD y de selección para Carrera (ya implementadas) ---
+  const handleToggleCarreraSelection = (carreraToToggle) => {
+    setSelectedCarreras((prevSelected) => {
+      const isSelected = prevSelected.find(
+        (c) => c.ID_CARRERA === carreraToToggle.ID_CARRERA
+      );
+      if (isSelected) {
+        return prevSelected.filter(
+          (c) => c.ID_CARRERA !== carreraToToggle.ID_CARRERA
+        );
+      }
+      return [...prevSelected, carreraToToggle];
+    });
+  };
+
+  const handleToggleSelectAllCarreras = () => {
+    // currentCarreras son las visibles en la paginación actual
+    if (selectedCarreras.length === currentCarreras.length) {
+      setSelectedCarreras([]);
+    } else {
+      setSelectedCarreras([...currentCarreras]);
     }
   };
 
@@ -270,119 +466,120 @@ export default function AsignaturasPage() {
       await AddCarrera(form);
       loadData();
       closeModal();
-      setSuccess('Carrera creada con éxito');
-      setTimeout(() => {
-        setSuccess('');
-      }, 5000);
+      setSuccess('Carrera agregada con éxito');
+      setTimeout(() => setSuccess(''), 5000);
     } catch (error) {
-      setError('Error al crear carrera');
-      setTimeout(() => {
-        setError('');
-      }, 5000);
+      setError('Error al agregar carrera');
+      console.error('Error:', error);
+      setTimeout(() => setError(''), 5000);
       closeModal();
     }
   };
 
   const handleEditCarrera = async (form) => {
     try {
-      await EditCarrera(selectedCarrera, form);
+      if (selectedCarreras.length !== 1) {
+        setError(
+          'Error: Debe haber exactamente una carrera seleccionada para editar.'
+        );
+        setTimeout(() => setError(''), 5000);
+        return;
+      }
+      await EditCarrera(selectedCarreras[0].ID_CARRERA, form);
       loadData();
       closeModal();
       setSuccess('Carrera actualizada con éxito');
-      setTimeout(() => {
-        setSuccess('');
-      }, 5000);
+      setSelectedCarreras([]); // Limpiar selección
+      setTimeout(() => setSuccess(''), 5000);
     } catch (error) {
       setError('Error al actualizar carrera');
       console.error('Error:', error);
-      setTimeout(() => {
-        setError('');
-      }, 5000);
+      setTimeout(() => setError(''), 5000);
       closeModal();
     }
   };
 
   const handleDeleteCarrera = async () => {
+    if (selectedCarreras.length === 0) {
+      setError('No hay carreras seleccionadas para eliminar.');
+      setTimeout(() => setError(''), 5000);
+      closeModal();
+      return;
+    }
     try {
-      await DeleteCarrera(selectedCarrera);
+      for (const carrera of selectedCarreras) {
+        await DeleteCarrera(carrera.ID_CARRERA);
+      }
       loadData();
       closeModal();
-      setSelectedCarrera(null);
-      setSuccess('Carrera eliminada con éxito');
-      setTimeout(() => {
-        setSuccess('');
-      }, 5000);
+      setSuccess(
+        `${selectedCarreras.length} carrera(s) eliminada(s) con éxito`
+      );
+      setSelectedCarreras([]); // Limpiar selección
+      setTimeout(() => setSuccess(''), 5000);
     } catch (error) {
-      setError('Error al eliminar carrera');
+      setError('Error al eliminar carrera(s)');
       console.error('Error:', error);
-      setTimeout(() => {
-        setError('');
-      }, 5000);
+      setTimeout(() => setError(''), 5000);
       closeModal();
     }
   };
 
-  const handleAddEscuela = async (form) => {
-    try {
-      await AddEscuela(form);
-      loadData();
-      closeModal();
-      setSuccess('Escuela creada con éxito');
-      setTimeout(() => {
-        setSuccess('');
-      }, 5000);
-    } catch (error) {
-      setError('Error al crear escuela');
-      setTimeout(() => {
-        setError('');
-      }, 5000);
-      closeModal();
-    }
-  };
+  // Funciones de paginación
+  const paginateAsignaturas = (pageNumber) =>
+    setCurrentPageAsignaturas(pageNumber);
+  const paginateSecciones = (pageNumber) => setCurrentPageSecciones(pageNumber);
+  const paginateCarreras = (pageNumber) => setCurrentPageCarreras(pageNumber);
+  const paginateEscuelas = (pageNumber) => setCurrentPageEscuelas(pageNumber);
 
-  const handleEditEscuela = async (form) => {
-    try {
-      await EditEscuela(selectedEscuela, form);
-      loadData();
-      closeModal();
-      setSuccess('Escuela actualizada con éxito');
-      setTimeout(() => {
-        setSuccess('');
-      }, 5000);
-    } catch (error) {
-      setError('Error al actualizar escuela');
-      console.error('Error:', error);
-      setTimeout(() => {
-        setError('');
-      }, 5000);
-      closeModal();
-    }
-  };
+  // Calcular datos para la página actual
+  const indexOfLastAsignatura = currentPageAsignaturas * itemsPerPage;
+  const indexOfFirstAsignatura = indexOfLastAsignatura - itemsPerPage;
+  const currentAsignaturas = asignaturas.slice(
+    indexOfFirstAsignatura,
+    indexOfLastAsignatura
+  );
 
-  const handleDeleteEscuela = async () => {
-    try {
-      await DeleteEscuela(selectedEscuela);
-      loadData();
-      closeModal();
-      setSelectedEscuela(null);
-      setSuccess('Escuela eliminada con éxito');
-      setTimeout(() => {
-        setSuccess('');
-      }, 5000);
-    } catch (error) {
-      setError('Error al eliminar escuela');
-      console.error('Error:', error);
-      setTimeout(() => {
-        setError('');
-      }, 5000);
-      closeModal();
-    }
+  const indexOfLastSeccion = currentPageSecciones * itemsPerPage;
+  const indexOfFirstSeccion = indexOfLastSeccion - itemsPerPage;
+  const currentSecciones = secciones.slice(
+    indexOfFirstSeccion,
+    indexOfLastSeccion
+  );
+
+  const indexOfLastCarrera = currentPageCarreras * itemsPerPage;
+  const indexOfFirstCarrera = indexOfLastCarrera - itemsPerPage;
+  const currentCarreras = carreras.slice(
+    indexOfFirstCarrera,
+    indexOfLastCarrera
+  );
+
+  const indexOfLastEscuela = currentPageEscuelas * itemsPerPage;
+  const indexOfFirstEscuela = indexOfLastEscuela - itemsPerPage;
+  const currentEscuelas = escuelas.slice(
+    indexOfFirstEscuela,
+    indexOfLastEscuela
+  );
+
+  const handleSetTab = (tabName) => {
+    setActiveTab(tabName);
+    // Opcional: resetear selecciones al cambiar de pestaña
+    setSelectedAsignaturas([]);
+    setSelectedSecciones([]);
+    setSelectedCarreras([]);
+    setSelectedEscuelas([]);
   };
 
   return (
     <Layout>
       <style>{keyframes}</style>
-      <h1 className="mb-4">Gestion Administrativa</h1>
+      <div>
+        <p className="display-5 page-title-custom mb-2">
+          <i className="bi bi-briefcase-fill me-3"></i>
+          Gestión Administrativa
+        </p>
+      </div>
+      <hr />
       {error && (
         <div className="alert alert-danger" style={alertStyle}>
           {error}
@@ -393,12 +590,11 @@ export default function AsignaturasPage() {
           {success}
         </div>
       )}
-
       <ul className="nav nav-tabs mb-3">
         <li className="nav-item">
           <button
             className={`nav-link ${activeTab === 'asignaturas' ? 'active' : ''}`}
-            onClick={() => setActiveTab('asignaturas')}
+            onClick={() => handleSetTab('asignaturas')}
           >
             Asignaturas
           </button>
@@ -406,7 +602,7 @@ export default function AsignaturasPage() {
         <li className="nav-item">
           <button
             className={`nav-link ${activeTab === 'secciones' ? 'active' : ''}`}
-            onClick={() => setActiveTab('secciones')}
+            onClick={() => handleSetTab('secciones')}
           >
             Secciones
           </button>
@@ -414,7 +610,7 @@ export default function AsignaturasPage() {
         <li className="nav-item">
           <button
             className={`nav-link ${activeTab === 'carreras' ? 'active' : ''}`}
-            onClick={() => setActiveTab('carreras')}
+            onClick={() => handleSetTab('carreras')}
           >
             Carreras
           </button>
@@ -422,7 +618,7 @@ export default function AsignaturasPage() {
         <li className="nav-item">
           <button
             className={`nav-link ${activeTab === 'escuelas' ? 'active' : ''}`}
-            onClick={() => setActiveTab('escuelas')}
+            onClick={() => handleSetTab('escuelas')}
           >
             Escuelas
           </button>
@@ -435,17 +631,25 @@ export default function AsignaturasPage() {
             onAdd={() => openModal('add', 'asignatura')}
             onEdit={() => openModal('edit', 'asignatura')}
             onDelete={() => openModal('delete', 'asignatura')}
-            selectedAsignatura={selectedAsignatura}
+            selectedAsignaturas={selectedAsignaturas} // Pasar el array
           />
           <AsignaturaList
-            asignaturas={asignaturas}
-            selectedAsignatura={selectedAsignatura}
-            onSelectAsignatura={setSelectedAsignatura}
+            asignaturas={currentAsignaturas} // Usar datos paginados
+            selectedAsignaturas={selectedAsignaturas} // Pasar el array
+            onToggleAsignaturaSelection={handleToggleAsignaturaSelection}
+            onToggleSelectAll={handleToggleSelectAllAsignaturas}
             loading={loading}
           />
+          {!loading && asignaturas.length > itemsPerPage && (
+            <PaginationComponent
+              itemsPerPage={itemsPerPage}
+              totalItems={asignaturas.length}
+              paginate={paginateAsignaturas}
+              currentPage={currentPageAsignaturas}
+            />
+          )}
         </>
       )}
-
       {modal.type && modal.entity === 'asignatura' && (
         <Modal
           title={
@@ -453,13 +657,28 @@ export default function AsignaturasPage() {
               ? 'Agregar Asignatura'
               : modal.type === 'edit'
                 ? 'Editar Asignatura'
-                : 'Eliminar Asignatura'
+                : `Eliminar Asignatura(s) (${selectedAsignaturas.length})`
           }
           onClose={closeModal}
         >
           {modal.type === 'delete' ? (
             <div>
-              <p>¿Está seguro de que desea eliminar esta asignatura?</p>
+              <p>
+                ¿Está seguro de que desea eliminar{' '}
+                {selectedAsignaturas.length === 1
+                  ? 'la asignatura seleccionada'
+                  : `las ${selectedAsignaturas.length} asignaturas seleccionadas`}
+                ?
+              </p>
+              {selectedAsignaturas.length > 1 && (
+                <ul>
+                  {selectedAsignaturas.map((a) => (
+                    <li key={a.ID_ASIGNATURA}>
+                      {a.NOMBRE_ASIGNATURA || a.ID_ASIGNATURA}
+                    </li>
+                  ))}
+                </ul>
+              )}
               <div className="modal-footer">
                 <button className="btn btn-secondary" onClick={closeModal}>
                   Cancelar
@@ -481,6 +700,7 @@ export default function AsignaturasPage() {
                   : handleEditAsignatura
               }
               onCancel={closeModal}
+              carreras={carreras} // Pasar carreras al formulario
             />
           )}
         </Modal>
@@ -492,17 +712,25 @@ export default function AsignaturasPage() {
             onAdd={() => openModal('add', 'seccion')}
             onEdit={() => openModal('edit', 'seccion')}
             onDelete={() => openModal('delete', 'seccion')}
-            selectedSeccion={selectedSeccion}
+            selectedSecciones={selectedSecciones}
           />
           <SeccionList
-            secciones={secciones}
-            selectedSeccion={selectedSeccion}
-            onSelectSeccion={setSelectedSeccion}
+            secciones={currentSecciones} // Usar datos paginados
+            selectedSecciones={selectedSecciones}
+            onToggleSeccionSelection={handleToggleSeccionSelection}
+            onToggleSelectAll={handleToggleSelectAllSecciones}
             loading={loading}
           />
+          {!loading && secciones.length > itemsPerPage && (
+            <PaginationComponent
+              itemsPerPage={itemsPerPage}
+              totalItems={secciones.length}
+              paginate={paginateSecciones}
+              currentPage={currentPageSecciones}
+            />
+          )}
         </>
       )}
-
       {modal.type && modal.entity === 'seccion' && (
         <Modal
           title={
@@ -510,13 +738,28 @@ export default function AsignaturasPage() {
               ? 'Agregar Sección'
               : modal.type === 'edit'
                 ? 'Editar Sección'
-                : 'Eliminar Sección'
+                : `Eliminar Sección(es) (${selectedSecciones.length})`
           }
           onClose={closeModal}
         >
           {modal.type === 'delete' ? (
             <div>
-              <p>¿Está seguro de que desea eliminar esta sección?</p>
+              <p>
+                ¿Está seguro de que desea eliminar{' '}
+                {selectedSecciones.length === 1
+                  ? 'la sección seleccionada'
+                  : `las ${selectedSecciones.length} secciones seleccionadas`}
+                ?
+              </p>
+              {selectedSecciones.length > 1 && (
+                <ul>
+                  {selectedSecciones.map((s) => (
+                    <li key={s.ID_SECCION}>
+                      {s.NOMBRE_SECCION || s.ID_SECCION}
+                    </li>
+                  ))}
+                </ul>
+              )}
               <div className="modal-footer">
                 <button className="btn btn-secondary" onClick={closeModal}>
                   Cancelar
@@ -536,28 +779,38 @@ export default function AsignaturasPage() {
                 modal.type === 'add' ? handleAddSeccion : handleEditSeccion
               }
               onCancel={closeModal}
+              asignaturas={asignaturas} // Pasar lista de asignaturas
+              carreras={carreras} // Pasar lista de carreras
+              // profesores={profesores} // Pasar lista de profesores si es necesario
             />
           )}
         </Modal>
       )}
-
       {activeTab === 'carreras' && (
         <>
           <CarreraActions
             onAdd={() => openModal('add', 'carrera')}
             onEdit={() => openModal('edit', 'carrera')}
             onDelete={() => openModal('delete', 'carrera')}
-            selectedCarrera={selectedCarrera}
+            selectedCarreras={selectedCarreras} // Pasar el array
           />
           <CarreraList
-            carreras={carreras}
-            selectedCarrera={selectedCarrera}
-            onSelectCarrera={setSelectedCarrera}
+            carreras={currentCarreras} // Usar datos paginados
+            selectedCarreras={selectedCarreras} // Pasar el array
+            onToggleCarreraSelection={handleToggleCarreraSelection}
+            onToggleSelectAll={handleToggleSelectAllCarreras}
             loading={loading}
           />
+          {!loading && carreras.length > itemsPerPage && (
+            <PaginationComponent
+              itemsPerPage={itemsPerPage}
+              totalItems={carreras.length}
+              paginate={paginateCarreras}
+              currentPage={currentPageCarreras}
+            />
+          )}
         </>
       )}
-
       {modal.type && modal.entity === 'carrera' && (
         <Modal
           title={
@@ -565,13 +818,28 @@ export default function AsignaturasPage() {
               ? 'Agregar Carrera'
               : modal.type === 'edit'
                 ? 'Editar Carrera'
-                : 'Eliminar Carrera'
+                : `Eliminar Carrera(s) (${selectedCarreras.length})`
           }
           onClose={closeModal}
         >
           {modal.type === 'delete' ? (
             <div>
-              <p>¿Está seguro de que desea eliminar esta carrera?</p>
+              <p>
+                ¿Está seguro de que desea eliminar{' '}
+                {selectedCarreras.length === 1
+                  ? 'la carrera seleccionada'
+                  : `las ${selectedCarreras.length} carreras seleccionadas`}
+                ?
+              </p>
+              {selectedCarreras.length > 1 && (
+                <ul>
+                  {selectedCarreras.map((c) => (
+                    <li key={c.ID_CARRERA}>
+                      {c.NOMBRE_CARRERA || c.ID_CARRERA}
+                    </li>
+                  ))}
+                </ul>
+              )}
               <div className="modal-footer">
                 <button className="btn btn-secondary" onClick={closeModal}>
                   Cancelar
@@ -591,6 +859,7 @@ export default function AsignaturasPage() {
                 modal.type === 'add' ? handleAddCarrera : handleEditCarrera
               }
               onCancel={closeModal}
+              escuelas={escuelas} // Pasar escuelas al formulario
             />
           )}
         </Modal>
@@ -602,17 +871,25 @@ export default function AsignaturasPage() {
             onAdd={() => openModal('add', 'escuela')}
             onEdit={() => openModal('edit', 'escuela')}
             onDelete={() => openModal('delete', 'escuela')}
-            selectedEscuela={selectedEscuela}
+            selectedEscuelas={selectedEscuelas} // Pasar el array
           />
           <EscuelaList
-            escuelas={escuelas}
-            selectedEscuela={selectedEscuela}
-            onSelectEscuela={setSelectedEscuela}
+            escuelas={currentEscuelas} // Usar datos paginados
+            selectedEscuelas={selectedEscuelas} // Pasar el array
+            onToggleEscuelaSelection={handleToggleEscuelaSelection}
+            onToggleSelectAll={handleToggleSelectAllEscuelas}
             loading={loading}
           />
+          {!loading && escuelas.length > itemsPerPage && (
+            <PaginationComponent
+              itemsPerPage={itemsPerPage}
+              totalItems={escuelas.length}
+              paginate={paginateEscuelas}
+              currentPage={currentPageEscuelas}
+            />
+          )}
         </>
       )}
-
       {modal.type && modal.entity === 'escuela' && (
         <Modal
           title={
@@ -620,13 +897,28 @@ export default function AsignaturasPage() {
               ? 'Agregar Escuela'
               : modal.type === 'edit'
                 ? 'Editar Escuela'
-                : 'Eliminar Escuela'
+                : `Eliminar Escuela(s) (${selectedEscuelas.length})`
           }
           onClose={closeModal}
         >
           {modal.type === 'delete' ? (
             <div>
-              <p>¿Está seguro de que desea eliminar esta escuela?</p>
+              <p>
+                ¿Está seguro de que desea eliminar{' '}
+                {selectedEscuelas.length === 1
+                  ? 'la escuela seleccionada'
+                  : `las ${selectedEscuelas.length} escuelas seleccionadas`}
+                ?
+              </p>
+              {selectedEscuelas.length > 1 && (
+                <ul>
+                  {selectedEscuelas.map((e) => (
+                    <li key={e.ID_ESCUELA}>
+                      {e.NOMBRE_ESCUELA || e.ID_ESCUELA}
+                    </li>
+                  ))}
+                </ul>
+              )}
               <div className="modal-footer">
                 <button className="btn btn-secondary" onClick={closeModal}>
                   Cancelar
@@ -646,6 +938,7 @@ export default function AsignaturasPage() {
                 modal.type === 'add' ? handleAddEscuela : handleEditEscuela
               }
               onCancel={closeModal}
+              // No se pasan otras listas a EscuelaForm a menos que sea necesario
             />
           )}
         </Modal>
