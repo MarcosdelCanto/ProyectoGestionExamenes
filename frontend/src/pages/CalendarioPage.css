@@ -130,7 +130,7 @@
 
 /* Celdas de módulo y horario */
 .numero-modulo {
-  background: #fff;
+  background: #5d5f7d;
   font-weight: bold;
   color: var(--secondary-color);
 }
@@ -208,4 +208,16 @@
   flex: 1;
   margin: 0 1rem 1rem;
   /* El componente AgendaSemanal ya gestiona su propio layout con .agenda-container */
+}
+.orden-col {
+  width: 50px;
+  text-align: center;
+  font-weight: lighter;
+  color: black;
+}
+.horario-col {
+  width: 100px;
+  text-align: center;
+  font-weight: normal;
+  color: #5d5f7d;
 }

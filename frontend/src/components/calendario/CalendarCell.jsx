@@ -1,5 +1,6 @@
 import React from 'react';
-import { useDrop } from 'react-dnd';
+import { format } from 'date-fns';
+import { useDroppable } from '@dnd-kit/core'; // Importar useDroppable
 
 export default function CalendarCell({
   fecha,
@@ -10,56 +11,55 @@ export default function CalendarCell({
   modulosSeleccionados,
   onSelectModulo,
 }) {
-  const [{ isOver, canDrop }, dropRef] = useDrop({
-    accept: 'EXAM',
-    canDrop: () => !!selectedSala && !!selectedExam,
-    drop: () => onSelectModulo(fecha, modulo.ORDEN),
-    collect: (monitor) => ({
-      isOver: monitor.isOver(),
-      canDrop: monitor.canDrop(),
-    }),
+  const { setNodeRef, isOver } = useDroppable({
+    id: `celda-${format(new Date(fecha), 'yyyy-MM-dd')}-${modulo.ID_MODULO}`, // ID único para la celda
+    data: {
+      // Datos asociados a esta zona "soltable"
+      type: 'celda-calendario',
+      fecha: format(new Date(fecha), 'yyyy-MM-dd'), // Guardar fecha formateada
+      modulo: modulo, // Guardar el objeto módulo completo
+    },
   });
 
-  const highlight = isOver
-    ? canDrop
-      ? { backgroundColor: 'lightgreen' }
-      : { backgroundColor: 'lightcoral' }
-    : {};
-
-  // Reserva existente
-  const reserva = reservas.find(
+  const estaReservado = reservas.some(
     (r) =>
       r.SALA_ID_SALA === selectedSala?.ID_SALA &&
-      r.FECHA_RESERVA.slice(0, 10) === fecha &&
+      format(new Date(r.FECHA_RESERVA), 'yyyy-MM-dd') ===
+        format(new Date(fecha), 'yyyy-MM-dd') &&
       r.Modulos.some((m) => m.MODULO_ID_MODULO === modulo.ID_MODULO)
   );
 
-  if (reserva) {
-    return (
-      <td ref={dropRef} style={highlight} className="reservado">
-        <div>
-          <span>{reserva.Examen?.NOMBRE_EXAMEN}</span>
-        </div>
-      </td>
-    );
+  const estaSeleccionado = modulosSeleccionados.some(
+    (m) =>
+      m.fecha === format(new Date(fecha), 'yyyy-MM-dd') &&
+      m.numero === modulo.ORDEN
+  );
+
+  let cellClassName = 'calendar-cell';
+  if (estaReservado) {
+    cellClassName += ' reservado';
+  } else if (estaSeleccionado) {
+    cellClassName += ' seleccionado';
   }
 
-  const estaSel = modulosSeleccionados.some(
-    (m) => m.fecha === fecha && m.numero === modulo.ORDEN
-  );
+  // Estilo para feedback visual cuando se arrastra sobre la celda
+  const droppableStyle = {
+    backgroundColor: isOver ? '#e6f7ff' : undefined, // Cambia el fondo si algo se arrastra encima
+    border: isOver ? '2px dashed #1890ff' : '1px solid #ddd', // Cambia el borde
+    // Asegúrate que el padding y otros estilos no se rompan
+  };
 
   return (
     <td
-      ref={dropRef}
-      style={highlight}
-      className={estaSel ? 'seleccionado' : 'disponible'}
+      ref={setNodeRef} // Aplicar la referencia para dnd-kit
+      className={cellClassName}
+      style={droppableStyle} // Aplicar estilo de "soltable"
+      onClick={() =>
+        !estaReservado &&
+        onSelectModulo(format(new Date(fecha), 'yyyy-MM-dd'), modulo.ORDEN)
+      }
     >
-      <button
-        disabled={!selectedSala || !selectedExam}
-        onClick={() => onSelectModulo(fecha, modulo.ORDEN)}
-      >
-        {estaSel ? '👌' : '➕'}
-      </button>
+      {/* Contenido de la celda, si lo hubiera */}
     </td>
   );
 }

@@ -5,7 +5,7 @@ export const getAllSalas = async (req, res) => {
   try {
     conn = await getConnection();
     const result = await conn.execute(
-      `SELECT s.id_sala, s.nombre_sala, s.capacidad_sala, s.edificio_id_edificio, e.nombre_edificio, e.sigla_edificio
+      `SELECT s.id_sala, s.nombre_sala, s.capacidad_sala, s.edificio_id_edificio,s.cod_sala, e.nombre_edificio, e.sigla_edificio
       FROM SALA s
       JOIN EDIFICIO e ON s.edificio_id_edificio = e.id_edificio
       ORDER BY s.id_sala`,

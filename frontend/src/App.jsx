@@ -15,6 +15,7 @@ import AsignaturasPage from './pages/AsignaturasPage';
 import ExamenesPage from './pages/ExamenesPage';
 import CalendarioPage from './pages/CalendarioPage';
 import CargaDatosPage from './pages/CargaDatosPage';
+import RolesPage from './pages/RolesPage';
 
 function App() {
   return (
@@ -36,6 +37,7 @@ function App() {
             <Route path="/examenes" element={<ExamenesPage />} />
             <Route path="/calendario" element={<CalendarioPage />} />
             <Route path="/carga-datos" element={<CargaDatosPage />} />
+            <Route path="/roles" element={<RolesPage />} />
           </Route>
         </Routes>
       </DndProvider>
