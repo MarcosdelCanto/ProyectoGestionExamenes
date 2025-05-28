@@ -15,8 +15,6 @@ import AsignaturasPage from './pages/AsignaturasPage';
 import ExamenesPage from './pages/ExamenesPage';
 import CalendarioPage from './pages/CalendarioPage';
 import CargaDatosPage from './pages/CargaDatosPage';
-
-import RolesPage from './pages/RolesPage'; // Importar la nueva página de Roles
 import RolesPage from './pages/RolesPage';
 
 function App() {
@@ -28,7 +26,6 @@ function App() {
         <Routes>
           {/* Ruta pública de login */}
           <Route path="/login" element={<Login />} />
-
           {/* Rutas protegidas */}
           <Route element={<PrivateRoute />}>
             <Route path="/" element={<HomePage />} />
