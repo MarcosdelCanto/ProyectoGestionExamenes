@@ -56,13 +56,12 @@ export const getRoleById = async (req, res) => {
  * Asume que la tabla ROL tiene ID_ROL (autoincremental con SEQ_ROL) y NOMBRE_ROL.
  */
 export const createRole = async (req, res) => {
-  const { NOMBRE_ROL } = req.body; // Solo esperamos NOMBRE_ROL
+  const { NOMBRE_ROL, permisos } = req.body;
   let conn;
-
+  console.log('[CREATE ROLE] Body recibido:', req.body);
   if (!NOMBRE_ROL || NOMBRE_ROL.trim() === '') {
     return res.status(400).json({ error: 'El nombre del rol es obligatorio.' });
   }
-
   try {
     conn = await getConnection();
     const result = await conn.execute(
@@ -74,9 +73,21 @@ export const createRole = async (req, res) => {
         newId: { dir: oracledb.BIND_OUT, type: oracledb.NUMBER },
       }
     );
+    const newRoleId = result.outBinds.newId[0];
+    console.log(`[CREATE ROLE] Rol creado con ID: ${newRoleId}`);
+    if (Array.isArray(permisos) && permisos.length > 0) {
+      console.log(`[CREATE ROLE] Permisos a asociar:`, permisos);
+      for (const idPermiso of permisos) {
+        await conn.execute(
+          `INSERT INTO ADMIN.PERMISOSROL (ID_ROL, ID_PERMISO) VALUES (:idRol, :idPermiso)`,
+          { idRol: newRoleId, idPermiso }
+        );
+      }
+    } else {
+      console.log('[CREATE ROLE] No se enviaron permisos para asociar.');
+    }
     await conn.commit();
-    // Devolver el rol creado, incluyendo el nuevo ID y el nombre
-    res.status(201).json({ ID_ROL: result.outBinds.newId[0], NOMBRE_ROL });
+    res.status(201).json({ ID_ROL: newRoleId, NOMBRE_ROL });
   } catch (err) {
     console.error('Error al crear rol:', err);
     // Manejo de error específico para violación de constraint único (si NOMBRE_ROL debe ser único)
@@ -97,47 +108,45 @@ export const createRole = async (req, res) => {
  */
 export const updateRole = async (req, res) => {
   const { id } = req.params;
-  const { NOMBRE_ROL } = req.body; // Solo esperamos NOMBRE_ROL
+  const { NOMBRE_ROL, permisos } = req.body;
   let conn;
-
+  console.log(`[UPDATE ROLE] Body recibido:`, req.body);
   if (!NOMBRE_ROL || NOMBRE_ROL.trim() === '') {
     return res.status(400).json({ error: 'El nombre del rol es obligatorio.' });
   }
-
   try {
     conn = await getConnection();
     const result = await conn.execute(
-      `UPDATE ADMIN.ROL
-         SET NOMBRE_ROL = :nombre_rol
-       WHERE ID_ROL = :id`,
-      {
-        id,
-        nombre_rol: NOMBRE_ROL,
-      }
+      `UPDATE ADMIN.ROL SET NOMBRE_ROL = :nombre_rol WHERE ID_ROL = :id`,
+      { id, nombre_rol: NOMBRE_ROL }
     );
-
     if (result.rowsAffected === 0) {
-      return res
-        .status(404)
-        .json({ error: 'Rol no encontrado para actualizar.' });
+      return res.status(404).json({ error: 'Rol no encontrado para actualizar.' });
+    }
+    await conn.execute(
+      `DELETE FROM ADMIN.PERMISOSROL WHERE ID_ROL = :idRol`,
+      { idRol: id }
+    );
+    if (Array.isArray(permisos) && permisos.length > 0) {
+      console.log(`[UPDATE ROLE] Permisos a asociar:`, permisos);
+      for (const idPermiso of permisos) {
+        await conn.execute(
+          `INSERT INTO ADMIN.PERMISOSROL (ID_ROL, ID_PERMISO) VALUES (:idRol, :idPermiso)`,
+          { idRol: id, idPermiso }
+        );
+      }
+    } else {
+      console.log('[UPDATE ROLE] No se enviaron permisos para asociar.');
     }
     await conn.commit();
-    res
-      .status(200)
-      .json({
-        message: 'Rol actualizado exitosamente.',
-        ID_ROL: Number(id),
-        NOMBRE_ROL,
-      });
+    res.status(200).json({ message: 'Rol actualizado exitosamente.', ID_ROL: Number(id), NOMBRE_ROL });
   } catch (err) {
     console.error('Error al actualizar rol:', err);
     if (err.errorNum === 1) {
       // ORA-00001: unique constraint violated
-      return res
-        .status(409)
-        .json({
-          error: `El nombre de rol '${NOMBRE_ROL}' ya está en uso por otro rol.`,
-        });
+      return res.status(409).json({
+        error: `El nombre de rol '${NOMBRE_ROL}' ya está en uso por otro rol.`,
+      });
     }
     res.status(500).json({ error: 'No se pudo actualizar el rol.' });
   } finally {
@@ -170,12 +179,10 @@ export const deleteRole = async (req, res) => {
     // Considerar errores de FK si un rol está en uso
     if (err.errorNum === 2292) {
       // ORA-02292: integrity constraint violated - child record found
-      return res
-        .status(409)
-        .json({
-          error:
-            'No se puede eliminar el rol porque está asignado a uno o más usuarios.',
-        });
+      return res.status(409).json({
+        error:
+          'No se puede eliminar el rol porque está asignado a uno o más usuarios.',
+      });
     }
     res.status(500).json({ error: 'No se pudo eliminar el rol.' });
   } finally {
