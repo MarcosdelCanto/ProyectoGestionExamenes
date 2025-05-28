@@ -15,7 +15,7 @@ import {
 } from '@dnd-kit/core';
 // closestCenter es un algoritmo de colisión, puedes probar otros como pointerWithin
 
-export default function CalendarioPage() {
+export function CalendarioPage() {
   const [examenes, setExamenes] = useState([]);
   const [isLoadingExamenes, setIsLoadingExamenes] = useState(true);
   const [draggedExamenData, setDraggedExamenData] = useState(null);
