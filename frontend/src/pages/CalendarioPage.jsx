@@ -1,93 +1,111 @@
-import React, { useState } from 'react'; // Importar useState
+import React, { useState, useEffect } from 'react';
+import AgendaSemanal from '../components/calendario/AgendaSemanal';
+import ExamenSelector from '../components/calendario/ExamenSelector';
+import Layout from '../components/Layout';
+import './CalendarioPage.css';
+
+// Imports para dnd-kit
 import {
   DndContext,
   closestCenter,
-  KeyboardSensor,
   PointerSensor,
+  KeyboardSensor,
   useSensor,
   useSensors,
 } from '@dnd-kit/core';
-import {
-  arrayMove,
-  SortableContext,
-  sortableKeyboardCoordinates,
-  verticalListSortingStrategy,
-  useSortable,
-} from '@dnd-kit/sortable';
-import Layout from '../components/Layout';
-import AgendaSemanal from '../components/AgendaSemanal';
-import { DndProvider } from 'react-dnd';
-import { HTML5Backend } from 'react-dnd-html5-backend';
-import './CalendarioPage.css'; // Importar estilos CSS
+// closestCenter es un algoritmo de colisión, puedes probar otros como pointerWithin
 
-// Define o importa 'datosIniciales'
-// Ejemplo de definición:
-const datosIniciales = [
-  { id: '1', contenido: 'Elemento 1' },
-  { id: '2', contenido: 'Elemento 2' },
-  { id: '3', contenido: 'Elemento 3' },
-];
+export default function CalendarioPage() {
+  const [examenes, setExamenes] = useState([]);
+  const [isLoadingExamenes, setIsLoadingExamenes] = useState(true);
+  const [draggedExamenData, setDraggedExamenData] = useState(null);
+  const [dropTargetCellData, setDropTargetCellData] = useState(null);
 
-/**
- * Fila arrastrable para cada examen
- * @param {{ id: string, children: React.ReactNode }} props
- */
-export function SortableRow({ id, children }) {
-  const { attributes, listeners, setNodeRef, transform, transition } =
-    useSortable({ id });
-  const style = {
-    transform: transform
-      ? `translate3d(${transform.x}px, ${transform.y}px, 0)`
-      : undefined,
-    transition,
-  };
-  return (
-    <tr ref={setNodeRef} style={style} {...attributes} {...listeners}>
-      {children}
-    </tr>
-  );
-}
-
-function CalendarioPage() {
-  const [items, setItems] = useState(datosIniciales);
-
-  // Sensores para detectar el input (puntero y teclado para accesibilidad)
+  // Sensores para dnd-kit (para interacciones de puntero y teclado)
   const sensors = useSensors(
-    useSensor(PointerSensor),
-    useSensor(KeyboardSensor, {
-      coordinateGetter: sortableKeyboardCoordinates,
-    })
+    useSensor(PointerSensor, {
+      activationConstraint: {
+        // Pequeño retraso para evitar que el D&D se active con un simple clic en Swiper
+        // Ajusta o elimina si causa problemas con Swiper
+        delay: 100,
+        tolerance: 5,
+      },
+    }),
+    useSensor(KeyboardSensor)
   );
 
-  function handleDragEnd(event) {
+  useEffect(() => {
+    async function loadExamenes() {
+      setIsLoadingExamenes(true);
+      try {
+        const res = await fetch('/api/examenes'); // <-- TU ENDPOINT REAL AQUÍ
+        if (!res.ok) {
+          const errorData = await res.text(); // O res.json() si tu API devuelve JSON en errores
+          throw new Error(
+            `Error al cargar exámenes: ${res.status} ${errorData}`
+          );
+        }
+        const data = await res.json();
+        setExamenes(data);
+      } catch (err) {
+        console.error('Error cargando exámenes:', err);
+        setExamenes([]); // Considera un mejor manejo de errores
+      } finally {
+        setIsLoadingExamenes(false);
+      }
+    }
+    loadExamenes();
+  }, []);
+
+  const handleDragEnd = (event) => {
     const { active, over } = event;
 
-    if (active.id !== over.id) {
-      setItems((prevItems) => {
-        const oldIndex = prevItems.findIndex((item) => item.id === active.id);
-        const newIndex = prevItems.findIndex((item) => item.id === over.id);
+    // Limpiar estados previos en caso de que no se suelte sobre un destino válido
+    setDraggedExamenData(null);
+    setDropTargetCellData(null);
 
-        // arrayMove es una función útil de @dnd-kit/sortable
-        return arrayMove(prevItems, oldIndex, newIndex);
-      });
+    if (
+      over &&
+      active.data.current?.type === 'examen' &&
+      over.data.current?.type === 'celda-calendario'
+    ) {
+      setDraggedExamenData(active.data.current.examen); // El objeto examen completo
+      setDropTargetCellData(over.data.current); // { type, fecha, modulo }
     }
-  }
+  };
+
+  // Función para que AgendaSemanal notifique que ha procesado el drop
+  const handleDropProcessed = () => {
+    setDraggedExamenData(null);
+    setDropTargetCellData(null);
+  };
 
   return (
     <Layout>
-      <div className="container-fluid usuarios-page-container">
-        {/* Combinando Bootstrap con una clase personalizada */}
-        <h2 className="display-5 page-title-custom mb-4">
-          <i className="bi bi-calendar-check me-3"></i>
-          Calendario de Exámenes
-        </h2>
-
-        {/* Componente de calendario para poder soltar exámenes */}
-        <DndProvider backend={HTML5Backend}>
-          <AgendaSemanal />
-        </DndProvider>
-      </div>
+      {/* DndContext envuelve todos los componentes que participan en D&D */}
+      <DndContext
+        sensors={sensors}
+        collisionDetection={closestCenter} // O prueba con pointerWithin
+        onDragEnd={handleDragEnd}
+      >
+        <div className="page-calendario">
+          <ExamenSelector
+            examenes={examenes}
+            isLoadingExamenes={isLoadingExamenes}
+            // ...otras props para filtros
+          />
+          <AgendaSemanal
+            // Pasar los datos del D&D y la callback
+            draggedExamen={draggedExamenData}
+            dropTargetCell={dropTargetCellData}
+            onDropProcessed={handleDropProcessed}
+            // Pasar la lista de examenes si AgendaSemanal la necesita para la lógica de drop
+            // (ej. para obtener el objeto examen completo si solo se pasara el ID)
+            // Pero como ya pasamos el objeto examen completo en draggedExamenData, no sería estrictamente necesario
+            // examenesOriginales={examenes}
+          />
+        </div>
+      </DndContext>
     </Layout>
   );
 }
-export default CalendarioPage;
