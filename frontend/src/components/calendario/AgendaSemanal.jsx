@@ -11,9 +11,10 @@ import { es } from 'date-fns/locale';
 import SalaSelector from './SalaSelector';
 import ExamenSelector from './ExamenSelector'; // Importar ExamenSelector
 import CalendarGrid from './CalendarGrid';
-import FilterModalSalas from './FilterModalSalas'; // Importar el modal de filtros para salas
-// Asegúrate que las rutas de importación sean correctas
+import FilterModalSalas from './FilterModalSalas';
+import './CalendarioStyles.css'; // Importar los estilos
 
+//funcion para obtener las fechas de la semana actual
 const getWeekDates = (currentDate) => {
   if (!isValid(new Date(currentDate))) {
     currentDate = new Date();
@@ -24,10 +25,10 @@ const getWeekDates = (currentDate) => {
     locale: es,
   });
 
-  // Generar 6 días desde el lunes (hasta el sábado)
+  // Generar 7 días a partir del lunes
   return eachDayOfInterval({
     start,
-    end: addDays(start, 5), // 5 días después del lunes = sábado
+    end: addDays(start, 6), // 5 días después del lunes = sábado
   }).map((date) => ({
     fecha: format(date, 'yyyy-MM-dd'),
     diaNumero: format(date, 'd'),
@@ -369,17 +370,10 @@ export default function AgendaSemanal({
   };
 
   return (
-    <div
-      className="agenda-semanal-container"
-      style={{
-        display: 'flex',
-        flexDirection: 'column',
-      }}
-    >
-      {/* Ajustar SOME_HEADER_HEIGHT */}
+    <div className="agenda-semanal-container">
       {/* Fila Superior: Selectores */}
-      <div style={topRowStyle}>
-        <div style={salaSelectorContainerStyle}>
+      <div className="top-row">
+        <div className="sala-selector-container">
           <SalaSelector
             salas={salas}
             searchTerm={searchTermSala}
@@ -389,27 +383,19 @@ export default function AgendaSemanal({
             onSelectSala={handleSelectSala}
             isLoadingSalas={isLoadingSalas}
             onOpenFilterModal={() => setShowSalaFilterModal(true)}
-            // Aplicar estilos para que ocupe el 100% de la altura de su contenedor
-            // style={{ height: '100%' }} // Esto se aplicaría al div raíz de SalaSelector
           />
         </div>
-        <div style={examenSelectorContainerStyle}>
+        <div className="examen-selector-container">
           <ExamenSelector
             examenes={examenes} // Pasar los exámenes cargados aquí
             isLoadingExamenes={isLoadingExamenes}
-            // Aplicar estilos para que ocupe el 100% de la altura de su contenedor
-            // style={{ height: '100%' }} // Esto se aplicaría al div raíz de ExamenSelector
           />
         </div>
       </div>
       {/* Sección del Calendario */}
-      <main
-        className="details-section"
-        style={{ flexGrow: 1, overflowY: 'auto' }}
-      >
-        {/* Para que el calendario ocupe el resto y tenga scroll si es necesario */}
+      <main className="details-section">
         {isLoadingModulos || isLoadingSalas ? ( // isLoadingSalas también es relevante aquí
-          <p>Cargando datos del calendario...</p>
+          <p className="aviso-seleccion">Cargando datos del calendario...</p>
         ) : selectedSala ? (
           <>
             <CalendarGrid
@@ -419,11 +405,12 @@ export default function AgendaSemanal({
               selectedExam={selectedExamInternal} // Pasar el examen que se está intentando reservar
               reservas={reservas}
               modulosSeleccionados={modulosSeleccionados}
+              onSelectModulo={handleSelectModulo}
             />
             {puedeConfirmar && (
               <button
                 onClick={handleConfirmReserva}
-                className="btn btn-primary mt-3"
+                className="btn btn-primary btn-confirmar-reserva"
               >
                 Confirmar Reserva para {selectedExamInternal?.NOMBRE_ASIGNATURA}
               </button>

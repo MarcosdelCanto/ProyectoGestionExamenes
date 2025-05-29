@@ -1,6 +1,7 @@
 import React, { useState } from 'react'; // Quitar useEffect, useMemo, useRef si ya no se usan aquí
 import AgendaSemanal from '../components/calendario/AgendaSemanal';
 import Layout from '../components/Layout';
+import '../components/calendario/CalendarioStyles.css';
 import './CalendarioPage.css';
 
 // Imports para dnd-kit
