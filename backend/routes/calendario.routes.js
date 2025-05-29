@@ -8,10 +8,6 @@ import {
   getAllModulos,
   getModuloById,
 } from '../controllers/modulo.controller.js';
-import {
-  getAllReservas,
-  createReserva,
-} from '../controllers/reserva.controller.js';
 
 const router = Router();
 
@@ -21,6 +17,4 @@ router.get('/examenes', getAllExamenes); // Obtener todos los exámenes
 router.get('/examenes/:id', getExamenById); // Obtener un examen por ID
 router.get('/modulos', getAllModulos); // Obtener todos los módulos
 router.get('/modulos/:id', getModuloById); // Obtener un módulo por ID
-router.get('/reservas', getAllReservas); // Obtener todas las reservas
-router.post('/reservas', createReserva); // Crear una nueva reserva
 export default router;

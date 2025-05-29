@@ -5,6 +5,7 @@ import {
   addDays,
   eachDayOfInterval,
   isValid,
+  set,
 } from 'date-fns';
 import { es } from 'date-fns/locale';
 import SalaSelector from './SalaSelector';
@@ -17,8 +18,17 @@ const getWeekDates = (currentDate) => {
   if (!isValid(new Date(currentDate))) {
     currentDate = new Date();
   }
-  const start = startOfWeek(new Date(currentDate), { locale: es });
-  return eachDayOfInterval({ start, end: addDays(start, 6) }).map((date) => ({
+  // Obtener el lunes de la semana
+  const start = startOfWeek(new Date(currentDate), {
+    weekStartsOn: 1,
+    locale: es,
+  });
+
+  // Generar 6 días desde el lunes (hasta el sábado)
+  return eachDayOfInterval({
+    start,
+    end: addDays(start, 5), // 5 días después del lunes = sábado
+  }).map((date) => ({
     fecha: format(date, 'yyyy-MM-dd'),
     diaNumero: format(date, 'd'),
     diaNombre: format(date, 'EEEE', { locale: es }),
@@ -65,21 +75,14 @@ export default function AgendaSemanal({
       setIsLoadingModulos(true);
       setIsLoadingReservas(true);
       try {
-        const [
-          salasRes,
-          examenesRes,
-          modulosRes,
-          reservasRes,
-          sedesRes,
-          edificiosRes,
-        ] = await Promise.all([
-          fetch('/api/salas'),
-          fetch('/api/examenes'),
-          fetch('/api/modulos'), // Asegúrate que estos endpoints sean correctos
-          fetch('/api/reservas'),
-          fetch('/api/sedes'), // Endpoint para obtener sedes
-          fetch('/api/edificios'), // Endpoint para obtener edificios
-        ]);
+        const [salasRes, examenesRes, modulosRes, sedesRes, edificiosRes] =
+          await Promise.all([
+            fetch('/api/salas'),
+            fetch('/api/examenes'),
+            fetch('/api/modulos'), // Asegúrate que estos endpoints sean correctos
+            fetch('/api/sede'), // Endpoint para obtener sedes
+            fetch('/api/edificio'), // Endpoint para obtener edificios
+          ]);
 
         if (!salasRes.ok) throw new Error('Error cargando salas');
         setSalas(await salasRes.json());
@@ -90,8 +93,7 @@ export default function AgendaSemanal({
         if (!modulosRes.ok) throw new Error('Error cargando módulos');
         setModulos(await modulosRes.json());
 
-        if (!reservasRes.ok) throw new Error('Error cargando reservas');
-        setReservas(await reservasRes.json());
+        setReservas([]);
 
         if (!sedesRes.ok) throw new Error('Error cargando sedes');
         setSedesDisponibles(await sedesRes.json());
@@ -100,6 +102,7 @@ export default function AgendaSemanal({
         setEdificiosDisponibles(await edificiosRes.json());
       } catch (error) {
         console.error('Error al cargar datos iniciales:', error);
+
         // Manejar errores individuales si es necesario
       } finally {
         setIsLoadingSalas(false);
@@ -113,6 +116,7 @@ export default function AgendaSemanal({
 
   const fechas = useMemo(() => getWeekDates(fechaBase), [fechaBase]);
 
+  // Filtrado de salas
   const filteredSalas = useMemo(() => {
     let tempSalas = salas;
 
@@ -225,6 +229,7 @@ export default function AgendaSemanal({
     onDropProcessed,
   ]);
 
+  // Selección de módulos en el calendario
   const handleSelectModulo = useCallback(
     (fecha, orden) => {
       // Esta función podría ya no ser necesaria si la selección de módulos
@@ -234,13 +239,10 @@ export default function AgendaSemanal({
         alert('Primero arrastra un examen a una celda del calendario.');
         return;
       }
-      // Tu lógica original de selección manual
       setModulosSeleccionados((prev) => {
-        const yaExiste = prev.find(
-          (m) => m.fecha === fecha && m.numero === orden
-        );
-        if (yaExiste) {
-          return prev.filter((m) => !(m.fecha === fecha && m.numero === orden));
+        if (prev.length && prev[0].fecha !== fecha) {
+          alert('Módulos deben estar en el mismo día');
+          return [{ fecha, numero: orden }];
         }
         if (prev.length > 0 && prev[0].fecha !== fecha) {
           alert('Todos los módulos deben ser del mismo día.');
@@ -255,13 +257,10 @@ export default function AgendaSemanal({
         const nuevos = [...prev, { fecha, numero: orden }].sort(
           (a, b) => a.numero - b.numero
         );
-        // Validar consecutividad
         for (let i = 0; i < nuevos.length - 1; i++) {
           if (nuevos[i + 1].numero !== nuevos[i].numero + 1) {
-            alert(
-              'Los módulos deben ser consecutivos. Por favor, selecciona nuevamente.'
-            );
-            return [{ fecha, numero: orden }]; // Reinicia selección con el actual
+            alert('Módulos no consecutivos');
+            return [{ fecha, numero: orden }];
           }
         }
         return nuevos;
@@ -270,6 +269,7 @@ export default function AgendaSemanal({
     [selectedExamInternal] // Depende del examen activo
   );
 
+  // Construir payload para reserva
   const payloadForReserva = useCallback(() => {
     if (
       !selectedSala ||
@@ -301,6 +301,7 @@ export default function AgendaSemanal({
     };
   }, [selectedSala, selectedExamInternal, modulosSeleccionados, modulos]);
 
+  // Confirmar reserva al backend
   const handleConfirmReserva = useCallback(async () => {
     const payload = payloadForReserva();
     if (!payload) {
@@ -373,7 +374,6 @@ export default function AgendaSemanal({
       style={{
         display: 'flex',
         flexDirection: 'column',
-        height: 'calc(100vh - SOME_HEADER_HEIGHT)',
       }}
     >
       {/* Ajustar SOME_HEADER_HEIGHT */}
@@ -408,7 +408,7 @@ export default function AgendaSemanal({
         style={{ flexGrow: 1, overflowY: 'auto' }}
       >
         {/* Para que el calendario ocupe el resto y tenga scroll si es necesario */}
-        {isLoadingModulos || isLoadingReservas || isLoadingSalas ? ( // isLoadingSalas también es relevante aquí
+        {isLoadingModulos || isLoadingSalas ? ( // isLoadingSalas también es relevante aquí
           <p>Cargando datos del calendario...</p>
         ) : selectedSala ? (
           <>
@@ -419,7 +419,6 @@ export default function AgendaSemanal({
               selectedExam={selectedExamInternal} // Pasar el examen que se está intentando reservar
               reservas={reservas}
               modulosSeleccionados={modulosSeleccionados}
-              onSelectModulo={handleSelectModulo} // Considerar si esta función sigue siendo necesaria
             />
             {puedeConfirmar && (
               <button
@@ -432,7 +431,7 @@ export default function AgendaSemanal({
           </>
         ) : (
           <p className="aviso-seleccion">
-            Selecciona una sala para ver disponibilidad y arrastrar exámenes.
+            Selecciona una sala para ver disponibilidad
           </p>
         )}
       </main>
