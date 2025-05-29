@@ -1,6 +1,15 @@
 import api from './api';
 
-export const fetchAllAsignaturas = () => api.get('/asignatura');
+// export const fetchAllAsignaturas = () => api.get('/asignatura'); // Anterior
+export const fetchAllAsignaturas = async () => {
+  try {
+    const response = await api.get('/asignatura');
+    return response.data; // Asumiendo que response.data es el array de asignaturas
+  } catch (error) {
+    console.error('Error fetching asignaturas:', error);
+    throw error; // Propagar el error para que el componente lo maneje
+  }
+};
 export const fetchAsignaturaById = (id) => api.get(`/asignatura/${id}`);
 export const createAsignatura = (data) => api.post('/asignatura', data);
 export const updateAsignatura = (id, data) =>

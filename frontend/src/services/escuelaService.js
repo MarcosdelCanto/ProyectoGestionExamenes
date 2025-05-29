@@ -1,6 +1,15 @@
 import api from './api';
 
-export const fetchAllEscuelas = () => api.get('/escuela');
+// export const fetchAllEscuelas = () => api.get('/escuela'); // Anterior
+export const fetchAllEscuelas = async () => {
+  try {
+    const response = await api.get('/escuela');
+    return response.data; // Asumiendo que response.data es el array de escuelas
+  } catch (error) {
+    console.error('Error fetching escuelas:', error);
+    throw error; // Propagar el error para que el componente lo maneje
+  }
+};
 export const fetchEscuelaById = (id) => api.get(`/escuela/${id}`);
 export const createEscuela = (data) => api.post('/escuela', data);
 export const updateEscuela = (id, data) => api.put(`/escuela/${id}`, data);
