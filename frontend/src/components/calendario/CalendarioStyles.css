@@ -146,3 +146,36 @@
   align-self: flex-end;
   margin-top: 15px;
 }
+/* Estilos para post-it redimensionables */
+.drag-handle {
+  cursor: grab;
+  opacity: 0.6;
+  transition: opacity 0.2s;
+}
+
+.drag-handle:hover {
+  opacity: 1;
+}
+/* Indicador visual para celdas donde se puede soltar */
+.calendar-cell.drop-target {
+  background-color: rgba(0, 123, 255, 0.1);
+  border: 2px dashed #007bff;
+}
+
+/* Indicador visual para celdas incompatibles */
+.calendar-cell.drop-invalid {
+  background-color: rgba(220, 53, 69, 0.1);
+  border: 2px dashed #dc3545;
+}
+
+/* Mejora visual para post-its */
+.examen-post-it {
+  transition:
+    transform 0.1s,
+    box-shadow 0.2s;
+}
+
+.examen-post-it:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+}

@@ -68,6 +68,8 @@ export default function AgendaSemanal({
   const [isLoadingModulos, setIsLoadingModulos] = useState(true);
   const [isLoadingReservas, setIsLoadingReservas] = useState(true);
 
+  const [examenesConModulosModificados, setExamenesConModulosModificados] =
+    useState({});
   // Carga de datos inicial (salas, exámenes, módulos, reservas)
   useEffect(() => {
     async function loadInitialData() {
@@ -155,7 +157,13 @@ export default function AgendaSemanal({
   // Efecto para procesar el drop (cuando draggedExamen y dropTargetCell vienen de CalendarioPage)
   useEffect(() => {
     if (draggedExamen && dropTargetCell && selectedSala) {
-      const examenParaReservar = draggedExamen; // Este es el objeto examen completo
+      const examenParaReservar = {
+        ...draggedExamen,
+        CANTIDAD_MODULOS_EXAMEN:
+          examenesConModulosModificados[draggedExamen.ID_EXAMEN] ||
+          draggedExamen.CANTIDAD_MODULOS_EXAMEN,
+      };
+
       const { fecha: fechaDrop, modulo: moduloDrop } = dropTargetCell;
 
       if (
@@ -173,21 +181,26 @@ export default function AgendaSemanal({
         return;
       }
 
-      setSelectedExamInternal(examenParaReservar); // Guardar el examen que se está intentando reservar
+      // Usar la cantidad de módulos potencialmente modificada
+      setSelectedExamInternal(examenParaReservar);
+
+      // Verificar disponibilidad de módulos consecutivos
 
       let nuevosModulos = [];
       let seleccionExitosa = true;
+
       for (let i = 0; i < examenParaReservar.CANTIDAD_MODULOS_EXAMEN; i++) {
         const ordenActual = moduloDrop.ORDEN + i;
+
+        //verficar si el modulo existe
         const moduloParaSeleccionar = modulos.find(
           (m) => m.ORDEN === ordenActual
         );
-
         if (!moduloParaSeleccionar) {
           seleccionExitosa = false;
           break;
         }
-
+        //verificar si esta reservando
         const estaReservado = reservas.some(
           (r) =>
             r.SALA_ID_SALA === selectedSala.ID_SALA &&
@@ -228,6 +241,7 @@ export default function AgendaSemanal({
     modulos,
     reservas,
     onDropProcessed,
+    examenesConModulosModificados,
   ]);
 
   // Selección de módulos en el calendario
@@ -301,6 +315,14 @@ export default function AgendaSemanal({
       Modulos: modulosParaAPI,
     };
   }, [selectedSala, selectedExamInternal, modulosSeleccionados, modulos]);
+
+  // manejo los cambios en los módulos del examen seleccionado
+  const handleExamenModulosChange = useCallback((examenId, newModulosCount) => {
+    setExamenesConModulosModificados((prev) => ({
+      ...prev,
+      [examenId]: newModulosCount,
+    }));
+  }, []);
 
   // Confirmar reserva al backend
   const handleConfirmReserva = useCallback(async () => {
@@ -389,6 +411,7 @@ export default function AgendaSemanal({
           <ExamenSelector
             examenes={examenes} // Pasar los exámenes cargados aquí
             isLoadingExamenes={isLoadingExamenes}
+            onExamenModulosChange={handleExamenModulosChange}
           />
         </div>
       </div>

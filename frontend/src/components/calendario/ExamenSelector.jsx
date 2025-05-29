@@ -1,6 +1,7 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { FaSearch, FaFilter } from 'react-icons/fa';
 import ExamenPostIt from './ExamenPostIt';
+import { FaGripLines } from 'react-icons/fa';
 
 // Imports para Swiper
 import { Swiper, SwiperSlide } from 'swiper/react';
@@ -11,15 +12,20 @@ import 'swiper/css/pagination';
 
 // Imports para dnd-kit
 import { useDraggable } from '@dnd-kit/core';
+import { set } from 'date-fns';
 
 // Componente auxiliar para el elemento arrastrable (se mantiene igual)
-function DraggableExamenPostIt({ examen }) {
+function DraggableExamenPostIt({ examen, onModulosChange }) {
+  const [currentModulos, setCurrentModulos] = useState(
+    examen.CANTIDAD_MODULOS_EXAMEN
+  );
+
   const { attributes, listeners, setNodeRef, transform, isDragging } =
     useDraggable({
       id: `examen-${examen.ID_EXAMEN}`,
       data: {
         type: 'examen',
-        examen: examen,
+        examen: { ...examen, CANTIDAD_MODULOS_EXAMEN: currentModulos },
       },
     });
 
@@ -31,11 +37,19 @@ function DraggableExamenPostIt({ examen }) {
       }
     : undefined;
 
+  const handleModulosChange = (id, newModulosCount) => {
+    setCurrentModulos(newModulosCount);
+    if (onModulosChange) {
+      onModulosChange(id, newModulosCount);
+    }
+  };
+
   return (
     <ExamenPostIt
-      examen={examen}
+      examen={{ ...examen, CANTIDAD_MODULOS_EXAMEN: currentModulos }}
       setNodeRef={setNodeRef}
       style={style}
+      onModulosChange={handleModulosChange}
       {...listeners}
       {...attributes}
     />
@@ -153,8 +167,7 @@ function FilterModal({
 export default function ExamenSelector({
   examenes,
   isLoadingExamenes,
-
-  // ... otras props
+  onExamenModulosChange,
 }) {
   const [searchTermExamenes, setSearchTermExamenes] = useState('');
   const [selectedEscuela, setSelectedEscuela] = useState('');
@@ -164,6 +177,12 @@ export default function ExamenSelector({
 
   const handleSearchExamenes = (event) => {
     setSearchTermExamenes(event.target.value);
+  };
+
+  const handleModulosChange = (examenId, newModulosCount) => {
+    if (onExamenModulosChange) {
+      onExamenModulosChange(examenId, newModulosCount);
+    }
   };
 
   const filteredExamenes = useMemo(() => {
@@ -309,12 +328,13 @@ export default function ExamenSelector({
                   style={{
                     width: 'auto', // Para que el slide tome el ancho del ExamenPostIt
                     display: 'flex',
-                    //alignItems: 'center',
-                    //justifyContent: 'center',
                     padding: 0, // Añadir esto para eliminar el padding
                   }}
                 >
-                  <DraggableExamenPostIt examen={ex} />
+                  <DraggableExamenPostIt
+                    examen={ex}
+                    onModulosChange={handleModulosChange}
+                  />
                 </SwiperSlide>
               ))}
             </Swiper>
