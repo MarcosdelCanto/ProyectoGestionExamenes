@@ -37,12 +37,9 @@ function SeccionList({
             </th>
             <th className="align-middle">ID</th>
             <th className="align-middle">Nombre</th>
-            <th className="align-middle">Asignatura ID</th>{' '}
-            {/* Ajustar según el nombre real del campo */}
-            <th className="align-middle">Profesor ID</th>{' '}
-            {/* Ajustar según el nombre real del campo */}
-            <th className="align-middle">Carrera ID</th>{' '}
-            {/* Ajustar según el nombre real del campo */}
+            <th className="align-middle">Asignatura ID</th>
+            <th className="align-middle">Profesor ID</th>
+            <th className="align-middle">Carrera ID</th>
           </tr>
         </thead>
         <tbody>

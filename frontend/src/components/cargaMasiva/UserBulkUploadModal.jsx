@@ -3,7 +3,6 @@ import * as XLSX from 'xlsx';
 import { Modal, Button, Form, Alert, Table, Spinner } from 'react-bootstrap';
 import cargaDocenteService from '../../services/cargaDocenteService';
 import cargaAlumnoService from '../../services/cargaAlumnoService';
-import cargaSalaService from '../../services/cargaSalaService';
 import { fetchAllRoles } from '../../services/rolService';
 
 const VALID_FILE_EXTENSIONS = ['.xlsx', '.xls'];
@@ -143,8 +142,6 @@ export default function UserBulkUploadModal({
           dataForUpload,
           selectedOption
         );
-      } else if (selectedOption === SALA_OPTION) {
-        responseData = await cargaSalaService.subirSalas(dataForUpload);
       } else {
         setError(
           `La opción ${selectedOption} no tiene un método de carga masiva definido.`
@@ -222,7 +219,6 @@ export default function UserBulkUploadModal({
                     </option>
                   )
               )}
-              <option value={SALA_OPTION}>Salas</option>
             </Form.Select>
           </Form.Group>
           <Form.Group controlId="file-input" className="mb-3">

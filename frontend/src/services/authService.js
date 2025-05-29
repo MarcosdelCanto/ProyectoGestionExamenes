@@ -1,4 +1,5 @@
 // src/services/authService.js
+import { fetchPermisosByRol } from './permisoService';
 
 // Es buena práctica usar la misma URL base que tu instancia de Axios si es posible,
 // o asegurarte de que VITE_API_URL esté configurada.
@@ -27,23 +28,33 @@ export async function login(email_usuario, password_usuario) {
   localStorage.setItem('refreshToken', refreshToken);
 
   // Guarda la información del usuario (incluyendo el rol)
-  // El backend ahora envía `nombre_rol` con el nombre del rol y `rol` con el ID.
-  // Queremos que el objeto 'user' en localStorage tenga una propiedad 'rol' con el NOMBRE_ROL.
   if (usuario && usuario.nombre_rol) {
-    // Crea una copia del objeto usuario para no modificar el original si se usa en otro lado.
+    // Crea una copia del objeto usuario para no modificar el original
     const userToStore = { ...usuario };
-    // Asigna el nombre_rol a la propiedad 'rol' que espera el frontend.
+    // Asigna el nombre_rol a la propiedad 'rol' que espera el frontend
     userToStore.rol = usuario.nombre_rol;
-    // Opcionalmente, puedes eliminar nombre_rol si no lo necesitas duplicado o ROL_ID_ROL si 'rol' ya tiene el nombre.
-    // delete userToStore.nombre_rol; // Si solo quieres 'rol' con el nombre
+
+    try {
+      // Importante: Cargar los permisos inmediatamente después del login
+      console.log('Cargando permisos para el rol:', usuario.ROL_ID_ROL);
+      const permisos = await fetchPermisosByRol(usuario.ROL_ID_ROL);
+
+      // Agregar los permisos al objeto de usuario
+      userToStore.permisos = permisos;
+      console.log('Permisos cargados:', permisos.length);
+    } catch (error) {
+      console.error('Error al cargar permisos durante login:', error);
+      userToStore.permisos = []; // Asignar array vacío en caso de error
+    }
+
+    // Guardar el usuario con los permisos en localStorage
     localStorage.setItem('user', JSON.stringify(userToStore));
   } else {
     // Es crucial que el rol venga del backend. Si no, el RBAC no funcionará.
     console.error(
       'Error: El objeto usuario recibido del backend no contiene la propiedad "rol".'
     );
-    // Podrías optar por no completar el login o asignar un rol por defecto con permisos mínimos.
-    // Por ahora, limpiaremos para evitar un estado inconsistente.
+    // Limpiamos para evitar un estado inconsistente
     logout();
     throw new Error(
       'Información de usuario incompleta desde el servidor (falta rol).'
@@ -74,23 +85,46 @@ export function logout() {
 }
 
 export function getCurrentUser() {
-  const token = getAccessToken(); // Opcionalmente, puedes basar 'isAuthenticated' solo en la presencia del token
+  const token = getAccessToken();
   const userString = localStorage.getItem('user');
   if (token && userString) {
     try {
       const user = JSON.parse(userString);
-      // 'user' ya debería tener la propiedad 'rol' con el nombre del rol gracias al ajuste en login()
-      // Ejemplo: { isAuthenticated: true, id_usuario: ..., email_usuario: ..., rol: "admin", nombre_rol: "admin", ROL_ID_ROL: 1 }
-      // o si eliminaste nombre_rol: { isAuthenticated: true, id_usuario: ..., email_usuario: ..., rol: "admin", ROL_ID_ROL: 1 }
       return { isAuthenticated: true, ...user };
     } catch (e) {
       console.error('Error al parsear datos del usuario desde localStorage', e);
       logout(); // Limpia datos corruptos
-      // Asegúrate que el objeto devuelto en caso de error también tenga 'rol: null'
-      // para consistencia con el caso de no autenticado.
       return { isAuthenticated: false, rol: null };
     }
   }
   // Devuelve rol: null si no está autenticado o no hay datos de usuario
   return { isAuthenticated: false, rol: null };
+}
+
+// Nueva función para refrescar permisos sin hacer login completo
+export async function refreshUserPermissions() {
+  const currentUser = getCurrentUser();
+
+  if (currentUser.isAuthenticated && currentUser.ROL_ID_ROL) {
+    try {
+      console.log('Actualizando permisos para el rol:', currentUser.ROL_ID_ROL);
+      const permisos = await fetchPermisosByRol(currentUser.ROL_ID_ROL);
+
+      // Actualizar el objeto de usuario con los nuevos permisos
+      const updatedUser = {
+        ...currentUser,
+        permisos,
+      };
+
+      // Guardar el usuario actualizado en localStorage
+      localStorage.setItem('user', JSON.stringify(updatedUser));
+
+      return permisos;
+    } catch (error) {
+      console.error('Error al actualizar permisos:', error);
+      return [];
+    }
+  }
+
+  return [];
 }

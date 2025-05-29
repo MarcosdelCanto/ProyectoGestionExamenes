@@ -1,6 +1,15 @@
 import api from './api';
 
-//export const fetchAllEscuelas = () => api.get('/escuela');
+// export const fetchAllEscuelas = () => api.get('/escuela'); // Anterior
+export const fetchAllEscuelas = async () => {
+  try {
+    const response = await api.get('/escuela');
+    return response.data; // Asumiendo que response.data es el array de escuelas
+  } catch (error) {
+    console.error('Error fetching escuelas:', error);
+    throw error; // Propagar el error para que el componente lo maneje
+  }
+};
 export const fetchEscuelaById = (id) => api.get(`/escuela/${id}`);
 export const createEscuela = (data) => api.post('/escuela', data);
 export const updateEscuela = (id, data) => api.put(`/escuela/${id}`, data);
@@ -20,15 +29,4 @@ export const DeleteEscuela = async (selectedEscuela) => {
   const response = await api.delete(`/escuela/${selectedEscuela}`);
   if (!response.data) throw new Error('Error al eliminar escuela');
   return response.data;
-};
-export const fetchAllEscuelas = async () => {
-  try {
-    const response = await api.get('/escuela'); // Asegúrate que el endpoint '/escuela' sea correcto
-    return response.data || []; // Devuelve response.data o un array vacío si es undefined/null
-  } catch (error) {
-    console.error('Error fetching escuelas:', error);
-    // Podrías devolver un array vacío en caso de error para evitar el .map error,
-    // pero es mejor lanzar el error para que el componente lo maneje.
-    throw error;
-  }
 };
