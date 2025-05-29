@@ -20,28 +20,31 @@
 
 /* Layout: lateral + detalle */
 .container-lateral {
+  float: left;
   width: 300px;
-  height: 100vh; /* scrollará independientemente */
   padding: 1rem;
+  overflow-y: auto;
+  border-right: 1px solid #ddd;
   background: var(--light-gray);
   box-shadow: 2px 0 5px rgba(0, 0, 0, 0.1);
-  overflow-y: auto;
 }
 .details-section {
   /* margin-left: 320px; */
-  flex: 1; /* ocupa el resto del ancho */
-  height: 100vh; /* scrollará independientemente */
+  flex: 1;
+  overflow-y: auto;
+  float: right;
+  width: calc(100% - 320px);
   padding: 1rem;
   background: var(--white);
   border-radius: 8px;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-  overflow-y: auto;
 }
 
 /* Wrapper para scroll horizontal en la tabla */
 .details-section .table-wrapper {
   overflow-x: auto;
   margin-top: 1rem;
+  margin-bottom: 20px;
 }
 
 /* Sección de búsqueda */
@@ -190,13 +193,16 @@
   display: flex;
   height: 100vh;
 }
+
+/* Estilos específicos para la página de calendario */
+
+/* ==== Layout general de página ==== */
 .page-calendario {
   display: flex;
   flex-direction: column;
   height: 100vh;
   background: var(--light-gray);
 }
-
 .page-title {
   margin: 1rem 0;
   font-size: 1.75rem;
@@ -204,20 +210,139 @@
   color: var(--primary-color);
 }
 
-.page-calendario > .agenda-container {
+/* ==== Contenedor de la agenda ==== */
+.agenda-semanal-container {
+  display: flex;
   flex: 1;
-  margin: 0 1rem 1rem;
-  /* El componente AgendaSemanal ya gestiona su propio layout con .agenda-container */
+  overflow: hidden; /* para que los scroll internos funcionen */
 }
-.orden-col {
-  width: 50px;
-  text-align: center;
-  font-weight: lighter;
-  color: black;
+
+/* ==== Sidebar (salas + examen search) ==== */
+.container-lateral {
+  width: 300px;
+  background: var(--white);
+  box-shadow: 2px 0 5px rgba(0, 0, 0, 0.1);
+  padding: 1rem;
+  display: flex;
+  flex-direction: column;
+  overflow-y: auto;
 }
-.horario-col {
-  width: 100px;
+
+/* ==== Panel principal ==== */
+.details-section {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  padding: 1rem;
+  overflow: hidden;
+  position: relative;
+}
+
+/* ==== Carrusel de exámenes ==== */
+.details-section .examen-selector {
+  margin-bottom: 1rem;
+  overflow-x: auto;
+  display: flex;
+  gap: 0.75rem;
+  padding-bottom: 0.5rem;
+}
+.details-section .examen-selector::-webkit-scrollbar {
+  height: 6px;
+}
+.details-section .examen-selector::-webkit-scrollbar-thumb {
+  background: var(--secondary-color);
+  border-radius: 3px;
+}
+
+/* ==== Wrapper para la tabla ==== */
+.details-section .table-wrapper {
+  flex: 1;
+  overflow: auto;
+  background: var(--white);
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+/* ==== Estilos de la tabla ==== */
+.calendar-table {
+  width: 100%;
+  border-collapse: collapse;
+  table-layout: fixed;
+  font-size: 0.9rem;
+}
+.calendar-table th,
+.calendar-table td {
+  padding: 0.75rem;
+  border: 1px solid var(--light-gray);
   text-align: center;
-  font-weight: normal;
-  color: #5d5f7d;
+  vertical-align: middle;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* ==== Cabecera sticky ==== */
+.calendar-table thead th {
+  background: var(--secondary-color);
+  color: var(--white);
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  font-weight: 600;
+}
+
+/* ==== Columnas fijas ==== */
+.calendar-table th:nth-child(1),
+.calendar-table td:nth-child(1) {
+  position: sticky;
+  left: 0;
+  background: var(--secondary-color);
+  color: var(--white);
+  z-index: 9;
+  width: 40px;
+}
+.calendar-table th:nth-child(2),
+.calendar-table td:nth-child(2) {
+  position: sticky;
+  left: 40px;
+  background: var(--secondary-color);
+  color: var(--white);
+  z-index: 9;
+  width: 80px;
+}
+
+/* ==== Zebra-stripes y hover ==== */
+.calendar-table tbody tr:nth-child(even) {
+  background: var(--light-gray);
+}
+.calendar-table tbody tr:hover {
+  background: rgba(40, 167, 69, 0.1);
+}
+
+/* ==== Estados de celda ==== */
+.calendar-cell.disponible button {
+  background: var(--accent-color);
+  color: var(--white);
+}
+.calendar-cell.seleccionado {
+  background-color: rgba(39, 174, 96, 0.2);
+  border: 2px solid var(--accent-color);
+}
+.calendar-cell.reservado {
+  background-color: #f8d7da;
+  color: #721c24;
+  cursor: not-allowed;
+}
+
+/* ==== Botón confirmar ==== */
+.details-section > button {
+  align-self: flex-end;
+  margin-top: 1rem;
+  padding: 0.6rem 1.2rem;
+  font-size: 1rem;
+  background: var(--accent-color);
+  color: var(--white);
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
 }

@@ -82,12 +82,15 @@ function App() {
             }
           >
             <Route path="/carga-datos" element={<CargaDatosPage />} />
+<<<<<<< HEAD
           </Route>
 
           <Route
             element={<PrivateRoute requiredPermissions={['VIEW_ROLES']} />}
           >
             <Route path="/roles" element={<RolesPage />} />
+=======
+>>>>>>> dev_isabel
           </Route>
         </Routes>
       </DndProvider>
