@@ -19,8 +19,9 @@ import jornadaRoutes from './routes/jornada.routes.js';
 import moduloUsuariosRoutes from './routes/moduloUsuarios.routes.js';
 import cargaRoutes from './routes/carga.routes.js';
 import cargaAlumnoRoutes from './routes/cargaAlumno.routes.js';
-import cargaDocenteRoutes from './routes/cargaDocente.routes.js'; // Nueva importación
+import cargaDocenteRoutes from './routes/cargaDocente.routes.js';
 import rolesRouter from './routes/rol.routes.js';
+import cargaSalaRoutes from './routes/cargaSala.routes.js';
 import calendarioRoutes from './routes/calendario.routes.js'; // Importa las rutas de calendario
 import usuarioCarreraRoutes from './routes/usuarioCarrera.routes.js'; // Nueva importación
 import usuarioSeccionRoutes from './routes/usuarioSeccion.routes.js'; // Nueva importación
@@ -83,6 +84,7 @@ async function startServer() {
     app.use('/api/roles', rolesRouter);
     app.use('/api/cargaAlumno', cargaAlumnoRoutes);
     app.use('/api/cargaDocente', cargaDocenteRoutes);
+    app.use('/api/cargaSala', cargaSalaRoutes);
     app.use('/api/usuario-carreras', usuarioCarreraRoutes); // Nueva ruta para usuario-carrera
     app.use('/api/usuario-secciones', usuarioSeccionRoutes); // Nueva ruta para usuario-sección
     app.use('/api/permisos', permisosRoutes);

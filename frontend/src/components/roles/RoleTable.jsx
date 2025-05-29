@@ -38,7 +38,7 @@ function RoleTable({
         marginBottom: '1rem', // Margen inferior como en ModuloTable
       }}
     >
-      <Table bordered hover responsive="sm" className="mb-0">
+      <Table striped bordered hover responsive="sm" className="mb-0">
         <thead className="table-light position-sticky top-0">
           <tr>
             <th>ID</th>

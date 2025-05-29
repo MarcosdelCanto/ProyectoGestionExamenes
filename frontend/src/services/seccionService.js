@@ -21,12 +21,3 @@ export const DeleteSeccion = async (selectedSeccion) => {
   if (!response.data) throw new Error('Error al eliminar seccion');
   return response.data;
 };
-export const fetchAllSecciones = async () => {
-  try {
-    const response = await api.get('/seccion'); // Ajusta el endpoint si es necesario
-    return response.data;
-  } catch (error) {
-    console.error('Error fetching secciones:', error);
-    throw error;
-  }
-};

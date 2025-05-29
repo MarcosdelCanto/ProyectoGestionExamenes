@@ -23,6 +23,8 @@ export const fetchAllPermisos = async (req, res) => {
 // Obtener permisos de un rol específico
 export const fetchPermisosByRol = async (req, res) => {
   const { idRol } = req.params;
+  console.log(`Backend: Solicitando permisos para rol ${idRol}`);
+
   let conn;
   try {
     conn = await getConnection();
@@ -34,14 +36,22 @@ export const fetchPermisosByRol = async (req, res) => {
       [idRol],
       { outFormat: oracledb.OUT_FORMAT_OBJECT }
     );
+
+    console.log(
+      `Backend: Encontrados ${result.rows.length} permisos para rol ${idRol}`
+    );
     res.json(result.rows);
   } catch (err) {
-    console.error('Error al obtener permisos del rol:', err);
-    res
-      .status(500)
-      .json({ error: 'No se pudieron obtener los permisos del rol.' });
+    console.error('Error al obtener permisos:', err);
+    res.status(500).json({ error: 'No se pudieron obtener los permisos.' });
   } finally {
-    if (conn) await conn.close();
+    if (conn) {
+      try {
+        await conn.close();
+      } catch (err) {
+        console.error('Error al cerrar la conexión:', err);
+      }
+    }
   }
 };
 

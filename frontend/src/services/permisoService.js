@@ -1,18 +1,35 @@
-import axios from 'axios';
+import api from './api';
 
-const API_URL = '/api/permisos';
-
+// Obtener todos los permisos
 export const fetchAllPermisos = async () => {
-  const response = await axios.get(API_URL);
-  return response.data;
+  try {
+    const response = await api.get('/permisos');
+    return response.data;
+  } catch (error) {
+    console.error('Error al obtener permisos:', error);
+    throw error;
+  }
 };
 
+// Obtener permisos por ID de rol (esta es la función clave)
 export const fetchPermisosByRol = async (idRol) => {
-  const response = await axios.get(`${API_URL}/rol/${idRol}`);
-  return response.data;
+  try {
+    const response = await api.get(`/permisos/rol/${idRol}`);
+    console.log(`Permisos cargados para rol ${idRol}:`, response.data);
+    return response.data;
+  } catch (error) {
+    console.error(`Error al obtener permisos del rol ${idRol}:`, error);
+    return [];
+  }
 };
 
+// Actualizar permisos de un rol
 export const updatePermisosRol = async (idRol, permisos) => {
-  const response = await axios.put(`${API_URL}/rol/${idRol}`, { permisos });
-  return response.data;
+  try {
+    const response = await api.put(`/permisos/rol/${idRol}`, { permisos });
+    return response.data;
+  } catch (error) {
+    console.error(`Error al actualizar permisos del rol ${idRol}:`, error);
+    throw error;
+  }
 };
