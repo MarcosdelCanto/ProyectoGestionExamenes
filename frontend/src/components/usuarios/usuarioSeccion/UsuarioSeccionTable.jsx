@@ -14,12 +14,12 @@ function UsuarioSeccionTable({
   onDeleteAllUserAssociations,
 }) {
   if (loading && Object.keys(groupedAssociations).length === 0) {
-    return null; // El Spinner principal ya está en UsuarioSeccionTab
+    return null; // El Spinner principal ya está en UsuarioSeccionTable
   }
 
   return (
     <Table bordered hover responsive>
-      <thead class="table-light position-sticky top-0">
+      <thead className="table-light position-sticky top-0">
         <tr>
           <th style={{ width: '5%' }} className="text-center align-middle">
             <input
