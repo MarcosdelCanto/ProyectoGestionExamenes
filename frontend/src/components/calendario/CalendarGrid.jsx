@@ -1,4 +1,6 @@
 import React from 'react';
+import { format } from 'date-fns';
+import { es } from 'date-fns/locale';
 import CalendarCell from './CalendarCell';
 import CalendarHeader from './CalendarHeader'; // Asegúrate de importar CalendarHeader
 
@@ -14,16 +16,16 @@ export default function CalendarGrid({
   if (!modulos || modulos.length === 0) {
     return <p>No hay módulos para mostrar.</p>;
   }
-  if (!fechas || fechas.length === 0) {
-    // Podrías tener un estado de carga específico para las fechas si vienen de una API
-    // o si getWeekDates pudiera fallar, aunque es una función síncrona.
-    return <p>Cargando fechas...</p>;
-  }
+  // Filtrar para excluir el domingo (último día de la semana)
+  const fechasSinDomingo = fechas.filter(
+    (fecha) =>
+      format(new Date(fecha.fecha), 'EEEE', { locale: es }) !== 'domingo'
+  );
 
   return (
     <div className="table-wrapper">
       <table className="calendar-table">
-        <CalendarHeader fechas={fechas} /> {/* Pasa la prop fechas aquí */}
+        <CalendarHeader fechas={fechasSinDomingo} />
         <tbody>
           {modulos.map((mod) => (
             <tr key={mod.ID_MODULO}>
@@ -31,7 +33,7 @@ export default function CalendarGrid({
               <td className="horario-col">
                 {mod.INICIO_MODULO} - {mod.FIN_MODULO}
               </td>
-              {fechas.map(
+              {fechasSinDomingo.map(
                 (
                   { fecha } // Aquí usas 'fecha' del objeto destructurado
                 ) => (

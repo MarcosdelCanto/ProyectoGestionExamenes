@@ -71,4 +71,4 @@ export function CalendarioPage() {
   );
 }
 
-export default AgendaSemanal;
+export default CalendarioPage;

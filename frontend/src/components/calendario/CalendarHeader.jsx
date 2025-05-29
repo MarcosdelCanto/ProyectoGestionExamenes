@@ -14,7 +14,6 @@ export default function CalendarHeader({ fechas }) {
           <th>Jue</th>
           <th>Vie</th>
           <th>Sáb</th>
-          <th>Dom</th>
         </tr>
       </thead>
     );
