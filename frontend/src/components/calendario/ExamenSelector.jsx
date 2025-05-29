@@ -2,7 +2,7 @@ import React, { useState, useMemo, useEffect } from 'react';
 import { FaSearch, FaFilter } from 'react-icons/fa';
 import ExamenPostIt from './ExamenPostIt';
 import { FaGripLines } from 'react-icons/fa';
-
+//prueba para git
 // Imports para Swiper
 import { Swiper, SwiperSlide } from 'swiper/react';
 import { Navigation, Pagination } from 'swiper/modules';
