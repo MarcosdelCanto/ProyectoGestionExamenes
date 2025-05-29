@@ -1,5 +1,5 @@
 import api from './api';
-
+// git add
 // export const fetchAllAsignaturas = () => api.get('/asignatura'); // Anterior
 export const fetchAllAsignaturas = async () => {
   try {
