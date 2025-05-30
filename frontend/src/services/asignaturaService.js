@@ -1,4 +1,24 @@
 import api from './api';
+
+/**
+ * Obtiene todas las asignaturas asociadas a una carrera específica.
+ * Usado para los filtros dependientes en el dashboard.
+ * @param {string|number} carreraId - El ID de la carrera.
+ * @returns {Promise<Array<Object>>} - Un array de asignaturas.
+ */
+export const fetchAsignaturasByCarrera = async (carreraId) => {
+  try {
+    const response = await api.get(`/asignatura/carrera/${carreraId}`);
+    return response.data;
+  } catch (error) {
+    console.error(
+      `Error fetching asignaturas for carrera ${carreraId}:`,
+      error.response?.data || error.message
+    );
+    throw error;
+  }
+};
+
 // git add
 // export const fetchAllAsignaturas = () => api.get('/asignatura'); // Anterior
 export const fetchAllAsignaturas = async () => {
@@ -10,26 +30,51 @@ export const fetchAllAsignaturas = async () => {
     throw error; // Propagar el error para que el componente lo maneje
   }
 };
-export const fetchAsignaturaById = (id) => api.get(`/asignatura/${id}`);
-export const createAsignatura = (data) => api.post('/asignatura', data);
-export const updateAsignatura = (id, data) =>
-  api.put(`/asignatura/${id}`, data);
-export const deleteAsignatura = (id) => api.delete(`/asignatura/${id}`);
-
-export const AddAsignatura = async (form) => {
-  const response = await api.post('/asignatura', form);
-  if (!response.data) throw new Error('Error al crear asignatura');
-  return response.data;
+export const fetchAsignaturaById = async (id) => {
+  try {
+    const response = await api.get(`/asignatura/${id}`);
+    return response.data;
+  } catch (error) {
+    console.error(
+      `Error fetching asignatura with id ${id}:`,
+      error.response?.data || error.message
+    );
+    throw error;
+  }
 };
-
-export const EditAsignatura = async (selectedAsignatura, form) => {
-  const response = await api.put(`/asignatura/${selectedAsignatura}`, form);
-  if (!response.data) throw new Error('Error al actualizar asignatura');
-  return response.data;
+export const createAsignatura = async (data) => {
+  try {
+    const response = await api.post('/asignatura', data);
+    return response.data;
+  } catch (error) {
+    console.error(
+      'Error creating asignatura:',
+      error.response?.data || error.message
+    );
+    throw error;
+  }
 };
-
-export const DeleteAsignatura = async (selectedAsignatura) => {
-  const response = await api.delete(`/asignatura/${selectedAsignatura}`);
-  if (!response.data) throw new Error('Error al eliminar asignatura');
-  return response.data;
+export const updateAsignatura = async (id, data) => {
+  try {
+    const response = await api.put(`/asignatura/${id}`, data);
+    return response.data;
+  } catch (error) {
+    console.error(
+      `Error updating asignatura ${id}:`,
+      error.response?.data || error.message
+    );
+    throw error;
+  }
+};
+export const deleteAsignatura = async (id) => {
+  try {
+    const response = await api.delete(`/asignatura/${id}`);
+    return response.data; // O un mensaje de éxito si el backend no devuelve el objeto eliminado
+  } catch (error) {
+    console.error(
+      `Error deleting asignatura ${id}:`,
+      error.response?.data || error.message
+    );
+    throw error;
+  }
 };

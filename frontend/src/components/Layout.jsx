@@ -125,6 +125,10 @@ export default function Layout({ children }) {
                 Gestión de Roles
               </Link>
             )}
+
+            <Link to="/reportes" className="nav-link fw-bold text-dark">
+              Reportes
+            </Link>
           </nav>
           <div className="mt-auto">
             <button className="btn btn-danger w-100" onClick={handleLogout}>

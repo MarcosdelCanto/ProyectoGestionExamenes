@@ -5,6 +5,7 @@ import {
   createEdificio,
   updateEdificio,
   deleteEdificio,
+  getEdificiosBySede,
 } from '../controllers/edificio.controller.js';
 
 const router = Router();
@@ -14,5 +15,6 @@ router.get('/:id', getEdificioById);
 router.post('/', createEdificio);
 router.put('/:id', updateEdificio);
 router.delete('/:id', deleteEdificio);
+router.get('/sede/:sedeId', getEdificiosBySede);
 
 export default router;

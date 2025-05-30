@@ -119,3 +119,33 @@ export const deleteCarrera = async (req, res) => {
     if (conn) await conn.close();
   }
 };
+
+export const getCarrerasByEscuela = async (req, res) => {
+  let connection;
+  try {
+    const { escuelaId } = req.params;
+    if (!escuelaId) {
+      return res.status(400).json({ message: 'Escuela ID is required' });
+    }
+    connection = await getConnection();
+    const result = await connection.execute(
+      `SELECT ID_CARRERA, NOMBRE_CARRERA, ESCUELA_ID_ESCUELA
+       FROM CARRERA
+       WHERE ESCUELA_ID_ESCUELA = :id`,
+      [parseInt(escuelaId)],
+      { outFormat: oracledb.OUT_FORMAT_OBJECT }
+    );
+    res.json(result.rows);
+  } catch (error) {
+    console.error('Error fetching carreras by escuela:', error);
+    res.status(500).json({ message: 'Error al obtener carreras por escuela' });
+  } finally {
+    if (connection) {
+      try {
+        await connection.close();
+      } catch (err) {
+        console.error('Error al cerrar la conexión:', err);
+      }
+    }
+  }
+};

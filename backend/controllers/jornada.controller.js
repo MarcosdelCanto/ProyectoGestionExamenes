@@ -81,10 +81,13 @@ export const updateJornada = async (req, res) => {
   const { nombre_jornada, cod_jornada } = req.body;
   let conn;
   try {
-    if (!nombre_jornada || cod_jornada) {
+    if (!nombre_jornada || !cod_jornada) {
+      // Corregida la validación si ambos son obligatorios
       return res
         .status(400)
-        .json({ error: 'Todos los campos son obligatorios' });
+        .json({
+          error: 'Nombre de jornada y código de jornada son obligatorios',
+        });
     }
     conn = await getConnection();
     const result = await conn.execute(
@@ -98,7 +101,11 @@ export const updateJornada = async (req, res) => {
       }
     );
     if (result.rowsAffected === 0)
-      return res.status(404).json({ error: 'La jornada no existe' });
+      return res
+        .status(404)
+        .json({ error: 'La jornada no existe o no se modificaron datos' });
+    await conn.commit(); // Añadido commit
+    res.json({ message: 'Jornada actualizada con éxito' }); // Añadida respuesta de éxito
   } catch (err) {
     console.error('Error al actualizar jornada:', err);
     res.status(500).json({ error: 'Error al actualizar jornada' });
