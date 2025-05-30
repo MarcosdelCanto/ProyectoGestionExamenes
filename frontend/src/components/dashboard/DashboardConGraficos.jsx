@@ -1,9 +1,9 @@
 import React from 'react';
 import Modal from 'react-modal';
 import ExamenesPorCarreraChart from './charts/ExamenesPorCarreraChart';
-// import ModulosAgendadosChart from './charts/ModulosAgendadosChart';
-// import UsoSalasChart from './charts/UsoSalasChart';
-// import ExamenesPorDiaChart from './charts/ExamenesPorDiaChart';
+import ModulosAgendadosChart from './charts/ModulosAgendadosChart';
+import UsoSalasChart from './charts/UsoSalasChart';
+import ExamenesPorDiaChart from './charts/ExamenesPorDiaChart';
 import './DashboardConGraficos.css'; // Crearemos este archivo para estilos adicionales
 
 // Configuración de React Modal
@@ -26,19 +26,19 @@ const DashboardConGraficos = () => {
       </div>
 
       {/* Gráfico de Módulos más agendados */}
-      {/* <div className="col-12 col-md-6 mb-4">
+      <div className="col-12 col-md-6 mb-4">
         <ModulosAgendadosChart />
-      </div> */}
+      </div>
 
       {/* Gráfico de Distribución de Salas */}
-      {/* <div className="col-12 col-md-6 mb-4">
+      <div className="col-12 col-md-6 mb-4">
         <UsoSalasChart />
-      </div> */}
+      </div>
 
       {/* Exámenes por Día */}
-      {/* <div className="col-12 col-md-6 mb-4">
+      <div className="col-12 col-md-6 mb-4">
         <ExamenesPorDiaChart />
-      </div> */}
+      </div>
       {/* Modals will be part of their respective components */}
     </div>
   );
