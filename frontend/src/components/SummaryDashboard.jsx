@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { getDashboardSummary } from '../services/dashboardService'; // Importar el servicio
-import './dashboard.css'; // Archivo CSS para estilos específicos del dashboard
+import './dashboardSummary.css'; // Archivo CSS para estilos específicos del dashboard
 
 // Iconos de ejemplo, puedes usar los que prefieras de react-icons o bootstrap-icons
 import {
@@ -35,7 +35,7 @@ const StatCard = ({ title, value, icon, color }) => (
   </div>
 );
 
-export const Dashboard = () => {
+export const SummaryDashboard = () => {
   const [stats, setStats] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
