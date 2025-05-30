@@ -18,6 +18,7 @@ import CargaDatosPage from './pages/CargaDatosPage';
 import RolesPage from './pages/RolesPage';
 import UnauthorizedPage from './pages/UnauthorizedPage';
 import { ROLES } from './constants/roles';
+import ReportesPage from './pages/ReportesPage';
 
 function App() {
   return (
@@ -88,6 +89,10 @@ function App() {
             element={<PrivateRoute requiredPermissions={['VIEW_ROLES']} />}
           >
             <Route path="/roles" element={<RolesPage />} />
+          </Route>
+
+          <Route element={<PrivateRoute />}>
+            <Route path="/reportes" element={<ReportesPage />} />
           </Route>
         </Routes>
       </DndProvider>

@@ -152,3 +152,32 @@ export const deleteEdificio = async (req, res) => {
     if (conn) await conn.close();
   }
 };
+export const getEdificiosBySede = async (req, res) => {
+  let connection;
+  try {
+    const { sedeId } = req.params;
+    if (!sedeId) {
+      return res.status(400).json({ message: 'Sede ID is required' });
+    }
+    connection = await getConnection();
+    const result = await connection.execute(
+      `SELECT ID_EDIFICIO, NOMBRE_EDIFICIO, SEDE_ID_SEDE
+       FROM EDIFICIO
+       WHERE SEDE_ID_SEDE = :id`,
+      [parseInt(sedeId)], // o solo sedeId si tu driver lo maneja bien
+      { outFormat: oracledb.OUT_FORMAT_OBJECT }
+    );
+    res.json(result.rows);
+  } catch (error) {
+    console.error('Error fetching edificios by sede:', error);
+    res.status(500).json({ message: 'Error al obtener edificios por sede' });
+  } finally {
+    if (connection) {
+      try {
+        await connection.close();
+      } catch (err) {
+        console.error('Error al cerrar la conexión:', err);
+      }
+    }
+  }
+};

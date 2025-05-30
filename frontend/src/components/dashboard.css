@@ -1,0 +1,60 @@
+.dashboard-container {
+  /* Definiendo colores como variables CSS en un scope local o global (ej. :root) */
+  --color-primary: #4e73df;
+  --color-success: #1cc88a;
+  --color-info: #36b9cc;
+  --color-warning: #f6c23e;
+  --color-danger: #e74a3b;
+  --color-secondary: #858796;
+  --color-dark: #5a5c69;
+  --color-gray-300: #dddfeb;
+  --color-gray-800: #5a5c69;
+}
+
+.dashboard-container {
+  padding: 20px;
+}
+
+.dashboard-card {
+  transition: transform 0.2s; /* Animation */
+}
+
+.dashboard-card:hover {
+  transform: scale(
+    1.03
+  ); /* (103% zoom - Note: if a parent element has "overflow: hidden" it will crop.) */
+}
+
+/* Colores para los bordes izquierdos de las tarjetas (inspirado en SB Admin) */
+.border-left-primary {
+  border-left: 0.25rem solid var(--color-primary) !important;
+}
+.border-left-success {
+  border-left: 0.25rem solid var(--color-success) !important;
+}
+.border-left-info {
+  border-left: 0.25rem solid var(--color-info) !important;
+}
+.border-left-warning {
+  border-left: 0.25rem solid var(--color-warning) !important;
+}
+.border-left-danger {
+  border-left: 0.25rem solid var(--color-danger) !important;
+}
+.border-left-secondary {
+  border-left: 0.25rem solid var(--color-secondary) !important;
+}
+.border-left-dark {
+  border-left: 0.25rem solid var(--color-dark) !important;
+}
+
+.text-gray-300 {
+  color: var(--color-gray-300) !important;
+}
+.text-gray-800 {
+  color: var(--color-gray-800) !important;
+}
+
+.text-xs {
+  font-size: 0.7rem;
+}

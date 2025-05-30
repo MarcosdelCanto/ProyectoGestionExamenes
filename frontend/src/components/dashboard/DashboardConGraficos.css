@@ -1,0 +1,48 @@
+.card-header {
+  background-color: #f8f9fa; /* Un fondo ligero para el header de la tarjeta */
+  padding: 0.75rem 1.25rem;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.125);
+}
+
+.card-title {
+  margin-bottom: 0; /* Ajuste para que el título y los botones se alineen mejor */
+}
+
+.chart-actions button {
+  font-size: 0.8rem; /* Iconos un poco más pequeños */
+  padding: 0.2rem 0.4rem;
+}
+
+.table-responsive {
+  max-height: 300px; /* O la altura que coincida con tu gráfico */
+  overflow-y: auto;
+}
+
+/* Estilos básicos para React Modal (puedes personalizarlos más) */
+.ReactModal__Overlay {
+  opacity: 0;
+  transition: opacity 200ms ease-in-out;
+  background-color: rgba(0, 0, 0, 0.75);
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 1050; /* Asegura que esté por encima de otros elementos */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.ReactModal__Overlay--after-open {
+  opacity: 1;
+}
+
+.ReactModal__Content {
+  background: white;
+  padding: 20px;
+  border-radius: 8px;
+  max-width: 500px; /* Ancho máximo del modal */
+  width: 90%;
+  outline: none; /* Quita el borde por defecto al enfocar */
+}

@@ -9,15 +9,12 @@ import EdificioActions from '../components/edificios/EdificioActions';
 import SedeForm from '../components/sedes/SedeForm';
 import SedeList from '../components/sedes/SedeList';
 import SedeActions from '../components/sedes/SedeActions';
-import { AddSala, EditSala, DeleteSala } from '../services/salaService';
-import {
-  AddEdificio,
-  EditEdificio,
-  DeleteEdificio,
-} from '../services/edificioService';
-import { AddSede, EditSede, DeleteSede } from '../services/sedeService';
+import { AddSala, EditSala, deleteSala } from '../services/salaService';
+import { createEdificio, updateEdificio } from '../services/edificioService';
+import { createSede, updateSede, deleteSede } from '../services/sedeService';
 import PaginationComponent from '../components/PaginationComponent'; // Asegúrate de que la ruta sea correcta
-
+import { deleteEdificio } from '../services/edificioService';
+import { updateEscuela, deleteEscuela } from '../services/escuelaService';
 const alertStyle = {
   animation: 'fadeInOut 5s ease-in-out',
   WebkitAnimation: 'fadeInOut 5s ease-in-out',
@@ -173,7 +170,7 @@ export default function SalasPage() {
 
   const handleDeleteSala = async () => {
     try {
-      await DeleteSala(selectedSala);
+      await deleteSala(selectedSala);
       loadData();
       closeModal();
       setSelectedSala(null);
@@ -195,7 +192,7 @@ export default function SalasPage() {
 
   const handleAddEdificio = async (form) => {
     try {
-      await AddEdificio(form);
+      await createEdificio(form);
       loadData();
       closeModal();
       setSuccess('Edificio creado con éxito');
@@ -213,7 +210,7 @@ export default function SalasPage() {
 
   const handleEditEdificio = async (form) => {
     try {
-      await EditEdificio(selectedEdificio, form);
+      await updateEdificio(selectedEdificio, form);
       loadData();
       closeModal();
       setSuccess('Edificio actualizado con éxito');
@@ -232,7 +229,7 @@ export default function SalasPage() {
 
   const handleDeleteEdificio = async () => {
     try {
-      await DeleteEdificio(selectedEdificio);
+      await deleteEdificio(selectedEdificio);
       loadData();
       closeModal();
       setSelectedEdificio(null);
@@ -254,7 +251,7 @@ export default function SalasPage() {
 
   const handleAddSede = async (form) => {
     try {
-      await AddSede(form);
+      await createSede(form);
       loadData();
       closeModal();
       setSuccess('Sede creada con éxito');
@@ -272,7 +269,7 @@ export default function SalasPage() {
 
   const handleEditSede = async (form) => {
     try {
-      await EditSede(selectedSede, form);
+      await updateSede(selectedSede, form);
       closeModal();
       loadData();
       setSuccess('Sede actualizada con éxito');
@@ -291,7 +288,7 @@ export default function SalasPage() {
 
   const handleDeleteSede = async () => {
     try {
-      await DeleteSede(selectedSede);
+      await deleteSede(selectedSede);
       loadData();
       closeModal();
       setSelectedSede(null);
@@ -315,7 +312,7 @@ export default function SalasPage() {
   const paginateEdificios = (pageNumber) => setCurrentPageEdificios(pageNumber);
   const paginateSedes = (pageNumber) => setCurrentPageSedes(pageNumber);
 
-  // Calcular datos para la página actual
+  // Calcular datos para la página current
   const indexOfLastSala = currentPageSalas * itemsPerPage;
   const indexOfFirstSala = indexOfLastSala - itemsPerPage;
   const currentSalas = salas.slice(indexOfFirstSala, indexOfLastSala);

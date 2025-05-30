@@ -8,7 +8,8 @@ import './HomePage.css'; // ¡Ahora este archivo es fundamental!
 import { socket } from '../store/socketMiddleware';
 import Layout from '../components/Layout';
 import { FaUserCircle } from 'react-icons/fa';
-import { Dashboard } from '../components/dashboard';
+import { Dashboard } from '../components/dashboard/';
+import DashboardConGraficos from '../components/dashboard/DashboardConGraficos'; // Importar el componente de gráficos
 
 export default function HomePage() {
   const { status, updaterId } = useSelector((state) => state.status);
@@ -103,6 +104,7 @@ export default function HomePage() {
         <hr></hr> {/* Asegura que este contenedor pueda usar el ancho */}
         <div className="text-center my-4">
           <Dashboard />
+          <DashboardConGraficos /> {/* Añadir el componente de gráficos aquí */}
         </div>
       </div>
       {/* Sección de estado y botón */}

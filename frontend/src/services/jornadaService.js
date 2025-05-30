@@ -1,26 +1,94 @@
 import api from './api';
 
-export const fetchAllJornadas = () => api.get('/jornada');
-export const fetchJornadaById = (id) => api.get(`/jornada/${id}`);
-export const createJornada = (jornada) => api.post('/jornada', jornada);
-export const updateJornada = (id, jornada) =>
-  api.put(`/jornada/${id}`, jornada);
-export const deleteJornada = (id) => api.delete(`/jornada/${id}`);
-
-export const AddJornada = async (jornada) => {
-  const response = await api.post('/jornada', jornada);
-  if (!response.data) throw new Error('No se pudo crear la jornada');
-  return response.data;
+/**
+ * Obtiene todas las jornadas.
+ * @returns {Promise<Array<Object>>} - Un array de jornadas.
+ */
+export const fetchAllJornadas = async () => {
+  try {
+    const response = await api.get('/jornada');
+    return response.data;
+  } catch (error) {
+    console.error(
+      'Error fetching jornadas:',
+      error.response?.data || error.message
+    );
+    throw error;
+  }
 };
 
-export const EditJornada = async (id, jornada) => {
-  const response = await api.put(`/jornada/${id}`, jornada);
-  if (!response.data) throw new Error('No se pudo actualizar la jornada');
-  return response.data;
+/**
+ * Obtiene una jornada específica por su ID.
+ * @param {string|number} id - El ID de la jornada.
+ * @returns {Promise<Object>} - El objeto de la jornada.
+ */
+export const fetchJornadaById = async (id) => {
+  try {
+    const response = await api.get(`/jornada/${id}`);
+    return response.data;
+  } catch (error) {
+    console.error(
+      `Error fetching jornada with id ${id}:`,
+      error.response?.data || error.message
+    );
+    throw error;
+  }
 };
 
-export const DeleteJornada = async (id) => {
-  const response = await api.delete(`/jornada/${id}`);
-  if (!response.data) throw new Error('No se pudo eliminar la jornada');
-  return response.data;
+/**
+ * Crea una nueva jornada.
+ * @param {Object} data - Los datos de la jornada a crear.
+ * @returns {Promise<Object>} - La jornada creada.
+ */
+export const createJornada = async (data) => {
+  try {
+    const response = await api.post('/jornada', data);
+    return response.data;
+  } catch (error) {
+    console.error(
+      'Error creating jornada:',
+      error.response?.data || error.message
+    );
+    throw error;
+  }
 };
+
+/**
+ * Actualiza una jornada existente.
+ * @param {string|number} id - El ID de la jornada a actualizar.
+ * @param {Object} data - Los nuevos datos para la jornada.
+ * @returns {Promise<Object>} - La respuesta del servidor.
+ */
+export const updateJornada = async (id, data) => {
+  try {
+    const response = await api.put(`/jornada/${id}`, data);
+    return response.data;
+  } catch (error) {
+    console.error(
+      `Error updating jornada ${id}:`,
+      error.response?.data || error.message
+    );
+    throw error;
+  }
+};
+
+/**
+ * Elimina una jornada.
+ * @param {string|number} id - El ID de la jornada a eliminar.
+ * @returns {Promise<Object>} - La respuesta del servidor.
+ */
+export const deleteJornada = async (id) => {
+  try {
+    const response = await api.delete(`/jornada/${id}`);
+    return response.data;
+  } catch (error) {
+    console.error(
+      `Error deleting jornada ${id}:`,
+      error.response?.data || error.message
+    );
+    throw error;
+  }
+};
+
+// Las funciones AddJornada, EditJornada, DeleteJornada eran redundantes y han sido eliminadas
+// para mantener la consistencia con las funciones CRUD estándar.

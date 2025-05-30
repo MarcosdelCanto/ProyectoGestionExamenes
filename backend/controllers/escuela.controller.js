@@ -1,5 +1,6 @@
 import { getConnection } from '../db.js';
 import oracledb from 'oracledb';
+
 export const getAllEscuelas = async (req, res) => {
   let conn;
   try {
@@ -117,5 +118,34 @@ export const deleteEscuela = async (req, res) => {
     res.status(500).json({ error: 'Error al eliminar escuela' });
   } finally {
     if (conn) await conn.close();
+  }
+};
+
+export const getEscuelasBySede = async (req, res) => {
+  let connection;
+  try {
+    const { sedeId } = req.params;
+    if (!sedeId) {
+      return res.status(400).json({ message: 'Sede ID is required' });
+    }
+    connection = await getConnection();
+    const result = await connection.execute(
+      `SELECT ID_ESCUELA, NOMBRE_ESCUELA, SEDE_ID_SEDE
+       FROM ESCUELA
+       WHERE SEDE_ID_SEDE = :id`,
+      [parseInt(sedeId)] // o solo sedeId si tu driver lo maneja bien
+    );
+    res.json(result.rows);
+  } catch (error) {
+    console.error('Error fetching escuelas by sede:', error);
+    res.status(500).json({ message: 'Error al obtener escuelas por sede' });
+  } finally {
+    if (connection) {
+      try {
+        await connection.close();
+      } catch (err) {
+        console.error('Error al cerrar la conexión:', err);
+      }
+    }
   }
 };

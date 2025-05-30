@@ -1,10 +1,12 @@
 import { Router } from 'express';
+
 import {
   getAllEscuelas,
   getEscuelaById,
   createEscuela,
   updateEscuela,
   deleteEscuela,
+  getEscuelasBySede,
 } from '../controllers/escuela.controller.js';
 
 const router = Router();
@@ -14,5 +16,6 @@ router.get('/:id', getEscuelaById);
 router.post('/', createEscuela);
 router.put('/:id', updateEscuela);
 router.delete('/:id', deleteEscuela);
+router.get('/sede/:sedeId', getEscuelasBySede); // Esta es la ruta clave
 
 export default router;

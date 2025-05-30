@@ -19,7 +19,9 @@ export const getAllExamenes = async (req, res) => {
     res.json(result.rows);
   } catch (err) {
     console.error('Error al obtener examenes:', err);
-    res.status(500).json({ error: 'Error al obtener examenes' });
+    res
+      .status(500)
+      .json({ error: 'Error al obtener examenes', details: err.message });
   } finally {
     if (conn) await conn.close();
   }

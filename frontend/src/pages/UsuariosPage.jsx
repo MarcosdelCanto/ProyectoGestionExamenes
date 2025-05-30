@@ -22,8 +22,8 @@ import {
   Button as BsButton,
   Spinner,
 } from 'react-bootstrap'; // Asegúrate de importar Alert y Nav
-import UsuarioCarreraTab from '../components/usuarios/usuarioCarreraTab'; // Nueva pestaña
-import UsuarioSeccionTab from '../components/usuarios/usuarioSeccionTab'; // Nueva pestaña
+import UsuarioCarreraTab from '../components/usuarios/UsuarioCarreraTab'; // Nueva pestaña
+import UsuarioSeccionTab from '../components/usuarios/UsuarioSeccionTab'; // Nueva pestaña
 
 import { listCarrerasByUsuario } from '../services/usuarioCarreraService'; // Para el nuevo modal
 import { listSeccionesByUsuario } from '../services/usuarioSeccionService'; // Para el nuevo modal

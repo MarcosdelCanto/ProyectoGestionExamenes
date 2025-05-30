@@ -9,6 +9,14 @@
   --text-dark: #2c3e50;
 }
 
+/* ==== Layout general de página ==== */
+.calendario-page-container {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  background: var(--light-gray);
+}
+
 /* Título principal */
 .titulo {
   font-size: 1.5rem;
@@ -18,41 +26,20 @@
   text-align: center;
 }
 
-/* Layout: lateral + detalle */
-.container-lateral {
-  float: left;
-  width: 300px;
-  padding: 1rem;
-  overflow-y: auto;
-  border-right: 1px solid #ddd;
-  background: var(--light-gray);
-  box-shadow: 2px 0 5px rgba(0, 0, 0, 0.1);
-}
-.details-section {
-  /* margin-left: 320px; */
-  flex: 1;
-  overflow-y: auto;
-  float: right;
-  width: calc(100% - 320px);
-  padding: 1rem;
-  background: var(--white);
-  border-radius: 8px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+.page-title {
+  margin: 1rem 0;
+  font-size: 1.75rem;
+  text-align: center;
+  color: var(--primary-color);
 }
 
-/* Wrapper para scroll horizontal en la tabla */
-.details-section .table-wrapper {
-  overflow-x: auto;
-  margin-top: 1rem;
-  margin-bottom: 20px;
-}
-
-/* Sección de búsqueda */
+/* ==== Sección de búsqueda ==== */
 .search-section h2 {
   margin: 1rem 0 0.5rem;
   color: var(--primary-color);
   font-size: 1.1rem;
 }
+
 .search-section input[type='search'],
 .search-section input[type='date'] {
   width: 100%;
@@ -62,92 +49,61 @@
   border-radius: 4px;
 }
 
-/* Listados de salas/exámenes */
+/* ==== Listados de salas/exámenes ==== */
 .search-box {
   max-height: 200px;
   overflow-y: auto;
   margin-bottom: 1rem;
 }
+
 .tabla-seleccion {
   width: 100%;
   border-collapse: collapse;
 }
+
 .tabla-seleccion th,
 .tabla-seleccion td {
   border: 1px solid #ddd;
   padding: 0.5rem;
   text-align: left;
 }
+
 .fila-seleccionada {
   background: rgba(39, 174, 96, 0.2);
 }
+
 .icono {
   cursor: pointer;
   color: var(--primary-color);
 }
+
 .icono-reservado {
   color: var(--disabled-gray);
 }
 
-/* Tabla de disponibilidad */
-.details-section table {
-  width: 100%;
-  border-collapse: collapse;
-  table-layout: fixed;
-  background: none;
-  color: var(--white);
-  box-shadow: none;
-}
-.details-section th,
-.details-section td {
-  border: 1px solid var(--secondary-color);
-  padding: 0.5rem;
-  vertical-align: middle;
-}
-.details-section th {
-  background: var(--light-gray);
-  color: var(--text-dark);
-  font-weight: 600;
-  text-align: center;
-}
-.details-section th[colspan] h2,
-.details-section th[colspan] h3 {
-  margin: 0.2rem 0;
+/* ==== Carrusel de exámenes ==== */
+.examen-selector {
+  margin-bottom: 1rem;
+  overflow-x: auto;
+  display: flex;
+  gap: 0.75rem;
+  padding-bottom: 0.5rem;
 }
 
-/* Columnas fijas */
-.details-section th:nth-child(1),
-.details-section td:nth-child(1) {
-  width: 40px;
-}
-.details-section th:nth-child(2),
-.details-section td:nth-child(2) {
-  width: 80px;
+.examen-selector::-webkit-scrollbar {
+  height: 6px;
 }
 
-/* Ocultar únicamente celdas vacías */
-.details-section th:empty,
-.details-section td:empty {
-  display: none;
+.examen-selector::-webkit-scrollbar-thumb {
+  background: var(--secondary-color);
+  border-radius: 3px;
 }
 
-/* Celdas de módulo y horario */
-.numero-modulo {
-  background: #5d5f7d;
-  font-weight: bold;
-  color: var(--secondary-color);
-}
-.horario-modulo {
-  background: var(--light-gray);
-  color: var(--text-dark);
-  font-size: 0.85rem;
-  line-height: 1.2;
-}
-
-/* Estados de celda */
+/* ==== Estados de celda ==== */
 .disponible {
   background: var(--white);
 }
+
 .reservado {
   background: var(--disabled-gray);
   color: var(--white);
@@ -155,7 +111,7 @@
   line-height: 1.2;
 }
 
-/* Botones de selección */
+/* ==== Botones de selección ==== */
 .disponible button,
 .boton-modulo-seleccionado {
   width: 100%;
@@ -165,177 +121,24 @@
   font-size: 0.9rem;
   cursor: pointer;
 }
+
 .disponible button {
   background: var(--accent-color);
   color: var(--white);
 }
+
 .disponible button:disabled {
   background: var(--disabled-gray);
   cursor: not-allowed;
 }
+
 .boton-modulo-seleccionado {
   background: #c0392b; /* rojo oscuro para seleccionado */
   color: var(--white);
 }
 
-/* Botón Confirmar Reserva */
-.details-section > button {
-  margin-top: 1rem;
-  padding: 0.6rem 1.2rem;
-  font-size: 1rem;
-  background: var(--accent-color);
-  color: var(--white);
-  border: none;
-  border-radius: 4px;
-  cursor: pointer;
-}
-.agenda-container {
-  display: flex;
-  height: 100vh;
-}
-
-/* Estilos específicos para la página de calendario */
-
-/* ==== Layout general de página ==== */
-.page-calendario {
-  display: flex;
-  flex-direction: column;
-  height: 100vh;
-  background: var(--light-gray);
-}
-.page-title {
-  margin: 1rem 0;
-  font-size: 1.75rem;
-  text-align: center;
-  color: var(--primary-color);
-}
-
-/* ==== Contenedor de la agenda ==== */
-.agenda-semanal-container {
-  display: flex;
-  flex: 1;
-  overflow: hidden; /* para que los scroll internos funcionen */
-}
-
-/* ==== Sidebar (salas + examen search) ==== */
-.container-lateral {
-  width: 300px;
-  background: var(--white);
-  box-shadow: 2px 0 5px rgba(0, 0, 0, 0.1);
-  padding: 1rem;
-  display: flex;
-  flex-direction: column;
-  overflow-y: auto;
-}
-
-/* ==== Panel principal ==== */
-.details-section {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  padding: 1rem;
-  overflow: hidden;
-  position: relative;
-}
-
-/* ==== Carrusel de exámenes ==== */
-.details-section .examen-selector {
-  margin-bottom: 1rem;
-  overflow-x: auto;
-  display: flex;
-  gap: 0.75rem;
-  padding-bottom: 0.5rem;
-}
-.details-section .examen-selector::-webkit-scrollbar {
-  height: 6px;
-}
-.details-section .examen-selector::-webkit-scrollbar-thumb {
-  background: var(--secondary-color);
-  border-radius: 3px;
-}
-
-/* ==== Wrapper para la tabla ==== */
-.details-section .table-wrapper {
-  flex: 1;
-  overflow: auto;
-  background: var(--white);
-  border-radius: 8px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-}
-
-/* ==== Estilos de la tabla ==== */
-.calendar-table {
-  width: 100%;
-  border-collapse: collapse;
-  table-layout: fixed;
-  font-size: 0.9rem;
-}
-.calendar-table th,
-.calendar-table td {
-  padding: 0.75rem;
-  border: 1px solid var(--light-gray);
-  text-align: center;
-  vertical-align: middle;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-/* ==== Cabecera sticky ==== */
-.calendar-table thead th {
-  background: var(--secondary-color);
-  color: var(--white);
-  position: sticky;
-  top: 0;
-  z-index: 10;
-  font-weight: 600;
-}
-
-/* ==== Columnas fijas ==== */
-.calendar-table th:nth-child(1),
-.calendar-table td:nth-child(1) {
-  position: sticky;
-  left: 0;
-  background: var(--secondary-color);
-  color: var(--white);
-  z-index: 9;
-  width: 40px;
-}
-.calendar-table th:nth-child(2),
-.calendar-table td:nth-child(2) {
-  position: sticky;
-  left: 40px;
-  background: var(--secondary-color);
-  color: var(--white);
-  z-index: 9;
-  width: 80px;
-}
-
-/* ==== Zebra-stripes y hover ==== */
-.calendar-table tbody tr:nth-child(even) {
-  background: var(--light-gray);
-}
-.calendar-table tbody tr:hover {
-  background: rgba(40, 167, 69, 0.1);
-}
-
-/* ==== Estados de celda ==== */
-.calendar-cell.disponible button {
-  background: var(--accent-color);
-  color: var(--white);
-}
-.calendar-cell.seleccionado {
-  background-color: rgba(39, 174, 96, 0.2);
-  border: 2px solid var(--accent-color);
-}
-.calendar-cell.reservado {
-  background-color: #f8d7da;
-  color: #721c24;
-  cursor: not-allowed;
-}
-
 /* ==== Botón confirmar ==== */
-.details-section > button {
+.btn-confirmar-reserva {
   align-self: flex-end;
   margin-top: 1rem;
   padding: 0.6rem 1.2rem;
@@ -345,4 +148,23 @@
   border: none;
   border-radius: 4px;
   cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.btn-confirmar-reserva:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
+
+/* ==== Diseño responsivo ==== */
+@media (max-width: 992px) {
+  .top-row {
+    flex-direction: column;
+  }
+
+  .sala-selector-container {
+    flex: 0 0 auto;
+    width: 100%;
+    margin-bottom: 15px;
+  }
 }

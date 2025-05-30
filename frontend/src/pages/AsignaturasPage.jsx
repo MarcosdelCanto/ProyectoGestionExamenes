@@ -13,24 +13,24 @@ import SeccionForm from '../components/secciones/SeccionForm';
 import SeccionList from '../components/secciones/SeccionList';
 import SeccionActions from '../components/secciones/SeccionActions';
 import {
-  AddAsignatura,
-  EditAsignatura,
-  DeleteAsignatura,
+  createAsignatura as AddAsignatura,
+  updateAsignatura as EditAsignatura,
+  deleteAsignatura as DeleteAsignatura,
 } from '../services/asignaturaService';
 import {
-  AddSeccion,
-  EditSeccion,
-  DeleteSeccion,
+  createSeccion as AddSeccion, // Asumiendo que seccionService exporta createSeccion
+  updateSeccion as EditSeccion, // Asumiendo que seccionService exporta updateSeccion
+  deleteSeccion as DeleteSeccion, // Asumiendo que seccionService exporta deleteSeccion
 } from '../services/seccionService';
 import {
-  AddCarrera,
-  EditCarrera,
-  DeleteCarrera,
+  createCarrera as AddCarrera, // Asumiendo que carreraService exporta createCarrera
+  updateCarrera as EditCarrera, // Asumiendo que carreraService exporta updateCarrera
+  deleteCarrera as DeleteCarrera, // Asumiendo que carreraService exporta deleteCarrera
 } from '../services/carreraService';
 import {
-  AddEscuela,
-  EditEscuela,
-  DeleteEscuela,
+  createEscuela as AddEscuela,
+  updateEscuela as EditEscuela,
+  deleteEscuela as DeleteEscuela,
 } from '../services/escuelaService';
 import PaginationComponent from '../components/PaginationComponent'; // Importar PaginationComponent
 

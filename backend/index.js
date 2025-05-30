@@ -26,6 +26,9 @@ import calendarioRoutes from './routes/calendario.routes.js'; // Importa las rut
 import usuarioCarreraRoutes from './routes/usuarioCarrera.routes.js'; // Nueva importación
 import usuarioSeccionRoutes from './routes/usuarioSeccion.routes.js'; // Nueva importación
 import permisosRoutes from './routes/permiso.routes.js'; // Nueva importación
+import dashboardRoutes from './routes/dashboard.routes.js'; // Importar rutas del dashboard
+import reservaRoutes from './routes/reserva.routes.js'; // Importar rutas de reserva
+import reportsRoutes from './routes/reports.routes.js'; // Importar rutas de reportes
 
 const app = express();
 
@@ -88,7 +91,11 @@ async function startServer() {
     app.use('/api/usuario-carreras', usuarioCarreraRoutes); // Nueva ruta para usuario-carrera
     app.use('/api/usuario-secciones', usuarioSeccionRoutes); // Nueva ruta para usuario-sección
     app.use('/api/permisos', permisosRoutes);
+    app.use('/api/dashboard', dashboardRoutes); // Usar rutas del dashboard
     app.use('/api', calendarioRoutes);
+    app.use('/api/reserva', reservaRoutes); // Usar rutas de reserva
+    app.use('/api/escuela', escuelaRoutes); // Asegúrate que el prefijo sea el correcto
+    app.use('/api/reports', reportsRoutes); // Asegúrate de que las rutas de reportes estén correctamente definidas
 
     const PORT = process.env.PORT || 3000;
     server.listen(PORT, () =>
