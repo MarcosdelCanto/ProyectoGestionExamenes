@@ -122,3 +122,23 @@ export const deleteSeccion = async (req, res) => {
     if (conn) await conn.close();
   }
 };
+
+export const getSeccionesByAsignatura = async (req, res) => {
+  let connection;
+  try {
+    connection = await getConnection();
+    const { asignaturaId } = req.params;
+    const sql = `SELECT ID_SECCION, NOMBRE_SECCION FROM SECCION WHERE ASIGNATURA_ID_ASIGNATURA = :asignaturaId ORDER BY NOMBRE_SECCION`;
+    const result = await connection.execute(sql, [asignaturaId], {
+      outFormat: oracledb.OUT_FORMAT_OBJECT,
+    });
+    res.json(result.rows);
+  } catch (error) {
+    console.error('Error al eliminar seccion:', error);
+    res
+      .status(500)
+      .json({ error: 'Error al obtener secciones por asignatura' });
+  } finally {
+    if (connection) await connection.close();
+  }
+};

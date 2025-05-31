@@ -83,7 +83,7 @@ function ListaExamenesExternos({ examenes }) {
               userSelect: 'none',
             }}
           >
-            {examen.NOMBRE_EXAMEN} ({examen.CANTIDAD_MODULOS_EXAMEN}{' '}
+            {examen.NOMBRE_EXAMEN} ({examen.CANTIDAD_MODULOS_EXAMEN}
             {examen.CANTIDAD_MODULOS_EXAMEN === 1 ? 'módulo' : 'módulos'})
           </div>
         ))}

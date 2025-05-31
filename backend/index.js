@@ -69,7 +69,7 @@ async function startServer() {
 
     // Rutas API
     app.use('/api/auth', authRoutes);
-    app.use('/api/user', userRoutes);
+    //app.use('/api/user', userRoutes);
     app.use('/api/usuarios', userRoutes);
     app.use('/api/modulo', moduloRoutes);
     app.use('/api/sala', salaRoutes);

@@ -65,9 +65,8 @@ function CargaDatosPage() {
           <Col>
             <div>
               <p className="display-5 page-title-custom mb-2">
-                {' '}
                 {/* Clase de UsuariosPage */}
-                <i className="bi bi-cloud-upload-fill me-3"></i>{' '}
+                <i className="bi bi-cloud-upload-fill me-3"></i>
                 {/* Ícono cambiado */}
                 Carga Masiva de Datos {/* Título cambiado */}
               </p>

@@ -33,7 +33,6 @@ function UsuarioActions({
 
   return (
     <>
-      {' '}
       {/* Usamos un Fragment (<>) para poder retornar el div y el Modal juntos */}
       <div className="mb-3 d-flex flex-wrap align-items-center">
         <div className="usuario-action-buttons d-flex flex-wrap">
@@ -86,7 +85,7 @@ function UsuarioActions({
         </Modal.Header>
         <Modal.Body>
           {/* Hacemos el mensaje un poco más dinámico */}
-          ¿Estás seguro de que deseas eliminar {selectedUsuarios.length}{' '}
+          ¿Estás seguro de que deseas eliminar {selectedUsuarios.length}
           usuario(s)? Esta acción no se puede deshacer.
         </Modal.Body>
         <Modal.Footer>

@@ -638,7 +638,6 @@ const DashboardConGraficos = () => {
               setExamenesCarrera,
               'Exámenes por Carrera', // ChartComponent
               <div className="flex-grow-1" style={{ minHeight: '300px' }}>
-                {' '}
                 {/* Ajusta esta altura según necesites */}
                 <ResponsiveContainer width="100%" height="100%">
                   <BarChart
@@ -723,7 +722,6 @@ const DashboardConGraficos = () => {
               setModulosAgendados,
               'Módulos más Agendados', // ChartComponent
               <div className="flex-grow-1" style={{ minHeight: '300px' }}>
-                {' '}
                 {/* Ajusta esta altura según necesites */}
                 <ResponsiveContainer width="100%" height="100%">
                   <LineChart
@@ -888,7 +886,6 @@ const DashboardConGraficos = () => {
               setExamenesPorDia,
               'Exámenes por Día', // ChartComponent
               <div className="flex-grow-1" style={{ minHeight: '300px' }}>
-                {' '}
                 {/* Ajusta esta altura según necesites */}
                 <ResponsiveContainer width="100%" height="100%">
                   <BarChart

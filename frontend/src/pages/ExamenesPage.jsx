@@ -155,7 +155,7 @@ export default function ExamenesPage() {
       {/* Título de la página actualizado */}
       <div>
         <p className="display-5 page-title-custom mb-2">
-          <i className="bi bi-file-earmark-text-fill me-3"></i>{' '}
+          <i className="bi bi-file-earmark-text-fill me-3"></i>
           {/* Ícono para gestión de exámenes */}
           Gestión de Exámenes
         </p>

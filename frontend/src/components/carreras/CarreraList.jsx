@@ -72,7 +72,7 @@ function CarreraList({
               <td>{c.ID_CARRERA}</td>
               <td>{c.CODIGO_CARRERA}</td>
               <td>{c.NOMBRE_CARRERA}</td>
-              <td>{c.NOMBRE_ESCUELA || c.ESCUELA_ID_ESCUELA}</td>{' '}
+              <td>{c.NOMBRE_ESCUELA || c.ESCUELA_ID_ESCUELA}</td>
               {/* Muestra nombre de escuela si está disponible */}
             </tr>
           ))}

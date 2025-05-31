@@ -353,21 +353,21 @@ export default function UsuariosPage() {
               <p>{bulkUploadResult.message}</p>
             ) : (
               <>
-                Resumen de la carga: Nuevos:{' '}
+                Resumen de la carga: Nuevos:
                 {bulkUploadResult.inserted !== undefined
                   ? bulkUploadResult.inserted
-                  : 'N/A'}{' '}
-                | Actualizados:{' '}
+                  : 'N/A'}
+                | Actualizados:
                 {bulkUploadResult.updated !== undefined
                   ? bulkUploadResult.updated
-                  : 'N/A'}{' '}
-                | Ignorados:{' '}
+                  : 'N/A'}
+                | Ignorados:
                 {bulkUploadResult.ignored !== undefined
                   ? bulkUploadResult.ignored
                   : 'N/A'}
                 {bulkUploadResult.associations_created !== undefined && (
                   <>
-                    {' | '}Asociaciones Creadas:{' '}
+                    {' | '}Asociaciones Creadas:
                     {bulkUploadResult.associations_created !== undefined
                       ? bulkUploadResult.associations_created
                       : 'N/A'}
@@ -538,8 +538,8 @@ export default function UsuariosPage() {
               </ul>
             ) : (
               <p>
-                No hay{' '}
-                {modalContentType === 'carreras' ? 'carreras' : 'secciones'}{' '}
+                No hay
+                {modalContentType === 'carreras' ? 'carreras' : 'secciones'}
                 asociadas a este usuario.
               </p>
             )}
@@ -570,9 +570,9 @@ export default function UsuariosPage() {
                   className="btn-close"
                   onClick={() => setMsgModal(null)}
                   aria-label="Close" // Es buena práctica añadir aria-label para accesibilidad
-                />{' '}
+                />
                 {/* CORREGIDO: Botón auto-cerrado */}
-              </div>{' '}
+              </div>
               {/* CORREGIDO: div del header cierra después del botón */}
               <div className="modal-body">
                 <p>{msgModal.body}</p>

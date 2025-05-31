@@ -19,7 +19,7 @@ function UsuarioSeccionTable({
 
   return (
     <Table bordered hover responsive>
-      <thead class="table-light position-sticky top-0">
+      <thead className="table-light position-sticky top-0">
         <tr>
           <th style={{ width: '5%' }} className="text-center align-middle">
             <input
@@ -50,7 +50,6 @@ function UsuarioSeccionTable({
         {Object.keys(groupedAssociations).length === 0 && !loading && (
           <tr>
             <td colSpan="5" className="text-center">
-              {' '}
               {/* Ajustado colSpan a 5 */}
               No hay asociaciones registradas.
             </td>

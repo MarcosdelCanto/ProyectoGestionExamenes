@@ -90,6 +90,20 @@ export const deleteSeccion = async (id) => {
   }
 };
 
+export const fetchSeccionesByAsignatura = async (asignaturaId) => {
+  try {
+    // La URL será /api/seccion/asignatura/ID
+    const response = await api.get(`/seccion/asignatura/${asignaturaId}`);
+    return response.data;
+  } catch (error) {
+    console.error(
+      `Error fetching secciones for asignatura ${asignaturaId}:`,
+      error.response?.data || error.message
+    );
+    throw error;
+  }
+};
+
 // Las funciones fetchAllAsignaturas, fetchAsignaturaById, createAsignatura, updateAsignatura, deleteAsignatura
 // y AddSeccion, EditSeccion, DeleteSeccion eran incorrectas o redundantes y se han reemplazado/eliminado.
 // La función fetchAllSecciones que tenías al final ya estaba bien encaminada.

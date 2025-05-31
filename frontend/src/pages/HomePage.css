@@ -19,7 +19,7 @@
   align-items: center;
   justify-content: center;
   flex-direction: column;
-  overflow: hidden;
+  /*overflow: hidden;*/
 }
 
 /* Sección izquierda con el ícono y el gradiente */

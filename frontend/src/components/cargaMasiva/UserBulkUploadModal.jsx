@@ -272,7 +272,7 @@ export default function UserBulkUploadModal({
               </Button>
             )}
           </div>
-          {error && <Alert variant="danger">{error}</Alert>}{' '}
+          {error && <Alert variant="danger">{error}</Alert>}
           {/* Error se muestra DENTRO del modal */}
           {jsonData && (
             <>

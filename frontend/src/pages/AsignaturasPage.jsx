@@ -664,7 +664,7 @@ export default function AsignaturasPage() {
           {modal.type === 'delete' ? (
             <div>
               <p>
-                ¿Está seguro de que desea eliminar{' '}
+                ¿Está seguro de que desea eliminar
                 {selectedAsignaturas.length === 1
                   ? 'la asignatura seleccionada'
                   : `las ${selectedAsignaturas.length} asignaturas seleccionadas`}
@@ -745,7 +745,7 @@ export default function AsignaturasPage() {
           {modal.type === 'delete' ? (
             <div>
               <p>
-                ¿Está seguro de que desea eliminar{' '}
+                ¿Está seguro de que desea eliminar
                 {selectedSecciones.length === 1
                   ? 'la sección seleccionada'
                   : `las ${selectedSecciones.length} secciones seleccionadas`}
@@ -825,7 +825,7 @@ export default function AsignaturasPage() {
           {modal.type === 'delete' ? (
             <div>
               <p>
-                ¿Está seguro de que desea eliminar{' '}
+                ¿Está seguro de que desea eliminar
                 {selectedCarreras.length === 1
                   ? 'la carrera seleccionada'
                   : `las ${selectedCarreras.length} carreras seleccionadas`}
@@ -904,7 +904,7 @@ export default function AsignaturasPage() {
           {modal.type === 'delete' ? (
             <div>
               <p>
-                ¿Está seguro de que desea eliminar{' '}
+                ¿Está seguro de que desea eliminar
                 {selectedEscuelas.length === 1
                   ? 'la escuela seleccionada'
                   : `las ${selectedEscuelas.length} escuelas seleccionadas`}

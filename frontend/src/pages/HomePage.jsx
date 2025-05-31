@@ -18,7 +18,7 @@ export default function HomePage() {
   const navigate = useNavigate();
 
   useEffect(() => {
-    api('/user/profile')
+    api('/usuarios/profile')
       .then((res) => {
         setPerfil(res.data.perfil);
       })

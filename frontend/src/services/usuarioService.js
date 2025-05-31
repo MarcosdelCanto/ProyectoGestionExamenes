@@ -64,3 +64,26 @@ export const resetPassword = (id) =>
       console.error('resetPassword error:', err);
       throw err;
     });
+
+// Ejemplo en tu archivo de servicio (services/usuarioService.js)
+
+export const fetchAllDocentes = async () => {
+  try {
+    // ANTES (Llamada sin parámetros)
+    // const response = await api.get('/api/usuarios');
+
+    // DESPUÉS (Llamada con el parámetro para filtrar por rol de docente)
+    // Le pasamos el ID del rol "DOCENTE" a la API.
+    // NOTA: Asegúrate de que el ID del rol 'DOCENTE' en tu tabla ROL sea realmente 2.
+    const response = await api.get('/usuarios', {
+      params: {
+        rolId: 2,
+      },
+    });
+
+    return response.data;
+  } catch (error) {
+    console.error('Error fetching docentes:', error);
+    throw error;
+  }
+};

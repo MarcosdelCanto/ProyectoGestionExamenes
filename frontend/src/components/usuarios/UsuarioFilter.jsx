@@ -44,9 +44,9 @@ function UsuarioFilter({ roles, onFilterChange, currentFilters }) {
                 className="w-100 btn-icon-only-candidate" // Añadir btn-icon-only-candidate
                 title="Limpiar Filtros" // Añadir title para accesibilidad
               >
-                <i className="bi bi-arrow-counterclockwise"></i>{' '}
+                <i className="bi bi-arrow-counterclockwise"></i>
                 {/* Icono para limpiar/resetear */}
-                <span className="btn-responsive-text ms-2">Limpiar</span>{' '}
+                <span className="btn-responsive-text ms-2">Limpiar</span>
                 {/* Texto responsivo */}
               </Button>
             </Col>

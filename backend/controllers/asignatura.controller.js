@@ -122,31 +122,17 @@ export const deleteAsignatura = async (req, res) => {
 export const getAsignaturasByCarrera = async (req, res) => {
   let connection;
   try {
-    const { carreraId } = req.params;
-    if (!carreraId) {
-      return res.status(400).json({ message: 'Carrera ID is required' });
-    }
     connection = await getConnection();
-    const result = await connection.execute(
-      `SELECT ID_ASIGNATURA, NOMBRE_ASIGNATURA, CARRERA_ID_CARRERA
-       FROM ASIGNATURA
-       WHERE CARRERA_ID_CARRERA = :id`,
-      [parseInt(carreraId)],
-      { outFormat: oracledb.OUT_FORMAT_OBJECT }
-    );
+    const { carreraId } = req.params;
+    const sql = `SELECT ID_ASIGNATURA, NOMBRE_ASIGNATURA FROM ASIGNATURA WHERE CARRERA_ID_CARRERA = :carreraId ORDER BY NOMBRE_ASIGNATURA`;
+    const result = await connection.execute(sql, [carreraId], {
+      outFormat: oracledb.OUT_FORMAT_OBJECT,
+    });
     res.json(result.rows);
-  } catch (error) {
-    console.error('Error fetching asignaturas by carrera:', error);
-    res
-      .status(500)
-      .json({ message: 'Error al obtener asignaturas por carrera' });
+  } catch (err) {
+    console.error('Error al obtener asignatura por carrera:', err);
+    res.status(500).json({ error: 'Error al obtener asignatura por carrera:' });
   } finally {
-    if (connection) {
-      try {
-        await connection.close();
-      } catch (err) {
-        console.error('Error al cerrar la conexión:', err);
-      }
-    }
+    if (connection) await connection.close();
   }
 };

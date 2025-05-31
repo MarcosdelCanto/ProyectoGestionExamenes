@@ -3,6 +3,11 @@ import { getConnection } from '../db.js';
 import bcrypt from 'bcrypt'; // Importar bcrypt
 import oracledb from 'oracledb';
 
+const handleError = (res, error, message) => {
+  console.error(message, ':', error);
+  res.status(500).json({ error: message, details: error.message });
+};
+
 /**
  * Importa o actualiza usuarios desde un array de filas:
  * - Si ID_DOCENTE ya existe, actualiza EMAIL_USUARIO y fecha_actu_usuario.
@@ -187,6 +192,41 @@ export const getProfile = async (req, res) => {
         await conn.close();
       } catch (e) {
         console.error(e);
+      }
+    }
+  }
+};
+
+export const getUsuarios = async (req, res) => {
+  let connection;
+  try {
+    connection = await getConnection();
+    const { rolId } = req.query;
+
+    let sql = `
+      SELECT ID_USUARIO, NOMBRE_USUARIO, EMAIL_USUARIO, ROL_ID_ROL
+      FROM USUARIO
+    `;
+    const params = {};
+
+    if (rolId) {
+      sql += ` WHERE ROL_ID_ROL = :rolId`;
+      params.rolId = parseInt(rolId);
+    }
+    sql += ` ORDER BY NOMBRE_USUARIO`;
+
+    const result = await connection.execute(sql, params, {
+      outFormat: oracledb.OUT_FORMAT_OBJECT,
+    });
+    res.json(result.rows);
+  } catch (error) {
+    handleError(res, error, 'Error al obtener usuarios');
+  } finally {
+    if (connection) {
+      try {
+        await connection.close();
+      } catch (err) {
+        console.error('Error closing connection for getUsuarios', err);
       }
     }
   }

@@ -374,7 +374,7 @@ function UsuarioSeccionTab({ allUsers, allRoles }) {
   if (loading) {
     return (
       <div className="text-center p-3">
-        <Spinner animation="border" />{' '}
+        <Spinner animation="border" />
         <p>Cargando asociaciones Usuario-Sección...</p>
       </div>
     );

@@ -342,7 +342,7 @@ export default function SalasPage() {
       {/* Título de la página actualizado */}
       <div>
         <p className="display-5 page-title-custom mb-2">
-          <i className="bi bi-door-open-fill me-3"></i>{' '}
+          <i className="bi bi-door-open-fill me-3"></i>
           {/* Ícono para gestión de espacios/salas */}
           Gestión de Espacios
         </p>

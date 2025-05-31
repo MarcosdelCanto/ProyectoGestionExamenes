@@ -177,9 +177,8 @@ export default function ModulosPage() {
       <style>{keyframes}</style>
       <div>
         <p className="display-5 page-title-custom mb-2">
-          {' '}
           {/* Clase de UsuariosPage */}
-          <i className="bi bi-stack me-3"></i>{' '}
+          <i className="bi bi-stack me-3"></i>
           {/* Ícono cambiado para módulos */}
           Gestión de Módulos {/* Título cambiado */}
         </p>
