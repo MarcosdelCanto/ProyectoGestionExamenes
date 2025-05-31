@@ -2,8 +2,6 @@ import React, { useState, useMemo, useEffect } from 'react';
 import { FaSearch, FaFilter } from 'react-icons/fa';
 import ExamenPostIt from './ExamenPostIt';
 import { FaGripLines } from 'react-icons/fa';
-//prueba para git
-// Imports para Swiper
 import { Swiper, SwiperSlide } from 'swiper/react';
 import { Navigation, Pagination } from 'swiper/modules';
 import 'swiper/css';
@@ -12,12 +10,11 @@ import 'swiper/css/pagination';
 
 // Imports para dnd-kit
 import { useDraggable } from '@dnd-kit/core';
-import { set } from 'date-fns';
 
 // Componente auxiliar para el elemento arrastrable (se mantiene igual)
 function DraggableExamenPostIt({ examen, onModulosChange }) {
   const [currentModulos, setCurrentModulos] = useState(
-    examen.CANTIDAD_MODULOS_EXAMEN
+    examen.CANTIDAD_MODULOS_EXAMEN || 1
   );
 
   const { attributes, listeners, setNodeRef, transform, isDragging } =
@@ -29,18 +26,20 @@ function DraggableExamenPostIt({ examen, onModulosChange }) {
       },
     });
 
+  // estilo de transformacion controlados por dnd-kit
   const style = transform
     ? {
         transform: `translate3d(${transform.x}px, ${transform.y}px, 0)`,
         zIndex: isDragging ? 1000 : 'auto',
         opacity: isDragging ? 0.8 : 1,
+        // El cursor se manejará en el ExamenPostIt, en el drag handle
       }
-    : undefined;
-
-  const handleModulosChange = (id, newModulosCount) => {
-    setCurrentModulos(newModulosCount);
+    : {}; // Devolver un objeto vacío para que no sea undefined y cause problemas de estilo
+  // Manejador para el cambio de módulos
+  const handleModulosChange = (id, newCount) => {
+    setCurrentModulos(newCount);
     if (onModulosChange) {
-      onModulosChange(id, newModulosCount);
+      onModulosChange(id, newCount);
     }
   };
 
@@ -50,8 +49,10 @@ function DraggableExamenPostIt({ examen, onModulosChange }) {
       setNodeRef={setNodeRef}
       style={style}
       onModulosChange={handleModulosChange}
-      {...listeners}
+      isPreview={true} // Indicar que es vista previa
       {...attributes}
+      dragHandleListeners={listeners} // Pasar listeners específicamente para el handle
+      isBeingDragged={isDragging} // Pasar el estado de arrastre
     />
   );
 }
@@ -178,13 +179,11 @@ export default function ExamenSelector({
   const handleSearchExamenes = (event) => {
     setSearchTermExamenes(event.target.value);
   };
-
   const handleModulosChange = (examenId, newModulosCount) => {
     if (onExamenModulosChange) {
       onExamenModulosChange(examenId, newModulosCount);
     }
   };
-
   const filteredExamenes = useMemo(() => {
     let tempExamenes = examenes || [];
     if (selectedEscuela) {
@@ -313,6 +312,7 @@ export default function ExamenSelector({
               slidesPerView={'auto'}
               navigation
               pagination={{ clickable: true }}
+              allowTouchMove={false} // Permitir el movimiento táctil
               style={{
                 width: '100%',
                 height: '100%',

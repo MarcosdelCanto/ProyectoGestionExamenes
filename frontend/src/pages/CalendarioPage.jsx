@@ -1,52 +1,56 @@
-import React, { useState } from 'react'; // Quitar useEffect, useMemo, useRef si ya no se usan aquí
+import React, { useState } from 'react';
+import {
+  DndContext,
+  PointerSensor,
+  useSensor,
+  useSensors,
+} from '@dnd-kit/core';
 import AgendaSemanal from '../components/calendario/AgendaSemanal';
 import Layout from '../components/Layout';
 import '../components/calendario/CalendarioStyles.css';
 import './CalendarioPage.css';
 
-// Imports para dnd-kit
-import {
-  DndContext,
-  closestCenter,
-  PointerSensor,
-  KeyboardSensor,
-  useSensor,
-  useSensors,
-} from '@dnd-kit/core';
-
 export function CalendarioPage() {
-  // Los estados de examenes, salas, selectedSalaCalendario, etc., se moverán a AgendaSemanal
-  const [draggedExamenData, setDraggedExamenData] = useState(null);
-  const [dropTargetCellData, setDropTargetCellData] = useState(null);
+  const [draggedExamen, setDraggedExamen] = useState(null);
+  const [dropTargetCell, setDropTargetCell] = useState(null);
 
   const sensors = useSensors(
     useSensor(PointerSensor, {
-      activationConstraint: { delay: 100, tolerance: 5 },
-    }),
-    useSensor(KeyboardSensor)
+      // Temporalmente sin activationConstraint para prueba
+      // activationConstraint: { delay: 100, tolerance: 5 },
+    })
   );
 
-  // La carga de datos (examenes, salas) se hará dentro de AgendaSemanal
-  // useEffect(() => { ... loadData ... }, []); // Ya no aquí
+  const hanldeDragStart = (event) => {
+    console.log('Drag Start detected:', event);
+  };
 
+  // Manejador de fin de arrastre
   const handleDragEnd = (event) => {
     const { active, over } = event;
-    setDraggedExamenData(null);
-    setDropTargetCellData(null);
+    console.log('Drag ended:', { active, over });
+
+    // Limpiar estados previos
+    setDraggedExamen(null);
+    setDropTargetCell(null);
+
+    // Si hay un drop válido
     if (
       over &&
       active.data.current?.type === 'examen' &&
       over.data.current?.type === 'celda-calendario'
     ) {
-      // Es importante que active.data.current.examen contenga el objeto examen completo
-      setDraggedExamenData(active.data.current.examen);
-      setDropTargetCellData(over.data.current); // Esto debería ser { fecha, modulo }
+      console.log('Valid drop detected!');
+
+      // Configurar el estado para procesar el drop
+      setDraggedExamen(active.data.current.examen);
+      setDropTargetCell(over.data.current);
     }
   };
 
   const handleDropProcessed = () => {
-    setDraggedExamenData(null);
-    setDropTargetCellData(null);
+    setDraggedExamen(null);
+    setDropTargetCell(null);
   };
 
   // handleSelectSala y filteredSalas ya no son necesarios aquí
@@ -55,16 +59,15 @@ export function CalendarioPage() {
     <Layout>
       <DndContext
         sensors={sensors}
-        collisionDetection={closestCenter}
+        onDragStart={hanldeDragStart}
         onDragEnd={handleDragEnd}
       >
         <div className="container-fluid mt-3 calendario-page-container">
           {/* AgendaSemanal ahora es el componente principal que organiza su interior */}
           <AgendaSemanal
-            draggedExamen={draggedExamenData}
-            dropTargetCell={dropTargetCellData}
+            draggedExamen={draggedExamen}
+            dropTargetCell={dropTargetCell}
             onDropProcessed={handleDropProcessed}
-            // Ya no se pasa externalSelectedSala desde aquí
           />
         </div>
       </DndContext>
