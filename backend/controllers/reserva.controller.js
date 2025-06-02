@@ -282,13 +282,7 @@ export const updateReserva = async (req, res) => {
   if (isNaN(reservaIdNum)) {
     return handleError(res, null, 'El ID de la reserva no es válido.', 400);
   }
-  const {
-    fecha_reserva,
-    examen_id_examen,
-    sala_id_sala,
-    estado_id_estado,
-    modulos,
-  } = req.body;
+  const { fecha_reserva, examen_id_examen, sala_id_sala, modulos } = req.body;
   let conn;
   try {
     conn = await getConnection();
