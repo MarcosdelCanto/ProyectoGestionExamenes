@@ -1,5 +1,31 @@
-import { useState, useEffect } from 'react';
-import Layout from '../components/Layout';
+// src/pages/SalasPage.jsx
+import React, { useState, useEffect, useCallback } from 'react';
+import Layout from '../components/Layout'; // Ajusta la ruta si es necesario
+
+// Importa tus servicios (asumiendo que usan tu instancia de 'api' de Axios)
+import {
+  fetchAllSalas,
+  createSala as AddSala, // Renombrado createSala a AddSala
+  updateSala as EditSala, // Renombrado updateSala a EditSala
+  deleteSalaById, // Renombrado deleteSala a deleteSalaById
+} from '../services/salaService'; // Renombrado deleteSala a deleteSalaById
+import {
+  fetchAllEdificios,
+  createEdificio,
+  updateEdificio,
+  deleteEdificio as deleteEdificioById,
+} from '../services/edificioService'; // Renombrado deleteEdificio
+import {
+  fetchAllSedes,
+  createSede,
+  updateSede,
+  deleteSede as deleteSedeById,
+} from '../services/sedeService'; // Renombrado deleteSede
+
+// Importa componentes de UI de React Bootstrap
+import { Alert, Spinner } from 'react-bootstrap'; // Modal y Button se usarán implícitamente por los Forms
+
+// Importa tus componentes de UI específicos
 import SalaForm from '../components/salas/SalaForm';
 import SalaList from '../components/salas/SalaList';
 import SalaActions from '../components/salas/SalaActions';
@@ -9,36 +35,22 @@ import EdificioActions from '../components/edificios/EdificioActions';
 import SedeForm from '../components/sedes/SedeForm';
 import SedeList from '../components/sedes/SedeList';
 import SedeActions from '../components/sedes/SedeActions';
-import { AddSala, EditSala, deleteSala } from '../services/salaService';
-import { createEdificio, updateEdificio } from '../services/edificioService';
-import { createSede, updateSede, deleteSede } from '../services/sedeService';
 import PaginationComponent from '../components/PaginationComponent'; // Asegúrate de que la ruta sea correcta
-import { deleteEdificio } from '../services/edificioService';
-import { updateEscuela, deleteEscuela } from '../services/escuelaService';
-const alertStyle = {
-  animation: 'fadeInOut 5s ease-in-out',
-  WebkitAnimation: 'fadeInOut 5s ease-in-out',
-  opacity: 1,
-};
 
-const keyframes = `
-  @keyframes fadeInOut {
-    0% { opacity: 0; transform: translateY(-20px); }
-    10% { opacity: 1; transform: translateY(0); }
-    90% { opacity: 1; transform: translateY(0); }
-    100% { opacity: 0; transform: translateY(-20px); }
-  }
-`;
+// Componente Modal Bootstrap Genérico (el que ya tenías, está bien)
+function Modal({ title, children, onClose, show }) {
+  // Añadida prop 'show'
+  if (!show) return null; // No renderizar si no se debe mostrar
 
-// Componente Modal Bootstrap
-function Modal({ title, children, onClose }) {
   return (
     <div
       className="modal show"
       tabIndex="-1"
       style={{ display: 'block', backgroundColor: 'rgba(0,0,0,0.5)' }}
     >
-      <div className="modal-dialog">
+      <div className="modal-dialog modal-dialog-centered">
+        {' '}
+        {/* modal-dialog-centered para centrarlo */}
         <div className="modal-content">
           <div className="modal-header">
             <h5 className="modal-title">{title}</h5>
@@ -60,250 +72,161 @@ export default function SalasPage() {
   const [salas, setSalas] = useState([]);
   const [edificios, setEdificios] = useState([]);
   const [sedes, setSedes] = useState([]);
+
   const [selectedSala, setSelectedSala] = useState(null);
   const [selectedEdificio, setSelectedEdificio] = useState(null);
   const [selectedSede, setSelectedSede] = useState(null);
-  const [loading, setLoading] = useState(false);
+
+  const [loading, setLoading] = useState(true); // Para la carga inicial de todas las listas
+  const [isProcessing, setIsProcessing] = useState(false); // Para acciones CRUD
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
-  const [modal, setModal] = useState({ type: null, data: null });
+
+  const [modal, setModal] = useState({
+    type: null,
+    entity: null,
+    data: null,
+    show: false,
+  }); // Añadido 'show'
   const [activeTab, setActiveTab] = useState('salas');
 
-  // Estados para paginación
-  const [itemsPerPage, setItemsPerPage] = useState(10); // O el número que prefieras
+  const [itemsPerPage] = useState(10);
   const [currentPageSalas, setCurrentPageSalas] = useState(1);
   const [currentPageEdificios, setCurrentPageEdificios] = useState(1);
   const [currentPageSedes, setCurrentPageSedes] = useState(1);
 
-  // Efectos
-  useEffect(() => {
-    loadData();
-  }, []);
+  const displayMessage = (setter, message, duration = 4000) => {
+    setter(message);
+    setTimeout(() => setter(''), duration);
+  };
 
-  const loadData = async () => {
-    setLoading(true); // Mover setLoading(true) al inicio
+  const loadData = useCallback(async () => {
+    setLoading(true);
+    setError('');
     try {
-      const [salasDataRes, edificiosDataRes, sedesDataRes] = await Promise.all([
-        fetch('http://localhost:3000/api/sala'),
-        fetch('http://localhost:3000/api/edificio'),
-        fetch('http://localhost:3000/api/sede'),
+      const [salasData, edificiosData, sedesData] = await Promise.all([
+        fetchAllSalas(), // Usa tus funciones de servicio que llaman a tu 'api' de Axios
+        fetchAllEdificios(),
+        fetchAllSedes(),
       ]);
-      const salasData = await salasDataRes.json();
-      const edificiosData = await edificiosDataRes.json();
-      const sedesData = await sedesDataRes.json();
-      setSalas(salasData);
-      setEdificios(edificiosData);
-      setSedes(sedesData);
-      // Resetear paginación al cargar datos
+      setSalas(salasData || []); // Asegura que siempre sea un array
+      setEdificios(edificiosData || []);
+      setSedes(sedesData || []);
+
       setCurrentPageSalas(1);
       setCurrentPageEdificios(1);
       setCurrentPageSedes(1);
-    } catch (error) {
-      console.error('Error al cargar datos:', error);
-      setError('Error al cargar datos');
+    } catch (err) {
+      console.error('Error al cargar datos:', err);
+      setError('Error al cargar datos. ' + (err.message || ''));
+      setSalas([]);
+      setEdificios([]);
+      setSedes([]); // En caso de error, inicializar como arrays vacíos
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
 
-  // Funciones de modal
-  const openModal = (type, entity) => {
-    let data = null;
+  useEffect(() => {
+    loadData();
+  }, [loadData]);
+
+  const openModalHandler = (type, entity, selectedEntityData = null) => {
+    let dataToModal = null;
     if (type === 'edit' || type === 'delete') {
       switch (entity) {
         case 'sala':
-          if (!selectedSala) return;
-          data = salas.find((s) => s.ID_SALA === selectedSala);
+          dataToModal = selectedSala
+            ? salas.find((s) => s.ID_SALA === selectedSala.ID_SALA)
+            : null; // Usa selectedSala.ID_SALA
           break;
         case 'edificio':
-          if (!selectedEdificio) return;
-          data = edificios.find((e) => e.ID_EDIFICIO === selectedEdificio);
+          dataToModal = selectedEdificio
+            ? edificios.find(
+                (e) => e.ID_EDIFICIO === selectedEdificio.ID_EDIFICIO
+              )
+            : null;
           break;
         case 'sede':
-          if (!selectedSede) return;
-          data = sedes.find((s) => s.ID_SEDE === selectedSede);
+          dataToModal = selectedSede
+            ? sedes.find((s) => s.ID_SEDE === selectedSede.ID_SEDE)
+            : null;
+          break;
+        default:
           break;
       }
+      if (!dataToModal && selectedEntityData) dataToModal = selectedEntityData; // Fallback si la selección de tabla no estaba actualizada
     }
-    setModal({ type, entity, data });
+    setModal({ type, entity, data: dataToModal, show: true });
   };
 
-  const closeModal = () => setModal({ type: null, data: null });
+  const closeModalHandler = () =>
+    setModal({ type: null, entity: null, data: null, show: false });
 
-  // Manejadores para salas
-  const handleAddSala = async (form) => {
+  // --- Manejadores CRUD ---
+  const handleSave = async (entity, form) => {
+    setIsProcessing(true);
+    setError('');
+    setSuccess('');
     try {
-      await AddSala(form);
+      let message = '';
+      if (modal.type === 'add') {
+        if (entity === 'sala') await AddSala(form);
+        else if (entity === 'edificio') await createEdificio(form);
+        else if (entity === 'sede') await createSede(form);
+        message = `${entity.charAt(0).toUpperCase() + entity.slice(1)} creada con éxito.`;
+      } else if (modal.type === 'edit' && modal.data) {
+        if (entity === 'sala') await EditSala(modal.data.ID_SALA, form);
+        else if (entity === 'edificio')
+          await updateEdificio(modal.data.ID_EDIFICIO, form);
+        else if (entity === 'sede') await updateSede(modal.data.ID_SEDE, form);
+        message = `${entity.charAt(0).toUpperCase() + entity.slice(1)} actualizada con éxito.`;
+      }
+      displayMessage(setSuccess, message);
       loadData();
-      closeModal();
-      setSuccess('Sala creada con éxito');
-      setTimeout(() => {
-        setSuccess('');
-      }, 5000);
-    } catch (error) {
-      setError('Error al crear sala');
-      setTimeout(() => {
-        setError('');
-      }, 5000);
-      closeModal();
-    }
-  };
-
-  const handleEditSala = async (form) => {
-    try {
-      await EditSala(selectedSala, form);
-      loadData();
-      closeModal();
-      setSuccess('Sala actualizada con éxito');
-      setTimeout(() => {
-        setSuccess('');
-      }, 5000);
-    } catch (error) {
-      setError('Error al actualizar sala');
-      console.error('Error:', error);
-      setTimeout(() => {
-        setError('');
-      }, 5000);
-      closeModal();
+      closeModalHandler();
+    } catch (err) {
+      displayMessage(
+        setError,
+        `Error al guardar ${entity}: ` +
+          (err.response?.data?.error || err.message)
+      );
+      console.error(`Error guardando ${entity}:`, err);
+    } finally {
+      setIsProcessing(false);
     }
   };
 
-  const handleDeleteSala = async () => {
+  const handleDelete = async () => {
+    if (!modal.data || !modal.entity) return;
+    setIsProcessing(true);
+    setError('');
+    setSuccess('');
+    const entityName =
+      modal.entity.charAt(0).toUpperCase() + modal.entity.slice(1);
     try {
-      await deleteSala(selectedSala);
-      loadData();
-      closeModal();
-      setSelectedSala(null);
-      setSuccess('Sala eliminada con éxito');
-      setTimeout(() => {
-        setSuccess('');
-      }, 5000);
-    } catch (error) {
-      setError('Error al eliminar sala');
-      console.error('Error:', error);
-      setTimeout(() => {
-        setError('');
-      }, 5000);
-      closeModal();
-    }
-  };
+      if (modal.entity === 'sala') await deleteSalaById(modal.data.ID_SALA);
+      else if (modal.entity === 'edificio')
+        await deleteEdificioById(modal.data.ID_EDIFICIO);
+      else if (modal.entity === 'sede')
+        await deleteSedeById(modal.data.ID_SEDE);
 
-  // Manejadores para edificios
-
-  const handleAddEdificio = async (form) => {
-    try {
-      await createEdificio(form);
+      displayMessage(setSuccess, `${entityName} eliminada con éxito.`);
       loadData();
-      closeModal();
-      setSuccess('Edificio creado con éxito');
-      setTimeout(() => {
-        setSuccess('');
-      }, 5000);
-    } catch (error) {
-      setError('Error al crear edificio');
-      setTimeout(() => {
-        setError('');
-      }, 5000);
-      closeModal();
-    }
-  };
-
-  const handleEditEdificio = async (form) => {
-    try {
-      await updateEdificio(selectedEdificio, form);
-      loadData();
-      closeModal();
-      setSuccess('Edificio actualizado con éxito');
-      setTimeout(() => {
-        setSuccess('');
-      }, 5000);
-    } catch (error) {
-      setError('Error al actualizar edificio');
-      console.error('Error:', error);
-      setTimeout(() => {
-        setError('');
-      }, 5000);
-      closeModal();
-    }
-  };
-
-  const handleDeleteEdificio = async () => {
-    try {
-      await deleteEdificio(selectedEdificio);
-      loadData();
-      closeModal();
-      setSelectedEdificio(null);
-      setSuccess('Edificio eliminado con éxito');
-      setTimeout(() => {
-        setSuccess('');
-      }, 5000);
-    } catch (error) {
-      setError('Error al eliminar edificio');
-      console.error('Error:', error);
-      setTimeout(() => {
-        setError('');
-      }, 5000);
-      closeModal();
-    }
-  };
-
-  // Manejadores para sedes
-
-  const handleAddSede = async (form) => {
-    try {
-      await createSede(form);
-      loadData();
-      closeModal();
-      setSuccess('Sede creada con éxito');
-      setTimeout(() => {
-        setSuccess('');
-      }, 5000);
-    } catch (error) {
-      setError('Error al crear sede');
-      setTimeout(() => {
-        setError('');
-      }, 5000);
-      closeModal();
-    }
-  };
-
-  const handleEditSede = async (form) => {
-    try {
-      await updateSede(selectedSede, form);
-      closeModal();
-      loadData();
-      setSuccess('Sede actualizada con éxito');
-      setTimeout(() => {
-        setSuccess('');
-      }, 5000);
-    } catch (error) {
-      setError('Error al actualizar sede');
-      console.error('Error:', error);
-      setTimeout(() => {
-        setError('');
-      }, 5000);
-      closeModal();
-    }
-  };
-
-  const handleDeleteSede = async () => {
-    try {
-      await deleteSede(selectedSede);
-      loadData();
-      closeModal();
-      setSelectedSede(null);
-      setSuccess('Sede eliminada con éxito');
-      setTimeout(() => {
-        setSuccess('');
-      }, 5000);
-      loadData();
-    } catch (error) {
-      setError('Error al eliminar sede');
-      console.error('Error:', error);
-      setTimeout(() => {
-        setError('');
-      }, 5000);
-      closeModal();
+      // Deseleccionar la entidad eliminada
+      if (modal.entity === 'sala') setSelectedSala(null);
+      if (modal.entity === 'edificio') setSelectedEdificio(null);
+      if (modal.entity === 'sede') setSelectedSede(null);
+      closeModalHandler();
+    } catch (err) {
+      displayMessage(
+        setError,
+        `Error al eliminar ${entityName}: ` +
+          (err.response?.data?.error || err.message)
+      );
+      console.error(`Error eliminando ${entityName}:`, err);
+    } finally {
+      setIsProcessing(false);
     }
   };
 
@@ -312,251 +235,253 @@ export default function SalasPage() {
   const paginateEdificios = (pageNumber) => setCurrentPageEdificios(pageNumber);
   const paginateSedes = (pageNumber) => setCurrentPageSedes(pageNumber);
 
-  // Calcular datos para la página current
-  const indexOfLastSala = currentPageSalas * itemsPerPage;
-  const indexOfFirstSala = indexOfLastSala - itemsPerPage;
-  const currentSalas = salas.slice(indexOfFirstSala, indexOfLastSala);
+  const getPaginatedData = (items, currentPage) => {
+    if (!Array.isArray(items)) return [];
+    const indexOfLastItem = currentPage * itemsPerPage;
+    const indexOfFirstItem = indexOfLastItem - itemsPerPage;
+    return items.slice(indexOfFirstItem, indexOfLastItem);
+  };
 
-  const indexOfLastEdificio = currentPageEdificios * itemsPerPage;
-  const indexOfFirstEdificio = indexOfLastEdificio - itemsPerPage;
-  const currentEdificios = edificios.slice(
-    indexOfFirstEdificio,
-    indexOfLastEdificio
-  );
-
-  const indexOfLastSede = currentPageSedes * itemsPerPage;
-  const indexOfFirstSede = indexOfLastSede - itemsPerPage;
-  const currentSedes = sedes.slice(indexOfFirstSede, indexOfLastSede);
+  const currentSalas = getPaginatedData(salas, currentPageSalas);
+  const currentEdificios = getPaginatedData(edificios, currentPageEdificios);
+  const currentSedes = getPaginatedData(sedes, currentPageSedes);
 
   const handleSetTab = (tabName) => {
     setActiveTab(tabName);
-    // Opcional: resetear la página al cambiar de pestaña
-    // if (tabName === 'salas') setCurrentPageSalas(1);
-    // if (tabName === 'edificios') setCurrentPageEdificios(1);
-    // if (tabName === 'sedes') setCurrentPageSedes(1);
+    setSelectedSala(null);
+    setSelectedEdificio(null);
+    setSelectedSede(null); // Limpiar selecciones al cambiar de tab
   };
+
+  // Renderizado
+  if (
+    loading &&
+    salas.length === 0 &&
+    edificios.length === 0 &&
+    sedes.length === 0
+  ) {
+    return (
+      <Layout>
+        <div className="container-fluid mt-4 text-center">
+          <Spinner animation="border" variant="primary" />
+          <p>Cargando datos...</p>
+        </div>
+      </Layout>
+    );
+  }
 
   return (
     <Layout>
-      <style>{keyframes}</style>
-      {/* Título de la página actualizado */}
-      <div>
-        <p className="display-5 page-title-custom mb-2">
-          <i className="bi bi-door-open-fill me-3"></i>
-          {/* Ícono para gestión de espacios/salas */}
-          Gestión de Espacios
-        </p>
-      </div>
-      <hr /> {/* Separador */}
-      {error && (
-        <div className="alert alert-danger" style={alertStyle}>
-          {error}
+      {/* <style>{keyframes}</style> // Puedes definir keyframes en un archivo CSS separado */}
+      <div className="container-fluid pt-4">
+        <div>
+          <h2 className="display-6 mb-3">
+            <i className="bi bi-door-open-fill me-3"></i>
+            Gestión de Espacios
+          </h2>
         </div>
-      )}
-      {success && (
-        <div className="alert alert-success" style={alertStyle}>
-          {success}
-        </div>
-      )}
-      <ul className="nav nav-tabs mb-3">
-        <li className="nav-item">
-          <button
-            className={`nav-link ${activeTab === 'salas' ? 'active' : ''}`}
-            onClick={() => handleSetTab('salas')}
-          >
-            Salas
-          </button>
-        </li>
-        <li className="nav-item">
-          <button
-            className={`nav-link ${activeTab === 'edificios' ? 'active' : ''}`}
-            onClick={() => handleSetTab('edificios')}
-          >
-            Edificios
-          </button>
-        </li>
-        <li className="nav-item">
-          <button
-            className={`nav-link ${activeTab === 'sedes' ? 'active' : ''}`}
-            onClick={() => handleSetTab('sedes')}
-          >
-            Sedes
-          </button>
-        </li>
-      </ul>
-      {activeTab === 'salas' && (
-        <>
-          <SalaActions
-            onAdd={() => openModal('add', 'sala')}
-            onEdit={() => openModal('edit', 'sala')}
-            onDelete={() => openModal('delete', 'sala')}
-            selectedSala={selectedSala}
-          />
-          <SalaList
-            salas={currentSalas} // Usar datos paginados
-            selectedSala={selectedSala}
-            onSelectSala={setSelectedSala}
-            loading={loading}
-          />
-          {!loading && salas.length > itemsPerPage && (
-            <PaginationComponent
-              itemsPerPage={itemsPerPage}
-              totalItems={salas.length}
-              paginate={paginateSalas}
-              currentPage={currentPageSalas}
-            />
-          )}
-        </>
-      )}
-      {modal.type && modal.entity === 'sala' && (
-        <Modal
-          title={
-            modal.type === 'add'
-              ? 'Agregar Sala'
-              : modal.type === 'edit'
-                ? 'Editar Sala'
-                : 'Eliminar Sala'
-          }
-          onClose={closeModal}
-        >
-          {modal.type === 'delete' ? (
-            <div>
-              <p>¿Está seguro de que desea eliminar esta sala?</p>
-              <div className="modal-footer">
-                <button className="btn btn-secondary" onClick={closeModal}>
-                  Cancelar
-                </button>
-                <button className="btn btn-danger" onClick={handleDeleteSala}>
-                  Eliminar
-                </button>
-              </div>
-            </div>
-          ) : (
-            <SalaForm
-              initial={modal.data}
-              onSubmit={modal.type === 'add' ? handleAddSala : handleEditSala}
-              onCancel={closeModal}
-            />
-          )}
-        </Modal>
-      )}
-      {activeTab === 'edificios' && (
-        <>
-          <EdificioActions
-            onAdd={() => openModal('add', 'edificio')}
-            onEdit={() => openModal('edit', 'edificio')}
-            onDelete={() => openModal('delete', 'edificio')}
-            selectedEdificio={selectedEdificio}
-          />
-          <EdificioList
-            edificios={currentEdificios} // Usar datos paginados
-            selectedEdificio={selectedEdificio}
-            onSelectEdificio={setSelectedEdificio}
-            loading={loading}
-          />
-          {!loading && edificios.length > itemsPerPage && (
-            <PaginationComponent
-              itemsPerPage={itemsPerPage}
-              totalItems={edificios.length}
-              paginate={paginateEdificios}
-              currentPage={currentPageEdificios}
-            />
-          )}
-        </>
-      )}
-      {modal.type && modal.entity === 'edificio' && (
-        <Modal
-          title={
-            modal.type === 'add'
-              ? 'Agregar Edificio'
-              : modal.type === 'edit'
-                ? 'Editar Edificio'
-                : 'Eliminar Edificio'
-          }
-          onClose={closeModal}
-        >
-          {modal.type === 'delete' ? (
-            <div>
-              <p>¿Está seguro de que desea eliminar este edificio?</p>
-              <div className="modal-footer">
-                <button className="btn btn-secondary" onClick={closeModal}>
-                  Cancelar
-                </button>
-                <button
-                  className="btn btn-danger"
-                  onClick={handleDeleteEdificio}
-                >
-                  Eliminar
-                </button>
-              </div>
-            </div>
-          ) : (
-            <EdificioForm
-              initial={modal.data}
-              onSubmit={
-                modal.type === 'add' ? handleAddEdificio : handleEditEdificio
+        {error && (
+          <Alert variant="danger" onClose={() => setError('')} dismissible>
+            {error}
+          </Alert>
+        )}
+        {success && (
+          <Alert variant="success" onClose={() => setSuccess('')} dismissible>
+            {success}
+          </Alert>
+        )}
+
+        <ul className="nav nav-tabs mb-3">
+          <li className="nav-item">
+            <button
+              className={`nav-link ${activeTab === 'salas' ? 'active' : ''}`}
+              onClick={() => handleSetTab('salas')}
+            >
+              Salas
+            </button>
+          </li>
+          <li className="nav-item">
+            <button
+              className={`nav-link ${activeTab === 'edificios' ? 'active' : ''}`}
+              onClick={() => handleSetTab('edificios')}
+            >
+              Edificios
+            </button>
+          </li>
+          <li className="nav-item">
+            <button
+              className={`nav-link ${activeTab === 'sedes' ? 'active' : ''}`}
+              onClick={() => handleSetTab('sedes')}
+            >
+              Sedes
+            </button>
+          </li>
+        </ul>
+
+        {activeTab === 'salas' && (
+          <>
+            <SalaActions
+              onAdd={() => openModalHandler('add', 'sala')}
+              onEdit={() =>
+                selectedSala && openModalHandler('edit', 'sala', selectedSala)
               }
-              onCancel={closeModal}
+              onDelete={() =>
+                selectedSala && openModalHandler('delete', 'sala', selectedSala)
+              }
+              selectedSala={selectedSala}
+              disabled={isProcessing}
             />
-          )}
-        </Modal>
-      )}
-      {activeTab === 'sedes' && (
-        <>
-          <SedeActions
-            onAdd={() => openModal('add', 'sede')}
-            onEdit={() => openModal('edit', 'sede')}
-            onDelete={() => openModal('delete', 'sede')}
-            selectedSede={selectedSede}
-          />
-          <SedeList
-            sedes={currentSedes} // Usar datos paginados
-            selectedSede={selectedSede}
-            onSelectSede={setSelectedSede}
-            loading={loading}
-          />
-          {!loading && sedes.length > itemsPerPage && (
-            <PaginationComponent
-              itemsPerPage={itemsPerPage}
-              totalItems={sedes.length}
-              paginate={paginateSedes}
-              currentPage={currentPageSedes}
+            <SalaList
+              salas={currentSalas}
+              selectedSala={selectedSala}
+              onSelectSala={setSelectedSala}
+              loading={loading} // Para mostrar 'cargando' en la tabla si es necesario
             />
-          )}
-        </>
-      )}
-      {modal.type && modal.entity === 'sede' && (
+            {!loading && salas.length > itemsPerPage && (
+              <PaginationComponent
+                itemsPerPage={itemsPerPage}
+                totalItems={salas.length}
+                paginate={paginateSalas}
+                currentPage={currentPageSalas}
+              />
+            )}
+          </>
+        )}
+        {activeTab === 'edificios' && (
+          <>
+            <EdificioActions
+              onAdd={() => openModalHandler('add', 'edificio')}
+              onEdit={() =>
+                selectedEdificio &&
+                openModalHandler('edit', 'edificio', selectedEdificio)
+              }
+              onDelete={() =>
+                selectedEdificio &&
+                openModalHandler('delete', 'edificio', selectedEdificio)
+              }
+              selectedEdificio={selectedEdificio}
+              disabled={isProcessing}
+            />
+            <EdificioList
+              edificios={currentEdificios}
+              selectedEdificio={selectedEdificio}
+              onSelectEdificio={setSelectedEdificio}
+              loading={loading}
+            />
+            {!loading && edificios.length > itemsPerPage && (
+              <PaginationComponent
+                itemsPerPage={itemsPerPage}
+                totalItems={edificios.length}
+                paginate={paginateEdificios}
+                currentPage={currentPageEdificios}
+              />
+            )}
+          </>
+        )}
+        {activeTab === 'sedes' && (
+          <>
+            <SedeActions
+              onAdd={() => openModalHandler('add', 'sede')}
+              onEdit={() =>
+                selectedSede && openModalHandler('edit', 'sede', selectedSede)
+              }
+              onDelete={() =>
+                selectedSede && openModalHandler('delete', 'sede', selectedSede)
+              }
+              selectedSede={selectedSede}
+              disabled={isProcessing}
+            />
+            <SedeList
+              sedes={currentSedes}
+              selectedSede={selectedSede}
+              onSelectSede={setSelectedSede}
+              loading={loading}
+            />
+            {!loading && sedes.length > itemsPerPage && (
+              <PaginationComponent
+                itemsPerPage={itemsPerPage}
+                totalItems={sedes.length}
+                paginate={paginateSedes}
+                currentPage={currentPageSedes}
+              />
+            )}
+          </>
+        )}
+
+        {/* Modal Genérico */}
         <Modal
           title={
             modal.type === 'add'
-              ? 'Agregar Sede'
+              ? `Agregar ${modal.entity}`
               : modal.type === 'edit'
-                ? 'Editar Sede'
-                : 'Eliminar Sede'
+                ? `Editar ${modal.entity}`
+                : `Eliminar ${modal.entity}`
           }
-          onClose={closeModal}
+          show={modal.show} // Prop 'show' para el Modal
+          onClose={closeModalHandler}
         >
           {modal.type === 'delete' ? (
             <div>
-              <p>¿Está seguro de que desea eliminar esta sede?</p>
+              <p>
+                ¿Está seguro de que desea eliminar est
+                {modal.entity === 'sede' ? 'a' : 'e'} {modal.entity}?
+              </p>
+              {modal.data && (
+                <p>
+                  <strong>
+                    {modal.data.NOMBRE_SALA ||
+                      modal.data.NOMBRE_EDIFICIO ||
+                      modal.data.NOMBRE_SEDE}
+                  </strong>
+                </p>
+              )}
               <div className="modal-footer">
-                <button className="btn btn-secondary" onClick={closeModal}>
+                <BsButton
+                  variant="secondary"
+                  onClick={closeModalHandler}
+                  disabled={isProcessing}
+                >
                   Cancelar
-                </button>
-                <button className="btn btn-danger" onClick={handleDeleteSede}>
-                  Eliminar
-                </button>
+                </BsButton>
+                <BsButton
+                  variant="danger"
+                  onClick={handleDelete}
+                  disabled={isProcessing}
+                >
+                  {isProcessing ? (
+                    <Spinner as="span" size="sm" animation="border" />
+                  ) : (
+                    'Eliminar'
+                  )}
+                </BsButton>
               </div>
             </div>
-          ) : (
-            <SedeForm
-              initial={modal.data}
-              onSubmit={modal.type === 'add' ? handleAddSede : handleEditSede}
-              onCancel={closeModal}
+          ) : modal.entity === 'sala' ? (
+            <SalaForm
+              initialData={modal.data}
+              onSubmit={(form) => handleSave('sala', form)}
+              onCancel={closeModalHandler}
+              isProcessing={isProcessing}
+              edificios={edificios}
             />
-          )}
+          ) : modal.entity === 'edificio' ? (
+            <EdificioForm
+              initialData={modal.data}
+              onSubmit={(form) => handleSave('edificio', form)}
+              onCancel={closeModalHandler}
+              isProcessing={isProcessing}
+              sedes={sedes}
+            />
+          ) : modal.entity === 'sede' ? (
+            <SedeForm
+              initialData={modal.data}
+              onSubmit={(form) => handleSave('sede', form)}
+              onCancel={closeModalHandler}
+              isProcessing={isProcessing}
+            />
+          ) : null}
         </Modal>
-      )}
+      </div>
     </Layout>
   );
 }

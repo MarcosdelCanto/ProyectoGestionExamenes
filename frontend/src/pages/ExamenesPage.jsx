@@ -1,235 +1,218 @@
-import { useState, useEffect } from 'react';
+// src/pages/ExamenesPage.jsx
+import React, { useState, useEffect, useCallback } from 'react';
 import Layout from '../components/Layout';
 import ExamenForm from '../components/examenes/ExamenForm';
 import ExamenActions from '../components/examenes/ExamenActions';
 import ExamenList from '../components/examenes/ExamenList';
+import {
+  Alert,
+  Modal as BootstrapModal,
+  Button as BsButton,
+  Spinner,
+} from 'react-bootstrap'; // Usar Modal y Button de react-bootstrap
+import api from '../services/api'; // <-- USA TU INSTANCIA DE AXIOS CONFIGURADA (api.js)
 
-const alertStyle = {
-  animation: 'fadeInOut 5s ease-in-out',
-  WebkitAnimation: 'fadeInOut 5s ease-in-out',
-  opacity: 1,
-};
-
-const keyframes = `
-  @keyframes fadeInOut {
-    0% { opacity: 0; transform: translateY(-20px); }
-    10% { opacity: 1; transform: translateY(0); }
-    90% { opacity: 1; transform: translateY(0); }
-    100% { opacity: 0; transform: translateY(-20px); }
-  }
-`;
-
-function Modal({ title, children, onClose }) {
-  return (
-    <div
-      className="modal show"
-      style={{ display: 'block', backgroundColor: 'rgba(0,0,0,0.5)' }}
-    >
-      <div className="modal-dialog">
-        <div className="modal-content">
-          <div className="modal-header">
-            <h5 className="modal-title">{title}</h5>
-            <button
-              type="button"
-              className="btn-close"
-              aria-label="Close"
-              onClick={onClose}
-            ></button>
-          </div>
-          <div className="modal-body">{children}</div>
-        </div>
-      </div>
-    </div>
-  );
-}
+// (Puedes quitar el keyframes y alertStyle si no los necesitas o si manejas las alertas de otra forma)
 
 export default function ExamenesPage() {
   const [examenes, setExamenes] = useState([]);
-  const [selectedExamen, setSelectedExamen] = useState(null);
-  const [loading, setLoading] = useState(false);
+  const [selectedExamenId, setSelectedExamenId] = useState(null); // Cambiado a selectedExamenId para manejar solo el ID
+  const [loading, setLoading] = useState(true); // Inicia en true para la carga inicial
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
-  const [modal, setModal] = useState({ type: null, data: null });
-  const [activeTab, setActiveTab] = useState('examenes');
+  const [showModal, setShowModal] = useState(false);
+  const [modalType, setModalType] = useState(null); // 'add', 'edit', 'delete'
+  const [currentExamenData, setCurrentExamenData] = useState(null); // Para editar o eliminar
 
-  useEffect(() => {
-    loadData();
+  // No necesitas activeTab si solo manejas exámenes aquí
+
+  const loadExamenes = useCallback(async () => {
+    setLoading(true);
+    setError('');
+    try {
+      // Asumimos que tu endpoint en examen.routes.js para GET / es getAllExamenes
+      // y que está montado en /api/examen en server.js
+      const response = await api.get('/examen'); // Usa tu instancia de Axios
+      setExamenes(Array.isArray(response.data) ? response.data : []); // Asegura que sea un array
+    } catch (err) {
+      console.error('Error al cargar los exámenes:', err);
+      setError(
+        err.response?.data?.error ||
+          err.message ||
+          'Error al cargar los exámenes. Intente más tarde.'
+      );
+      setExamenes([]); // Devuelve array vacío en caso de error
+    } finally {
+      setLoading(false);
+    }
   }, []);
 
-  const loadData = async () => {
-    setLoading(true);
+  useEffect(() => {
+    loadExamenes();
+  }, [loadExamenes]);
+
+  useEffect(() => {
+    let timer;
+    if (success) {
+      timer = setTimeout(() => setSuccess(''), 3000);
+    }
+    if (error) {
+      timer = setTimeout(() => setError(''), 5000);
+    }
+    return () => clearTimeout(timer);
+  }, [success, error]);
+
+  const openModalHandler = (type, examenId = null) => {
+    setModalType(type);
+    if ((type === 'edit' || type === 'delete') && examenId) {
+      const examenToProcess = examenes.find((e) => e.ID_EXAMEN === examenId);
+      setCurrentExamenData(examenToProcess || null);
+    } else {
+      setCurrentExamenData(null); // Para 'add'
+    }
+    setShowModal(true);
+  };
+
+  const closeModalHandler = () => {
+    setShowModal(false);
+    setModalType(null);
+    setCurrentExamenData(null);
+  };
+
+  const handleFormSubmit = async (formData) => {
+    setLoading(true); // Para indicar procesamiento
     try {
-      const examenesRes = await fetch('http://localhost:3000/api/examen');
-      const examenesData = await examenesRes.json();
-      setExamenes(examenesData);
-    } catch (error) {
-      console.error('Error al cargar los datos:', error);
+      if (modalType === 'add') {
+        await api.post('/examen', formData); // Asume que formData tiene el formato correcto
+        setSuccess('Examen creado con éxito');
+      } else if (modalType === 'edit' && currentExamenData) {
+        await api.put(`/examen/${currentExamenData.ID_EXAMEN}`, formData);
+        setSuccess('Examen actualizado con éxito');
+      }
+      await loadExamenes();
+      closeModalHandler();
+    } catch (err) {
       setError(
-        'Error al cargar los datos. Por favor, inténtalo de nuevo más tarde.'
+        err.response?.data?.error || err.message || 'Error al guardar el examen'
       );
     } finally {
       setLoading(false);
     }
   };
 
-  const openModal = (type, entity) => {
-    let data = null;
-    if (type === 'edit' || type === 'delete') {
-      switch (entity) {
-        case 'examen':
-          if (!selectedExamen) return;
-          data = examenes.find((e) => e.ID_EXAMEN === selectedExamen);
-          break;
-      }
-    }
-    setModal({ type, entity, data });
-  };
-
-  const closeModal = () => setModal({ type: null, data: null });
-
-  const handleAddExamen = async (form) => {
-    try {
-      const response = await fetch('http://localhost:3000/api/examen', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(form),
-      });
-      if (!response.ok) throw new Error('Error al crear examen');
-      await loadData();
-      closeModal();
-      setSuccess('Examen creado con éxito');
-      setTimeout(() => setSuccess(''), 5000);
-    } catch (error) {
-      setError('Error al crear examen');
-      setTimeout(() => setError(''), 5000);
-      closeModal();
-    }
-  };
-
-  const handleEditExamen = async (form) => {
-    try {
-      const response = await fetch(
-        `http://localhost:3000/api/examen/${selectedExamen}`,
-        {
-          method: 'PUT',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(form),
-        }
-      );
-      if (!response.ok) throw new Error('Error al actualizar examen');
-      await loadData();
-      closeModal();
-      setSuccess('Examen actualizado con éxito');
-      setTimeout(() => setSuccess(''), 5000);
-    } catch (error) {
-      setError('Error al actualizar examen');
-      setTimeout(() => setError(''), 5000);
-      closeModal();
-    }
-  };
-
   const handleDeleteExamen = async () => {
+    if (!currentExamenData) return;
+    setLoading(true);
     try {
-      const response = await fetch(
-        `http://localhost:3000/api/examen/${selectedExamen}`,
-        {
-          method: 'DELETE',
-        }
-      );
-      if (!response.ok) throw new Error('Error al eliminar examen');
-      await loadData();
-      closeModal();
-      setSelectedExamen(null);
+      await api.delete(`/examen/${currentExamenData.ID_EXAMEN}`);
       setSuccess('Examen eliminado con éxito');
-      setTimeout(() => setSuccess(''), 5000);
-    } catch (error) {
-      setError('Error al eliminar examen');
-      setTimeout(() => setError(''), 5000);
-      closeModal();
+      await loadExamenes();
+      setSelectedExamenId(null); // Deseleccionar
+      closeModalHandler();
+    } catch (err) {
+      setError(
+        err.response?.data?.error ||
+          err.message ||
+          'Error al eliminar el examen'
+      );
+    } finally {
+      setLoading(false);
     }
   };
 
   return (
     <Layout>
-      <style>{keyframes}</style>
-      {/* Título de la página actualizado */}
-      <div>
-        <p className="display-5 page-title-custom mb-2">
-          <i className="bi bi-file-earmark-text-fill me-3"></i>
-          {/* Ícono para gestión de exámenes */}
-          Gestión de Exámenes
-        </p>
-      </div>
-      <hr /> {/* Separador */}
-      {error && (
-        <div className="alert alert-danger" style={alertStyle}>
-          {error}
+      <div className="container-fluid pt-4">
+        <div className="d-flex justify-content-between align-items-center mb-3">
+          <h2 className="display-6">
+            <i className="bi bi-file-earmark-text-fill me-3"></i>
+            Gestión de Exámenes
+          </h2>
         </div>
-      )}
-      {success && (
-        <div className="alert alert-success" style={alertStyle}>
-          {success}
-        </div>
-      )}
-      <ul className="nav nav-tabs mb-3">
-        <li className="nav-item">
-          <button
-            className={`nav-link ${activeTab === 'examenes' ? 'active' : ''}`}
-            onClick={() => setActiveTab('examenes')}
-          >
-            Examenes
-          </button>
-        </li>
-      </ul>
-      {activeTab === 'examenes' && (
-        <>
-          <ExamenActions
-            onAdd={() => openModal('add', 'examen')}
-            onEdit={() => openModal('edit', 'examen')}
-            onDelete={() => openModal('delete', 'examen')}
-            selectedExamen={selectedExamen}
-          />
+        <hr />
+        {error && (
+          <Alert variant="danger" onClose={() => setError('')} dismissible>
+            {error}
+          </Alert>
+        )}
+        {success && (
+          <Alert variant="success" onClose={() => setSuccess('')} dismissible>
+            {success}
+          </Alert>
+        )}
+
+        <ExamenActions
+          onAdd={() => openModalHandler('add')}
+          onEdit={() => {
+            if (selectedExamenId) openModalHandler('edit', selectedExamenId);
+            else alert('Por favor, seleccione un examen para editar.');
+          }}
+          onDelete={() => {
+            if (selectedExamenId) openModalHandler('delete', selectedExamenId);
+            else alert('Por favor, seleccione un examen para eliminar.');
+          }}
+          isExamenSelected={!!selectedExamenId} // Para habilitar/deshabilitar botones
+        />
+
+        {loading && examenes.length === 0 ? (
+          <div className="text-center">
+            <Spinner animation="border" variant="primary" />
+            <p>Cargando exámenes...</p>
+          </div>
+        ) : (
           <ExamenList
-            examenes={examenes}
-            selectedExamen={selectedExamen}
-            onSelectExamen={setSelectedExamen}
-            loading={loading}
+            examenes={examenes} // 'examenes' aquí siempre será un array
+            selectedExamenId={selectedExamenId} // Cambiado a selectedExamenId
+            onSelectExamen={setSelectedExamenId} // Cambiado a setSelectedExamenId
+            loading={loading} // Para mostrar un indicador en la tabla si se está recargando
           />
-        </>
+        )}
+      </div>
+
+      {/* Modal para Crear/Editar Examen */}
+      {showModal && (modalType === 'add' || modalType === 'edit') && (
+        <ExamenForm
+          show={showModal}
+          handleClose={closeModalHandler}
+          handleSubmit={handleFormSubmit}
+          initialData={modalType === 'edit' ? currentExamenData : null}
+          isProcessing={loading} // Puedes usar el 'loading' general o uno específico
+        />
       )}
-      {modal.type && modal.entity === 'examen' && (
-        <Modal
-          title={
-            modal.type === 'add'
-              ? 'Agregar examen'
-              : modal.type === 'edit'
-                ? 'Editar examen'
-                : 'Eliminar examen'
-          }
-          onClose={closeModal}
-        >
-          {modal.type === 'delete' ? (
-            <div>
-              <p>¿Está seguro de que desea eliminar este examen?</p>
-              <div className="modal-footer">
-                <button className="btn btn-secondary" onClick={closeModal}>
-                  Cancelar
-                </button>
-                <button className="btn btn-danger" onClick={handleDeleteExamen}>
-                  Eliminar
-                </button>
-              </div>
-            </div>
-          ) : (
-            <ExamenForm
-              initial={modal.data}
-              onSubmit={
-                modal.type === 'add' ? handleAddExamen : handleEditExamen
-              }
-              onCancel={closeModal}
-            />
-          )}
-        </Modal>
+
+      {/* Modal de Confirmación para Eliminar Examen */}
+      {showModal && modalType === 'delete' && currentExamenData && (
+        <BootstrapModal show={showModal} onHide={closeModalHandler} centered>
+          <BootstrapModal.Header closeButton>
+            <BootstrapModal.Title>Confirmar Eliminación</BootstrapModal.Title>
+          </BootstrapModal.Header>
+          <BootstrapModal.Body>
+            <p>
+              ¿Está seguro de que desea eliminar el examen "
+              <strong>{currentExamenData.NOMBRE_EXAMEN}</strong>"?
+            </p>
+          </BootstrapModal.Body>
+          <BootstrapModal.Footer>
+            <BsButton
+              variant="secondary"
+              onClick={closeModalHandler}
+              disabled={loading}
+            >
+              Cancelar
+            </BsButton>
+            <BsButton
+              variant="danger"
+              onClick={handleDeleteExamen}
+              disabled={loading}
+            >
+              {loading ? (
+                <Spinner as="span" size="sm" animation="border" />
+              ) : (
+                'Eliminar'
+              )}
+            </BsButton>
+          </BootstrapModal.Footer>
+        </BootstrapModal>
       )}
     </Layout>
   );

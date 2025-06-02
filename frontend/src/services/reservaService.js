@@ -35,6 +35,28 @@ export const fetchReservaById = async (id) => {
     throw error;
   }
 };
+/**
+ * Crea una reserva completa (Reserva + ReservaModulos) para un examen existente.
+ * @param {object} payload - Datos de la reserva: { examen_id_examen, fecha_reserva, sala_id_sala, modulos_ids, estado_id_estado_reserva }
+ * @returns {Promise<object>} - Respuesta del servidor.
+ */
+export const crearReservaParaExamenExistenteService = async (payload) => {
+  try {
+    // Usaremos un endpoint nuevo o ajustaremos el existente.
+    // Si ajustas el existente, asegúrate que el backend sepa que no debe crear un examen.
+    const response = await api.post(
+      '/reserva/crear-para-examen-existente',
+      payload
+    );
+    return response.data;
+  } catch (error) {
+    console.error(
+      'Error al crear la reserva para examen existente:',
+      error.response?.data || error.message
+    );
+    throw error.response?.data || error;
+  }
+};
 
 /**
  * Crea una nueva reserva.
@@ -91,3 +113,59 @@ export const deleteReserva = async (id) => {
     throw error;
   }
 };
+
+/**
+ * Obtiene las reservas pendientes de confirmación para el docente autenticado.
+ */
+export const getMisReservasPendientesDocente = async () => {
+  try {
+    const response = await api.get('/reserva/docente/pendientes'); // Endpoint del backend
+    return response.data;
+  } catch (error) {
+    console.error(
+      'Error al obtener reservas pendientes del docente:',
+      error.response?.data || error.message
+    );
+    throw error.response?.data || error;
+  }
+};
+
+/**
+ * Actualiza el estado de confirmación de una reserva por parte del docente.
+ * @param {string|number} idReserva - El ID de la reserva a actualizar.
+ * @param {object} datosConfirmacion - Objeto con { nuevoEstado, observaciones }
+ * @returns {Promise<object>} - Respuesta del servidor.
+ */
+export const actualizarConfirmacionReservaDocente = async (
+  idReserva,
+  datosConfirmacion
+) => {
+  try {
+    const response = await api.put(
+      `/reserva/${idReserva}/docente/confirmacion`,
+      datosConfirmacion
+    ); // Endpoint del backend
+    return response.data;
+  } catch (error) {
+    console.error(
+      `Error al actualizar confirmación para reserva ${idReserva}:`,
+      error.response?.data || error.message
+    );
+    throw error.response?.data || error;
+  }
+};
+
+export const fetchMisAsignacionesDeReservas = async () => {
+  try {
+    const response = await api.get('/reserva/mis-asignaciones'); // Llama al nuevo endpoint
+    return response.data;
+  } catch (error) {
+    console.error(
+      'Error al obtener mis asignaciones de reservas:',
+      error.response?.data || error.message
+    );
+    throw error.response?.data || error;
+  }
+};
+
+// ... otras funciones de servicio de reservas que puedas tener

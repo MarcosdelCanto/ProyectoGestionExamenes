@@ -1,3 +1,4 @@
+// routes/rol.routes.js
 import { Router } from 'express';
 import {
   fetchAllRoles,
@@ -5,38 +6,29 @@ import {
   getRoleById,
   updateRole,
   deleteRole,
-} from '../controllers/rol.controller.js'; // Asegúrate de que estos nombres coincidan con tu controlador
+} from '../controllers/rol.controller.js';
+import { authMiddleware } from '../middlewares/auth.middleware.js';
+import { checkPermission } from '../middlewares/permission.middleware.js'; // Descomenta y usa cuando lo necesites
 
 const router = Router();
 
-/**
- * GET /api/roles
- * Devuelve la lista de todos los roles disponibles.
- */
-router.get('/', fetchAllRoles);
+// Todas estas rutas deberían estar protegidas al menos por authMiddleware
+// y luego por checkPermission con los permisos específicos (ej: 'VIEW_ROLES', 'CREATE_ROLES', etc.)
 
-/**
- * GET /api/roles/:id
- * Devuelve un rol específico por su ID.
- */
-router.get('/:id', getRoleById);
-
-/**
- * POST /api/roles
- * Crea un nuevo rol.
- */
-router.post('/', createRole);
-
-/**
- * PUT /api/roles/:id
- * Actualiza un rol existente por su ID.
- */
-router.put('/:id', updateRole);
-
-/**
- * DELETE /api/roles/:id
- * Elimina un rol existente por su ID.
- */
-router.delete('/:id', deleteRole);
+router.get('/', authMiddleware, checkPermission(['VIEW_ROLES']), fetchAllRoles);
+router.get(
+  '/:id',
+  authMiddleware,
+  checkPermission(['VIEW_ROLES']),
+  getRoleById
+); // O un permiso 'VIEW_ROL_DETAIL'
+router.post('/', authMiddleware, checkPermission(['CREATE_ROLES']), createRole);
+router.put('/:id', authMiddleware, checkPermission(['EDIT_ROLES']), updateRole);
+router.delete(
+  '/:id',
+  authMiddleware,
+  checkPermission(['DELETE_ROLES']),
+  deleteRole
+);
 
 export default router;

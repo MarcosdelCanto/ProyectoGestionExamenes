@@ -1,5 +1,6 @@
 import { getConnection } from '../db.js';
 import oracledb from 'oracledb';
+
 export const getAllEstados = async (req, res) => {
   let conn;
   try {

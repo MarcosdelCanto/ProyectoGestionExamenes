@@ -6,10 +6,11 @@ import {
   updateEstado,
   deleteEstado,
 } from '../controllers/estado.controller.js';
+import { authMiddleware } from '../middlewares/auth.middleware.js';
 
 const router = Router();
 
-router.get('/', getAllEstados);
+router.get('/', authMiddleware, getAllEstados);
 router.get('/:id', getEstadoById);
 router.post('/', createEstado);
 router.put('/:id', updateEstado);

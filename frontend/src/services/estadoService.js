@@ -7,14 +7,14 @@ import api from './api';
  */
 export const fetchAllEstados = async () => {
   try {
-    const response = await api.get('/estado');
+    const response = await api.get('/estado'); // Llama a GET /api/estado
     return response.data;
   } catch (error) {
     console.error(
-      'Error fetching estados:',
+      'Error fetching todos los estados:',
       error.response?.data || error.message
     );
-    throw error;
+    throw error.response?.data || error;
   }
 };
 

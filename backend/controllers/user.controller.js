@@ -204,13 +204,15 @@ export const getUsuarios = async (req, res) => {
     const { rolId } = req.query;
 
     let sql = `
-      SELECT ID_USUARIO, NOMBRE_USUARIO, EMAIL_USUARIO, ROL_ID_ROL
-      FROM USUARIO
+      SELECT u.ID_USUARIO, u.NOMBRE_USUARIO, u.EMAIL_USUARIO, u.ROL_ID_ROL , r.NOMBRE_ROL
+      FROM USUARIO u
+      JOIN ROL r ON u.ROL_ID_ROL = r.ID_ROL
+
     `;
     const params = {};
 
     if (rolId) {
-      sql += ` WHERE ROL_ID_ROL = :rolId`;
+      sql += ` WHERE u.ROL_ID_ROL = :rolId`;
       params.rolId = parseInt(rolId);
     }
     sql += ` ORDER BY NOMBRE_USUARIO`;

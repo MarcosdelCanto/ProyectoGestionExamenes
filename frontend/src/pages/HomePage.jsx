@@ -32,7 +32,7 @@ export default function HomePage() {
   const puedeModificar = status === 'disponible' || socket.id === updaterId;
 
   const handleClick = () => {
-    const next = status === 'disponible' ? 'pendiente' : 'confirmada';
+    const next = status === 'disponible' ? 'pendiente' : ' CONFIRMADO';
     dispatch(changeStatus(next));
   };
 

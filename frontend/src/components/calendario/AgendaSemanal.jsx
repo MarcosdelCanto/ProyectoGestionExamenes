@@ -344,7 +344,7 @@ export default function AgendaSemanal({
       const nuevaReserva = await response.json();
       setReservas((prev) => [...prev, nuevaReserva]);
       alert(
-        `Reserva para ${selectedExamInternal?.NOMBRE_ASIGNATURA} confirmada!`
+        `Reserva para ${selectedExamInternal?.NOMBRE_ASIGNATURA}  CONFIRMADO!`
       );
       setSelectedExamInternal(null);
       setModulosSeleccionados([]);

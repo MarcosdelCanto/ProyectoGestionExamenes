@@ -1,6 +1,13 @@
 import { getConnection } from '../db.js';
 import oracledb from 'oracledb';
 
+const handleError = (res, error, message, statusCode = 500) => {
+  console.error(message, ':', error);
+  res
+    .status(statusCode)
+    .json({ error: message, details: error.message || error });
+};
+
 export const getAllExamenes = async (req, res) => {
   let conn;
   try {
@@ -29,6 +36,15 @@ export const getAllExamenes = async (req, res) => {
 
 export const getExamenById = async (req, res) => {
   const { id } = req.params;
+  const examenId = parseInt(id, 10); // Convertimos a número base 10
+  if (isNaN(examenId)) {
+    return handleError(
+      res,
+      null,
+      'El ID del examen proporcionado no es un número válido.',
+      400
+    ); // Bad Request
+  }
   let conn;
   try {
     conn = await getConnection();
@@ -200,5 +216,47 @@ export const deleteExamen = async (req, res) => {
     res.status(500).json({ error: 'Error al eliminar examen' });
   } finally {
     if (conn) await conn.close();
+  }
+};
+export const getAllExamenesForSelect = async (req, res) => {
+  let connection;
+  try {
+    connection = await getConnection();
+    const sql = `
+      SELECT
+        E.ID_EXAMEN,
+        E.NOMBRE_EXAMEN,
+        S.NOMBRE_SECCION,
+        A.NOMBRE_ASIGNATURA
+      FROM EXAMEN E
+      JOIN SECCION S ON E.SECCION_ID_SECCION = S.ID_SECCION
+      JOIN ASIGNATURA A ON S.ASIGNATURA_ID_ASIGNATURA = A.ID_ASIGNATURA
+      ORDER BY E.NOMBRE_EXAMEN, S.NOMBRE_SECCION
+    `;
+    const result = await connection.execute(
+      sql,
+      {},
+      { outFormat: oracledb.OUT_FORMAT_OBJECT }
+    );
+    res.json(result.rows);
+  } catch (error) {
+    // La llamada a handleError aquí imprimirá el error detallado en la consola del backend
+    handleError(
+      res,
+      error,
+      'Error al obtener todos los exámenes para selección'
+    );
+  } finally {
+    if (connection) {
+      try {
+        await connection.close();
+      } catch (err) {
+        // Esto también se vería en la consola del backend si falla el cierre
+        console.error(
+          'Error closing connection for getAllExamenesForSelect',
+          err
+        );
+      }
+    }
   }
 };

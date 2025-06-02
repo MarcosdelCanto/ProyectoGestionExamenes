@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { Table, Button, Modal, Form, Alert, Spinner } from 'react-bootstrap';
 import {
   listUsuarioCarreras,
@@ -6,111 +6,102 @@ import {
   deleteUsuarioCarrera,
 } from '../../services/usuarioCarreraService';
 import { fetchAllCarreras } from '../../services/carreraService';
-import { fetchAllEscuelas } from '../../services/escuelaService'; // Asumiendo que tienes este servicio
+import { fetchAllEscuelas } from '../../services/escuelaService';
 
 import UsuarioCarreraActions from './usuarioCarrera/UsuarioCarreraActions';
 import UsuarioCarreraModal from './usuarioCarrera/UsuarioCarreraModal';
 import UsuarioCarreraTable from './usuarioCarrera/UsuarioCarreraTable';
 
-const COORDINADOR_ROLE_NAME = 'COORDINADOR';
-const DIRECTOR_ROLE_NAME = 'DIRECTOR';
+const COORDINADOR_ROLE_NAME = 'COORDINADOR CARRERA';
+const DIRECTOR_ROLE_NAME = 'JEFE CARRERA';
+const COORDINADOR_DOCENTE_ROLE_NAME = 'COORDINADOR DOCENTE'; // Añadido
 
 function UsuarioCarreraTab({ allUsers, allRoles }) {
   const [associations, setAssociations] = useState([]);
-  const [eligibleUsers, setEligibleUsers] = useState([]);
+  const [eligibleUsers, setEligibleUsers] = useState([]); // Usuarios con roles elegibles (Coordinador, Jefe, Coord. Docente)
   const [carreras, setCarreras] = useState([]);
   const [escuelas, setEscuelas] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [successMessage, setSuccessMessage] = useState('');
   const [showModal, setShowModal] = useState(false);
-  const [editingUser, setEditingUser] = useState(null); // Para saber si estamos editando o creando
+  const [editingUser, setEditingUser] = useState(null);
 
-  // Estados para la modal
-  const [selectedUsuarioId, setSelectedUsuarioId] = useState('');
-  const [selectedCarreraIds, setSelectedCarreraIds] = useState([]); // Múltiples carreras
-  const [processing, setProcessing] = useState(false);
-  const [searchTermUser, setSearchTermUser] = useState('');
-  const [filterRoleUser, setFilterRoleUser] = useState('');
-  const [filterEscuelaCarrera, setFilterEscuelaCarrera] = useState('');
+  // Estados para los valores seleccionados DENTRO DEL MODAL, controlados por este componente padre
+  const [selectedUsuarioIdModal, setSelectedUsuarioIdModal] = useState('');
+  const [selectedCarreraIdsModal, setSelectedCarreraIdsModal] = useState([]);
+  const [processingModal, setProcessingModal] = useState(false);
 
-  // Estado para la tabla agrupada y selección
+  // --- ESTADOS PARA LOS FILTROS DENTRO DEL MODAL, CONTROLADOS AQUÍ ---
+  const [searchTermUserModal, setSearchTermUserModal] = useState('');
+  const [filterRoleUserModal, setFilterRoleUserModal] = useState('');
+  const [filterEscuelaCarreraModal, setFilterEscuelaCarreraModal] =
+    useState('');
+
+  // Estados para la tabla principal
   const [groupedAssociations, setGroupedAssociations] = useState({});
-  const [selectedUsersInTab, setSelectedUsersInTab] = useState([]); // Usuarios seleccionados en esta tabla
+  const [selectedUserIdsInTable, setSelectedUserIdsInTable] = useState([]);
 
-  // Estados para el modal de visualización de carreras de un usuario
+  // Estados para el modal de visualización de carreras
   const [showViewCarrerasModal, setShowViewCarrerasModal] = useState(false);
   const [viewingUserCarreras, setViewingUserCarreras] = useState([]);
   const [viewingUserName, setViewingUserName] = useState('');
 
   const eligibleRoleIds = useMemo(() => {
-    if (!allRoles || allRoles.length === 0) return [];
+    if (!Array.isArray(allRoles) || allRoles.length === 0) return [];
     return allRoles
       .filter(
         (r) =>
           r.NOMBRE_ROL === COORDINADOR_ROLE_NAME ||
-          r.NOMBRE_ROL === DIRECTOR_ROLE_NAME
+          r.NOMBRE_ROL === DIRECTOR_ROLE_NAME ||
+          r.NOMBRE_ROL === COORDINADOR_DOCENTE_ROLE_NAME // Incluido
       )
       .map((r) => r.ID_ROL);
   }, [allRoles]);
 
   useEffect(() => {
-    if (eligibleRoleIds.length > 0 && allUsers.length > 0) {
-      setEligibleUsers(
-        allUsers.filter((user) => eligibleRoleIds.includes(user.ROL_ID_ROL))
+    if (Array.isArray(allUsers) && eligibleRoleIds.length > 0) {
+      const filtered = allUsers.filter(
+        (user) => user.ROL_ID_ROL && eligibleRoleIds.includes(user.ROL_ID_ROL)
       );
+      setEligibleUsers(filtered);
     } else {
       setEligibleUsers([]);
     }
   }, [allUsers, eligibleRoleIds]);
 
-  useEffect(() => {
-    // Agrupar asociaciones por usuario
-    if (!allUsers || allUsers.length === 0) return;
-    const grouped = associations.reduce((acc, assoc) => {
-      acc[assoc.USUARIO_ID_USUARIO] = acc[assoc.USUARIO_ID_USUARIO] || {
-        NOMBRE_USUARIO: assoc.NOMBRE_USUARIO,
-        ROL_USUARIO:
-          allUsers.find((u) => u.ID_USUARIO === assoc.USUARIO_ID_USUARIO)
-            ?.NOMBRE_ROL || 'N/A',
-        EMAIL_USUARIO:
-          allUsers.find((u) => u.ID_USUARIO === assoc.USUARIO_ID_USUARIO)
-            ?.EMAIL_USUARIO || '',
-        carreras: [],
-      };
-      acc[assoc.USUARIO_ID_USUARIO].carreras.push({
-        ID_CARRERA: assoc.CARRERA_ID_CARRERA,
-        NOMBRE_CARRERA: assoc.NOMBRE_CARRERA,
-      });
-      return acc;
-    }, {});
-    setGroupedAssociations(grouped);
-  }, [associations, allUsers]);
+  const userExistsAndIsInRole = (userId, usersList, roleIdsList) => {
+    if (!Array.isArray(usersList) || !Array.isArray(roleIdsList)) return false;
+    const user = usersList.find((u) => u.ID_USUARIO === userId);
+    return user && user.ROL_ID_ROL && roleIdsList.includes(user.ROL_ID_ROL);
+  };
 
-  const fetchData = async () => {
+  const fetchData = useCallback(async () => {
     setLoading(true);
     setError(null);
     try {
       const [assocData, carrerasData, escuelasData] = await Promise.all([
         listUsuarioCarreras(),
         fetchAllCarreras(),
-        fetchAllEscuelas(), // Cargar escuelas
+        fetchAllEscuelas(),
       ]);
-
-      setCarreras(carrerasData || []);
-
-      const enrichedAssociations = (assocData || [])
+      const validCarrerasData = Array.isArray(carrerasData) ? carrerasData : [];
+      setCarreras(validCarrerasData);
+      setEscuelas(Array.isArray(escuelasData) ? escuelasData : []);
+      const enrichedAssociations = (Array.isArray(assocData) ? assocData : [])
         .map((assoc) => {
-          const user = allUsers.find(
-            (u) => u.ID_USUARIO === assoc.USUARIO_ID_USUARIO // Asegúrate que ID_USUARIO es numérico o haz la conversión
-          );
-          const carrera = (carrerasData || []).find(
-            (c) => c.ID_CARRERA === assoc.CARRERA_ID_CARRERA // Asegúrate que ID_CARRERA es numérico o haz la conversión
+          const user = Array.isArray(allUsers)
+            ? allUsers.find((u) => u.ID_USUARIO === assoc.USUARIO_ID_USUARIO)
+            : null;
+          const carrera = validCarrerasData.find(
+            (c) => c.ID_CARRERA === assoc.CARRERA_ID_CARRERA
           );
           return {
             ...assoc,
             NOMBRE_USUARIO: user
-              ? `${user.NOMBRE_USUARIO} (${user.EMAIL_USUARIO})`
+              ? user.NOMBRE_USUARIO
               : `Usuario ID: ${assoc.USUARIO_ID_USUARIO}`,
+            EMAIL_USUARIO: user ? user.EMAIL_USUARIO : '',
             NOMBRE_CARRERA: carrera
               ? carrera.NOMBRE_CARRERA
               : `Carrera ID: ${assoc.CARRERA_ID_CARRERA}`,
@@ -123,358 +114,330 @@ function UsuarioCarreraTab({ allUsers, allRoles }) {
             allUsers,
             eligibleRoleIds
           )
-        ); // Filtrar por si un usuario cambió de rol
-
+        );
       setAssociations(enrichedAssociations);
-      setEscuelas(escuelasData || []);
     } catch (err) {
       setError(
-        'Error al cargar datos de asociaciones Usuario-Carrera. ' +
-          (err.message || '')
+        'Error al cargar datos: ' + (err.message || 'Error desconocido')
       );
-      console.error(err);
     } finally {
       setLoading(false);
     }
-  };
-
-  // Helper function to check if user exists and is in one of the eligible roles
-  const userExistsAndIsInRole = (userId, usersList, roleIdsList) => {
-    const user = usersList.find((u) => u.ID_USUARIO === userId);
-    return user && roleIdsList.includes(user.ROL_ID_ROL);
-  };
+  }, [allUsers, eligibleRoleIds]);
 
   useEffect(() => {
-    if (allUsers.length > 0 && allRoles.length > 0) {
+    if (
+      Array.isArray(allUsers) &&
+      allUsers.length > 0 &&
+      Array.isArray(allRoles) &&
+      allRoles.length > 0
+    ) {
       fetchData();
     } else {
-      setLoading(false); // No hay usuarios o roles, no podemos cargar
+      setLoading(false);
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [allUsers, allRoles]); // Dependemos de allUsers y allRoles para iniciar la carga
+  }, [fetchData, allUsers, allRoles]);
 
-  const resetModalState = () => {
-    setSelectedUsuarioId('');
-    setSelectedCarreraIds([]);
-    setSearchTermUser('');
-    setFilterRoleUser('');
-    setFilterEscuelaCarrera('');
+  useEffect(() => {
+    if (!Array.isArray(associations) || !Array.isArray(allUsers)) {
+      setGroupedAssociations({});
+      return;
+    }
+    const grouped = associations.reduce((acc, assoc) => {
+      const user = allUsers.find(
+        (u) => u.ID_USUARIO === assoc.USUARIO_ID_USUARIO
+      );
+      const key = assoc.USUARIO_ID_USUARIO;
+      acc[key] = acc[key] || {
+        ID_USUARIO: assoc.USUARIO_ID_USUARIO,
+        NOMBRE_USUARIO: user ? user.NOMBRE_USUARIO : `Usuario ID: ${key}`,
+        EMAIL_USUARIO: user ? user.EMAIL_USUARIO : '',
+        ROL_USUARIO: user && user.NOMBRE_ROL ? user.NOMBRE_ROL : 'N/A',
+        carreras: [],
+      };
+      acc[key].carreras.push({
+        ID_CARRERA: assoc.CARRERA_ID_CARRERA,
+        NOMBRE_CARRERA: assoc.NOMBRE_CARRERA,
+      });
+      return acc;
+    }, {});
+    setGroupedAssociations(grouped);
+  }, [associations, allUsers]);
+
+  useEffect(() => {
+    if (successMessage) {
+      const timer = setTimeout(() => setSuccessMessage(''), 4000);
+      return () => clearTimeout(timer);
+    }
+  }, [successMessage]);
+
+  const resetModalStateAndFilters = () => {
+    setSelectedUsuarioIdModal('');
+    setSelectedCarreraIdsModal([]);
     setEditingUser(null);
     setShowModal(false);
+    setSuccessMessage('');
+    // Resetea los filtros del modal
+    setSearchTermUserModal('');
+    setFilterRoleUserModal('');
+    setFilterEscuelaCarreraModal('');
   };
 
-  const handleAddAssociation = async () => {
-    if (!selectedUsuarioId || selectedCarreraIds.length === 0) {
-      setError('Debe seleccionar un usuario y al menos una carrera.');
+  const handleOpenNewAssociationModal = () => {
+    setEditingUser(null);
+    resetModalStateAndFilters(); // Llama a la función que también resetea filtros
+    setShowModal(true);
+  };
+
+  const handleOpenEditAssociationModal = (userId) => {
+    const userToEdit = eligibleUsers.find((u) => u.ID_USUARIO === userId);
+    if (!userToEdit) {
+      setError('No se pudo encontrar el usuario elegible para editar.');
       return;
     }
-    setProcessing(true);
-    setError(null);
-    try {
-      if (editingUser) {
-        // Lógica de edición: eliminar las antiguas y agregar las nuevas
-        // 1. Obtener las carreras actualmente asociadas al usuario
-        const currentCarrerasForUser = associations
-          .filter(
-            (assoc) => assoc.USUARIO_ID_USUARIO === parseInt(selectedUsuarioId)
-          )
-          .map((assoc) => assoc.CARRERA_ID_CARRERA);
-
-        // 2. Identificar carreras a eliminar (están en currentCarrerasForUser pero no en selectedCarreraIds)
-        const carrerasToDelete = currentCarrerasForUser.filter(
-          (cId) => !selectedCarreraIds.includes(cId.toString())
-        );
-
-        // 3. Identificar carreras a agregar (están en selectedCarreraIds pero no en currentCarrerasForUser)
-        const carrerasToAdd = selectedCarreraIds.filter(
-          (cId) => !currentCarrerasForUser.includes(parseInt(cId))
-        );
-
-        await Promise.all([
-          ...carrerasToDelete.map((carreraId) =>
-            deleteUsuarioCarrera(parseInt(selectedUsuarioId), carreraId)
-          ),
-          ...carrerasToAdd.map((carreraId) =>
-            createUsuarioCarrera({
-              USUARIO_ID_USUARIO: parseInt(selectedUsuarioId),
-              CARRERA_ID_CARRERA: parseInt(carreraId),
-            })
-          ),
-        ]);
-      } else {
-        // Lógica de creación (múltiples carreras)
-        await Promise.all(
-          selectedCarreraIds.map((carreraId) =>
-            createUsuarioCarrera({
-              USUARIO_ID_USUARIO: parseInt(selectedUsuarioId),
-              CARRERA_ID_CARRERA: parseInt(carreraId),
-            })
-          )
-        );
-      }
-      resetModalState();
-      fetchData();
-    } catch (err) {
-      setError(
-        `Error al ${editingUser ? 'actualizar' : 'crear'} asociación: ` +
-          (err.response?.data?.message || err.message || 'Error desconocido')
-      );
-    } finally {
-      setProcessing(false);
-    }
-  };
-
-  const handleEditUserAssociations = (userId) => {
-    const userToEdit = allUsers.find((u) => u.ID_USUARIO === userId);
-    if (!userToEdit) return;
 
     setEditingUser(userToEdit);
-    setSelectedUsuarioId(userId.toString());
+    setSelectedUsuarioIdModal(String(userId));
+    const associatedCarreras = (
+      groupedAssociations[userId]?.carreras || []
+    ).map((c) => String(c.ID_CARRERA));
+    setSelectedCarreraIdsModal(associatedCarreras);
 
-    const associatedCarreras = associations
-      .filter((assoc) => assoc.USUARIO_ID_USUARIO === userId)
-      .map((assoc) => assoc.CARRERA_ID_CARRERA.toString());
-    setSelectedCarreraIds(associatedCarreras);
-
-    // Opcional: pre-seleccionar filtros si es relevante
-    // setFilterRoleUser(userToEdit.ROL_ID_ROL.toString());
+    // Resetear filtros del modal al abrir para editar
+    setSearchTermUserModal('');
+    setFilterRoleUserModal('');
+    setFilterEscuelaCarreraModal('');
     setShowModal(true);
-    setSelectedUsersInTab([userToEdit]); // Seleccionar el usuario que se está editando
   };
 
-  const handleDeleteAssociation = async (usuarioId, carreraId) => {
-    if (!window.confirm('¿Está seguro de que desea eliminar esta asociación?'))
-      return;
-    setProcessing(true);
-    setError(null);
-    try {
-      await deleteUsuarioCarrera(usuarioId, carreraId);
-      fetchData();
-    } catch (err) {
-      setError(
-        'Error al eliminar asociación: ' +
-          (err.response?.data?.message || err.message || 'Error desconocido')
-      );
-    } finally {
-      setProcessing(false);
-    }
-  };
-
-  const handleDeleteAllUserAssociations = async (userId) => {
-    const user = eligibleUsers.find((u) => u.ID_USUARIO === userId); // Usar eligibleUsers
-    if (!user) return;
-    if (
-      !window.confirm(
-        // Confirmación individual
-        `¿Está seguro de que desea eliminar TODAS las asociaciones de carrera para el usuario ${user.NOMBRE_USUARIO}? Esta acción no eliminará al usuario.`
-      )
-    )
-      return;
-
-    setProcessing(true);
-    setError(null);
-    try {
-      const userAssociations = associations.filter(
-        (assoc) => assoc.USUARIO_ID_USUARIO === userId
-      );
-      await Promise.all(
-        userAssociations.map((assoc) =>
-          deleteUsuarioCarrera(userId, assoc.CARRERA_ID_CARRERA)
-        )
-      );
-      fetchData();
-    } catch (err) {
-      setError(
-        'Error al eliminar todas las asociaciones del usuario: ' +
-          (err.response?.data?.message || err.message || 'Error desconocido')
-      );
-    } finally {
-      setProcessing(false);
-    }
-  };
-
-  const handleToggleUserSelection = (userToToggle) => {
-    setSelectedUsersInTab((prevSelected) => {
-      const isSelected = prevSelected.find(
-        (u) => u.ID_USUARIO === userToToggle.ID_USUARIO
-      );
-      if (isSelected) {
-        return prevSelected.filter(
-          (u) => u.ID_USUARIO !== userToToggle.ID_USUARIO
-        );
-      }
-      return [...prevSelected, userToToggle];
-    });
-  };
-
-  const handleToggleSelectAllUsers = () => {
-    const usersInCurrentView = Object.keys(groupedAssociations)
-      .map((userId) =>
-        eligibleUsers.find((u) => u.ID_USUARIO === parseInt(userId))
-      )
-      .filter(Boolean);
-
-    if (selectedUsersInTab.length === usersInCurrentView.length) {
-      setSelectedUsersInTab([]);
-    } else {
-      setSelectedUsersInTab(usersInCurrentView);
-    }
-  };
-
+  // Esta es tu función correcta para abrir el modal de visualización
   const handleOpenViewCarrerasModal = (userId) => {
+    console.log(
+      '[UsuarioCarreraTab] handleOpenViewCarrerasModal llamado con userId:',
+      userId
+    );
     const userData = groupedAssociations[userId];
-    if (userData) {
+    console.log(
+      '[UsuarioCarreraTab] userData encontrada para modal de vista:',
+      userData
+    );
+    if (userData && Array.isArray(userData.carreras)) {
+      // Asegúrate que userData y userData.carreras existan
       setViewingUserName(userData.NOMBRE_USUARIO);
       setViewingUserCarreras(userData.carreras);
       setShowViewCarrerasModal(true);
+      console.log(
+        '[UsuarioCarreraTab] setShowViewCarrerasModal(true) fue ejecutado.'
+      );
+    } else {
+      console.warn(
+        '[UsuarioCarreraTab] No se encontró userData o userData.carreras para el modal de visualización. UserData:',
+        userData
+      );
+      // Opcional: mostrar un error al usuario si userData no se encuentra
+      // setError('No se pudieron cargar los detalles de las carreras para este usuario.');
     }
   };
 
-  const handleBulkDeleteAssociations = async () => {
-    if (selectedUsersInTab.length === 0) {
-      setError('Seleccione al menos un usuario.');
+  useEffect(() => {
+    console.log(
+      '[UsuarioCarreraTab] El estado showViewCarrerasModal cambió a:',
+      showViewCarrerasModal
+    );
+  }, [showViewCarrerasModal]);
+
+  const handleModalSubmit = async () => {
+    if (!selectedUsuarioIdModal || selectedCarreraIdsModal.length === 0) {
+      alert('Debe seleccionar un usuario y al menos una carrera.');
       return;
     }
-    if (
-      !window.confirm(
-        `¿Está seguro de que desea eliminar TODAS las asociaciones de carrera para los ${selectedUsersInTab.length} usuarios seleccionados? Esta acción no eliminará a los usuarios.`
-      )
-    ) {
-      return;
-    }
-    setProcessing(true);
+    setProcessingModal(true);
     setError(null);
+    setSuccessMessage('');
+    const userId = parseInt(selectedUsuarioIdModal);
+    const newCarreraIds = selectedCarreraIdsModal.map((id) => parseInt(id));
     try {
-      for (const user of selectedUsersInTab) {
-        const userAssociations = associations.filter(
-          (assoc) => assoc.USUARIO_ID_USUARIO === user.ID_USUARIO
+      if (editingUser) {
+        const currentAssociatedCarreraIds = (
+          groupedAssociations[editingUser.ID_USUARIO]?.carreras || []
+        ).map((c) => c.ID_CARRERA);
+        const carrerasToDelete = currentAssociatedCarreraIds.filter(
+          (id) => !newCarreraIds.includes(id)
         );
+        const carrerasToAdd = newCarreraIds.filter(
+          (id) => !currentAssociatedCarreraIds.includes(id)
+        );
+        await Promise.all([
+          ...carrerasToDelete.map((carreraId) =>
+            deleteUsuarioCarrera(userId, carreraId)
+          ),
+          ...carrerasToAdd.map((carreraId) =>
+            createUsuarioCarrera({
+              USUARIO_ID_USUARIO: userId,
+              CARRERA_ID_CARRERA: carreraId,
+            })
+          ),
+        ]);
+        setSuccessMessage('Asociaciones actualizadas exitosamente.');
+      } else {
         await Promise.all(
-          userAssociations.map((assoc) =>
-            deleteUsuarioCarrera(user.ID_USUARIO, assoc.CARRERA_ID_CARRERA)
+          newCarreraIds.map((carreraId) =>
+            createUsuarioCarrera({
+              USUARIO_ID_USUARIO: userId,
+              CARRERA_ID_CARRERA: carreraId,
+            })
           )
         );
+        setSuccessMessage('Asociaciones creadas exitosamente.');
       }
-      fetchData(); // Refrescar datos
-      setSelectedUsersInTab([]); // Limpiar selección
+      resetModalStateAndFilters(); // Llama a la función que también resetea filtros
+      fetchData();
     } catch (err) {
-      setError(
-        'Error al eliminar asociaciones en lote: ' +
-          (err.response?.data?.message || err.message || 'Error desconocido')
-      );
+      const errorMsg =
+        `Error al ${editingUser ? 'actualizar' : 'crear'} asociación: ` +
+        (err.response?.data?.message || err.message || 'Error desconocido');
+      alert(errorMsg);
+      console.error(errorMsg, err);
     } finally {
-      setProcessing(false);
+      setProcessingModal(false);
     }
   };
 
-  if (loading) {
+  const handleToggleUserSelectionInTable = (userIdPassed) => {
+    setSelectedUserIdsInTable((prevSelected) =>
+      prevSelected.includes(userIdPassed)
+        ? prevSelected.filter((id) => id !== userIdPassed)
+        : [...prevSelected, userIdPassed]
+    );
+  };
+
+  const handleToggleSelectAllInTable = () => {
+    const allUserIdsInView = Object.keys(groupedAssociations).map((id) =>
+      parseInt(id)
+    );
+    if (
+      selectedUserIdsInTable.length === allUserIdsInView.length &&
+      allUserIdsInView.length > 0
+    ) {
+      setSelectedUserIdsInTable([]);
+    } else {
+      setSelectedUserIdsInTable(allUserIdsInView);
+    }
+  };
+
+  const handleBulkDeleteFromTable = async () => {
+    /* ... tu lógica ... */
+  };
+
+  if (loading && !associations.length) {
     return (
       <div className="text-center p-3">
-        <Spinner animation="border" />
-        <p>Cargando asociaciones Usuario-Carrera...</p>
+        <Spinner animation="border" variant="primary" />
+        <p>Cargando datos...</p>
       </div>
     );
   }
 
-  const filteredEligibleUsers = eligibleUsers.filter((user) => {
-    const searchTermMatch =
-      searchTermUser === '' ||
-      user.NOMBRE_USUARIO.toLowerCase().includes(
-        searchTermUser.toLowerCase()
-      ) ||
-      user.EMAIL_USUARIO.toLowerCase().includes(searchTermUser.toLowerCase());
-    const roleMatch =
-      filterRoleUser === '' || user.ROL_ID_ROL === parseInt(filterRoleUser);
-    return searchTermMatch && roleMatch;
-  });
-
-  const filteredCarrerasByEscuela = carreras.filter((carrera) => {
-    return (
-      filterEscuelaCarrera === '' ||
-      carrera.ESCUELA_ID_ESCUELA === parseInt(filterEscuelaCarrera)
-    );
-  });
-
-  const handleCarreraSelection = (carreraId) => {
-    setSelectedCarreraIds((prevSelected) =>
-      prevSelected.includes(carreraId)
-        ? prevSelected.filter((id) => id !== carreraId)
-        : [...prevSelected, carreraId]
-    );
-  };
-
   return (
     <div>
-      <h4>Asociar Coordinadores/Directores a Carreras</h4>
+      <h4 className="mb-3 mt-3">Asociar Coordinadores/Directores a Carreras</h4>
       {error && (
-        <Alert variant="danger" onClose={() => setError(null)} dismissible>
+        <Alert
+          variant="danger"
+          onClose={() => setError(null)}
+          dismissible
+          className="mt-2"
+        >
           {error}
         </Alert>
       )}
-      <UsuarioCarreraActions
-        onNewAssociation={() => {
-          setEditingUser(null);
-          setShowModal(true);
-        }}
-        onEditSelected={() => {
-          if (selectedUsersInTab.length === 1)
-            handleEditUserAssociations(selectedUsersInTab[0].ID_USUARIO);
-        }}
-        onBulkDelete={handleBulkDeleteAssociations}
-        processing={processing}
-        selectedCount={selectedUsersInTab.length}
-      />
-
-      {eligibleUsers.length === 0 && (
-        <Alert variant="warning">
-          No hay usuarios con rol "{COORDINADOR_ROLE_NAME}" o "
-          {DIRECTOR_ROLE_NAME}" disponibles para asociar.
+      {successMessage && (
+        <Alert
+          variant="success"
+          onClose={() => setSuccessMessage('')}
+          dismissible
+          className="mt-2"
+        >
+          {successMessage}
         </Alert>
       )}
-      {/* {carreras.length === 0 && !loading && (
-        <Alert variant="warning">
-          No hay carreras disponibles para asociar.
+
+      <div className="mb-3">
+        <UsuarioCarreraActions
+          onNewAssociation={handleOpenNewAssociationModal}
+          onEditSelected={() => {
+            if (selectedUserIdsInTable.length === 1)
+              handleOpenEditAssociationModal(selectedUserIdsInTable[0]);
+            else
+              alert(
+                'Seleccione un solo usuario de la tabla para editar sus asociaciones.'
+              );
+          }}
+          onBulkDelete={handleBulkDeleteFromTable}
+          processing={processingModal}
+          selectedCount={selectedUserIdsInTable.length}
+          disabledEdit={selectedUserIdsInTable.length !== 1}
+        />
+      </div>
+
+      {eligibleUsers.length === 0 && !loading && (
+        <Alert variant="info" className="mt-3">
+          No hay usuarios con rol "{COORDINADOR_ROLE_NAME}", "
+          {DIRECTOR_ROLE_NAME}" o "{COORDINADOR_DOCENTE_ROLE_NAME}" definidos o
+          disponibles.
         </Alert>
-      )} */}
+      )}
 
       {showModal && (
         <UsuarioCarreraModal
           show={showModal}
-          onHide={resetModalState}
+          onHide={resetModalStateAndFilters} // Usa la función que también resetea filtros
+          onSubmit={handleModalSubmit}
           editingUser={editingUser}
           allRoles={allRoles}
-          eligibleUsers={eligibleUsers}
-          carreras={carreras}
-          escuelas={escuelas}
-          selectedUsuarioId={selectedUsuarioId}
-          setSelectedUsuarioId={setSelectedUsuarioId}
-          selectedCarreraIds={selectedCarreraIds}
-          handleCarreraSelection={handleCarreraSelection}
-          handleAddAssociation={handleAddAssociation}
-          processing={processing}
-          searchTermUser={searchTermUser}
-          setSearchTermUser={setSearchTermUser}
-          filterRoleUser={filterRoleUser}
-          setFilterRoleUser={setFilterRoleUser}
-          filterEscuelaCarrera={filterEscuelaCarrera}
-          setFilterEscuelaCarrera={setFilterEscuelaCarrera}
+          eligibleUsers={eligibleUsers} // Pasa la lista completa de usuarios elegibles (Coordinadores/Directores)
+          allCarreras={carreras} // Renombrado de 'carreras' a 'allCarreras' para claridad
+          allEscuelas={escuelas} // Renombrado de 'escuelas' a 'allEscuelas' para claridad
+          selectedUsuarioId={selectedUsuarioIdModal}
+          setSelectedUsuarioId={setSelectedUsuarioIdModal}
+          selectedCarreraIds={selectedCarreraIdsModal}
+          // Pasamos la función para manejar la selección de carreras del modal directamente
+          // setSelectedCarreraIds para que el modal pueda actualizar este estado del padre
+          // O, si handleCarreraSelection ya hace eso, mantenlo. Por simplicidad, le paso setSelectedCarreraIdsModal.
+          setSelectedCarreraIds={setSelectedCarreraIdsModal}
+          processing={processingModal}
+          // Pasar los estados de filtro y sus setters al modal
+          searchTermUser={searchTermUserModal}
+          setSearchTermUser={setSearchTermUserModal}
+          filterRoleUser={filterRoleUserModal}
+          setFilterRoleUser={setFilterRoleUserModal}
+          filterEscuelaCarrera={filterEscuelaCarreraModal}
+          setFilterEscuelaCarrera={setFilterEscuelaCarreraModal}
         />
       )}
 
       <UsuarioCarreraTable
         groupedAssociations={groupedAssociations}
         eligibleUsers={eligibleUsers}
-        selectedUsersInTab={selectedUsersInTab}
-        processing={processing}
+        selectedUsersInTab={
+          Array.isArray(allUsers)
+            ? selectedUserIdsInTable
+                .map((id) => allUsers.find((u) => u.ID_USUARIO === id))
+                .filter(Boolean)
+            : []
+        }
+        processing={processingModal}
         loading={loading}
-        onToggleUserSelection={handleToggleUserSelection}
-        onToggleSelectAllUsers={handleToggleSelectAllUsers}
-        onOpenViewCarrerasModal={handleOpenViewCarrerasModal}
-        onEditUserAssociations={handleEditUserAssociations}
-        onDeleteAllUserAssociations={handleDeleteAllUserAssociations}
+        onToggleUserSelection={(userObject) =>
+          handleToggleUserSelectionInTable(userObject.ID_USUARIO)
+        }
+        onToggleSelectAllUsers={handleToggleSelectAllInTable}
+        onViewUserCarreras={handleOpenViewCarrerasModal}
+        onOpenViewCarrerasModal={handleOpenViewCarrerasModal} // <--- Nombre de prop correcto
+        onEditUserAssociations={handleOpenEditAssociationModal}
+        onDeleteAllUserAssociations={handleBulkDeleteFromTable} // Añadido por consistencia si la tabla tiene este botón
       />
 
-      {/* Modal para visualizar carreras de un usuario */}
       <Modal
         show={showViewCarrerasModal}
         onHide={() => setShowViewCarrerasModal(false)}

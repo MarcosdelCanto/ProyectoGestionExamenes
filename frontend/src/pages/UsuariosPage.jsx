@@ -571,9 +571,7 @@ export default function UsuariosPage() {
                   onClick={() => setMsgModal(null)}
                   aria-label="Close" // Es buena práctica añadir aria-label para accesibilidad
                 />
-                {/* CORREGIDO: Botón auto-cerrado */}
               </div>
-              {/* CORREGIDO: div del header cierra después del botón */}
               <div className="modal-body">
                 <p>{msgModal.body}</p>
               </div>

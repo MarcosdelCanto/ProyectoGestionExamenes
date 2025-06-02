@@ -1,119 +1,88 @@
-import { useState, useEffect } from 'react';
-import { getCurrentUser } from '../services/authService';
-import { fetchPermisosByRol } from '../services/permisoService';
+// src/hooks/usePermission.js
+import { useState, useEffect, useCallback } from 'react';
+// Asumimos que refreshCurrentUserPermissions actualiza localStorage y devuelve el usuario actualizado
+import {
+  getCurrentUser,
+  refreshCurrentUserPermissions,
+} from '../services/authService';
 
 export function usePermission() {
-  const [userPermissions, setUserPermissions] = useState([]);
-  const [loading, setLoading] = useState(true);
-  // IMPORTANTE: Usamos useEffect para obtener el usuario actual solo al montar el componente
-  // en lugar de obtenerlo cada vez que el componente se renderiza
+  // Inicializa currentUser desde localStorage. getCurrentUser() debería devolver el objeto
+  // completo con isAuthenticated, rol, permisos, etc.
   const [currentUser, setCurrentUser] = useState(() => getCurrentUser());
+  const [loading, setLoading] = useState(true); // Inicia como true hasta que se cargue el usuario inicial
+
+  // Función para permitir que los componentes fuercen una recarga de permisos
+  // y del estado del usuario en este hook.
+  const forceReloadUserData = useCallback(async () => {
+    console.log(
+      '[usePermission] Forzando recarga de datos del usuario y permisos...'
+    );
+    setLoading(true);
+    try {
+      const updatedUser = await refreshCurrentUserPermissions(); // Llama al servicio que actualiza localStorage
+      setCurrentUser(updatedUser); // Actualiza el estado local del hook con el usuario refrescado
+    } catch (error) {
+      console.error(
+        '[usePermission] Error durante forceReloadUserData:',
+        error
+      );
+      // En caso de error, podríamos decidir mantener el currentUser anterior o limpiarlo
+      // Por ahora, lo mantenemos para no perder el estado si la API falla temporalmente
+      setCurrentUser(getCurrentUser()); // Reintentar leer de localStorage por si acaso
+    } finally {
+      setLoading(false);
+    }
+  }, []);
 
   useEffect(() => {
-    // Flag para evitar actualizar el estado si el componente se desmonta
-    let isMounted = true;
+    // Al montar, simplemente establecemos el usuario que ya está en localStorage.
+    // Se asume que authService.login() ya cargó los permisos y los guardó.
+    const userFromStorage = getCurrentUser();
+    setCurrentUser(userFromStorage);
+    setLoading(false);
 
-    const loadUserPermissions = async () => {
-      // Si ya tenemos permisos almacenados en el usuario, úsalos
-      if (currentUser && currentUser.isAuthenticated) {
-        if (currentUser.permisos) {
-          //console.log('Usando permisos almacenados:', currentUser.permisos);
-          if (isMounted) {
-            setUserPermissions(currentUser.permisos);
-            setLoading(false);
-          }
-          return;
-        }
+    // Opcional: Escuchar un evento si quieres sincronizar entre pestañas o si localStorage cambia externamente
+    // const handleStorageChange = (event) => {
+    //   if (event.key === 'user') {
+    //     console.log('[usePermission] localStorage "user" cambió, actualizando currentUser.');
+    //     setCurrentUser(getCurrentUser());
+    //   }
+    // };
+    // window.addEventListener('storage', handleStorageChange);
+    // return () => window.removeEventListener('storage', handleStorageChange);
+  }, []); // Se ejecuta solo una vez al montar para obtener el estado inicial de localStorage
 
-        // Verificar ID del rol
-        const idRol = currentUser.rol_id_rol || currentUser.ROL_ID_ROL;
-
-        // Si no hay permisos almacenados pero tenemos ID del rol, cargarlos
-        if (idRol) {
-          try {
-            console.log('Cargando permisos para el rol:', idRol);
-            const permisos = await fetchPermisosByRol(idRol);
-
-            // Solo almacenamos en localStorage, NO ACTUALIZAMOS currentUser
-            const updatedUser = {
-              ...currentUser,
-              permisos,
-            };
-            localStorage.setItem('user', JSON.stringify(updatedUser));
-
-            // Importante: solo actualizar el estado si el componente sigue montado
-            if (isMounted) {
-              setUserPermissions(permisos);
-            }
-          } catch (error) {
-            console.error('Error al cargar permisos del usuario:', error);
-            if (isMounted) {
-              setUserPermissions([]);
-            }
-          }
-        } else {
-          console.warn('Usuario autenticado pero sin rol_id_rol:', currentUser);
-
-          // Caso especial: para administrador, podemos asignar manualmente un rol_id
-          if (currentUser.rol === 'ADMINISTRADOR') {
-            try {
-              console.log(
-                'Usuario es ADMINISTRADOR, intentando cargar permisos con ID 1'
-              );
-              const permisos = await fetchPermisosByRol(1); // Asumimos que el admin tiene ID 1
-
-              if (isMounted) {
-                setUserPermissions(permisos);
-              }
-            } catch (error) {
-              console.error(
-                'Error al cargar permisos para administrador:',
-                error
-              );
-              if (isMounted) {
-                setUserPermissions([]);
-              }
-            }
-          } else {
-            if (isMounted) {
-              setUserPermissions([]);
-            }
-          }
-        }
-      } else {
-        console.log('Usuario no autenticado');
-        if (isMounted) {
-          setUserPermissions([]);
-        }
-      }
-
-      if (isMounted) {
-        setLoading(false);
-      }
-    };
-
-    loadUserPermissions();
-
-    // Limpieza para evitar actualizar estados en componentes desmontados
-    return () => {
-      isMounted = false;
-    };
-  }, []); // ¡IMPORTANTE! Dependencias vacías para que solo se ejecute al montar
-
-  // Verificamos si el usuario tiene un permiso específico
   const hasPermission = (permissionName) => {
-    if (!currentUser || !currentUser.isAuthenticated) return false;
+    if (loading || !currentUser || !currentUser.isAuthenticated) {
+      // console.log(`[usePermission] Verificando '${permissionName}': Cargando o no autenticado. Acceso denegado.`);
+      return false;
+    }
 
-    // Verificar si es administrador (acceso total)
-    if (currentUser.rol === 'ADMINISTRADOR') return true;
+    // Asumimos que currentUser.rol tiene el NOMBRE_ROL (ej: "ADMINISTRADOR")
+    // o que currentUser.NOMBRE_ROL existe si 'rol' es un alias.
+    // Es importante que el objeto 'user' en localStorage tenga esta propiedad consistentemente.
+    if (
+      currentUser.rol === 'ADMINISTRADOR' ||
+      currentUser.NOMBRE_ROL === 'ADMINISTRADOR'
+    ) {
+      // console.log(`[usePermission] Verificando '${permissionName}': Usuario es ADMIN. Acceso concedido.`);
+      return true;
+    }
 
-    // Verificar si el permiso específico existe en los permisos del usuario
-    return userPermissions.some(
-      (permission) => permission.NOMBRE_PERMISO === permissionName
-    );
+    // Asumimos que currentUser.permisos es un array de objetos: [{NOMBRE_PERMISO: '...'}, ...]
+    // según tu implementación original. Si fetchPermisosByRol y el login ahora devuelven
+    // un array de strings, esta lógica debe cambiar a: currentUser.permisos?.includes(permissionName)
+    const permissionFound =
+      currentUser.permisos?.some(
+        (permission) => permission.NOMBRE_PERMISO === permissionName
+      ) || false;
+
+    // console.log(`[usePermission] Verificando '${permissionName}': Permisos del usuario:`, currentUser.permisos, `Resultado: ${permissionFound}`);
+    return permissionFound;
   };
 
-  // Funciones helper para verificaciones comunes
+  // Funciones helper (están bien como las tienes)
   const canView = (resource) => hasPermission(`VIEW_${resource.toUpperCase()}`);
   const canCreate = (resource) =>
     hasPermission(`CREATE_${resource.toUpperCase()}`);
@@ -122,9 +91,11 @@ export function usePermission() {
     hasPermission(`DELETE_${resource.toUpperCase()}`);
 
   return {
-    userPermissions,
+    currentUser, // Exponer el usuario actual puede ser útil para la UI
     hasPermission,
     loading,
+    forceReloadUserData, // Renombrada para mayor claridad, refresca todo el usuario
+    // userPermissions: currentUser?.permisos || [], // Si necesitas la lista cruda de permisos
     canView,
     canCreate,
     canEdit,

@@ -44,3 +44,13 @@ export const fetchRoleById = async (roleId) => {
   const response = await api.get(`/roles/${roleId}`);
   return response.data;
 };
+
+export const fetchRoleByIdWithPermissions = async (idRol) => {
+  try {
+    const response = await api.get(`/roles/${idRol}`); // Asume que tu API está en /api
+    return response.data; // Esto debería devolver { ID_ROL, NOMBRE_ROL, permisos: [...] }
+  } catch (error) {
+    console.error(`Error al obtener el rol ${idRol} con permisos:`, error);
+    throw error;
+  }
+};

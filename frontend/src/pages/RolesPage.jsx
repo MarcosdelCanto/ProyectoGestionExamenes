@@ -1,45 +1,54 @@
 // src/pages/RolesPage.jsx
 import React, { useState, useEffect, useCallback } from 'react';
-import Layout from '../components/Layout';
+import Layout from '../components/Layout'; // Ajusta la ruta si es necesario
 import {
   fetchAllRoles,
   createRole,
   updateRole,
   deleteRole,
-} from '../services/rolService';
-import { Alert, Container, Row, Col, Modal, Button } from 'react-bootstrap'; // Añadir Modal y Button
+  fetchRoleByIdWithPermissions, // <-- IMPORTANTE: Servicio para obtener rol con sus permisos
+} from '../services/rolService'; // Ajusta la ruta si es necesario
+import { usePermission } from '../hooks/usePermission';
+import {
+  Alert,
+  Container,
+  Modal,
+  Button as BsButton, // Renombrado para evitar colisión si usaras un Button propio
+  Spinner,
+} from 'react-bootstrap';
 import RoleActions from '../components/roles/RoleActions';
 import RoleTable from '../components/roles/RoleTable';
 import RoleForm from '../components/roles/RoleForm';
+
 function RolesPage() {
   const [roles, setRoles] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null); // Para errores a nivel de página
-  const [modalError, setModalError] = useState(null); // Para errores dentro del modal
+  const [loading, setLoading] = useState(true); // Carga inicial de la tabla de roles
+  const [error, setError] = useState(null); // Errores a nivel de página
+  const [modalError, setModalError] = useState(null); // Errores específicos del modal/formulario
   const [successMessage, setSuccessMessage] = useState('');
+  const [isProcessing, setIsProcessing] = useState(false); // Para acciones como guardar, eliminar
 
-  const [isProcessing, setIsProcessing] = useState(false); // Para el estado de envío del formulario
-  // Estado para el modal: type puede ser 'add', 'edit', 'delete'. data es el rol actual.
   const [modalState, setModalState] = useState({
-    type: null,
-    data: null,
+    type: null, // 'add', 'edit', 'delete'
+    data: null, // El rol actual para editar/eliminar (con sus permisos si es para editar)
     show: false,
   });
-  const [selectedRole, setSelectedRole] = useState(null); // Estado para el rol seleccionado
+  const [selectedRole, setSelectedRole] = useState(null); // Rol seleccionado en la tabla
+
+  const { forceReloadUserData, currentUser } = usePermission();
 
   const loadRoles = useCallback(async () => {
     setLoading(true);
     setError(null);
     try {
       const data = await fetchAllRoles();
-      // Asumiendo que fetchAllRoles devuelve el array de roles directamente o dentro de una propiedad 'data'
       setRoles(Array.isArray(data) ? data : data.data || []);
     } catch (err) {
       setError('Error al cargar los roles. Intente de nuevo más tarde.');
       console.error('Error en loadRoles:', err);
       setRoles([]);
     } finally {
-      setSelectedRole(null); // Deseleccionar cualquier rol al recargar
+      setSelectedRole(null); // Limpiar selección de la tabla al recargar roles
       setLoading(false);
     }
   }, []);
@@ -50,28 +59,57 @@ function RolesPage() {
 
   useEffect(() => {
     if (successMessage) {
-      const timer = setTimeout(() => setSuccessMessage(''), 4000); // Mensaje visible por 4 segundos
+      const timer = setTimeout(() => setSuccessMessage(''), 4000);
       return () => clearTimeout(timer);
     }
   }, [successMessage]);
 
-  const openModal = (type, roleData = null) => {
-    setModalError(null); // Limpiar errores del modal al abrir
-    if (type === 'edit' && roleData) setSelectedRole(roleData); // Asegurar que el rol para editar esté seleccionado
-    setModalState({ type, data: roleData, show: true });
+  const openModal = async (type, roleDataFromTable = null) => {
+    setModalError(null); // Limpiar errores previos del modal
+    setIsProcessing(false); // Asegurar que no esté en estado de procesamiento
+
+    if (type === 'add') {
+      setSelectedRole(null);
+      setModalState({ type: 'add', data: null, show: true });
+    } else if (type === 'edit' && roleDataFromTable) {
+      setSelectedRole(roleDataFromTable); // Mantener la selección de la tabla
+      setIsProcessing(true); // Mostrar indicador mientras se cargan los detalles completos del rol
+      setModalState({ type: 'edit', data: null, show: true }); // Abrir modal, datos vendrán después
+      try {
+        // Fetch completo del rol, incluyendo sus permisos asignados
+        const fullRoleDataWithPermissions = await fetchRoleByIdWithPermissions(
+          roleDataFromTable.ID_ROL
+        );
+        setModalState({
+          type: 'edit',
+          data: fullRoleDataWithPermissions,
+          show: true,
+        });
+      } catch (err) {
+        console.error('Error al cargar datos del rol para editar:', err);
+        setModalError(
+          'No se pudieron cargar los detalles del rol para editar. Intente cerrar y abrir de nuevo.'
+        );
+        // Opcional: no cerrar el modal para que el usuario vea el error
+        // setModalState({ type: null, data: null, show: false });
+      } finally {
+        setIsProcessing(false); // Quitar indicador de carga de detalles del rol
+      }
+    } else if (type === 'delete' && roleDataFromTable) {
+      setSelectedRole(roleDataFromTable);
+      setModalState({ type: 'delete', data: roleDataFromTable, show: true });
+    }
   };
 
   const handleCloseModal = () => {
     setModalState({ type: null, data: null, show: false });
     setModalError(null);
-    // No deseleccionar aquí para que RoleActions siga reflejando la selección si el modal se cierra sin guardar
   };
 
-  // Renombrar la función para que coincida con la prop onSubmit y ajustar el parámetro
   const handleSubmitForm = async (formDataFromForm) => {
-    // El rol actual para edición se toma de modalState.data
     const currentRoleForSubmit =
       modalState.type === 'edit' ? modalState.data : null;
+
     if (modalState.type !== 'add' && modalState.type !== 'edit') {
       console.error(
         'handleSubmitForm llamado con tipo de modal incorrecto:',
@@ -82,73 +120,83 @@ function RolesPage() {
     setModalError(null);
     setSuccessMessage('');
 
-    if (!formDataFromForm.NOMBRE_ROL.trim()) {
+    if (!formDataFromForm.NOMBRE_ROL || !formDataFromForm.NOMBRE_ROL.trim()) {
       setModalError('El nombre del rol es obligatorio.');
       return;
     }
 
     setIsProcessing(true);
     try {
-      // En la función handleSubmitForm, modifica la llamada a updateRole/createRole:
+      let affectedRoleId = null;
       if (currentRoleForSubmit) {
         await updateRole(currentRoleForSubmit.ID_ROL, {
           NOMBRE_ROL: formDataFromForm.NOMBRE_ROL,
-          permisos: formDataFromForm.permisos,
+          permisos: formDataFromForm.permisos, // Array de IDs de permisos seleccionados
         });
+        setSuccessMessage('Rol actualizado exitosamente.');
+        affectedRoleId = currentRoleForSubmit.ID_ROL;
       } else {
-        await createRole({
+        const newRoleResponse = await createRole({
+          // Asumimos que createRole devuelve el rol creado
           NOMBRE_ROL: formDataFromForm.NOMBRE_ROL,
           permisos: formDataFromForm.permisos,
         });
+        setSuccessMessage('Rol creado exitosamente.');
+        affectedRoleId = newRoleResponse?.ID_ROL;
       }
-      loadRoles();
-      handleCloseModal();
+
+      await loadRoles(); // Recargar lista de roles para reflejar cambios
+      handleCloseModal(); // Cerrar el formulario
+
+      // Refrescar permisos del usuario actual si su rol fue el afectado
+      if (currentUser && affectedRoleId === currentUser.ROL_ID_ROL) {
+        if (typeof forceReloadUserData === 'function') {
+          console.log(
+            'Rol del usuario actual modificado, refrescando permisos...'
+          );
+          await forceReloadUserData();
+        }
+      }
     } catch (err) {
       console.error('Error en handleSubmitForm:', err);
       const errorMessage =
-        err.response?.data?.message ||
+        err.response?.data?.details ||
+        err.response?.data?.error ||
         err.message ||
         'Error al guardar el rol.';
-      // Si el error es por duplicado (ej. 409 Conflict)
       if (err.response?.status === 409) {
+        // Conflicto, ej: nombre de rol duplicado
         setModalError(errorMessage);
       } else {
-        setModalError(
-          err.message || // Usar el mensaje de error de la respuesta si está disponible
-            'Ocurrió un error inesperado. Por favor, intente de nuevo.'
-        );
+        setModalError(errorMessage); // Otros errores
       }
-      // También podrías mostrar un error a nivel de página si el modal se cierra por el error
-      // setError(errorMessage);
     } finally {
       setIsProcessing(false);
     }
   };
 
-  const handleDelete = async (roleId) => {
-    // Esta función ahora solo abre el modal de confirmación de borrado
-    // Encuentra el rol por ID para pasarlo al modal si necesitas mostrar su nombre, etc.
+  const handleDeleteRequest = (roleId) => {
+    // Renombrado para evitar colisión con servicio deleteRole
     const roleToDelete = roles.find((r) => r.ID_ROL === roleId);
     if (roleToDelete) {
-      openModal('delete', roleToDelete);
-      setSelectedRole(roleToDelete); // Asegurar que el rol para eliminar esté seleccionado
+      openModal('delete', roleToDelete); // openModal se encarga de setSelectedRole para 'delete'
     } else {
-      console.error('Rol no encontrado para eliminar:', roleId);
-      setError('No se pudo encontrar el rol para eliminar.');
+      console.error('Rol no encontrado para eliminar con ID:', roleId);
+      setError('No se pudo encontrar el rol especificado para eliminar.');
     }
   };
 
   const handleConfirmDelete = async () => {
     if (modalState.type !== 'delete' || !modalState.data) return;
-    setIsProcessing(true); // Usar el mismo estado de procesamiento
-    setError(null);
+    setIsProcessing(true);
+    setError(null); // Limpiar errores a nivel de página
     setSuccessMessage('');
     try {
       await deleteRole(modalState.data.ID_ROL);
       setSuccessMessage('Rol eliminado exitosamente.');
-      loadRoles();
+      await loadRoles(); // Recargar roles
       handleCloseModal();
-      setSelectedRole(null); // Deseleccionar después de eliminar
+      setSelectedRole(null); // Limpiar selección
     } catch (err) {
       setError(
         err.response?.data?.message ||
@@ -160,31 +208,29 @@ function RolesPage() {
     }
   };
 
-  // Funciones para los botones de RoleActions
   const handleAddAction = () => {
-    setSelectedRole(null); // Deseleccionar al añadir nuevo
     openModal('add');
   };
 
   const handleEditAction = () => {
     if (selectedRole) {
-      openModal('edit', selectedRole);
+      openModal('edit', selectedRole); // openModal ('edit') ahora carga los datos completos
+    } else {
+      alert('Por favor, seleccione un rol de la tabla para editar.');
     }
   };
 
-  // handleDelete ya maneja la apertura del modal de borrado para el rol seleccionado o desde la tabla
   return (
     <Layout>
-      <Container fluid>
-        {/* Similar a usuarios-page-container */}
+      <Container fluid className="pt-4">
+        {/* pt-4 para padding superior */}
         <div>
-          <p className="display-5 page-title-custom mb-2">
-            {/* Clase de UsuariosPage */}
+          <h2 className="display-6 mb-3">
+            {/* Título más pequeño, mb-3 para separación */}
             <i className="bi bi-shield-lock-fill me-3"></i>
             Gestión de Roles y Accesos
-          </p>
+          </h2>
         </div>
-        <hr />
         {error && (
           <Alert variant="danger" onClose={() => setError(null)} dismissible>
             {error}
@@ -199,26 +245,33 @@ function RolesPage() {
             {successMessage}
           </Alert>
         )}
-        <RoleActions
-          onAddRole={handleAddAction}
-          onEditRole={handleEditAction}
-          onDeleteRole={() => {
-            // onDeleteRole en RoleActions ahora abre el modal de confirmación para el selectedRole
-            if (selectedRole) handleDelete(selectedRole.ID_ROL);
-          }}
-          selectedRole={selectedRole}
-          isLoading={loading || isProcessing} // Combinar estados de carga
-        />
-        {/* No hay filtros para roles en esta versión, pero aquí iría el UsuarioFilter si se necesitara */}
-        <RoleTable
-          roles={roles}
-          selectedRole={selectedRole} // Pasar el rol seleccionado a la tabla
-          onSelectRole={setSelectedRole} // Permitir que la tabla actualice el rol seleccionado
-          onEditRole={(role) => openModal('edit', role)}
-          onDeleteRole={handleDelete}
-          isLoading={loading && roles.length === 0} // Mostrar "cargando" solo si no hay roles aún
-        />
-        {/* No hay paginación para roles en esta versión */}
+        <div className="mb-3">
+          {/* Espacio para RoleActions */}
+          <RoleActions
+            onAddRole={handleAddAction}
+            onEditRole={handleEditAction}
+            onDeleteRole={() => {
+              if (selectedRole) handleDeleteRequest(selectedRole.ID_ROL);
+            }}
+            selectedRole={selectedRole}
+            isLoading={loading || isProcessing} // Si la tabla está cargando o una acción está en proceso
+          />
+        </div>
+        {loading && roles.length === 0 ? ( // Muestra spinner solo si está cargando y no hay roles
+          <div className="text-center">
+            <Spinner animation="border" variant="primary" />
+            <p>Cargando roles...</p>
+          </div>
+        ) : (
+          <RoleTable
+            roles={roles}
+            selectedRole={selectedRole}
+            onSelectRole={setSelectedRole}
+            onEditRole={(role) => openModal('edit', role)} // 'role' aquí es de la lista simplificada
+            onDeleteRole={handleDeleteRequest}
+            isLoading={loading} // Pasar loading para que la tabla pueda mostrar un indicador si lo necesita
+          />
+        )}
       </Container>
 
       {/* Modal para Crear/Editar Rol */}
@@ -228,15 +281,7 @@ function RolesPage() {
             show={modalState.show}
             onHide={handleCloseModal}
             onSubmit={handleSubmitForm}
-            currentRole={modalState.type === 'edit' ? modalState.data : null}
-            initialData={
-              modalState.data
-                ? {
-                    NOMBRE_ROL: modalState.data.NOMBRE_ROL,
-                    // DESCRIPCION_ROL ya no es parte del formulario
-                  }
-                : { NOMBRE_ROL: '' } // Para añadir, solo NOMBRE_ROL
-            }
+            currentRole={modalState.data} // Para 'edit', modalState.data ya tiene el rol con sus permisos
             isProcessing={isProcessing}
             error={modalError}
           />
@@ -264,20 +309,24 @@ function RolesPage() {
             </p>
           </Modal.Body>
           <Modal.Footer>
-            <Button
+            <BsButton
               variant="secondary"
               onClick={handleCloseModal}
               disabled={isProcessing}
             >
               Cancelar
-            </Button>
-            <Button
+            </BsButton>
+            <BsButton
               variant="danger"
               onClick={handleConfirmDelete}
               disabled={isProcessing}
             >
-              {isProcessing ? 'Eliminando...' : 'Sí, Eliminar'}
-            </Button>
+              {isProcessing ? (
+                <Spinner as="span" animation="border" size="sm" />
+              ) : (
+                'Sí, Eliminar'
+              )}
+            </BsButton>
           </Modal.Footer>
         </Modal>
       )}

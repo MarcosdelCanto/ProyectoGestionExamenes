@@ -32,7 +32,13 @@ import reportsRoutes from './routes/reports.routes.js'; // Importar rutas de rep
 
 const app = express();
 
-app.use(cors());
+app.use(
+  cors({
+    origin: 'http://localhost:5173', // Reemplaza con el puerto exacto de tu frontend Vite
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'], // Asegúrate de incluir OPTIONS
+    allowedHeaders: ['Content-Type', 'Authorization'], // ¡Muy importante incluir Authorization!
+  })
+);
 //app.use(express.json());
 // Aumentamos el límite para aceptar payloads de hasta 50MB (puedes ajustar este valor)
 app.use(express.json({ limit: '50mb' }));
@@ -94,7 +100,6 @@ async function startServer() {
     app.use('/api/dashboard', dashboardRoutes); // Usar rutas del dashboard
     app.use('/api', calendarioRoutes);
     app.use('/api/reserva', reservaRoutes); // Usar rutas de reserva
-    app.use('/api/escuela', escuelaRoutes); // Asegúrate que el prefijo sea el correcto
     app.use('/api/reports', reportsRoutes); // Asegúrate de que las rutas de reportes estén correctamente definidas
 
     const PORT = process.env.PORT || 3000;

@@ -43,14 +43,12 @@ function UsuarioSeccionTable({
           <th>Usuario</th>
           <th>Rol</th>
           <th>Secciones Asociadas</th>
-          <th>Acciones</th>
         </tr>
       </thead>
       <tbody>
         {Object.keys(groupedAssociations).length === 0 && !loading && (
           <tr>
             <td colSpan="5" className="text-center">
-              {/* Ajustado colSpan a 5 */}
               No hay asociaciones registradas.
             </td>
           </tr>
@@ -84,7 +82,9 @@ function UsuarioSeccionTable({
               </td>
               <td className="align-middle">
                 {data.NOMBRE_USUARIO} <br />
-                <small className="text-muted">{data.EMAIL_USUARIO}</small>
+                <small className="text-muted">
+                  {data.EMAIL_USUARIO || 'Email no disponible'}
+                </small>
               </td>
               <td className="align-middle">{data.ROL_USUARIO}</td>
               <td className="text-center align-middle">
@@ -103,33 +103,6 @@ function UsuarioSeccionTable({
                 ) : (
                   <span className="text-muted">-</span>
                 )}
-              </td>
-              <td className="text-nowrap align-middle">
-                <Button
-                  variant="outline-primary"
-                  size="sm"
-                  className="me-2"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    onEditUserAssociations(parseInt(userId));
-                  }}
-                  disabled={processing}
-                  title="Editar asociaciones"
-                >
-                  <i className="bi bi-pencil-square"></i>
-                </Button>
-                <Button
-                  variant="outline-danger"
-                  size="sm"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    onDeleteAllUserAssociations(parseInt(userId));
-                  }}
-                  disabled={processing || data.secciones.length === 0}
-                  title="Eliminar todas las asociaciones del usuario"
-                >
-                  <i className="bi bi-trash3"></i>
-                </Button>
               </td>
             </tr>
           );

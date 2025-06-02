@@ -2,15 +2,15 @@ import api from './api.js';
 
 const BASE = '/moduloUsuarios';
 
-export const listUsuarios = () =>
-  api
-    .get(BASE)
-    .then((res) => res.data)
-    .catch((err) => {
-      console.error('listUsuarios error:', err);
-      throw err;
-    });
-
+export const listUsuarios = async () => {
+  try {
+    const response = await api.get('/usuarios'); // o la ruta que tengas
+    return Array.isArray(response.data) ? response.data : []; // Asegura que sea un array
+  } catch (error) {
+    console.error('Error fetching usuarios:', error);
+    return []; // Devuelve array vacío en caso de error
+  }
+};
 export const createUsuario = (payload) =>
   api
     .post(BASE, payload)

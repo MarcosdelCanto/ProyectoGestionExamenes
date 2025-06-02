@@ -1,67 +1,66 @@
 // src/services/authService.js
-import { fetchPermisosByRol } from './permisoService';
+import { fetchPermisosByRol } from './permisoService'; // Asegúrate que la ruta sea correcta
 
-// Es buena práctica usar la misma URL base que tu instancia de Axios si es posible,
-// o asegurarte de que VITE_API_URL esté configurada.
 const baseURL = import.meta.env.VITE_API_URL || 'http://localhost:3000/api';
 
 export async function login(email_usuario, password_usuario) {
-  // No se necesita token de autorización para el login
   const resp = await fetch(`${baseURL}/auth/login`, {
     method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-    },
+    headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ email_usuario, password_usuario }),
   });
 
   if (!resp.ok) {
-    // Intentar obtener un mensaje de error más específico del backend si está disponible
-    const errorData = await resp.json().catch(() => null);
+    const errorData = await resp
+      .json()
+      .catch(() => ({ message: 'Error de autenticación desconocido' }));
     throw new Error(errorData?.message || 'Credenciales inválidas');
   }
 
   const { accessToken, refreshToken, usuario } = await resp.json();
 
-  // Guarda tokens
   localStorage.setItem('accessToken', accessToken);
   localStorage.setItem('refreshToken', refreshToken);
 
-  // Guarda la información del usuario (incluyendo el rol)
-  if (usuario && usuario.nombre_rol) {
-    // Crea una copia del objeto usuario para no modificar el original
-    const userToStore = { ...usuario };
-    // Asigna el nombre_rol a la propiedad 'rol' que espera el frontend
-    userToStore.rol = usuario.nombre_rol;
+  if (usuario && usuario.ROL_ID_ROL) {
+    // Es crucial tener ROL_ID_ROL
+    const userToStore = {
+      ...usuario,
+      isAuthenticated: true, // Añadimos isAuthenticated aquí
+      // Asegúrate que el backend devuelva 'NOMBRE_ROL' si lo necesitas en el frontend
+      // Si 'usuario.rol' ya viene como el string del nombre del rol, puedes usarlo directamente
+      // o buscarlo aquí si el backend solo envía ROL_ID_ROL.
+      // Por simplicidad, asumiremos que 'usuario.nombre_rol' viene del backend.
+      rol: usuario.nombre_rol || `ROL_ID_${usuario.ROL_ID_ROL}`, // Fallback si nombre_rol no viene
+    };
 
     try {
-      // Importante: Cargar los permisos inmediatamente después del login
-      console.log('Cargando permisos para el rol:', usuario.ROL_ID_ROL);
-      const permisos = await fetchPermisosByRol(usuario.ROL_ID_ROL);
-
-      // Agregar los permisos al objeto de usuario
-      userToStore.permisos = permisos;
-      console.log('Permisos cargados:', permisos.length);
+      console.log(
+        '[AuthService] Cargando permisos para el rol ID:',
+        usuario.ROL_ID_ROL
+      );
+      const permisos = await fetchPermisosByRol(usuario.ROL_ID_ROL); // Esto debe devolver un array de objetos [{NOMBRE_PERMISO: '...'}, ...]
+      userToStore.permisos = permisos || []; // Aseguramos que sea un array
+      console.log(
+        '[AuthService] Permisos cargados para el usuario:',
+        userToStore.permisos.length
+      );
     } catch (error) {
-      console.error('Error al cargar permisos durante login:', error);
-      userToStore.permisos = []; // Asignar array vacío en caso de error
+      console.error(
+        '[AuthService] Error al cargar permisos durante login:',
+        error
+      );
+      userToStore.permisos = [];
     }
-
-    // Guardar el usuario con los permisos en localStorage
     localStorage.setItem('user', JSON.stringify(userToStore));
+    return userToStore; // Devolvemos el usuario con sus permisos
   } else {
-    // Es crucial que el rol venga del backend. Si no, el RBAC no funcionará.
     console.error(
-      'Error: El objeto usuario recibido del backend no contiene la propiedad "rol".'
+      '[AuthService] Información de usuario incompleta desde el servidor (falta ROL_ID_ROL o nombre_rol).'
     );
-    // Limpiamos para evitar un estado inconsistente
-    logout();
-    throw new Error(
-      'Información de usuario incompleta desde el servidor (falta rol).'
-    );
+    logout(); // Limpiar para evitar estado inconsistente
+    throw new Error('Información de usuario incompleta desde el servidor.');
   }
-
-  return usuario;
 }
 
 export function getAccessToken() {
@@ -73,58 +72,68 @@ export function getRefreshToken() {
 }
 
 export function setAccessToken(token) {
+  // Usado por el interceptor de Axios
   localStorage.setItem('accessToken', token);
 }
 
 export function logout() {
   localStorage.removeItem('accessToken');
   localStorage.removeItem('refreshToken');
-  localStorage.removeItem('user'); // Asegúrate de limpiar también la info del usuario
-  // Opcional: Redirigir o notificar a otras partes de la app
-  // window.location.href = '/login'; // Descomentar si quieres redirigir siempre al logout
+  localStorage.removeItem('user');
+  // Opcional: Despachar un evento o actualizar un estado global para notificar a la app
+  // window.location.href = '/login'; // Descomentar si quieres forzar redirección
 }
 
 export function getCurrentUser() {
-  const token = getAccessToken();
   const userString = localStorage.getItem('user');
-  if (token && userString) {
+  if (userString) {
     try {
       const user = JSON.parse(userString);
+      // Aseguramos que tenga la estructura esperada
       return { isAuthenticated: true, ...user };
     } catch (e) {
-      console.error('Error al parsear datos del usuario desde localStorage', e);
-      logout(); // Limpia datos corruptos
-      return { isAuthenticated: false, rol: null };
+      console.error(
+        '[AuthService] Error al parsear datos del usuario desde localStorage',
+        e
+      );
+      logout();
+      return { isAuthenticated: false, rol: null, permisos: [] };
     }
   }
-  // Devuelve rol: null si no está autenticado o no hay datos de usuario
-  return { isAuthenticated: false, rol: null };
+  return { isAuthenticated: false, rol: null, permisos: [] };
 }
 
-// Nueva función para refrescar permisos sin hacer login completo
-export async function refreshUserPermissions() {
-  const currentUser = getCurrentUser();
+/**
+ * Refresca los permisos del usuario actual desde el backend y actualiza localStorage.
+ * Devuelve el objeto de usuario actualizado con sus permisos.
+ */
+export async function refreshCurrentUserPermissions() {
+  const currentUserData = getCurrentUser(); // Obtiene el usuario base de localStorage
 
-  if (currentUser.isAuthenticated && currentUser.ROL_ID_ROL) {
+  if (currentUserData.isAuthenticated && currentUserData.ROL_ID_ROL) {
     try {
-      console.log('Actualizando permisos para el rol:', currentUser.ROL_ID_ROL);
-      const permisos = await fetchPermisosByRol(currentUser.ROL_ID_ROL);
+      console.log(
+        '[AuthService] Refrescando permisos para el rol ID:',
+        currentUserData.ROL_ID_ROL
+      );
+      const permisos = await fetchPermisosByRol(currentUserData.ROL_ID_ROL);
 
-      // Actualizar el objeto de usuario con los nuevos permisos
       const updatedUser = {
-        ...currentUser,
-        permisos,
+        ...currentUserData, // Mantenemos otros datos del usuario
+        permisos: permisos || [], // Actualizamos con los nuevos permisos
       };
 
-      // Guardar el usuario actualizado en localStorage
-      localStorage.setItem('user', JSON.stringify(updatedUser));
-
-      return permisos;
+      localStorage.setItem('user', JSON.stringify(updatedUser)); // Guardamos en localStorage
+      console.log('[AuthService] Permisos refrescados y guardados.');
+      return updatedUser; // Devolvemos el usuario actualizado
     } catch (error) {
-      console.error('Error al actualizar permisos:', error);
-      return [];
+      console.error('[AuthService] Error al refrescar permisos:', error);
+      // Devolvemos el usuario que teníamos, pero sin los permisos actualizados o con permisos vacíos
+      return { ...currentUserData, permisos: currentUserData.permisos || [] };
     }
   }
-
-  return [];
+  // Si no está autenticado o no tiene rol, devolvemos el usuario tal cual o uno vacío
+  return currentUserData.isAuthenticated
+    ? currentUserData
+    : { isAuthenticated: false, rol: null, permisos: [] };
 }

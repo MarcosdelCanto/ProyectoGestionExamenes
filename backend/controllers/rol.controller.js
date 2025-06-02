@@ -1,5 +1,18 @@
+// controllers/rol.controller.js
 import { getConnection } from '../db.js';
 import oracledb from 'oracledb';
+
+const handleError = (res, error, message, statusCode = 500) => {
+  console.error(message, ':', error);
+  const details =
+    error && error.message
+      ? error.message
+      : error
+        ? String(error) // Si error no tiene .message pero existe, lo convertimos a String
+        : 'No hay detalles adicionales del error.'; // Si error es null o undefined
+  res.status(statusCode).json({ error: message, details: details });
+};
+
 /**
  * Controlador para obtener todos los roles.
  */
@@ -8,149 +21,232 @@ export const fetchAllRoles = async (req, res) => {
   try {
     conn = await getConnection();
     const result = await conn.execute(
-      `SELECT ID_ROL, NOMBRE_ROL
-         FROM ADMIN.ROL
-        ORDER BY NOMBRE_ROL`,
+      `SELECT ID_ROL, NOMBRE_ROL FROM ADMIN.ROL ORDER BY NOMBRE_ROL`,
       [],
       { outFormat: oracledb.OUT_FORMAT_OBJECT }
     );
     res.json(result.rows);
   } catch (err) {
-    console.error('Error al obtener roles:', err);
-    res.status(500).json({ error: 'No se pudieron obtener los roles.' });
+    handleError(res, err, 'No se pudieron obtener los roles.');
   } finally {
-    if (conn) await conn.close();
+    if (conn) {
+      try {
+        await conn.close();
+      } catch (closeErr) {
+        console.error('Error cerrando conexión en fetchAllRoles:', closeErr);
+      }
+    }
   }
 };
 
 /**
- * Controlador para obtener un rol por su ID.
+ * Controlador para obtener un rol por su ID, incluyendo sus permisos.
  */
 export const getRoleById = async (req, res) => {
   const { id } = req.params;
+  const roleId = parseInt(id, 10);
+  if (isNaN(roleId)) {
+    return handleError(res, null, 'ID de Rol inválido.', 400);
+  }
   let conn;
   try {
     conn = await getConnection();
-    const result = await conn.execute(
-      `SELECT ID_ROL, NOMBRE_ROL
-         FROM ADMIN.ROL
-        WHERE ID_ROL = :id`,
-      [id],
+    const roleResult = await conn.execute(
+      `SELECT ID_ROL, NOMBRE_ROL FROM ADMIN.ROL WHERE ID_ROL = :roleIdBind`,
+      { roleIdBind: roleId },
       { outFormat: oracledb.OUT_FORMAT_OBJECT }
     );
 
-    if (result.rows.length === 0) {
-      return res.status(404).json({ error: 'Rol no encontrado.' });
+    if (roleResult.rows.length === 0) {
+      return handleError(res, null, 'Rol no encontrado.', 404);
     }
-    res.json(result.rows[0]);
+    const roleData = roleResult.rows[0];
+
+    const permisosResult = await conn.execute(
+      `SELECT P.ID_PERMISO, P.NOMBRE_PERMISO, P.DESCRIPCION_PERMISO
+       FROM ADMIN.PERMISOSROL PR
+       JOIN ADMIN.PERMISOS P ON PR.ID_PERMISO = P.ID_PERMISO
+       WHERE PR.ID_ROL = :roleIdBind
+       ORDER BY P.NOMBRE_PERMISO`, // Ordenar permisos para consistencia
+      { roleIdBind: roleId },
+      { outFormat: oracledb.OUT_FORMAT_OBJECT }
+    );
+
+    roleData.permisos = permisosResult.rows;
+    res.json(roleData);
   } catch (err) {
-    console.error('Error al obtener rol por ID:', err);
-    res.status(500).json({ error: 'No se pudo obtener el rol.' });
+    handleError(res, err, 'No se pudo obtener el rol.');
   } finally {
-    if (conn) await conn.close();
+    if (conn) {
+      try {
+        await conn.close();
+      } catch (closeErr) {
+        console.error('Error cerrando conexión en getRoleById:', closeErr);
+      }
+    }
   }
 };
 
 /**
- * Controlador para crear un nuevo rol.
- * Asume que la tabla ROL tiene ID_ROL (autoincremental con SEQ_ROL) y NOMBRE_ROL.
+ * Controlador para crear un nuevo rol y asignarle permisos.
  */
 export const createRole = async (req, res) => {
-  const { NOMBRE_ROL, permisos } = req.body;
+  const { NOMBRE_ROL, permisos } = req.body; // permisos es un array de ID_PERMISO
   let conn;
-  console.log('[CREATE ROLE] Body recibido:', req.body);
+
   if (!NOMBRE_ROL || NOMBRE_ROL.trim() === '') {
-    return res.status(400).json({ error: 'El nombre del rol es obligatorio.' });
+    return handleError(res, null, 'El nombre del rol es obligatorio.', 400);
   }
+
   try {
     conn = await getConnection();
-    const result = await conn.execute(
+    // La transacción comienza implícitamente con autoCommit = false (default del pool)
+    // No es necesario conn.execute('BEGIN');
+
+    const resultRole = await conn.execute(
       `INSERT INTO ADMIN.ROL (ID_ROL, NOMBRE_ROL)
-       VALUES (SEQ_ROL.NEXTVAL, :nombre_rol)
-       RETURNING ID_ROL INTO :newId`,
+       VALUES (SEQ_ROL.NEXTVAL, :nombre_rol_param)
+       RETURNING ID_ROL INTO :newId_param`,
       {
-        nombre_rol: NOMBRE_ROL,
-        newId: { dir: oracledb.BIND_OUT, type: oracledb.NUMBER },
+        nombre_rol_param: NOMBRE_ROL,
+        newId_param: { dir: oracledb.BIND_OUT, type: oracledb.NUMBER },
       }
+      // No autoCommit aquí, es parte de la transacción
     );
-    const newRoleId = result.outBinds.newId[0];
-    console.log(`[CREATE ROLE] Rol creado con ID: ${newRoleId}`);
+    const newRoleId = resultRole.outBinds.newId_param[0];
+
     if (Array.isArray(permisos) && permisos.length > 0) {
-      console.log(`[CREATE ROLE] Permisos a asociar:`, permisos);
-      for (const idPermiso of permisos) {
-        await conn.execute(
-          `INSERT INTO ADMIN.PERMISOSROL (ID_ROL, ID_PERMISO) VALUES (:idRol, :idPermiso)`,
-          { idRol: newRoleId, idPermiso }
+      const permisosBinds = permisos.map((idPermiso) => ({
+        idRol_param: newRoleId,
+        idPermiso_param: parseInt(idPermiso), // Asegurar que sea número
+      }));
+      // Asegúrate que las columnas en PERMISOSROL sean ID_ROL, ID_PERMISO
+      await conn.executeMany(
+        `INSERT INTO ADMIN.PERMISOSROL (ID_ROL, ID_PERMISO) VALUES (:idRol_param, :idPermiso_param)`,
+        permisosBinds
+      );
+    }
+
+    await conn.commit(); // Confirmar transacción
+    // Devolver el rol creado con el formato que espera el frontend (incluyendo los permisos enviados)
+    res.status(201).json({
+      ID_ROL: newRoleId,
+      NOMBRE_ROL,
+      permisos: permisos.map((id) => ({ ID_PERMISO: id })), // Simular estructura de permisos para la respuesta
+    });
+  } catch (err) {
+    if (conn) {
+      try {
+        await conn.rollback();
+      } catch (rollbackError) {
+        console.error(
+          'Error ejecutando rollback en createRole:',
+          rollbackError
         );
       }
-    } else {
-      console.log('[CREATE ROLE] No se enviaron permisos para asociar.');
     }
-    await conn.commit();
-    res.status(201).json({ ID_ROL: newRoleId, NOMBRE_ROL });
-  } catch (err) {
-    console.error('Error al crear rol:', err);
-    // Manejo de error específico para violación de constraint único (si NOMBRE_ROL debe ser único)
     if (err.errorNum === 1) {
       // ORA-00001: unique constraint violated
-      return res
-        .status(409)
-        .json({ error: `El rol con nombre '${NOMBRE_ROL}' ya existe.` });
+      return handleError(
+        res,
+        err,
+        `El rol con nombre '${NOMBRE_ROL}' ya existe.`,
+        409
+      );
     }
-    res.status(500).json({ error: 'No se pudo crear el rol.' });
+    handleError(res, err, 'No se pudo crear el rol.');
   } finally {
-    if (conn) await conn.close();
+    if (conn) {
+      try {
+        await conn.close();
+      } catch (closeErr) {
+        console.error('Error cerrando conexión en createRole:', closeErr);
+      }
+    }
   }
 };
 
 /**
- * Controlador para actualizar un rol existente por su ID.
+ * Controlador para actualizar un rol existente y sus permisos.
  */
 export const updateRole = async (req, res) => {
   const { id } = req.params;
+  const roleId = parseInt(id, 10);
   const { NOMBRE_ROL, permisos } = req.body;
   let conn;
-  console.log(`[UPDATE ROLE] Body recibido:`, req.body);
-  if (!NOMBRE_ROL || NOMBRE_ROL.trim() === '') {
-    return res.status(400).json({ error: 'El nombre del rol es obligatorio.' });
+
+  if (isNaN(roleId)) {
+    return handleError(res, null, 'ID de Rol inválido para actualizar.', 400);
   }
+  if (!NOMBRE_ROL || NOMBRE_ROL.trim() === '') {
+    return handleError(res, null, 'El nombre del rol es obligatorio.', 400);
+  }
+
   try {
     conn = await getConnection();
-    const result = await conn.execute(
-      `UPDATE ADMIN.ROL SET NOMBRE_ROL = :nombre_rol WHERE ID_ROL = :id`,
-      { id, nombre_rol: NOMBRE_ROL }
+    // La transacción comienza implícitamente
+
+    const resultUpdate = await conn.execute(
+      `UPDATE ADMIN.ROL SET NOMBRE_ROL = :nombre_rol_param WHERE ID_ROL = :roleId_param`,
+      { roleId_param: roleId, nombre_rol_param: NOMBRE_ROL }
     );
-    if (result.rowsAffected === 0) {
-      return res.status(404).json({ error: 'Rol no encontrado para actualizar.' });
+
+    if (resultUpdate.rowsAffected === 0) {
+      return handleError(res, null, 'Rol no encontrado para actualizar.', 404);
     }
+
     await conn.execute(
-      `DELETE FROM ADMIN.PERMISOSROL WHERE ID_ROL = :idRol`,
-      { idRol: id }
+      `DELETE FROM ADMIN.PERMISOSROL WHERE ID_ROL = :roleId_param`,
+      { roleId_param: roleId }
     );
+
     if (Array.isArray(permisos) && permisos.length > 0) {
-      console.log(`[UPDATE ROLE] Permisos a asociar:`, permisos);
-      for (const idPermiso of permisos) {
-        await conn.execute(
-          `INSERT INTO ADMIN.PERMISOSROL (ID_ROL, ID_PERMISO) VALUES (:idRol, :idPermiso)`,
-          { idRol: id, idPermiso }
+      const permisosBinds = permisos.map((idPermiso) => ({
+        idRol_param: roleId,
+        idPermiso_param: parseInt(idPermiso), // Asegurar que sea número
+      }));
+      await conn.executeMany(
+        `INSERT INTO ADMIN.PERMISOSROL (ID_ROL, ID_PERMISO) VALUES (:idRol_param, :idPermiso_param)`,
+        permisosBinds
+      );
+    }
+
+    await conn.commit();
+    res.status(200).json({
+      message: 'Rol actualizado exitosamente.',
+      ID_ROL: roleId,
+      NOMBRE_ROL,
+      // Devolver los permisos actualizados para que el frontend pueda reflejarlo si es necesario
+      permisos: permisos.map((id) => ({ ID_PERMISO: id })), // Simular estructura de permisos
+    });
+  } catch (err) {
+    if (conn) {
+      try {
+        await conn.rollback();
+      } catch (rollbackError) {
+        console.error(
+          'Error ejecutando rollback en updateRole:',
+          rollbackError
         );
       }
-    } else {
-      console.log('[UPDATE ROLE] No se enviaron permisos para asociar.');
     }
-    await conn.commit();
-    res.status(200).json({ message: 'Rol actualizado exitosamente.', ID_ROL: Number(id), NOMBRE_ROL });
-  } catch (err) {
-    console.error('Error al actualizar rol:', err);
     if (err.errorNum === 1) {
-      // ORA-00001: unique constraint violated
-      return res.status(409).json({
-        error: `El nombre de rol '${NOMBRE_ROL}' ya está en uso por otro rol.`,
-      });
+      return handleError(
+        res,
+        err,
+        `El nombre de rol '${NOMBRE_ROL}' ya está en uso por otro rol.`,
+        409
+      );
     }
-    res.status(500).json({ error: 'No se pudo actualizar el rol.' });
+    handleError(res, err, 'No se pudo actualizar el rol.');
   } finally {
-    if (conn) await conn.close();
+    if (conn) {
+      try {
+        await conn.close();
+      } catch (closeErr) {
+        console.error('Error cerrando la conexión en updateRole:', closeErr);
+      }
+    }
   }
 };
 
@@ -159,33 +255,70 @@ export const updateRole = async (req, res) => {
  */
 export const deleteRole = async (req, res) => {
   const { id } = req.params;
+  const roleId = parseInt(id, 10);
+  if (isNaN(roleId)) {
+    return handleError(res, null, 'ID de Rol inválido para eliminar.', 400);
+  }
   let conn;
   try {
     conn = await getConnection();
-    const result = await conn.execute(
-      `DELETE FROM ADMIN.ROL WHERE ID_ROL = :id`,
-      [id]
+    // La transacción comienza implícitamente
+
+    // Primero eliminar de PERMISOSROL (tabla hija)
+    await conn.execute(
+      `DELETE FROM ADMIN.PERMISOSROL WHERE ID_ROL = :roleId_param`,
+      { roleId_param: roleId }
     );
 
-    if (result.rowsAffected === 0) {
-      return res
-        .status(404)
-        .json({ error: 'Rol no encontrado para eliminar.' });
+    // Luego eliminar de ROL (tabla padre)
+    const resultDelete = await conn.execute(
+      `DELETE FROM ADMIN.ROL WHERE ID_ROL = :roleId_param`,
+      { roleId_param: roleId }
+    );
+
+    if (resultDelete.rowsAffected === 0) {
+      // Si no se afectó ROL, el rol no existía. Rollback no es estrictamente necesario aquí
+      // si la eliminación de PERMISOSROL no debe revertirse, pero por consistencia lo mantenemos.
+      if (conn) {
+        try {
+          await conn.rollback();
+        } catch (e) {
+          console.error('Rollback innecesario falló:', e);
+        }
+      }
+      return handleError(res, null, 'Rol no encontrado para eliminar.', 404);
     }
+
     await conn.commit();
     res.status(200).json({ message: 'Rol eliminado exitosamente.' });
   } catch (err) {
-    console.error('Error al eliminar rol:', err);
-    // Considerar errores de FK si un rol está en uso
+    if (conn) {
+      try {
+        await conn.rollback();
+      } catch (rollbackError) {
+        console.error(
+          'Error ejecutando rollback en deleteRole:',
+          rollbackError
+        );
+      }
+    }
     if (err.errorNum === 2292) {
       // ORA-02292: integrity constraint violated - child record found
-      return res.status(409).json({
-        error:
-          'No se puede eliminar el rol porque está asignado a uno o más usuarios.',
-      });
+      return handleError(
+        res,
+        err,
+        'No se puede eliminar el rol porque está asignado a uno o más usuarios.',
+        409
+      );
     }
-    res.status(500).json({ error: 'No se pudo eliminar el rol.' });
+    handleError(res, err, 'No se pudo eliminar el rol.');
   } finally {
-    if (conn) await conn.close();
+    if (conn) {
+      try {
+        await conn.close();
+      } catch (closeErr) {
+        console.error('Error cerrando la conexión en deleteRole:', closeErr);
+      }
+    }
   }
 };

@@ -4,4 +4,5 @@ export const ROLES = {
   DIRECTOR: 'DIRECTOR', // Puede gestionar módulos, salas, asignaturas, exámenes
   PROFESOR: 'DOCENTE', // Puede ver calendario, cargar datos específicos, ver sus exámenes
   ESTUDIANTE: 'ALUMNO', // Puede ver su calendario y exámenes asignados (ejemplo)
+  COORDINADOR: 'COORDINADOR', // Puede gestionar usuarios y ver reportes
 };
