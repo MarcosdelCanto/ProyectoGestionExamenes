@@ -8,7 +8,7 @@ import './HomePage.css'; // ¡Ahora este archivo es fundamental!
 import { socket } from '../store/socketMiddleware';
 import Layout from '../components/Layout';
 import { FaUserCircle } from 'react-icons/fa';
-import { Dashboard } from '../components/dashboard/';
+import { SummaryDashboard } from '../components/SummaryDashboard/';
 import DashboardConGraficos from '../components/dashboard/DashboardConGraficos'; // Importar el componente de gráficos
 
 export default function HomePage() {
@@ -103,7 +103,7 @@ export default function HomePage() {
         </div>
         <hr></hr> {/* Asegura que este contenedor pueda usar el ancho */}
         <div className="text-center my-4">
-          <Dashboard />
+          <SummaryDashboard />
           <DashboardConGraficos /> {/* Añadir el componente de gráficos aquí */}
         </div>
       </div>

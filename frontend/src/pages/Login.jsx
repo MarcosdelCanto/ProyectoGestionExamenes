@@ -58,7 +58,7 @@ const Login = () => {
               Contraseña
             </label>
             <input
-              type="password_usuario"
+              type="password"
               className="form-control"
               id="password_usuario"
               value={password_usuario}

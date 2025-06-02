@@ -14,7 +14,7 @@ function UsuarioSeccionTable({
   onDeleteAllUserAssociations,
 }) {
   if (loading && Object.keys(groupedAssociations).length === 0) {
-    return null; // El Spinner principal ya está en UsuarioSeccionTab
+    return null; // El Spinner principal ya está en UsuarioSeccionTable
   }
 
   return (
