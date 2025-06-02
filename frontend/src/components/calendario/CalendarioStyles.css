@@ -63,6 +63,28 @@
   vertical-align: middle;
 }
 
+.vista-examenes-postits {
+  touch-action: none;
+}
+
+.examenes-container {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.draggable-examen {
+  transform: translate3d(0, 0, 0);
+  cursor: grab;
+  touch-action: none;
+}
+
+.draggable-examen:active {
+  cursor: grabbing;
+}
+
 /* Columnas de orden y horario */
 .orden-col {
   width: 40px !important;
