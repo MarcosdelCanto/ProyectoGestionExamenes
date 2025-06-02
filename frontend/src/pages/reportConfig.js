@@ -81,7 +81,7 @@ export const reportConfig = {
     // para la tabla y la exportación a Excel. Asegura un orden consistente.
     excelMapper: (item) => ({
       'ID Examen': item.ID_EXAMEN,
-      'Nombre Examen': item.NOMBRE_EXAMEN,
+      Examen: item.NOMBRE_EXAMEN,
       'Fecha Examen': new Date(item.FECHA_RESERVA).toLocaleDateString('es-CL'),
       'Hora Inicio': item.HORA_INICIO,
       'Hora Fin': item.HORA_FIN,
@@ -90,7 +90,7 @@ export const reportConfig = {
       Carrera: item.NOMBRE_CARRERA,
       Sede: item.NOMBRE_SEDE,
       'Estado Examen': item.ESTADO_EXAMEN,
-      'Inscritos Examen': item.INSCRITOS_EXAMEN,
+      Inscritos: item.INSCRITOS_EXAMEN,
     }),
   },
 
