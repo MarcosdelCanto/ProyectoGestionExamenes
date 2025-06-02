@@ -3,8 +3,6 @@ import {
   getReporteDetalladoExamenes,
   getReporteAlumnosReservas,
 } from '../services/reportsService';
-// Si tuvieras más reportes, importarías sus funciones aquí.
-// import { getReporteAsistencia } from '../services/reportsService';
 
 // =================================================================================
 
