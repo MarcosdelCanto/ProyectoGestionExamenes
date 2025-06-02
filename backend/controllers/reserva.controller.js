@@ -304,7 +304,7 @@ export const updateReserva = async (req, res) => {
         fecha_reserva_param: `${fecha_reserva} 00:00:00`,
         examen_id_param: parseInt(examen_id_examen),
         sala_id_param: parseInt(sala_id_sala),
-        estado_id_param: parseInt(estado_id_estado),
+        estado_id_param: 6, // Asumiendo que 6 es el ID de 'PENDIENTE'
       },
       { autoCommit: false } // Asegurar que es parte de la transacción
     );
