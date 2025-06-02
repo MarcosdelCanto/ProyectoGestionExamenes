@@ -71,25 +71,81 @@ const MisReservasAsignadasPage = () => {
               </tr>
             </thead>
             <tbody>
-              {asignaciones.map((res) => (
-                <tr key={res.ID_RESERVA}>
-                  <td>{res.NOMBRE_EXAMEN}</td>
-                  <td>{res.NOMBRE_ASIGNATURA}</td>
-                  <td>{res.NOMBRE_SECCION}</td>
-                  <td>
-                    {new Date(res.FECHA_RESERVA).toLocaleDateString('es-CL')}
-                  </td>
-                  <td>
-                    {res.HORA_INICIO} - {res.HORA_FIN}
-                  </td>
-                  <td>{res.NOMBRE_SALA}</td>
-                  <td>{res.ESTADO_RESERVA}</td>
-                  <td>{res.ESTADO_EXAMEN}</td>
-                  <td>{res.ESTADO_CONFIRMACION_DOCENTE}</td>
-                </tr>
-              ))}
+              {asignaciones
+                .filter(
+                  (res) =>
+                    res.ESTADO_CONFIRMACION_DOCENTE !== 'REQUIERE_REVISION'
+                )
+                .map((res) => (
+                  <tr key={res.ID_RESERVA}>
+                    <td>{res.NOMBRE_EXAMEN}</td>
+                    <td>{res.NOMBRE_ASIGNATURA}</td>
+                    <td>{res.NOMBRE_SECCION}</td>
+                    <td>
+                      {new Date(res.FECHA_RESERVA).toLocaleDateString('es-CL')}
+                    </td>
+                    <td>
+                      {res.HORA_INICIO} - {res.HORA_FIN}
+                    </td>
+                    <td>{res.NOMBRE_SALA}</td>
+                    <td>{res.ESTADO_RESERVA}</td>
+                    <td>{res.ESTADO_EXAMEN}</td>
+                    <td>{res.ESTADO_CONFIRMACION_DOCENTE}</td>
+                  </tr>
+                ))}
             </tbody>
           </Table>
+        )}
+
+        <br />
+        {asignaciones.length > 0 && (
+          <>
+            <h3 className="display-7 mb-3 mt-4">
+              Exámenes que Requieren Revisión
+            </h3>
+            <hr />
+            <Table striped bordered hover responsive size="sm">
+              <thead className="table-light sticky-top">
+                <tr>
+                  <th>Examen</th>
+                  <th>Asignatura</th>
+                  <th>Sección</th>
+                  <th>Fecha</th>
+                  <th>Horario</th>
+                  <th>Sala</th>
+                  <th>Estado Reserva</th>
+                  <th>Estado Examen</th>
+                  <th>Confirmación Docente</th>
+                </tr>
+              </thead>
+              <tbody>
+                {asignaciones
+                  .filter(
+                    (res) =>
+                      res.ESTADO_CONFIRMACION_DOCENTE === 'REQUIERE_REVISION'
+                  )
+                  .map((res) => (
+                    <tr key={`${res.ID_RESERVA}-revision`}>
+                      <td>{res.NOMBRE_EXAMEN}</td>
+                      <td>{res.NOMBRE_ASIGNATURA}</td>
+                      <td>{res.NOMBRE_SECCION}</td>
+                      <td>
+                        {new Date(res.FECHA_RESERVA).toLocaleDateString(
+                          'es-CL'
+                        )}
+                      </td>
+                      <td>
+                        {res.HORA_INICIO} - {res.HORA_FIN}
+                      </td>
+                      <td>{res.NOMBRE_SALA}</td>
+                      <td>{res.ESTADO_RESERVA}</td>
+                      <td>{res.ESTADO_EXAMEN}</td>
+                      <td>{res.ESTADO_CONFIRMACION_DOCENTE}</td>
+                    </tr>
+                  ))}
+              </tbody>
+            </Table>
+          </>
         )}
       </div>
     </Layout>
