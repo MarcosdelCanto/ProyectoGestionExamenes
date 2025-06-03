@@ -16,7 +16,7 @@ const DocenteReservasPage = () => {
   const [selectedReserva, setSelectedReserva] = useState(null);
   const [observaciones, setObservaciones] = useState('');
   const [nuevoEstadoConfirmacion, setNuevoEstadoConfirmacion] =
-    useState(' CONFIRMADO'); // Por defecto ' CONFIRMADO'
+    useState('CONFIRMADO'); // Por defecto 'CONFIRMADO'
 
   const cargarReservas = useCallback(async () => {
     setLoading(true);
@@ -42,7 +42,7 @@ const DocenteReservasPage = () => {
     setNuevoEstadoConfirmacion(
       reserva.ESTADO_CONFIRMACION_DOCENTE === 'REQUIERE_REVISION'
         ? 'REQUIERE_REVISION'
-        : ' CONFIRMADO'
+        : 'CONFIRMADO'
     );
     setShowModal(true);
   };
@@ -51,7 +51,7 @@ const DocenteReservasPage = () => {
     setShowModal(false);
     setSelectedReserva(null);
     setObservaciones('');
-    setNuevoEstadoConfirmacion(' CONFIRMADO');
+    setNuevoEstadoConfirmacion('CONFIRMADO');
   };
 
   const handleSubmitConfirmacion = async () => {

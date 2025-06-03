@@ -9,7 +9,7 @@ const handleError = (res, error, message, statusCode = 500) => {
     .json({ error: message, details: error.message || error });
 };
 
-export const getMisReservas CONFIRMADOs = async (req, res) => {
+export const getMisReservas = async (req, res) => {
   let connection;
   try {
     const idAlumnoAutenticado = req.user.id_usuario; // ID del alumno logueado
@@ -54,20 +54,13 @@ export const getMisReservas CONFIRMADOs = async (req, res) => {
     });
     res.json(result.rows);
   } catch (error) {
-    handleError(
-      res,
-      error,
-      'Error al obtener las reservas  CONFIRMADOs del alumno'
-    );
+    handleError(res, error, 'Error al obtener las reservas del alumno');
   } finally {
     if (connection) {
       try {
         await connection.close();
       } catch (err) {
-        console.error(
-          'Error closing connection for getMisReservas CONFIRMADOs',
-          err
-        );
+        console.error('Error closing connection for getMisReservas', err);
       }
     }
   }

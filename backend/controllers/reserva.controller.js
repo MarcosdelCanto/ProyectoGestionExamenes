@@ -282,13 +282,7 @@ export const updateReserva = async (req, res) => {
   if (isNaN(reservaIdNum)) {
     return handleError(res, null, 'El ID de la reserva no es válido.', 400);
   }
-  const {
-    fecha_reserva,
-    examen_id_examen,
-    sala_id_sala,
-    estado_id_estado,
-    modulos,
-  } = req.body;
+  const { fecha_reserva, examen_id_examen, sala_id_sala, modulos } = req.body;
   let conn;
   try {
     conn = await getConnection();
@@ -297,14 +291,16 @@ export const updateReserva = async (req, res) => {
          SET FECHA_RESERVA = TO_TIMESTAMP(:fecha_reserva_param, 'YYYY-MM-DD HH24:MI:SS'),
              EXAMEN_ID_EXAMEN = :examen_id_param,
              SALA_ID_SALA = :sala_id_param,
-             ESTADO_ID_ESTADO = :estado_id_param
+             ESTADO_ID_ESTADO = :estado_id_param,
+             ESTADO_CONFIRMACION_DOCENTE = :estado_confirmacion_docente_param
          WHERE ID_RESERVA = :id_param`,
       {
         id_param: reservaIdNum,
         fecha_reserva_param: `${fecha_reserva} 00:00:00`,
         examen_id_param: parseInt(examen_id_examen),
         sala_id_param: parseInt(sala_id_sala),
-        estado_id_param: parseInt(estado_id_estado),
+        estado_id_param: 8,
+        estado_confirmacion_docente_param: 'PENDIENTE',
       },
       { autoCommit: false } // Asegurar que es parte de la transacción
     );
@@ -656,7 +652,7 @@ export const getMisAsignacionesDeReservas = async (req, res) => {
         ESC.ID_ESCUELA, ESC.NOMBRE_ESCUELA,
         SE.ID_SEDE, SE.NOMBRE_SEDE,
         J.ID_JORNADA, J.NOMBRE_JORNADA,
-        SL.NOMBRE_SALA,
+        SL.ID_SALA, SL.NOMBRE_SALA,
         EST_R.NOMBRE_ESTADO AS ESTADO_RESERVA,
         EST_E.NOMBRE_ESTADO AS ESTADO_EXAMEN,
         (SELECT MIN(M.INICIO_MODULO) FROM RESERVAMODULO RM JOIN MODULO M ON RM.MODULO_ID_MODULO = M.ID_MODULO WHERE RM.RESERVA_ID_RESERVA = R.ID_RESERVA) AS HORA_INICIO,
