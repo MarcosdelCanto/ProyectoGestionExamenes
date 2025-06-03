@@ -291,14 +291,16 @@ export const updateReserva = async (req, res) => {
          SET FECHA_RESERVA = TO_TIMESTAMP(:fecha_reserva_param, 'YYYY-MM-DD HH24:MI:SS'),
              EXAMEN_ID_EXAMEN = :examen_id_param,
              SALA_ID_SALA = :sala_id_param,
-             ESTADO_ID_ESTADO = :estado_id_param
+             ESTADO_ID_ESTADO = :estado_id_param,
+             ESTADO_CONFIRMACION_DOCENTE = :estado_confirmacion_docente_param
          WHERE ID_RESERVA = :id_param`,
       {
         id_param: reservaIdNum,
         fecha_reserva_param: `${fecha_reserva} 00:00:00`,
         examen_id_param: parseInt(examen_id_examen),
         sala_id_param: parseInt(sala_id_sala),
-        estado_id_param: 6, // Asumiendo que 6 es el ID de 'PENDIENTE'
+        estado_id_param: 8,
+        estado_confirmacion_docente_param: 'PENDIENTE',
       },
       { autoCommit: false } // Asegurar que es parte de la transacción
     );

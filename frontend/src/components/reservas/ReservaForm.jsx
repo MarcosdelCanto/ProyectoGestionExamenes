@@ -142,7 +142,7 @@ const ReservaForm = ({
     const payload = {
       // Inicializar payload con campos que no son IDs problemáticos
       fecha_reserva: formData.fechaReserva,
-      modulos_ids: formData.modulosIds,
+      modulos: formData.modulosIds, // <--- CAMBIO DE NOMBRE AQUÍ de modulos_ids a modulos
     };
 
     // Manejo de examenId
