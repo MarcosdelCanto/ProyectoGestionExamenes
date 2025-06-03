@@ -121,6 +121,26 @@ export const crearReservaParaExamenExistente = async (req, res) => {
     connection = await getConnection();
     // Transacción implícita (autoCommit=false)
 
+    // --- VALIDACIÓN: Verificar si el examen ya tiene una reserva ---
+    const checkReservaExistenteSql = `
+      SELECT COUNT(*) AS count FROM RESERVA WHERE EXAMEN_ID_EXAMEN = :examen_id_param
+    `;
+    const checkReservaExistenteResult = await connection.execute(
+      checkReservaExistenteSql,
+      { examen_id_param: parseInt(examen_id_examen) },
+      { outFormat: oracledb.OUT_FORMAT_OBJECT }
+    );
+
+    if (checkReservaExistenteResult.rows[0].COUNT > 0) {
+      return handleError(
+        res,
+        null,
+        'Este examen ya se encuentra asociado a una reserva.',
+        400
+      );
+    }
+    // --- FIN VALIDACIÓN ---
+
     let idEstadoProgramado;
     const estadoResult = await connection.execute(
       `SELECT ID_ESTADO FROM ESTADO WHERE NOMBRE_ESTADO = 'PROGRAMADO'`,
@@ -220,6 +240,26 @@ export const createReserva = async (req, res) => {
   } = req.body;
   let conn;
   try {
+    // --- VALIDACIÓN: Verificar si el examen ya tiene una reserva ---
+    conn = await getConnection(); // Obtener conexión antes de la validación
+    const checkReservaExistenteSql = `
+      SELECT COUNT(*) AS count FROM RESERVA WHERE EXAMEN_ID_EXAMEN = :examen_id_param
+    `;
+    const checkReservaExistenteResult = await conn.execute(
+      checkReservaExistenteSql,
+      { examen_id_param: parseInt(examen_id_examen) },
+      { outFormat: oracledb.OUT_FORMAT_OBJECT }
+    );
+
+    if (checkReservaExistenteResult.rows[0].COUNT > 0) {
+      return handleError(
+        res,
+        null,
+        'Este examen ya se encuentra asociado a una reserva.',
+        400
+      );
+    }
+    // --- FIN VALIDACIÓN ---
     conn = await getConnection();
     const resultReserva = await conn.execute(
       `INSERT INTO RESERVA (ID_RESERVA, FECHA_RESERVA, EXAMEN_ID_EXAMEN, SALA_ID_SALA, ESTADO_ID_ESTADO, ESTADO_CONFIRMACION_DOCENTE)
