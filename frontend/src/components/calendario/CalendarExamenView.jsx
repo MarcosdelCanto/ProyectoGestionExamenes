@@ -1,5 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { FaArrowsAltV } from 'react-icons/fa';
+import './styles/PostIt.css';
 
 export default function CalendarExamenView({
   examen,
@@ -107,51 +108,25 @@ export default function CalendarExamenView({
   };
 
   return (
-    <div className="calendar-examen-view" style={containerStyle}>
-      <div
-        style={{
-          fontWeight: 'bold',
-          borderBottom: '1px solid rgba(0,0,0,0.1)',
-          marginBottom: '4px',
-          paddingBottom: '2px',
-          display: 'flex',
-          justifyContent: 'space-between',
-        }}
-      >
+    <div
+      className={`calendar-examen-view ${isResizing ? 'resizing' : ''}`}
+      style={{ backgroundColor: getPostItColor() }}
+    >
+      <div className="calendar-examen-view__header">
         {examen.NOMBRE_ASIGNATURA}
         <button
           onClick={handleRemove}
-          style={{
-            background: 'none',
-            border: 'none',
-            color: '#f00',
-            cursor: 'pointer',
-            padding: '0',
-            fontSize: '14px',
-          }}
+          className="calendar-examen-view__remove-btn"
         >
           ×
         </button>
       </div>
-      <div style={{ fontSize: '0.7rem' }}>
+      <div className="calendar-examen-view__details">
         <div>Sección: {examen.NOMBRE_SECCION || 'N/A'}</div>
         <div>Módulos: {modulosCount}</div>
       </div>
       <div
-        style={{
-          position: 'absolute',
-          bottom: 0,
-          left: 0,
-          right: 0,
-          background: 'rgba(0,0,0,0.05)',
-          height: '10px',
-          cursor: 'ns-resize',
-          textAlign: 'center',
-          fontSize: '8px',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-        }}
+        className="calendar-examen-view__resize-handle"
         onMouseDown={handleResizeStart}
       >
         <FaArrowsAltV size={8} />

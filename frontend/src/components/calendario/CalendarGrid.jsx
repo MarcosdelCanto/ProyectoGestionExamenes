@@ -1,7 +1,7 @@
 import React from 'react';
 import CalendarHeader from './CalendarHeader';
 import CalendarCell from './CalendarCell';
-
+import './styles/Calendar.css';
 export default function CalendarGrid({
   fechas,
   modulos,

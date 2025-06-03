@@ -1,5 +1,6 @@
-import React from 'react'; // useState y useMemo ya no son necesarios aquí
+import React from 'react';
 import { FaArrowCircleRight, FaSearch, FaFilter } from 'react-icons/fa'; // Importar FaFilter
+import './styles/SalaSelector.css';
 
 export default function SalaSelector({
   salas, // Lista original de salas, puede ser útil para la lógica de 'listaInicialVacia'

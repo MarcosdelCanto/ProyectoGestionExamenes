@@ -7,7 +7,6 @@ import {
 } from '@dnd-kit/core';
 import AgendaSemanal from '../components/calendario/AgendaSemanal';
 import Layout from '../components/Layout';
-import '../components/calendario/CalendarioStyles.css';
 import './CalendarioPage.css';
 
 export function CalendarioPage() {

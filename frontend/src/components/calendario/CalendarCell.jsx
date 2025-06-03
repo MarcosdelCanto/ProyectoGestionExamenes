@@ -1,7 +1,7 @@
 import React, { memo } from 'react'; // Usar memo para evitar rerenderizados innecesarios
 import { format } from 'date-fns';
 import { useDroppable } from '@dnd-kit/core';
-import './CalendarioStyles.css';
+import './styles/Calendar.css';
 import ExamenPostIt from './ExamenPostIt'; // Usar el mismo componente ExamenPostIt
 
 const CalendarCell = memo(function CalendarCell({

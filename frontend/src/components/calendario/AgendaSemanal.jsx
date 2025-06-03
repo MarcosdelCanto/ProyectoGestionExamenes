@@ -12,7 +12,7 @@ import SalaSelector from './SalaSelector';
 import ExamenSelector from './ExamenSelector'; // Importar ExamenSelector
 import CalendarGrid from './CalendarGrid';
 import FilterModalSalas from './FilterModalSalas';
-import './CalendarioStyles.css'; // Importar los estilos
+import './styles/AgendaSemanal.css'; // Importar los estilos
 
 //funcion para obtener las fechas de la semana actual
 const getWeekDates = (currentDate) => {

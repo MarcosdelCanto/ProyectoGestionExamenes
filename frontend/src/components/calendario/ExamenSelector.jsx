@@ -1,9 +1,8 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { FaSearch, FaFilter } from 'react-icons/fa';
 import ExamenPostIt from './ExamenPostIt';
-
-// Imports para dnd-kit
 import { useDraggable } from '@dnd-kit/core';
+import './styles/ExamenSelector.css';
 
 // Componente auxiliar para el elemento arrastrable (se mantiene igual)
 function DraggableExamenPostIt({ examen, onModulosChange }) {
@@ -40,12 +39,19 @@ function DraggableExamenPostIt({ examen, onModulosChange }) {
   };
 
   return (
-    <div ref={setNodeRef} style={style} {...attributes} {...listeners}>
+    <div
+      ref={setNodeRef}
+      style={style}
+      {...attributes}
+      {...listeners}
+      data-modulos={currentModulos}
+    >
       <ExamenPostIt
         examen={{ ...examen, CANTIDAD_MODULOS_EXAMEN: currentModulos }}
         onModulosChange={handleModulosChange}
         isPreview={true}
         isBeingDragged={isDragging}
+        handleRemove={() => {}} //agrega un manejador vacio o remover si no se usa
       />
     </div>
   );
@@ -224,26 +230,22 @@ export default function ExamenSelector({
 
   // Estilo para el panel principal que contiene todo el ExamenSelector
   const panelPrincipalStyle = {
-    // width: '100%', // Ya es un div, tomará el ancho del padre flex
-    height: '100%', // Para que ocupe la altura asignada por el contenedor flex en CalendarioPage
-    backgroundColor: '#f8f9fa',
-    border: '1px solid #dee2e6',
-    boxShadow: '0 1px 3px rgba(0,0,0,0.05)',
     display: 'flex',
     flexDirection: 'column',
-    boxSizing: 'border-box',
-    // padding: '5px 5px', // Reducido o ajustado según necesidad
-    // marginBottom: '5px', // Eliminado si CalendarioPage maneja el espaciado
+    height: '100%', // Ocupa toda la altura disponible
+    backgroundColor: '#fff',
+    borderRadius: '4px',
+    boxShadow: '0 2px 5px rgba(0, 0, 0, 0.1)',
+    overflow: 'hidden',
   };
 
   const topControlsContainerStyle = {
+    padding: '10px',
+    backgroundColor: '#f8f9fa',
+    borderBottom: '1px solid #dee2e6',
     display: 'flex',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    padding: '4px', // Añadir un poco de padding aquí
-    // marginBottom: '3px', // Reducido o eliminado, el padding puede ser suficiente
     gap: '10px',
-    flexShrink: 0, // Para que esta sección no se encoja si el contenido del carrusel es grande
+    alignItems: 'center',
   };
 
   const searchInputContainerStyle = {
@@ -252,21 +254,10 @@ export default function ExamenSelector({
 
   // Estilo para la sección que contendrá el Swiper
   const seccionExamenesStyle = {
-    flexGrow: 1,
-    overflow: 'auto',
-    display: 'flex',
-    flexDirection: 'column',
-    gap: '10px',
+    flex: '1',
+    overflowY: 'auto',
     padding: '10px',
-    position: 'relative',
-    height: '100%',
-    touchAction: 'none', // Importante para el manejo táctil
   };
-
-  // Clave para forzar la re-montura de Swiper si el estado de "tieneExamenes" cambia
-  const swiperKey = tieneExamenesParaMostrar
-    ? 'swiper-con-examenes'
-    : 'swiper-sin-examenes';
 
   return (
     <>

@@ -1,5 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { FaGripLines, FaArrowsAltV } from 'react-icons/fa';
+import './styles/PostIt.css';
 
 export default function ExamenPostIt({
   examen,
