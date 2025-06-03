@@ -5,12 +5,12 @@ import oracledb from 'oracledb';
 const handleError = (res, error, message, statusCode = 500) => {
   console.error(message, ':', error);
   const details =
-    error && error.message
+    error && error.message // Si hay un objeto error con mensaje
       ? error.message
-      : error
+      : error // Si hay un objeto error pero sin mensaje (raro, pero por si acaso)
         ? String(error)
-        : 'No hay detalles adicionales del error.';
-  res.status(statusCode).json({ error: message, details: details });
+        : message; // Si no hay objeto error, el 'message' principal es el detalle.
+  res.status(statusCode).json({ error: message, details }); // 'details' ahora puede ser igual a 'message'
 };
 
 export const getAllReservas = async (req, res) => {
@@ -100,15 +100,14 @@ export const getReservaById = async (req, res) => {
 export const crearReservaParaExamenExistente = async (req, res) => {
   let connection;
   try {
-    const { examen_id_examen, fecha_reserva, sala_id_sala, modulos_ids } =
-      req.body;
+    const { examen_id_examen, fecha_reserva, sala_id_sala, modulos } = req.body; // Cambiado de modulos_ids a modulos
 
     if (
       !examen_id_examen ||
       !fecha_reserva ||
       !sala_id_sala ||
-      !modulos_ids ||
-      modulos_ids.length === 0
+      !modulos || // Usar modulos
+      modulos.length === 0 // Usar modulos
     ) {
       return handleError(
         res,
@@ -120,6 +119,26 @@ export const crearReservaParaExamenExistente = async (req, res) => {
 
     connection = await getConnection();
     // Transacción implícita (autoCommit=false)
+
+    // --- VALIDACIÓN: Verificar si el examen ya tiene una reserva ---
+    const checkReservaExistenteSql = `
+      SELECT COUNT(*) AS count FROM RESERVA WHERE EXAMEN_ID_EXAMEN = :examen_id_param
+    `;
+    const checkReservaExistenteResult = await connection.execute(
+      checkReservaExistenteSql,
+      { examen_id_param: parseInt(examen_id_examen) },
+      { outFormat: oracledb.OUT_FORMAT_OBJECT }
+    );
+
+    if (checkReservaExistenteResult.rows[0].COUNT > 0) {
+      return handleError(
+        res,
+        null,
+        'El examen ya se encuentra programado.', // Mensaje de error deseado
+        400
+      );
+    }
+    // --- FIN VALIDACIÓN ---
 
     let idEstadoProgramado;
     const estadoResult = await connection.execute(
@@ -162,12 +181,14 @@ export const crearReservaParaExamenExistente = async (req, res) => {
     const resultReserva = await connection.execute(reservaSql, bindReserva);
     const generatedReservaId = resultReserva.outBinds.new_reserva_id_param[0];
 
-    if (generatedReservaId && modulos_ids && modulos_ids.length > 0) {
+    if (generatedReservaId && modulos && modulos.length > 0) {
+      // Usar modulos
       const reservamoduloSql = `
         INSERT INTO RESERVAMODULO (MODULO_ID_MODULO, RESERVA_ID_RESERVA)
         VALUES (:modulo_id_param, :reserva_id_param)
       `;
-      const bindDefsReservamodulo = modulos_ids.map((moduloId) => ({
+      const bindDefsReservamodulo = modulos.map((moduloId) => ({
+        // Usar modulos
         modulo_id_param: parseInt(moduloId),
         reserva_id_param: generatedReservaId,
       }));
@@ -220,6 +241,26 @@ export const createReserva = async (req, res) => {
   } = req.body;
   let conn;
   try {
+    // --- VALIDACIÓN: Verificar si el examen ya tiene una reserva ---
+    conn = await getConnection(); // Obtener conexión antes de la validación
+    const checkReservaExistenteSql = `
+      SELECT COUNT(*) AS count FROM RESERVA WHERE EXAMEN_ID_EXAMEN = :examen_id_param
+    `;
+    const checkReservaExistenteResult = await conn.execute(
+      checkReservaExistenteSql,
+      { examen_id_param: parseInt(examen_id_examen) },
+      { outFormat: oracledb.OUT_FORMAT_OBJECT }
+    );
+
+    if (checkReservaExistenteResult.rows[0].COUNT > 0) {
+      return handleError(
+        res,
+        null,
+        'Este examen ya se encuentra asociado a una reserva.',
+        400
+      );
+    }
+    // --- FIN VALIDACIÓN ---
     conn = await getConnection();
     const resultReserva = await conn.execute(
       `INSERT INTO RESERVA (ID_RESERVA, FECHA_RESERVA, EXAMEN_ID_EXAMEN, SALA_ID_SALA, ESTADO_ID_ESTADO, ESTADO_CONFIRMACION_DOCENTE)
@@ -655,8 +696,9 @@ export const getMisAsignacionesDeReservas = async (req, res) => {
         SL.ID_SALA, SL.NOMBRE_SALA,
         EST_R.NOMBRE_ESTADO AS ESTADO_RESERVA,
         EST_E.NOMBRE_ESTADO AS ESTADO_EXAMEN,
-        (SELECT MIN(M.INICIO_MODULO) FROM RESERVAMODULO RM JOIN MODULO M ON RM.MODULO_ID_MODULO = M.ID_MODULO WHERE RM.RESERVA_ID_RESERVA = R.ID_RESERVA) AS HORA_INICIO,
-        (SELECT MAX(M.FIN_MODULO) FROM RESERVAMODULO RM JOIN MODULO M ON RM.MODULO_ID_MODULO = M.ID_MODULO WHERE RM.RESERVA_ID_RESERVA = R.ID_RESERVA) AS HORA_FIN
+        (SELECT MIN(M.INICIO_MODULO) FROM RESERVAMODULO RM_MIN JOIN MODULO M ON RM_MIN.MODULO_ID_MODULO = M.ID_MODULO WHERE RM_MIN.RESERVA_ID_RESERVA = R.ID_RESERVA) AS HORA_INICIO,
+        (SELECT MAX(M.FIN_MODULO) FROM RESERVAMODULO RM_MAX JOIN MODULO M ON RM_MAX.MODULO_ID_MODULO = M.ID_MODULO WHERE RM_MAX.RESERVA_ID_RESERVA = R.ID_RESERVA) AS HORA_FIN,
+        (SELECT LISTAGG(RM_LIST.MODULO_ID_MODULO, ',') WITHIN GROUP (ORDER BY RM_LIST.MODULO_ID_MODULO) FROM RESERVAMODULO RM_LIST WHERE RM_LIST.RESERVA_ID_RESERVA = R.ID_RESERVA) AS MODULOS_IDS_STRING
       FROM RESERVA R
       JOIN EXAMEN E ON R.EXAMEN_ID_EXAMEN = E.ID_EXAMEN
       JOIN SECCION SEC ON E.SECCION_ID_SECCION = SEC.ID_SECCION
@@ -710,7 +752,15 @@ export const getMisAsignacionesDeReservas = async (req, res) => {
     const result = await connection.execute(sqlQuery, params, {
       outFormat: oracledb.OUT_FORMAT_OBJECT,
     });
-    res.json(result.rows);
+
+    // Procesar las filas para convertir MODULOS_IDS_STRING en un array de números
+    const reservasConModulosArray = result.rows.map((row) => ({
+      ...row,
+      MODULOS_IDS_ARRAY: row.MODULOS_IDS_STRING
+        ? row.MODULOS_IDS_STRING.split(',').map(Number)
+        : [],
+    }));
+    res.json(reservasConModulosArray);
   } catch (error) {
     handleError(res, error, 'Error al obtener asignaciones de reservas');
   } finally {

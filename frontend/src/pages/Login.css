@@ -15,3 +15,21 @@
   height: auto;
   margin-bottom: 20px;
 }
+.password-toggle-btn {
+  /* Hereda el padding y line-height de .btn de Bootstrap */
+  box-shadow: none !important; /* Quitar sombra de foco del botón mismo */
+  background-color: transparent !important; /* Fondo transparente */
+  color: #6c757d; /* Color del icono */
+
+  /* Definir los bordes para que coincidan con el input y se unan visualmente */
+  border-top: 1px solid #ced4da !important; /* Color de borde estándar de input de Bootstrap */
+  border-bottom: 1px solid #ced4da !important; /* Color de borde estándar de input de Bootstrap */
+  border-right: 1px solid #ced4da !important; /* Color de borde estándar de input de Bootstrap */
+  border-left: none; /* Sin borde izquierdo para unirse al input */
+}
+/* Estilos de foco: cuando el input tiene foco, el borde del botón también cambia */
+
+.login-card {
+  max-width: 400px;
+  width: 100%;
+}
