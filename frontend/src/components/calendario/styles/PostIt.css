@@ -14,10 +14,14 @@
 }
 
 .examen-post-it {
-  /* La transición en transform puede interferir con dnd-kit durante el arrastre */
   transition: box-shadow 0.2s;
 }
-
+.examen-post-it.placed {
+  z-index: 5;
+  width: 100%;
+  left: 0;
+  top: 0;
+}
 /* Aplicar efecto hover y transición de transform solo si NO se está arrastrando */
 .examen-post-it:not(.dragging):hover {
   transform: translateY(-2px);
@@ -28,6 +32,24 @@
   transition:
     transform 0.1s,
     box-shadow 0.2s;
+}
+/* Transiciones suaves para la redimensión de exámenes */
+.examen-post-it:not(.resizing) {
+  transition: height 0.15s ease-out;
+}
+/* El controlador de redimensión */
+.resize-handle {
+  cursor: ns-resize !important;
+  touch-action: none;
+}
+/* Asegurar que los estilos no dependan del data-modulos */
+[data-modulos] {
+  height: auto !important;
+}
+.examen-post-it.resizing {
+  pointer-events: auto !important;
+  user-select: none !important;
+  cursor: ns-resize !important;
 }
 /* Estilos para post-it redimensionables */
 .drag-handle {
@@ -89,4 +111,10 @@
   display: flex;
   align-items: center;
   justify-content: center;
+}
+/* Mejoras para la experiencia táctil */
+@media (pointer: coarse) {
+  .resize-handle {
+    height: 20px; /* Más grande para dispositivos táctiles */
+  }
 }

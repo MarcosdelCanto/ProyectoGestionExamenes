@@ -20,11 +20,17 @@
 .calendar-cell {
   position: relative;
   min-height: 40px;
-  vertical-align: top;
+  height: 40px;
   padding: 0 !important;
-  transition: all 0.2s;
+  overflow: visible !important;
 }
-
+.calendar-cell.contains-examen {
+  background-color: transparent;
+  z-index: 2;
+}
+.calendar-cell.part-of-examen {
+  background-color: rgba(255, 255, 200, 0.1);
+}
 .calendar-cell:hover {
   background-color: #f1f8ff;
 }
