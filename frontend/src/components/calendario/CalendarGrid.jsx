@@ -2,6 +2,7 @@ import React from 'react';
 import CalendarHeader from './CalendarHeader';
 import CalendarCell from './CalendarCell';
 import './styles/Calendar.css';
+
 export default function CalendarGrid({
   fechas,
   modulos,
@@ -18,6 +19,13 @@ export default function CalendarGrid({
     return <p className="aviso-seleccion">No hay módulos para mostrar.</p>;
   }
 
+  // funcion auxiliar para determinar si una celda debe renderizar un examen
+  const shouldRenderExamen = (fecha, modulo, examenAsignado) => {
+    if (!examenAsignado) return false;
+
+    return examenAsignado.moduloInicial === modulo.ORDEN;
+  };
+
   return (
     <div className="table-wrapper">
       <table className="calendar-table">
@@ -31,6 +39,11 @@ export default function CalendarGrid({
               </td>
               {fechas.map(({ fecha }) => {
                 const examenAsignado = obtenerExamenParaCelda(fecha, mod.ORDEN);
+                const renderExamen = shouldRenderExamen(
+                  fecha,
+                  mod,
+                  examenAsignado
+                );
 
                 return (
                   <CalendarCell
@@ -42,9 +55,11 @@ export default function CalendarGrid({
                     reservas={reservas}
                     modulosSeleccionados={modulosSeleccionados}
                     onSelectModulo={onSelectModulo}
-                    examenAsignado={examenAsignado}
+                    examenAsignado={renderExamen ? examenAsignado : null}
+                    isPartOfExamen={examenAsignado !== null}
                     onModulosChange={onModulosChange}
                     onRemoveExamen={onRemoveExamen}
+                    modulosCount={examenAsignado?.modulosCount || 1}
                   />
                 );
               })}

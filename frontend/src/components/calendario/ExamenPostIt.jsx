@@ -1,17 +1,21 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { FaGripLines, FaArrowsAltV } from 'react-icons/fa';
+import { FaGripLines, FaArrowsAltV, FaTimes } from 'react-icons/fa';
 import './styles/PostIt.css';
+import { is } from 'date-fns/locale';
 
 export default function ExamenPostIt({
   examen,
   setNodeRef, // Referencia para DndKit
   style, // Estilos aplicados por DndKit
   onModulosChange,
+  onRemove, // Función para eliminar el examen
   minModulos = 1,
   maxModulos = 12,
   isPreview = false, // Nuevo prop para diferenciar vista previa vs colocado
   dragHandleListeners, // Listeners para el drag handle
   isBeingDragged, // Para saber si el elemento está siendo arrastrado por dnd-kit
+  fecha,
+  moduloInicial, // Módulo inicial del examen
   ...props
 }) {
   const [modulosCount, setModulosCount] = useState(
@@ -20,7 +24,8 @@ export default function ExamenPostIt({
   const [isResizing, setIsResizing] = useState(false);
   const startResizeRef = useRef(null);
   const startHeightRef = useRef(null);
-  const moduleHeightRef = useRef(20);
+  const moduleHeightRef = useRef(40);
+  const lastResizeUpdateRef = useRef(0);
 
   // Color basado en la asignatura
   const getPostItColor = () => {
@@ -45,19 +50,25 @@ export default function ExamenPostIt({
   // Manejadores para el redimensionamiento - solo si NO es vista previa
   const handleResizeStart = (e) => {
     if (isPreview) return; // No permitir redimensionamiento en vista previa
-
     e.stopPropagation();
     e.preventDefault();
     setIsResizing(true);
     startResizeRef.current = e.clientY;
     startHeightRef.current = e.currentTarget.parentElement.offsetHeight;
-
-    document.addEventListener('mousemove', handleResizeMove);
+    document.addEventListener('mousemove', handleResizeMove, {
+      passive: false,
+    });
     document.addEventListener('mouseup', handleResizeEnd);
   };
 
   const handleResizeMove = (e) => {
     if (!isResizing) return;
+    e.preventDefault();
+
+    // Limitar la frecuencia de actualizaciones para evitar problemas de rendimiento
+    const now = Date.now();
+    if (now - lastResizeUpdateRef.current < 30) return; // Actualizar cada 50ms
+    lastResizeUpdateRef.current = now;
 
     const deltaY = e.clientY - startResizeRef.current;
     const baseHeight = startHeightRef.current || 40;
@@ -66,10 +77,7 @@ export default function ExamenPostIt({
     // Calcular nuevos módulos basados en la altura
     const newModulosCount = Math.max(
       minModulos,
-      Math.min(
-        maxModulos,
-        Math.round(newHeight / (moduleHeightRef.current * 2))
-      )
+      Math.min(maxModulos, Math.round(newHeight / moduleHeightRef.current))
     );
 
     if (newModulosCount !== modulosCount) {
@@ -84,6 +92,13 @@ export default function ExamenPostIt({
     setIsResizing(false);
     document.removeEventListener('mousemove', handleResizeMove);
     document.removeEventListener('mouseup', handleResizeEnd);
+  };
+
+  const handleRemove = (e) => {
+    e.stopPropagation(); // Evitar que el evento se propague al contenedor
+    if (onRemove) {
+      onRemove(examen.ID_EXAMEN);
+    }
   };
 
   // Limpieza de event listeners
@@ -108,7 +123,8 @@ export default function ExamenPostIt({
     overflow: 'hidden',
     boxSizing: 'border-box',
     position: 'relative',
-    userSelect: 'none', // Prevenir selección de texto durante drag
+    userSelect: 'none',
+    transition: isResizing ? 'none' : 'height 0.1s ease-out',
     ...style,
   };
 
@@ -140,7 +156,10 @@ export default function ExamenPostIt({
       style={finalStyles}
       className={`examen-post-it ${isPreview ? 'preview' : 'placed'} ${
         isBeingDragged ? 'dragging' : ''
-      }`}
+      } ${isResizing ? 'resizing' : ''}`}
+      data-modulos={modulosCount}
+      data-fecha={fecha}
+      data-modulo-inicial={moduloInicial}
       {...props}
     >
       <div
@@ -158,25 +177,22 @@ export default function ExamenPostIt({
           borderRadius: '2px',
         }}
       >
-        {/* Div wrapper para detener la propagación de eventos a Swiper */}
+        {/* Div para el drag handle - solo visible en modo preview */}
+
         <div
           className={`drag-handle-activator ${
-            // Renombrar clase para claridad
             isPreview && dragHandleListeners ? 'swiper-no-swiping' : ''
           }`}
           style={{
             cursor: isPreview && dragHandleListeners ? 'grab' : 'default',
             padding: '0 4px',
-            display: 'inline-flex', // Para centrar el ícono
+            display: 'inline-flex',
             alignItems: 'center',
-            touchAction: 'none', // Fundamental para interacciones táctiles con dnd-kit
-            position: 'relative', // Ayuda a que z-index funcione en su contexto de apilamiento
-            zIndex: 10, // Un valor para asegurar que esté "encima" de elementos hermanos dentro del mismo contexto de apilamiento
-            pointerEvents: 'auto', // Asegurar explícitamente que este elemento reciba eventos de puntero
+            touchAction: 'none',
+            position: 'relative',
+            zIndex: 10,
+            pointerEvents: 'auto',
           }}
-          onMouseDown={() => console.log('Mouse Down on Handle Activator')} // <-- AÑADIR ESTO
-          onTouchStart={() => console.log('Touch Start on Handle Activator')} // <-- Y ESTO
-          // Aplicar listeners de dnd-kit aquí, solo en modo preview
           {...(isPreview && dragHandleListeners ? dragHandleListeners : {})}
         >
           <FaGripLines />
@@ -193,6 +209,28 @@ export default function ExamenPostIt({
         >
           {examen.NOMBRE_ASIGNATURA}
         </span>
+
+        {/* Botón de eliminar - solo visible cuando no es preview */}
+        {!isPreview && (
+          <button
+            onClick={handleRemove}
+            style={{
+              background: 'none',
+              border: 'none',
+              color: '#f00',
+              cursor: 'pointer',
+              fontSize: '14px',
+              padding: '0',
+              marginLeft: '4px',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+            }}
+            title="Eliminar examen"
+          >
+            <FaTimes />
+          </button>
+        )}
       </div>
 
       <div
@@ -247,6 +285,8 @@ export default function ExamenPostIt({
             right: '0',
           }}
           onMouseDown={handleResizeStart}
+          onTouchStart={handleResizeStart}
+          className="resize-handle"
         >
           <FaArrowsAltV />
         </div>

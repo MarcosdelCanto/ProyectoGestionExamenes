@@ -1,8 +1,8 @@
-import React, { memo } from 'react'; // Usar memo para evitar rerenderizados innecesarios
+import React, { memo } from 'react';
 import { format } from 'date-fns';
 import { useDroppable } from '@dnd-kit/core';
 import './styles/Calendar.css';
-import ExamenPostIt from './ExamenPostIt'; // Usar el mismo componente ExamenPostIt
+import ExamenPostIt from './ExamenPostIt';
 
 const CalendarCell = memo(function CalendarCell({
   fecha,
@@ -13,8 +13,10 @@ const CalendarCell = memo(function CalendarCell({
   modulosSeleccionados,
   onSelectModulo,
   examenAsignado,
+  isPartOfExamen,
   onModulosChange,
   onRemoveExamen,
+  modulosCount,
 }) {
   // Configuración de la zona donde se puede soltar - un punto crucial
   const droppableId = `droppable-${fecha}-${modulo.ORDEN}`;
@@ -51,21 +53,19 @@ const CalendarCell = memo(function CalendarCell({
   if (isOver) {
     cellClassName += ' drop-hover';
   }
+  if (isPartOfExamen && !examenAsignado) {
+    cellClassName += ' part-of-examen';
+  }
   if (examenAsignado) {
-    cellClassName += ' con-examen';
+    cellClassName += ' contains-examen';
   }
 
   // Manejador de clic
   const handleClick = () => {
-    if (!estaReservado && !examenAsignado && onSelectModulo) {
+    if (!estaReservado && !isPartOfExamen && onSelectModulo) {
       onSelectModulo(fecha, modulo.ORDEN);
     }
   };
-
-  // Añadir atributo data-modulos para controlar la altura cuando hay examen asignado
-  const dataProps = examenAsignado
-    ? { 'data-modulos': examenAsignado.modulosCount }
-    : {};
 
   return (
     <td
@@ -73,7 +73,6 @@ const CalendarCell = memo(function CalendarCell({
       className={cellClassName}
       onClick={handleClick}
       data-celda-id={droppableId}
-      {...dataProps}
     >
       {examenAsignado ? (
         <ExamenPostIt
@@ -86,6 +85,17 @@ const CalendarCell = memo(function CalendarCell({
           }
           onRemove={onRemoveExamen}
           isPreview={false}
+          style={
+            modulosCount > 1
+              ? {
+                  height: `${modulosCount * 40}px`,
+                  position: 'absolute',
+                  zIndex: 5,
+                }
+              : undefined
+          }
+          fecha={fecha}
+          moduloInicial={examenAsignado.moduloInicial}
         />
       ) : null}
     </td>

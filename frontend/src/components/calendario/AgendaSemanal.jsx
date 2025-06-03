@@ -198,11 +198,25 @@ export default function AgendaSemanal({
     [setExamenesAsignados]
   );
   // funcion para eliminar un examen de la tabla
-  const eliminarExamen = useCallback((examenId) => {
-    setExamenesAsignados((prev) =>
-      prev.filter((asignado) => asignado.examen.ID_EXAMEN !== examenId)
-    );
-  }, []);
+  const eliminarExamen = useCallback(
+    (examenId) => {
+      setExamenesAsignados((prev) => {
+        const examenesActualizados = prev.filter(
+          (asignado) => asignado.examen.ID_EXAMEN !== examenId
+        );
+        return examenesActualizados;
+      });
+      if (selectedExamInternal && selectedExamInternal.ID_EXAMEN === examenId) {
+        setSelectedExamInternal(null); // Limpiar examen seleccionado si es el que se elimina
+        setModulosSeleccionados([]);
+      }
+      setExamenesConModulosModificados((prev) => {
+        const { [examenId]: _, ...rest } = prev; // Eliminar la entrada del examen eliminado
+        return rest;
+      });
+    },
+    [selectedExamInternal]
+  );
 
   // Funcion para obtener el examen asignado a una celda
   const obtenerExamenParaCelda = useCallback(
