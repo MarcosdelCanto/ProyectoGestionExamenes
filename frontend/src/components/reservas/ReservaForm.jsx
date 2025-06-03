@@ -73,12 +73,26 @@ const ReservaForm = ({
     setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
-  const handleModuloChange = (e) => {
-    const selectedOptions = Array.from(
-      e.target.selectedOptions,
-      (option) => Number(option.value) // Asegurar que sean números
-    );
-    setFormData((prev) => ({ ...prev, modulosIds: selectedOptions }));
+  const handleModuloCheckboxChange = (e) => {
+    const { value, checked } = e.target;
+    const moduloId = Number(value);
+
+    setFormData((prev) => {
+      const currentModulosIds = prev.modulosIds || [];
+      if (checked) {
+        // Añadir si no está presente
+        return {
+          ...prev,
+          modulosIds: [...new Set([...currentModulosIds, moduloId])],
+        };
+      } else {
+        // Remover
+        return {
+          ...prev,
+          modulosIds: currentModulosIds.filter((id) => id !== moduloId),
+        };
+      }
+    });
   };
 
   const handleSubmitInternal = async (e) => {
@@ -258,24 +272,40 @@ const ReservaForm = ({
 
         <Form.Group className="mb-3" controlId="formModulosModal">
           {' '}
-          {/* ID único */}
-          <Form.Label>Módulos (Ctrl/Cmd para seleccionar varios)</Form.Label>
-          <Form.Select
-            multiple
-            name="modulosIds"
-            value={formData.modulosIds.map(String)}
-            onChange={handleModuloChange}
-            required
-            style={{ height: '150px' }}
+          <Form.Label>Módulos</Form.Label>
+          <div
+            className="modulos-checkbox-group"
+            style={{
+              maxHeight: '150px',
+              overflowY: 'auto',
+              border: '1px solid #ced4da',
+              padding: '10px',
+              borderRadius: '.25rem',
+            }}
           >
             {modulos.map((m) => (
-              <option key={m.ID_MODULO} value={m.ID_MODULO}>
-                {m.NOMBRE_MODULO} ({m.INICIO_MODULO} - {m.FIN_MODULO})
-              </option>
+              <Form.Check
+                type="checkbox"
+                key={m.ID_MODULO}
+                id={`modulo-${m.ID_MODULO}`} // ID único para el label
+                label={`${m.NOMBRE_MODULO} (${m.INICIO_MODULO} - ${m.FIN_MODULO})`}
+                value={m.ID_MODULO}
+                checked={formData.modulosIds.includes(m.ID_MODULO)}
+                onChange={handleModuloCheckboxChange}
+              />
             ))}
-          </Form.Select>
+            {modulos.length === 0 && (
+              <p className="text-muted">No hay módulos disponibles.</p>
+            )}
+          </div>
           <Form.Text>
             Seleccionados: {formData.modulosIds.length} módulo(s).
+            {formData.modulosIds.length === 0 && (
+              <span className="text-danger">
+                {' '}
+                (Debe seleccionar al menos uno)
+              </span>
+            )}
           </Form.Text>
         </Form.Group>
 
