@@ -100,12 +100,7 @@ export const getReservaById = async (req, res) => {
 export const crearReservaParaExamenExistente = async (req, res) => {
   let connection;
   try {
-    const {
-      examen_id_examen,
-      fecha_reserva,
-      sala_id_sala,
-      modulos,
-    } = req.body; // Cambiado de modulos_ids a modulos
+    const { examen_id_examen, fecha_reserva, sala_id_sala, modulos } = req.body; // Cambiado de modulos_ids a modulos
 
     if (
       !examen_id_examen ||
@@ -701,8 +696,9 @@ export const getMisAsignacionesDeReservas = async (req, res) => {
         SL.ID_SALA, SL.NOMBRE_SALA,
         EST_R.NOMBRE_ESTADO AS ESTADO_RESERVA,
         EST_E.NOMBRE_ESTADO AS ESTADO_EXAMEN,
-        (SELECT MIN(M.INICIO_MODULO) FROM RESERVAMODULO RM JOIN MODULO M ON RM.MODULO_ID_MODULO = M.ID_MODULO WHERE RM.RESERVA_ID_RESERVA = R.ID_RESERVA) AS HORA_INICIO,
-        (SELECT MAX(M.FIN_MODULO) FROM RESERVAMODULO RM JOIN MODULO M ON RM.MODULO_ID_MODULO = M.ID_MODULO WHERE RM.RESERVA_ID_RESERVA = R.ID_RESERVA) AS HORA_FIN
+        (SELECT MIN(M.INICIO_MODULO) FROM RESERVAMODULO RM_MIN JOIN MODULO M ON RM_MIN.MODULO_ID_MODULO = M.ID_MODULO WHERE RM_MIN.RESERVA_ID_RESERVA = R.ID_RESERVA) AS HORA_INICIO,
+        (SELECT MAX(M.FIN_MODULO) FROM RESERVAMODULO RM_MAX JOIN MODULO M ON RM_MAX.MODULO_ID_MODULO = M.ID_MODULO WHERE RM_MAX.RESERVA_ID_RESERVA = R.ID_RESERVA) AS HORA_FIN,
+        (SELECT LISTAGG(RM_LIST.MODULO_ID_MODULO, ',') WITHIN GROUP (ORDER BY RM_LIST.MODULO_ID_MODULO) FROM RESERVAMODULO RM_LIST WHERE RM_LIST.RESERVA_ID_RESERVA = R.ID_RESERVA) AS MODULOS_IDS_STRING
       FROM RESERVA R
       JOIN EXAMEN E ON R.EXAMEN_ID_EXAMEN = E.ID_EXAMEN
       JOIN SECCION SEC ON E.SECCION_ID_SECCION = SEC.ID_SECCION
@@ -756,7 +752,15 @@ export const getMisAsignacionesDeReservas = async (req, res) => {
     const result = await connection.execute(sqlQuery, params, {
       outFormat: oracledb.OUT_FORMAT_OBJECT,
     });
-    res.json(result.rows);
+
+    // Procesar las filas para convertir MODULOS_IDS_STRING en un array de números
+    const reservasConModulosArray = result.rows.map((row) => ({
+      ...row,
+      MODULOS_IDS_ARRAY: row.MODULOS_IDS_STRING
+        ? row.MODULOS_IDS_STRING.split(',').map(Number)
+        : [],
+    }));
+    res.json(reservasConModulosArray);
   } catch (error) {
     handleError(res, error, 'Error al obtener asignaciones de reservas');
   } finally {
