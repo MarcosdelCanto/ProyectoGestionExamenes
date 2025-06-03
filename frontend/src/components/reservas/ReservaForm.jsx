@@ -25,17 +25,6 @@ const ReservaForm = ({
   const [loadingData, setLoadingData] = useState(true);
   const [error, setError] = useState(null);
 
-  // --- DEBUGGING ---
-  console.log(
-    '[DEBUG] ReservaForm rendered. isEditMode:',
-    isEditMode,
-    'isLoadingExternally:',
-    isLoadingExternally,
-    'loadingData (after useState):', // Actualizado para claridad
-    loadingData
-  );
-  // --- FIN DEBUGGING ---
-
   useEffect(() => {
     const cargarDatosInicialesSelects = async () => {
       setLoadingData(true);
@@ -116,12 +105,6 @@ const ReservaForm = ({
     const hoy = new Date();
     hoy.setHours(0, 0, 0, 0);
     // Aplicar validación de fecha solo si la fecha ha cambiado o es una nueva reserva
-    // --- DEBUGGING ---
-    console.log('[DEBUG] handleSubmitInternal - Inicio');
-    console.log('[DEBUG] isEditMode:', isEditMode);
-    console.log('[DEBUG] formData:', JSON.stringify(formData, null, 2));
-    console.log('[DEBUG] initialData:', JSON.stringify(initialData, null, 2));
-    // --- FIN DEBUGGING ---
 
     const fechaFormulario = new Date(formData.fechaReserva);
     const fechaInicial = initialData?.FECHA_RESERVA
@@ -150,25 +133,10 @@ const ReservaForm = ({
       // En modo edición, el examenId viene de initialData y está deshabilitado.
       // Usamos initialData.ID_EXAMEN directamente.
       // El error NJS-105 indica que el backend espera un número.
-      // --- DEBUGGING ---
-      console.log(
-        '[DEBUG] Modo Edición - initialData.ID_EXAMEN:',
-        initialData?.ID_EXAMEN,
-        typeof initialData?.ID_EXAMEN
-      );
-      // --- FIN DEBUGGING ---
       if (initialData && initialData.ID_EXAMEN != null) {
         // No es null ni undefined
         const idExamenNum = Number(initialData.ID_EXAMEN);
-        // --- DEBUGGING ---
-        console.log(
-          '[DEBUG] Modo Edición - idExamenNum convertido:',
-          idExamenNum,
-          typeof idExamenNum,
-          'isNaN:',
-          isNaN(idExamenNum)
-        );
-        // --- FIN DEBUGGING ---
+
         if (!isNaN(idExamenNum)) {
           payload.examen_id_examen = idExamenNum;
         } else {
@@ -189,16 +157,7 @@ const ReservaForm = ({
     } else {
       // Modo creación
       const idExamenNum = parseInt(formData.examenId, 10);
-      // --- DEBUGGING ---
-      console.log(
-        '[DEBUG] Modo Creación - formData.examenId:',
-        formData.examenId,
-        'idExamenNum convertido:',
-        idExamenNum,
-        'isNaN:',
-        isNaN(idExamenNum)
-      );
-      // --- FIN DEBUGGING ---
+
       if (!isNaN(idExamenNum)) {
         payload.examen_id_examen = idExamenNum;
       } else {
@@ -210,16 +169,7 @@ const ReservaForm = ({
 
     // Manejo de salaId (siempre editable y requerido)
     const idSalaNum = parseInt(formData.salaId, 10);
-    // --- DEBUGGING ---
-    console.log(
-      '[DEBUG] Manejo Sala - formData.salaId:',
-      formData.salaId,
-      'idSalaNum convertido:',
-      idSalaNum,
-      'isNaN:',
-      isNaN(idSalaNum)
-    );
-    // --- FIN DEBUGGING ---
+
     if (!isNaN(idSalaNum)) {
       payload.sala_id_sala = idSalaNum;
     } else {
@@ -227,13 +177,6 @@ const ReservaForm = ({
       setError('Debe seleccionar una sala válida.');
       return;
     }
-
-    // --- DEBUGGING ---
-    console.log(
-      '[DEBUG] Payload final a enviar:',
-      JSON.stringify(payload, null, 2)
-    );
-    // --- FIN DEBUGGING ---
 
     onSubmit(payload); // El padre maneja si es create o update
   };
@@ -246,19 +189,6 @@ const ReservaForm = ({
     );
   }
 
-  // --- DEBUGGING ---
-  console.log(
-    '[DEBUG] ReservaForm - Before return. isLoadingExternally:',
-    isLoadingExternally,
-    'loadingData:',
-    loadingData
-  );
-  const isSubmitButtonDisabled = isLoadingExternally || loadingData;
-  console.log(
-    '[DEBUG] ReservaForm - isSubmitButtonDisabled:',
-    isSubmitButtonDisabled
-  );
-  // --- FIN DEBUGGING ---
   return (
     <>
       {error && (

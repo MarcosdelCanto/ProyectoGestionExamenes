@@ -5,12 +5,12 @@ import oracledb from 'oracledb';
 const handleError = (res, error, message, statusCode = 500) => {
   console.error(message, ':', error);
   const details =
-    error && error.message
+    error && error.message // Si hay un objeto error con mensaje
       ? error.message
-      : error
+      : error // Si hay un objeto error pero sin mensaje (raro, pero por si acaso)
         ? String(error)
-        : 'No hay detalles adicionales del error.';
-  res.status(statusCode).json({ error: message, details: details });
+        : message; // Si no hay objeto error, el 'message' principal es el detalle.
+  res.status(statusCode).json({ error: message, details }); // 'details' ahora puede ser igual a 'message'
 };
 
 export const getAllReservas = async (req, res) => {
@@ -100,15 +100,19 @@ export const getReservaById = async (req, res) => {
 export const crearReservaParaExamenExistente = async (req, res) => {
   let connection;
   try {
-    const { examen_id_examen, fecha_reserva, sala_id_sala, modulos_ids } =
-      req.body;
+    const {
+      examen_id_examen,
+      fecha_reserva,
+      sala_id_sala,
+      modulos,
+    } = req.body; // Cambiado de modulos_ids a modulos
 
     if (
       !examen_id_examen ||
       !fecha_reserva ||
       !sala_id_sala ||
-      !modulos_ids ||
-      modulos_ids.length === 0
+      !modulos || // Usar modulos
+      modulos.length === 0 // Usar modulos
     ) {
       return handleError(
         res,
@@ -135,7 +139,7 @@ export const crearReservaParaExamenExistente = async (req, res) => {
       return handleError(
         res,
         null,
-        'Este examen ya se encuentra asociado a una reserva.',
+        'El examen ya se encuentra programado.', // Mensaje de error deseado
         400
       );
     }
@@ -182,12 +186,14 @@ export const crearReservaParaExamenExistente = async (req, res) => {
     const resultReserva = await connection.execute(reservaSql, bindReserva);
     const generatedReservaId = resultReserva.outBinds.new_reserva_id_param[0];
 
-    if (generatedReservaId && modulos_ids && modulos_ids.length > 0) {
+    if (generatedReservaId && modulos && modulos.length > 0) {
+      // Usar modulos
       const reservamoduloSql = `
         INSERT INTO RESERVAMODULO (MODULO_ID_MODULO, RESERVA_ID_RESERVA)
         VALUES (:modulo_id_param, :reserva_id_param)
       `;
-      const bindDefsReservamodulo = modulos_ids.map((moduloId) => ({
+      const bindDefsReservamodulo = modulos.map((moduloId) => ({
+        // Usar modulos
         modulo_id_param: parseInt(moduloId),
         reserva_id_param: generatedReservaId,
       }));
