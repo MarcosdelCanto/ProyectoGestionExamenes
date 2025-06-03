@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo, useCallback } from 'react';
+import React, { useState, useEffect, useMemo, useCallback, use } from 'react';
 import {
   format,
   startOfWeek,
@@ -12,7 +12,7 @@ import SalaSelector from './SalaSelector';
 import ExamenSelector from './ExamenSelector'; // Importar ExamenSelector
 import CalendarGrid from './CalendarGrid';
 import FilterModalSalas from './FilterModalSalas';
-import './CalendarioStyles.css'; // Importar los estilos
+import './styles/AgendaSemanal.css'; // Importar los estilos
 
 //funcion para obtener las fechas de la semana actual
 const getWeekDates = (currentDate) => {
@@ -68,8 +68,11 @@ export default function AgendaSemanal({
   const [isLoadingModulos, setIsLoadingModulos] = useState(true);
   const [isLoadingReservas, setIsLoadingReservas] = useState(true);
 
+  // Nuevo estado para exámenes asignados a la tabla
+  const [examenesAsignados, setExamenesAsignados] = useState([]);
   const [examenesConModulosModificados, setExamenesConModulosModificados] =
     useState({});
+
   // Carga de datos inicial (salas, exámenes, módulos, reservas)
   useEffect(() => {
     async function loadInitialData() {
@@ -154,85 +157,126 @@ export default function AgendaSemanal({
     setModulosSeleccionados([]); // Limpiar módulos seleccionados
   }, []);
 
-  // Efecto para procesar el drop (cuando draggedExamen y dropTargetCell vienen de CalendarioPage)
+  // funcion para añadir un examen a la tabla
+  const agregarExamenATabla = useCallback(
+    (examen, fecha, moduloOrden, cantidadModulos) => {
+      console.log('agregando examen a tabla:', {
+        examen,
+        fecha,
+        moduloOrden,
+        cantidadModulos,
+      });
+      setExamenesAsignados((prev) => [
+        ...prev,
+        {
+          id: `${examen.ID_EXAMEN}-${fecha}-${moduloOrden}`,
+          examen,
+          fecha,
+          moduloInicial: moduloOrden,
+          modulosCount: cantidadModulos,
+        },
+      ]);
+    },
+    []
+  );
+  // funcion para actualizar modulos de un examen existente
+  const actualizarModulosExamen = useCallback(
+    (examenId, nuevosCant) => {
+      // El estado `examenesConModulos` no está definido en este componente.
+      // `examenesConModulosModificados` se usa para rastrear cambios en el ExamenSelector
+      // antes de que el examen sea arrastrado.
+      // Esta función es para actualizar la cantidad de módulos de un examen
+      // que ya ha sido asignado y está en la tabla.
+      setExamenesAsignados((prev) =>
+        prev.map((asignado) =>
+          asignado.examen.ID_EXAMEN === examenId
+            ? { ...asignado, modulosCount: nuevosCant }
+            : asignado
+        )
+      );
+    },
+    [setExamenesAsignados]
+  );
+  // funcion para eliminar un examen de la tabla
+  const eliminarExamen = useCallback((examenId) => {
+    setExamenesAsignados((prev) =>
+      prev.filter((asignado) => asignado.examen.ID_EXAMEN !== examenId)
+    );
+  }, []);
+
+  // Funcion para obtener el examen asignado a una celda
+  const obtenerExamenParaCelda = useCallback(
+    (fecha, ordenModulo) => {
+      return examenesAsignados.find(
+        (asignado) =>
+          asignado.fecha === fecha &&
+          ordenModulo >= asignado.moduloInicial &&
+          ordenModulo < asignado.moduloInicial + asignado.modulosCount
+      );
+    },
+    [examenesAsignados]
+  );
+
+  // Efecto para procesar drops de examenes en la tabla
   useEffect(() => {
     if (draggedExamen && dropTargetCell && selectedSala) {
-      const examenParaReservar = {
-        ...draggedExamen,
-        CANTIDAD_MODULOS_EXAMEN:
-          examenesConModulosModificados[draggedExamen.ID_EXAMEN] ||
-          draggedExamen.CANTIDAD_MODULOS_EXAMEN,
-      };
+      console.log('Procesando drop de examen:', {
+        draggedExamen,
+        dropTargetCell,
+      });
+      const { fecha, modulo } = dropTargetCell;
+      const modulosNecesarios = draggedExamen.CANTIDAD_MODULOS_EXAMEN;
 
-      const { fecha: fechaDrop, modulo: moduloDrop } = dropTargetCell;
+      let hayConflicto = false;
 
-      if (
-        !examenParaReservar ||
-        !examenParaReservar.CANTIDAD_MODULOS_EXAMEN ||
-        !moduloDrop ||
-        typeof moduloDrop.ORDEN === 'undefined'
-      ) {
-        console.error('Datos incompletos para procesar el drop:', {
-          examenParaReservar,
-          moduloDrop,
-        });
-        alert('Error: Datos incompletos del examen o celda de destino.');
-        onDropProcessed(); // Limpiar estado en CalendarioPage
-        return;
-      }
-
-      // Usar la cantidad de módulos potencialmente modificada
-      setSelectedExamInternal(examenParaReservar);
-
-      // Verificar disponibilidad de módulos consecutivos
-
-      let nuevosModulos = [];
-      let seleccionExitosa = true;
-
-      for (let i = 0; i < examenParaReservar.CANTIDAD_MODULOS_EXAMEN; i++) {
-        const ordenActual = moduloDrop.ORDEN + i;
-
-        //verficar si el modulo existe
-        const moduloParaSeleccionar = modulos.find(
-          (m) => m.ORDEN === ordenActual
-        );
-        if (!moduloParaSeleccionar) {
-          seleccionExitosa = false;
+      for (let i = 0; i < modulosNecesarios; i++) {
+        const ordenActual = modulo.ORDEN + i;
+        // Verificar si el módulo existe
+        const moduloExiste = modulos.some((m) => m.ORDEN === ordenActual);
+        if (!moduloExiste) {
+          hayConflicto = true;
           break;
         }
-        //verificar si esta reservando
+        // verficar si ya hay un examen asignado
+        const hayExamenAsignado = obtenerExamenParaCelda(fecha, ordenActual);
+        if (hayExamenAsignado) {
+          hayConflicto = true;
+          break;
+        }
+        // Verificar si el módulo ya está reservado
         const estaReservado = reservas.some(
           (r) =>
             r.SALA_ID_SALA === selectedSala.ID_SALA &&
-            format(new Date(r.FECHA_RESERVA), 'yyyy-MM-dd') === fechaDrop &&
-            r.Modulos.some(
-              (m) => m.MODULO_ID_MODULO === moduloParaSeleccionar.ID_MODULO
-            )
+            format(new Date(r.FECHA_RESERVA), 'yyyy-MM-dd') === fecha &&
+            r.Modulos.some((m) => {
+              const moduloReservado = modulos.find(
+                (mod) => mod.ID_MODULO === m.MODULO_ID_MODULO
+              );
+              return moduloReservado && moduloReservado.ORDEN === ordenActual;
+            })
         );
-
         if (estaReservado) {
-          seleccionExitosa = false;
+          hayConflicto = true;
           break;
         }
-        nuevosModulos.push({ fecha: fechaDrop, numero: ordenActual });
       }
-
-      if (
-        seleccionExitosa &&
-        nuevosModulos.length === examenParaReservar.CANTIDAD_MODULOS_EXAMEN
-      ) {
-        setModulosSeleccionados(nuevosModulos);
+      if (!hayConflicto) {
+        // Si NO hay conflicto, entonces agregar el examen
+        agregarExamenATabla(
+          draggedExamen,
+          fecha,
+          modulo.ORDEN,
+          modulosNecesarios
+        );
       } else {
-        setModulosSeleccionados([]);
-        setSelectedExamInternal(null); // Limpiar si no se pudo seleccionar
+        // Si hay conflicto, mostrar alerta
         alert(
-          'No se pudieron seleccionar los módulos necesarios (ocupados o fuera de rango).'
+          'No se puede colocar el examen aquí. Los módulos están ocupados, fuera de rango o ya existe un examen solapado.'
         );
       }
-      onDropProcessed(); // Limpiar estado en CalendarioPage
-    } else if (draggedExamen && dropTargetCell && !selectedSala) {
-      alert('Por favor, selecciona una sala antes de arrastrar un examen.');
-      onDropProcessed();
+      if (onDropProcessed) {
+        onDropProcessed();
+      }
     }
   }, [
     draggedExamen,
@@ -240,9 +284,25 @@ export default function AgendaSemanal({
     selectedSala,
     modulos,
     reservas,
+    agregarExamenATabla,
+    obtenerExamenParaCelda,
     onDropProcessed,
-    examenesConModulosModificados,
   ]);
+
+  // funcion para modificar los modulos de un examen asignado
+  const handleModificarModulos = useCallback((examenId, nuevaCantidad) => {
+    setExamenesAsignados((prev) =>
+      prev.map((asignado) =>
+        asignado.examen.ID_EXAMEN === examenId
+          ? { ...asignado, modulosCount: nuevaCantidad }
+          : asignado
+      )
+    );
+    setExamenesConModulosModificados((prev) => ({
+      ...prev,
+      [examenId]: nuevaCantidad,
+    }));
+  }, []);
 
   // Selección de módulos en el calendario
   const handleSelectModulo = useCallback(
@@ -429,6 +489,9 @@ export default function AgendaSemanal({
               reservas={reservas}
               modulosSeleccionados={modulosSeleccionados}
               onSelectModulo={handleSelectModulo}
+              obtenerExamenParaCelda={obtenerExamenParaCelda}
+              onModulosChange={actualizarModulosExamen}
+              onRemoveExamen={eliminarExamen}
             />
             {puedeConfirmar && (
               <button

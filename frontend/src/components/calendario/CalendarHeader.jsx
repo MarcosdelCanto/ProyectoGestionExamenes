@@ -1,7 +1,7 @@
 import React from 'react';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
-import './CalendarioStyles.css';
+import './styles/Calendar.css';
 
 export default function CalendarHeader({ fechas }) {
   const today = format(new Date(), 'yyyy-MM-dd');

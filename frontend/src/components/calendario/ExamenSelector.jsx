@@ -1,23 +1,13 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { FaSearch, FaFilter } from 'react-icons/fa';
 import ExamenPostIt from './ExamenPostIt';
-import { FaGripLines } from 'react-icons/fa';
-//prueba para git
-// Imports para Swiper
-import { Swiper, SwiperSlide } from 'swiper/react';
-import { Navigation, Pagination } from 'swiper/modules';
-import 'swiper/css';
-import 'swiper/css/navigation';
-import 'swiper/css/pagination';
-
-// Imports para dnd-kit
 import { useDraggable } from '@dnd-kit/core';
-import { set } from 'date-fns';
+import './styles/ExamenSelector.css';
 
 // Componente auxiliar para el elemento arrastrable (se mantiene igual)
 function DraggableExamenPostIt({ examen, onModulosChange }) {
   const [currentModulos, setCurrentModulos] = useState(
-    examen.CANTIDAD_MODULOS_EXAMEN
+    examen.CANTIDAD_MODULOS_EXAMEN || 1
   );
 
   const { attributes, listeners, setNodeRef, transform, isDragging } =
@@ -29,30 +19,41 @@ function DraggableExamenPostIt({ examen, onModulosChange }) {
       },
     });
 
+  // estilo de transformacion controlados por dnd-kit
   const style = transform
     ? {
         transform: `translate3d(${transform.x}px, ${transform.y}px, 0)`,
         zIndex: isDragging ? 1000 : 'auto',
         opacity: isDragging ? 0.8 : 1,
+        cursor: isDragging ? 'grabbing' : 'grab',
+        touchAction: 'none', // Evitar problemas de arrastre en dispositivos táctiles
       }
     : undefined;
 
-  const handleModulosChange = (id, newModulosCount) => {
-    setCurrentModulos(newModulosCount);
+  // Manejador para el cambio de módulos
+  const handleModulosChange = (id, newCount) => {
+    setCurrentModulos(newCount);
     if (onModulosChange) {
-      onModulosChange(id, newModulosCount);
+      onModulosChange(id, newCount);
     }
   };
 
   return (
-    <ExamenPostIt
-      examen={{ ...examen, CANTIDAD_MODULOS_EXAMEN: currentModulos }}
-      setNodeRef={setNodeRef}
+    <div
+      ref={setNodeRef}
       style={style}
-      onModulosChange={handleModulosChange}
-      {...listeners}
       {...attributes}
-    />
+      {...listeners}
+      data-modulos={currentModulos}
+    >
+      <ExamenPostIt
+        examen={{ ...examen, CANTIDAD_MODULOS_EXAMEN: currentModulos }}
+        onModulosChange={handleModulosChange}
+        isPreview={true}
+        isBeingDragged={isDragging}
+        handleRemove={() => {}} //agrega un manejador vacio o remover si no se usa
+      />
+    </div>
   );
 }
 
@@ -174,11 +175,12 @@ export default function ExamenSelector({
   const [selectedCarrera, setSelectedCarrera] = useState('');
   const [selectedAsignatura, setSelectedAsignatura] = useState('');
   const [showFilterModal, setShowFilterModal] = useState(false);
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 5; // Ajusta según necesites
 
   const handleSearchExamenes = (event) => {
     setSearchTermExamenes(event.target.value);
   };
-
   const handleModulosChange = (examenId, newModulosCount) => {
     if (onExamenModulosChange) {
       onExamenModulosChange(examenId, newModulosCount);
@@ -218,28 +220,32 @@ export default function ExamenSelector({
   const tieneExamenesParaMostrar =
     filteredExamenes && filteredExamenes.length > 0;
 
+  // Calcular exámenes para la página actual
+  const paginatedExamenes = useMemo(() => {
+    const startIndex = (currentPage - 1) * itemsPerPage;
+    return filteredExamenes.slice(startIndex, startIndex + itemsPerPage);
+  }, [filteredExamenes, currentPage]);
+
+  const totalPages = Math.ceil(filteredExamenes.length / itemsPerPage);
+
   // Estilo para el panel principal que contiene todo el ExamenSelector
   const panelPrincipalStyle = {
-    // width: '100%', // Ya es un div, tomará el ancho del padre flex
-    height: '100%', // Para que ocupe la altura asignada por el contenedor flex en CalendarioPage
-    backgroundColor: '#f8f9fa',
-    border: '1px solid #dee2e6',
-    boxShadow: '0 1px 3px rgba(0,0,0,0.05)',
     display: 'flex',
     flexDirection: 'column',
-    boxSizing: 'border-box',
-    // padding: '5px 5px', // Reducido o ajustado según necesidad
-    // marginBottom: '5px', // Eliminado si CalendarioPage maneja el espaciado
+    height: '100%', // Ocupa toda la altura disponible
+    backgroundColor: '#fff',
+    borderRadius: '4px',
+    boxShadow: '0 2px 5px rgba(0, 0, 0, 0.1)',
+    overflow: 'hidden',
   };
 
   const topControlsContainerStyle = {
+    padding: '10px',
+    backgroundColor: '#f8f9fa',
+    borderBottom: '1px solid #dee2e6',
     display: 'flex',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    padding: '4px', // Añadir un poco de padding aquí
-    // marginBottom: '3px', // Reducido o eliminado, el padding puede ser suficiente
     gap: '10px',
-    flexShrink: 0, // Para que esta sección no se encoja si el contenido del carrusel es grande
+    alignItems: 'center',
   };
 
   const searchInputContainerStyle = {
@@ -248,20 +254,10 @@ export default function ExamenSelector({
 
   // Estilo para la sección que contendrá el Swiper
   const seccionExamenesStyle = {
-    flexGrow: 1,
-    overflow: 'hidden', // ¡CRUCIAL!
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    minHeight: '30px', // O la altura que necesites para tus post-its
-    padding: '1px 0',
-    position: 'relative', // Para el posicionamiento de los elementos de Swiper
+    flex: '1',
+    overflowY: 'auto',
+    padding: '10px',
   };
-
-  // Clave para forzar la re-montura de Swiper si el estado de "tieneExamenes" cambia
-  const swiperKey = tieneExamenesParaMostrar
-    ? 'swiper-con-examenes'
-    : 'swiper-sin-examenes';
 
   return (
     <>
@@ -306,38 +302,45 @@ export default function ExamenSelector({
               </div>
             </div>
           ) : tieneExamenesParaMostrar ? (
-            <Swiper
-              key={swiperKey}
-              modules={[Navigation, Pagination]}
-              spaceBetween={10}
-              slidesPerView={'auto'}
-              navigation
-              pagination={{ clickable: true }}
-              style={{
-                width: '100%',
-                height: '100%',
-                padding: '0 1px', // Ajusta el padding según sea necesario
-                margin: 0, // Asegúrate que no haya margen que afecte el layout
-                // overflow: 'hidden', // Añadir esto aquí es una prueba si el CSS global no funciona
-              }}
-              className="mySwiper" // Asegúrate que esta clase no oculte Swiper o sus hijos
-            >
-              {filteredExamenes.map((ex) => (
-                <SwiperSlide
-                  key={ex.ID_EXAMEN}
-                  style={{
-                    width: 'auto', // Para que el slide tome el ancho del ExamenPostIt
-                    display: 'flex',
-                    padding: 0, // Añadir esto para eliminar el padding
-                  }}
-                >
+            <div className="examenes-container">
+              <div
+                className="d-flex flex-wrap gap-2 justify-content-center"
+                style={{ minHeight: '200px' }}
+              >
+                {paginatedExamenes.map((ex) => (
                   <DraggableExamenPostIt
+                    key={ex.ID_EXAMEN}
                     examen={ex}
                     onModulosChange={handleModulosChange}
                   />
-                </SwiperSlide>
-              ))}
-            </Swiper>
+                ))}
+              </div>
+
+              {/* Controles de paginación */}
+              <div className="d-flex justify-content-center mt-2 gap-2">
+                <button
+                  className="btn btn-sm btn-secondary"
+                  onClick={() =>
+                    setCurrentPage((prev) => Math.max(prev - 1, 1))
+                  }
+                  disabled={currentPage === 1}
+                >
+                  Anterior
+                </button>
+                <span className="d-flex align-items-center">
+                  Página {currentPage} de {totalPages}
+                </span>
+                <button
+                  className="btn btn-sm btn-secondary"
+                  onClick={() =>
+                    setCurrentPage((prev) => Math.min(prev + 1, totalPages))
+                  }
+                  disabled={currentPage === totalPages}
+                >
+                  Siguiente
+                </button>
+              </div>
+            </div>
           ) : (
             <div className="d-flex justify-content-center align-items-center w-100 h-100">
               <p className="text-muted fst-italic">
