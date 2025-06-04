@@ -21,6 +21,10 @@ export default function Layout({ children }) {
     navigate('/login');
   };
 
+  const handleOverlayClick = () => {
+    setIsSidebarMinimized(true);
+  };
+
   useEffect(() => {
     if (offcanvasRef.current) {
       const bsOffcanvas = new Offcanvas(offcanvasRef.current, {
@@ -75,15 +79,29 @@ export default function Layout({ children }) {
   useEffect(() => {
     let timer;
     if (isSidebarMinimized) {
-      // Si se está minimizando, esperar a que termine la animación CSS antes de ocultar el logo del DOM
       timer = setTimeout(() => {
         setIsLogoVisibleForRender(false);
-      }, 250); // Asegúrate que este tiempo (250ms) coincida con tu transición CSS
+      }, 250);
     } else {
-      // Si se está expandiendo, mostrar el logo inmediatamente en el DOM
       setIsLogoVisibleForRender(true);
     }
-    return () => clearTimeout(timer); // Limpiar el temporizador si el componente se desmonta o el estado cambia
+    return () => clearTimeout(timer);
+  }, [isSidebarMinimized]);
+
+  //Efecto para controlar el scroll del body
+  useEffect(() => {
+    if (isSidebarMinimized) {
+      // Bloquear scroll cuando está expandido
+      document.body.style.overflow = 'hidden';
+    } else {
+      // Restaurar scroll cuando está minimizado
+      document.body.style.overflow = '';
+    }
+
+    // Cleanup al desmontar
+    return () => {
+      document.body.style.overflow = '';
+    };
   }, [isSidebarMinimized]);
 
   if (loading) {
@@ -98,6 +116,11 @@ export default function Layout({ children }) {
 
   return (
     <div className="d-flex flex-column w-100" style={{ minHeight: '100vh' }}>
+      <div
+        className={`sidebar-overlay ${!isSidebarMinimized ? 'show' : ''}`}
+        onClick={handleOverlayClick}
+      ></div>
+
       <main className="flex-grow-1 p-4 bg-light overflow-auto app-main content-shifted-for-minimized-sidebar">
         {children}
       </main>

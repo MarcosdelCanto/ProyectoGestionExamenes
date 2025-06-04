@@ -219,3 +219,32 @@ button:focus-visible {
     background-color: #f9f9f9;
   }
 }
+
+/* Overlay para bloquear interacción con el contenido principal */
+.sidebar-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background-color: rgba(0, 0, 0, 0.5); /* Fondo semi-transparente */
+  z-index: 1040; /* Menor que el offcanvas (1045) pero mayor que el contenido */
+  opacity: 0;
+  visibility: hidden;
+  transition:
+    opacity 0.25s ease-in-out,
+    visibility 0.25s ease-in-out;
+  pointer-events: none;
+}
+
+/* Mostrar overlay cuando el sidebar está expandido */
+.sidebar-overlay.show {
+  opacity: 1;
+  visibility: visible;
+  pointer-events: all; /* Permite hacer clic para cerrar */
+}
+
+/* Asegurar que el offcanvas tenga un z-index mayor */
+.offcanvas.offcanvas-start {
+  z-index: 1045 !important; /* Mayor que el overlay */
+}
