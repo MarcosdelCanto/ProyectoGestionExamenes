@@ -1,24 +1,50 @@
 .sala-selector-container {
-  flex: 0 0 20%;
+  /* Removemos el flex fijo y permitimos que se ajuste al contenido */
   display: flex;
   flex-direction: column;
-  height: 100%; /* Ocupa toda la altura del padre */
   background-color: var(--white);
   border-radius: 4px;
   box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
-  overflow: hidden; /* Para controlar el desbordamiento */
+  overflow: visible; /* Cambiamos a visible para permitir el dropdown */
+  width: 100%; /* Se ajusta al contenido */
+  min-width: 300px; /* Ancho mínimo para usabilidad */
 }
+
+.sala-selector-panel {
+  display: flex;
+  flex-direction: column;
+  padding: 10px; /* Añadimos padding interno */
+  width: 100%;
+}
+
+/* Ajustes para el contenedor del input */
+.sala-selector-panel .d-flex {
+  width: 100%;
+}
+
+.sala-selector-panel .position-relative {
+  min-width: 250px; /* Ancho mínimo del input */
+}
+
+/* Aseguramos que el dropdown tenga el ancho correcto */
+.sala-selector-panel .dropdown-menu {
+  min-width: 100%;
+  box-sizing: border-box;
+}
+
 .search-box {
   flex: 1;
   overflow-y: auto;
-  margin-bottom: 0; /* Removemos el margin bottom */
+  margin-bottom: 0;
   border-top: 1px solid #dee2e6;
 }
+
 .top-controls {
   padding: 10px;
   background-color: #f8f9fa;
   border-bottom: 1px solid #dee2e6;
 }
+
 .search-box {
   max-height: 200px;
   overflow-y: auto;
@@ -33,8 +59,7 @@
 .tabla-seleccion th,
 .tabla-seleccion td {
   border: 1px solid #ddd;
-  padding: 0.5rem;
-  text-align: left;
+  text-align: center;
 }
 
 .fila-seleccionada {

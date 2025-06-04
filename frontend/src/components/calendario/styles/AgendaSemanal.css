@@ -5,10 +5,11 @@
   overflow: hidden;
 }
 .top-row {
-  display: flex;
+  /* display: flex; */
   margin-bottom: 20px;
   min-height: 300px;
   gap: 20px;
+  width: 100%;
 }
 .details-section {
   flex-grow: 1;
