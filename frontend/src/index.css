@@ -19,6 +19,17 @@ body,
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+
+  --sidebar-width-expanded: 280px; /* Ancho estándar de offcanvas-start de Bootstrap, ajústalo si es diferente */
+  --sidebar-width-minimized: 80px; /* Ancho que definiste para el sidebar minimizado */
+  --sidebar-icon-size: 1.5rem; /* Ajusta según el tamaño de tus iconos */
+  --sidebar-padding-x: 0.75rem; /* Ajusta según el padding de tus .nav-link */
+}
+
+/* Nueva clase para empujar el contenido principal */
+.content-shifted-for-minimized-sidebar {
+  margin-left: var(--sidebar-width-minimized);
+  transition: margin-left 0.25s ease-in-out; /* Opcional, si alguna vez cambia este margen */
 }
 
 a {
@@ -60,6 +71,97 @@ button:hover {
 button:focus,
 button:focus-visible {
   outline: 4px auto -webkit-focus-ring-color;
+}
+
+/* Estilos para el sidebar minimizado */
+.offcanvas.sidebar-minimized-custom {
+  width: var(--sidebar-width-minimized) !important;
+  transition: width 0.25s ease-in-out;
+}
+
+/* Estilos para el sidebar expandido */
+.offcanvas.sidebar-expanded-custom {
+  width: var(
+    --sidebar-width-expanded
+  ) !important; /* Asegura el ancho correcto al expandir */
+  transition: width 0.25s ease-in-out;
+  /* z-index alto por defecto de Bootstrap asegura que se superponga */
+}
+
+/* Asegurar que el offcanvas sea visible y no tenga transformaciones que lo oculten por defecto */
+.offcanvas.offcanvas-start.show {
+  transform: none !important; /* Importante para anular el transform de Bootstrap que lo oculta fuera de la pantalla */
+}
+
+/* Contenedor del texto del enlace */
+.sidebar-link-text {
+  transition:
+    opacity 0.15s ease-out,
+    max-width 0.25s ease-in-out; /* Transición para max-width y opacidad */
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis; /* Muestra '...' si el texto es muy largo para el ancho fijo */
+  vertical-align: middle; /* Ayuda a alinear con el icono si es necesario */
+}
+
+/* Estado minimizado: Ocultar texto y título del offcanvas */
+.sidebar-minimized-custom .sidebar-link-text,
+.sidebar-minimized-custom .offcanvas-title {
+  opacity: 0;
+  max-width: 0; /* Encoge el contenedor del texto */
+  pointer-events: none;
+  margin-left: 0; /* Sin margen cuando está oculto */
+}
+
+.sidebar-minimized-custom .nav-link {
+  justify-content: center; /* Centra el icono */
+}
+
+.sidebar-minimized-custom .nav-link .bi {
+  margin-right: 0 !important; /* El icono no necesita margen si no hay texto */
+}
+
+.sidebar-minimized-custom .offcanvas-header {
+  justify-content: center;
+}
+
+/* Estado expandido: Mostrar texto y título del offcanvas */
+.sidebar-expanded-custom .sidebar-link-text {
+  opacity: 1;
+  /* Calcula el ancho máximo para el texto: Ancho expandido - padding - tamaño icono - margen icono */
+  max-width: calc(
+    var(--sidebar-width-expanded) - (2 * var(--sidebar-padding-x)) -
+      var(--sidebar-icon-size) - 0.5rem
+  );
+  margin-left: 0.5rem; /* Espacio entre el icono y el texto */
+}
+
+.sidebar-expanded-custom .offcanvas-title {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.sidebar-expanded-custom .nav-link {
+  justify-content: flex-start; /* Alineación normal */
+}
+
+.sidebar-expanded-custom .nav-link .bi {
+  margin-right: 0; /* El margen ahora lo controla el .sidebar-link-text con margin-left */
+}
+
+.sidebar-expanded-custom .offcanvas-header {
+  justify-content: space-between; /* Alineación normal */
+}
+
+/* Ajustes generales para los enlaces del sidebar */
+.nav-link {
+  display: flex;
+  align-items: center;
+}
+
+.nav-link .bi {
+  flex-shrink: 0; /* Evita que el icono se encoja */
+  /* El tamaño del icono se puede definir aquí o heredar */
 }
 
 @media (prefers-color-scheme: light) {
