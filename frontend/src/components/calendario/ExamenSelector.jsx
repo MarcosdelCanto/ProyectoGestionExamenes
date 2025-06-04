@@ -41,17 +41,24 @@ function DraggableExamenPostIt({ examen, onModulosChange }) {
   return (
     <div
       ref={setNodeRef}
-      style={style}
+      style={{
+        ...style,
+        margin: 0,
+        padding: 0,
+        width: '100%',
+        height: '100%',
+      }}
       {...attributes}
       {...listeners}
       data-modulos={currentModulos}
+      className="draggable-examen"
     >
       <ExamenPostIt
         examen={{ ...examen, CANTIDAD_MODULOS_EXAMEN: currentModulos }}
         onModulosChange={handleModulosChange}
         isPreview={true}
         isBeingDragged={isDragging}
-        handleRemove={() => {}} //agrega un manejador vacio o remover si no se usa
+        handleRemove={() => {}} // Manejador vacío
       />
     </div>
   );
@@ -70,43 +77,6 @@ function FilterModal({
   // escuelas, carreras, asignaturas // Props para poblar los selects
 }) {
   if (!isOpen) return null;
-
-  const modalStyle = {
-    position: 'fixed',
-    top: '50%',
-    left: '50%',
-    transform: 'translate(-50%, -50%)',
-    backgroundColor: 'white',
-    padding: '25px',
-    borderRadius: '8px',
-    boxShadow: '0 5px 15px rgba(0,0,0,0.3)',
-    zIndex: 1050,
-    width: '90%',
-    maxWidth: '500px',
-  };
-
-  const backdropStyle = {
-    position: 'fixed',
-    top: '0',
-    left: '0',
-    width: '100%',
-    height: '100%',
-    backgroundColor: 'rgba(0,0,0,0.5)',
-    zIndex: 1040,
-  };
-
-  const headerStyle = {
-    display: 'flex',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: '10px',
-  };
-
-  const selectContainerStyle = {
-    display: 'flex',
-    flexDirection: 'column',
-    gap: '15px',
-  };
 
   return (
     <>
@@ -252,34 +222,20 @@ export default function ExamenSelector({
     flexGrow: 1,
   };
 
-  // Estilo para la sección que contendrá el Swiper
-  const seccionExamenesStyle = {
-    flex: '1',
-    overflowY: 'auto',
-    padding: '10px',
-  };
-
   return (
     <>
-      <div
-        style={panelPrincipalStyle}
-        className="examen-selector-panel-integrado"
-      >
-        <div style={topControlsContainerStyle}>
-          <div
-            className="input-group input-group-sm"
-            style={searchInputContainerStyle}
-          >
+      <div className="contenedor-examenes-pendientes">
+        <div className="examen-search-container">
+          <div className="input-group input-group-sm">
             <span className="input-group-text bg-light">
               <FaSearch />
             </span>
             <input
               type="search"
               className="form-control"
-              placeholder="Buscar Examen por nombre/sección..."
+              placeholder="Buscar Examen..."
               value={searchTermExamenes}
               onChange={handleSearchExamenes}
-              aria-label="Buscar examen"
             />
           </div>
           <button
@@ -291,64 +247,46 @@ export default function ExamenSelector({
           </button>
         </div>
 
-        <div
-          style={seccionExamenesStyle}
-          className="vista-examenes-postits" // Asegúrate que esta clase no tenga estilos conflictivos
-        >
-          {isLoadingExamenes ? (
-            <div className="d-flex justify-content-center align-items-center w-100 h-100">
-              <div className="spinner-border text-primary" role="status">
-                <span className="visually-hidden">Cargando...</span>
-              </div>
-            </div>
-          ) : tieneExamenesParaMostrar ? (
-            <div className="examenes-container">
-              <div
-                className="d-flex flex-wrap gap-2 justify-content-center"
-                style={{ minHeight: '200px' }}
-              >
-                {paginatedExamenes.map((ex) => (
+        {tieneExamenesParaMostrar ? (
+          <div className="examenes-container">
+            <div className="vista-examenes-postits">
+              {paginatedExamenes.map((ex) => (
+                <div className="draggable-examen-wrapper" key={ex.ID_EXAMEN}>
                   <DraggableExamenPostIt
-                    key={ex.ID_EXAMEN}
                     examen={ex}
                     onModulosChange={handleModulosChange}
                   />
-                ))}
-              </div>
+                </div>
+              ))}
+            </div>
 
-              {/* Controles de paginación */}
-              <div className="d-flex justify-content-center mt-2 gap-2">
-                <button
-                  className="btn btn-sm btn-secondary"
-                  onClick={() =>
-                    setCurrentPage((prev) => Math.max(prev - 1, 1))
-                  }
-                  disabled={currentPage === 1}
-                >
-                  Anterior
-                </button>
-                <span className="d-flex align-items-center">
-                  Página {currentPage} de {totalPages}
-                </span>
-                <button
-                  className="btn btn-sm btn-secondary"
-                  onClick={() =>
-                    setCurrentPage((prev) => Math.min(prev + 1, totalPages))
-                  }
-                  disabled={currentPage === totalPages}
-                >
-                  Siguiente
-                </button>
-              </div>
+            <div className="pagination-controls">
+              <button
+                className="btn btn-sm btn-light"
+                onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
+                disabled={currentPage === 1}
+              >
+                Anterior
+              </button>
+              <span className="pagination-info">
+                {currentPage} / {totalPages}
+              </span>
+              <button
+                className="btn btn-sm btn-light"
+                onClick={() =>
+                  setCurrentPage((prev) => Math.min(prev + 1, totalPages))
+                }
+                disabled={currentPage === totalPages}
+              >
+                Siguiente
+              </button>
             </div>
-          ) : (
-            <div className="d-flex justify-content-center align-items-center w-100 h-100">
-              <p className="text-muted fst-italic">
-                No hay exámenes para mostrar.
-              </p>
-            </div>
-          )}
-        </div>
+          </div>
+        ) : (
+          <div className="d-flex justify-content-center align-items-center h-100">
+            <p className="text-muted">No hay exámenes disponibles.</p>
+          </div>
+        )}
       </div>
 
       <FilterModal

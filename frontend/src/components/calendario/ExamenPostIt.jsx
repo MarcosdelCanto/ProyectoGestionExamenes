@@ -194,54 +194,22 @@ export default function ExamenPostIt({
       data-modulo-inicial={moduloInicial}
       {...props}
     >
-      <div
-        style={{
-          fontSize: isPreview ? '0.7rem' : '0.8rem',
-          textAlign: 'center',
-          fontWeight: 'bold',
-          padding: '2px',
-          marginBottom: '4px',
-          borderBottom: '1px solid #ddd',
-          display: 'flex',
-          justifyContent: 'space-between',
-          alignItems: 'center',
-          backgroundColor: 'rgba(255,255,255,0.5)',
-          borderRadius: '2px',
-        }}
-      >
-        {/* Div para el drag handle - solo visible en modo preview */}
-
-        <div
-          className={`drag-handle-activator ${
-            isPreview && dragHandleListeners ? 'swiper-no-swiping' : ''
-          }`}
-          style={{
-            cursor: isPreview && dragHandleListeners ? 'grab' : 'default',
-            padding: '0 4px',
-            display: 'inline-flex',
-            alignItems: 'center',
-            touchAction: 'none',
-            position: 'relative',
-            zIndex: 10,
-            pointerEvents: 'auto',
-          }}
-          {...(isPreview && dragHandleListeners ? dragHandleListeners : {})}
-        >
-          <FaGripLines />
-        </div>
-        <span
-          title={examen.NOMBRE_ASIGNATURA}
-          style={{
-            flex: 1,
-            textAlign: 'center',
-            overflow: 'hidden',
-            textOverflow: 'ellipsis',
-            whiteSpace: 'nowrap',
-          }}
-        >
-          {examen.NOMBRE_ASIGNATURA}
-        </span>
-
+      <div className="header">
+        {isPreview && dragHandleListeners && (
+          <div
+            className="drag-handle-activator"
+            {...dragHandleListeners}
+            style={{
+              float: 'left',
+              marginRight: '8px',
+              cursor: 'grab',
+              paddingTop: '2px',
+            }}
+          >
+            <FaGripLines />
+          </div>
+        )}
+        <span title={examen.NOMBRE_ASIGNATURA}>{examen.NOMBRE_ASIGNATURA}</span>
         {/* Botón de eliminar - solo visible cuando no es preview */}
         {!isPreview && (
           <button
@@ -253,10 +221,8 @@ export default function ExamenPostIt({
               cursor: 'pointer',
               fontSize: '14px',
               padding: '0',
-              marginLeft: '4px',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
+              marginLeft: '8px',
+              float: 'right',
             }}
             title="Eliminar examen"
           >
@@ -265,41 +231,34 @@ export default function ExamenPostIt({
         )}
       </div>
 
-      <div
-        style={{
-          flexGrow: 1,
-          overflowY: 'auto',
-          padding: '2px',
-        }}
-      >
-        <div
-          style={{
-            fontSize: '0.7rem',
-            marginBottom: '3px',
-            display: 'flex',
-            justifyContent: 'space-between',
-            whiteSpace: 'nowrap',
-            overflow: 'hidden',
-            textOverflow: 'ellipsis',
-          }}
-          title={`Sección: ${examen.NOMBRE_SECCION}`}
-        >
-          <strong>Sección:</strong> {examen.NOMBRE_SECCION || 'N/A'}
+      <div className="content">
+        <div className="detail">
+          <span className="detail-label">Sección:</span>
+          <span title={examen.NOMBRE_SECCION}>
+            {examen.NOMBRE_SECCION || 'N/A'}
+          </span>
+        </div>
+        {examen.CANT_ALUMNOS && (
+          <div className="detail">
+            <span className="detail-label">Alumnos:</span>
+            <span>{examen.CANT_ALUMNOS}</span>
+          </div>
+        )}
+        <div className="detail">
+          <span className="detail-label">Módulos:</span>
+          <span>{modulosCount}</span>
         </div>
 
-        <div
-          style={{
-            fontSize: '0.7rem',
-            marginBottom: '3px',
-            display: 'flex',
-            justifyContent: 'space-between',
-          }}
-          title={`Módulos: ${modulosCount}`}
-        >
-          <strong>Módulos:</strong> {modulosCount}
-        </div>
+        {isPreview && (
+          <div className="modulos-indicator">
+            {modulosCount} {modulosCount === 1 ? 'módulo' : 'módulos'}
+          </div>
+        )}
       </div>
+
+      {/* Mensaje de error de redimensionamiento */}
       {resizeError && <div className="resize-error-message">{resizeError}</div>}
+
       {!isPreview && (
         <div
           style={{

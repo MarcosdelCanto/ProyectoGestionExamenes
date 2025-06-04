@@ -1,8 +1,11 @@
+/* Estilos para el contenedor de la tabla de calendario */
 .table-wrapper {
   width: 100%;
   overflow-x: auto;
   margin-bottom: 15px;
 }
+
+/* Estilos básicos para la tabla de calendario */
 .calendar-table {
   width: 100%;
   border-collapse: collapse;
@@ -10,6 +13,7 @@
   font-size: 0.9rem;
 }
 
+/* Estilos para celdas y encabezados de la tabla de calendario */
 .calendar-table th,
 .calendar-table td {
   border: 1px solid #dee2e6;
@@ -17,7 +21,9 @@
   text-align: center;
   vertical-align: middle;
 }
-.calendar-cell {
+
+/* Estilos específicos para las celdas del calendario */
+.calendar-table .calendar-cell {
   position: relative;
   height: 40px;
   min-height: 40px;
@@ -27,47 +33,61 @@
   overflow: visible !important;
   z-index: 1;
 }
-.calendar-cell.contains-examen {
+
+/* Celdas que contienen exámenes */
+.calendar-table .calendar-cell.contains-examen {
   overflow: visible !important;
   z-index: 2;
 }
-.calendar-cell.part-of-examen {
+
+/* Celdas que son parte de un examen */
+.calendar-table .calendar-cell.part-of-examen {
   background-color: rgba(255, 255, 200, 0.1);
 }
-/* Asegurar que los exámenes colocados se muestren correctamente */
-.examen-post-it.placed {
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  width: 100%;
-  z-index: 10;
+
+/* Estilos para exámenes colocados en el calendario (específicamente) */
+.calendar-table .calendar-cell .examen-post-it.placed {
+  position: absolute !important;
+  top: 0 !important;
+  left: 0 !important;
+  right: 0 !important;
+  width: 100% !important;
+  z-index: 10 !important;
 }
-.calendar-cell:hover {
+
+/* Hover para las celdas del calendario */
+.calendar-table .calendar-cell:hover {
   background-color: #f1f8ff;
 }
 
-.calendar-cell.seleccionado {
+/* Celdas seleccionadas */
+.calendar-table .calendar-cell.seleccionado {
   background-color: rgba(40, 167, 69, 0.2);
   border: 2px solid #28a745;
 }
 
-.calendar-cell.reservado {
+/* Celdas reservadas */
+.calendar-table .calendar-cell.reservado {
   background-color: #f8d7da;
   color: #721c24;
   cursor: not-allowed;
 }
-.calendar-cell.drop-hover {
+
+/* Celdas durante una operación de arrastre */
+.calendar-table .calendar-cell.drop-hover {
   background-color: rgba(0, 123, 255, 0.2);
   border: 2px dashed #007bff;
   z-index: 10;
 }
-.calendar-cell.con-examen {
+
+/* Celdas que contienen exámenes */
+.calendar-table .calendar-cell.con-examen {
   padding: 0 !important;
   overflow: visible !important;
 }
-/* Columnas de orden y horario */
-.orden-col {
+
+/* Columnas de orden y horario en el calendario */
+.calendar-table .orden-col {
   width: 40px !important;
   min-width: 40px;
   max-width: 40px;
@@ -78,7 +98,8 @@
   left: 0;
   z-index: 2;
 }
-.horario-col {
+
+.calendar-table .horario-col {
   width: 100px !important;
   min-width: 100px;
   max-width: 100px;
@@ -88,43 +109,45 @@
   left: 40px;
   z-index: 2;
 }
-/* Mejoras para la apariencia de los módulos */
-[data-modulos='1'] {
+
+/* Mejoras para la apariencia de los módulos (solo para el calendario) */
+.calendar-table [data-modulos='1'] {
   height: 40px;
 }
-[data-modulos='2'] {
+.calendar-table [data-modulos='2'] {
   height: 80px;
 }
-[data-modulos='3'] {
+.calendar-table [data-modulos='3'] {
   height: 120px;
 }
-[data-modulos='4'] {
+.calendar-table [data-modulos='4'] {
   height: 160px;
 }
-[data-modulos='5'] {
+.calendar-table [data-modulos='5'] {
   height: 200px;
 }
-[data-modulos='6'] {
+.calendar-table [data-modulos='6'] {
   height: 240px;
 }
-[data-modulos='7'] {
+.calendar-table [data-modulos='7'] {
   height: 280px;
 }
-[data-modulos='8'] {
+.calendar-table [data-modulos='8'] {
   height: 320px;
 }
-[data-modulos='9'] {
+.calendar-table [data-modulos='9'] {
   height: 360px;
 }
-[data-modulos='10'] {
+.calendar-table [data-modulos='10'] {
   height: 400px;
 }
-[data-modulos='11'] {
+.calendar-table [data-modulos='11'] {
   height: 440px;
 }
-[data-modulos='12'] {
+.calendar-table [data-modulos='12'] {
   height: 480px;
 }
+
 /* Encabezado del calendario */
 .calendar-table thead th {
   background-color: #343a40;
@@ -134,29 +157,57 @@
   z-index: 3;
 }
 
-.calendar-header-day {
+/* Formato para los días en el encabezado */
+.calendar-table .calendar-header-day {
   display: flex;
   flex-direction: column;
   align-items: center;
 }
 
-.day-name {
+.calendar-table .day-name {
   font-size: 0.9rem;
   font-weight: normal;
 }
 
-.day-number {
+.calendar-table .day-number {
   font-size: 1.1rem;
   font-weight: bold;
 }
+
 /* Indicador visual para celdas donde se puede soltar */
-.calendar-cell.drop-target {
+.calendar-table .calendar-cell.drop-target {
   background-color: rgba(0, 123, 255, 0.1);
   border: 2px dashed #007bff;
 }
 
 /* Indicador visual para celdas incompatibles */
-.calendar-cell.drop-invalid {
+.calendar-table .calendar-cell.drop-invalid {
   background-color: rgba(220, 53, 69, 0.1);
   border: 2px dashed #dc3545;
+}
+
+/* REGLAS EXPLÍCITAS PARA PREVENIR INTERFERENCIAS */
+/* Asegurar que las reglas del calendario no afecten al selector de exámenes */
+.vista-examenes-postits .examen-post-it {
+  position: static !important;
+  top: auto !important;
+  left: auto !important;
+  right: auto !important;
+  width: 100% !important;
+}
+
+/* Asegurar que los atributos data-modulos no afecten a los componentes fuera del calendario */
+.vista-examenes-postits [data-modulos] {
+  height: auto !important;
+  min-height: 120px !important;
+}
+
+/* Asegurar que la vista de grid no sea afectada */
+.vista-examenes-postits {
+  display: grid !important;
+}
+
+/* Prevenir que los estilos de hover del calendario afecten al selector */
+.vista-examenes-postits .examen-post-it:hover {
+  background-color: inherit;
 }

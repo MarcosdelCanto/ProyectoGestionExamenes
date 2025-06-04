@@ -6,9 +6,9 @@
 }
 .top-row {
   display: flex;
-  margin-bottom: 15px;
+  margin-bottom: 20px;
   min-height: 300px;
-  gap: 15px;
+  gap: 20px;
 }
 .details-section {
   flex-grow: 1;
