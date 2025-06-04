@@ -106,9 +106,7 @@ button:focus-visible {
   display: flex;
   align-items: center;
   overflow: hidden; /* Importante para la transición de max-width */
-  transition:
-    opacity 0.25s ease-in-out,
-    max-width 0.25s ease-in-out;
+  transition: opacity 0.25s ease-in-out;
 }
 
 .sidebar-logo {
@@ -126,7 +124,7 @@ button:focus-visible {
 
 .sidebar-minimized-custom .sidebar-logo-container {
   opacity: 0;
-  max-width: 0; /* Encoge el contenedor del logo */
+  width: 0; /* Encoge el contenedor del logo */
   pointer-events: none;
 }
 
@@ -137,10 +135,7 @@ button:focus-visible {
 
 .sidebar-expanded-custom .sidebar-logo-container {
   opacity: 1;
-  /* Ajusta este max-width según el espacio que quieras que ocupe el logo */
-  max-width: calc(
-    var(--sidebar-width-expanded) - 100px
-  ); /* Ejemplo: ancho expandido menos espacio para el botón y padding */
+  width: auto;
   pointer-events: auto;
 }
 
@@ -150,7 +145,6 @@ button:focus-visible {
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis; /* Muestra '...' si el texto es muy largo para el ancho fijo */
-  vertical-align: middle; /* Ayuda a alinear con el icono si es necesario */
 }
 
 /* Estado minimizado: Ocultar texto y título del offcanvas */
