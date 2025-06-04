@@ -146,9 +146,7 @@ button:focus-visible {
 
 /* Contenedor del texto del enlace */
 .sidebar-link-text {
-  transition:
-    opacity 0.15s ease-out,
-    max-width 0.25s ease-in-out; /* Transición para max-width y opacidad */
+  transition: opacity 0.15s ease-out; /* Transición para max-width y opacidad */
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis; /* Muestra '...' si el texto es muy largo para el ancho fijo */
@@ -159,9 +157,8 @@ button:focus-visible {
 .sidebar-minimized-custom .sidebar-link-text,
 .sidebar-minimized-custom .offcanvas-title {
   opacity: 0;
-  max-width: 0; /* Encoge el contenedor del texto */
   pointer-events: none;
-  margin-left: 0; /* Sin margen cuando está oculto */
+  visibility: hidden;
 }
 
 .sidebar-minimized-custom .nav-link .bi {
@@ -175,17 +172,14 @@ button:focus-visible {
 /* Estado expandido: Mostrar texto y título del offcanvas */
 .sidebar-expanded-custom .sidebar-link-text {
   opacity: 1;
-  max-width: calc(
-    var(--sidebar-width-expanded) - (2 * var(--sidebar-padding-x)) -
-      var(--sidebar-icon-size) - 0.5rem
-  );
-  margin-left: 0.5rem; /* Espacio entre el icono y el texto */
   pointer-events: auto;
+  visibility: visible;
 }
 
 .sidebar-expanded-custom .offcanvas-title {
   opacity: 1;
   pointer-events: auto;
+  visibility: visible;
 }
 
 .sidebar-expanded-custom .nav-link .bi {
@@ -201,7 +195,8 @@ button:focus-visible {
   display: flex;
   align-items: center;
   justify-content: flex-start; /* SIEMPRE flex-start */
-  padding-left: 1rem; /* Padding fijo para todos los estados */
+  padding-left: 1rem;
+  gap: 0.5rem;
 }
 
 .nav-link .bi {
