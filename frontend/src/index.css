@@ -141,7 +141,6 @@ button:focus-visible {
 
 /* Contenedor del texto del enlace */
 .sidebar-link-text {
-  transition: opacity 0.15s ease-out; /* Transición para max-width y opacidad */
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis; /* Muestra '...' si el texto es muy largo para el ancho fijo */
@@ -164,12 +163,14 @@ button:focus-visible {
 
 /* Estado expandido: Mostrar texto y título del offcanvas */
 .sidebar-expanded-custom .sidebar-link-text {
+  display: block;
   opacity: 1;
   pointer-events: auto;
   visibility: visible;
 }
 
 .sidebar-expanded-custom .offcanvas-title {
+  display: block;
   opacity: 1;
   pointer-events: auto;
   visibility: visible;
