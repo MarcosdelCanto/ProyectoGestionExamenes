@@ -77,22 +77,26 @@ button:focus-visible {
 .offcanvas.sidebar-minimized-custom {
   width: var(--sidebar-width-minimized) !important;
   transition: width 0.25s ease-in-out;
+  overflow: hidden;
 }
 
 /* Estilos para el sidebar expandido */
 .offcanvas.sidebar-expanded-custom {
-  width: var(
-    --sidebar-width-expanded
-  ) !important; /* Asegura el ancho correcto al expandir */
+  width: var(--sidebar-width-expanded) !important;
   transition: width 0.25s ease-in-out;
-  /* z-index alto por defecto de Bootstrap asegura que se superponga */
+  overflow: hidden;
 }
 
 /* Asegurar que el offcanvas sea visible y no tenga transformaciones que lo oculten por defecto */
 .offcanvas.offcanvas-start.show {
-  transform: none !important; /* Importante para anular el transform de Bootstrap que lo oculta fuera de la pantalla */
+  transform: none !important;
+  overflow: hidden;
 }
 
+.offcanvas-body {
+  overflow: hidden !important; /* Evita scroll durante transiciones */
+  padding: 0; /* Opcional: eliminar padding por defecto */
+}
 /* Estilos para el offcanvas-header y el logo */
 .offcanvas-header {
   display: flex;
@@ -191,6 +195,9 @@ button:focus-visible {
   justify-content: flex-start; /* SIEMPRE flex-start */
   padding-left: 1rem;
   gap: 0.5rem;
+  overflow: hidden;
+  width: 100%;
+  box-sizing: border-box;
 }
 
 .nav-link .bi {
