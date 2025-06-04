@@ -277,7 +277,7 @@ export default function Layout({ children }) {
             {hasPermission('VIEW_REPORTES') && (
               <Link
                 to="/reportes"
-                className="nav-link fw-bold text-dark d-flex align-items-center"
+                className="nav-link text-dark d-flex align-items-center"
               >
                 <div className="sidebar-icon-container">
                   <i className="bi bi-file-bar-graph-fill"></i>
