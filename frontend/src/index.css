@@ -150,9 +150,8 @@ button:focus-visible {
 /* Estado minimizado: Ocultar texto y título del offcanvas */
 .sidebar-minimized-custom .sidebar-link-text,
 .sidebar-minimized-custom .offcanvas-title {
-  opacity: 0;
+  display: none;
   pointer-events: none;
-  visibility: hidden;
 }
 
 .sidebar-minimized-custom .nav-link .bi {
