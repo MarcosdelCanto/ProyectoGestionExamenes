@@ -121,28 +121,46 @@ export default function Layout({ children }) {
         <div className="offcanvas-body p-3 d-flex flex-column">
           <nav className="nav flex-column mb-auto">
             {/* Enlace General */}
-            <Link to="/" className="nav-link fw-bold text-dark">
-              Inicio
+            <Link
+              to="/"
+              className="nav-link fw-bold text-dark d-flex align-items-center"
+            >
+              <i className="bi bi-house-door-fill me-2"></i>Inicio
             </Link>
             {/*// Podría ir después de Inicio o en una sección relevante */}
-            <Link to="/mis-reservas" className="nav-link text-dark">
-              Mis Exámenes Programados
+            <Link
+              to="/mis-reservas"
+              className="nav-link text-dark d-flex align-items-center"
+            >
+              <i className="bi bi-calendar-check-fill me-2"></i>Mis Exámenes
+              Programados
             </Link>
             {/* Enlaces Condicionales por Permiso */}
             {hasPermission('VIEW_CALENDARIO') && (
-              <Link to="/calendario" className="nav-link text-dark">
-                Calendario
+              <Link
+                to="/calendario"
+                className="nav-link text-dark d-flex align-items-center"
+              >
+                <i className="bi bi-calendar3 me-2"></i>Calendario
               </Link>
             )}
             {hasPermission('VIEW_EXAMENES') && ( // Para la página de gestión de exámenes
-              <Link to="/examen" className="nav-link text-dark">
-                Gestión de Exámenes
+              <Link
+                to="/examen"
+                className="nav-link text-dark d-flex align-items-center"
+              >
+                <i className="bi bi-file-earmark-text-fill me-2"></i>Gestión de
+                Exámenes
               </Link>
             )}
             {/* Permiso para la nueva funcionalidad de crear reserva */}
             {hasPermission('CREATE_RESERVAS_EXAMEN') && (
-              <Link to="/reservas/crear" className="nav-link text-dark">
-                Crear Reserva para Examen
+              <Link
+                to="/reservas/crear"
+                className="nav-link text-dark d-flex align-items-center"
+              >
+                <i className="bi bi-calendar-plus-fill me-2"></i>Crear Reserva
+                para Examen
               </Link>
             )}
             {/* Permiso para que el docente vea sus reservas pendientes */}
@@ -150,54 +168,80 @@ export default function Layout({ children }) {
             {hasPermission('DOCENTE_VIEW_RESERVAS_PENDIENTES') && (
               <Link
                 to="/reserva/docente/pendientes"
-                className="nav-link text-dark"
+                className="nav-link text-dark d-flex align-items-center"
               >
-                Mis Reservas Pendientes
+                <i className="bi bi-calendar-event-fill me-2"></i>Mis Reservas
+                Pendientes
               </Link>
             )}
             {hasPermission('VIEW_SALAS') && (
-              <Link to="/salas" className="nav-link text-dark">
-                Gestión de Salas
+              <Link
+                to="/salas"
+                className="nav-link text-dark d-flex align-items-center"
+              >
+                <i className="bi bi-door-open-fill me-2"></i>Gestión de Salas
               </Link>
             )}
             {hasPermission('VIEW_ASIGNATURAS') && (
-              <Link to="/asignaturas" className="nav-link text-dark">
-                Gestión de Asignaturas
+              <Link
+                to="/asignaturas"
+                className="nav-link text-dark d-flex align-items-center"
+              >
+                <i className="bi bi-book-fill me-2"></i>Gestión de Asignaturas
               </Link>
             )}
             {hasPermission('VIEW_MODULOS') && (
-              <Link to="/modulos" className="nav-link text-dark">
-                Gestión de Módulos
+              <Link
+                to="/modulos"
+                className="nav-link text-dark d-flex align-items-center"
+              >
+                <i className="bi bi-grid-1x2-fill me-2"></i>Gestión de Módulos
               </Link>
             )}
             {hasPermission('VIEW_USUARIOS') && (
-              <Link to="/usuarios" className="nav-link text-dark">
-                Gestión de Usuarios
+              <Link
+                to="/usuarios"
+                className="nav-link text-dark d-flex align-items-center"
+              >
+                <i className="bi bi-people-fill me-2"></i>Gestión de Usuarios
               </Link>
             )}
             {hasPermission('VIEW_CARGA_DATOS') && (
-              <Link to="/carga-datos" className="nav-link text-dark">
-                Carga de Datos Masiva
+              <Link
+                to="/carga-datos"
+                className="nav-link text-dark d-flex align-items-center"
+              >
+                <i className="bi bi-upload me-2"></i>Carga de Datos Masiva
               </Link>
             )}
             {hasPermission('VIEW_ROLES') && (
-              <Link to="/roles" className="nav-link text-dark">
-                Gestión de Roles y Permisos
+              <Link
+                to="/roles"
+                className="nav-link text-dark d-flex align-items-center"
+              >
+                <i className="bi bi-shield-lock-fill me-2"></i>Gestión de Roles
+                y Permisos
               </Link>
             )}
             {/* Permiso para la sección de reportes */}
             {/* (Asumimos que 'VIEW_REPORTES' es el nombre del permiso en tu DB si decidiste protegerlo) */}
             {hasPermission('VIEW_REPORTES') && (
-              <Link to="/reportes" className="nav-link fw-bold text-dark">
-                Reportes
+              <Link
+                to="/reportes"
+                className="nav-link fw-bold text-dark d-flex align-items-center"
+              >
+                <i className="bi bi-file-bar-graph-fill me-2"></i>Reportes
               </Link>
             )}
           </nav>
 
           {/* Botón de Cerrar Sesión */}
           <div className="mt-auto">
-            <button className="btn btn-danger w-100" onClick={handleLogout}>
-              Cerrar sesión
+            <button
+              className="btn btn-danger w-100 d-flex align-items-center justify-content-center"
+              onClick={handleLogout}
+            >
+              <i className="bi bi-box-arrow-right me-2"></i>Cerrar sesión
             </button>
           </div>
         </div>
