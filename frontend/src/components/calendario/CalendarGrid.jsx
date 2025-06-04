@@ -1,9 +1,7 @@
 import React from 'react';
-import { format } from 'date-fns';
-import { es } from 'date-fns/locale';
-import CalendarCell from './CalendarCell';
 import CalendarHeader from './CalendarHeader';
-import './CalendarioStyles.css'; // Importar los estilos
+import CalendarCell from './CalendarCell';
+import './styles/Calendar.css';
 
 export default function CalendarGrid({
   fechas,
@@ -13,13 +11,20 @@ export default function CalendarGrid({
   reservas,
   modulosSeleccionados,
   onSelectModulo,
+  obtenerExamenParaCelda,
+  onModulosChange,
+  onRemoveExamen,
 }) {
   if (!modulos || modulos.length === 0) {
     return <p className="aviso-seleccion">No hay módulos para mostrar.</p>;
   }
 
-  // Filtrar fechas si es necesario (por ejemplo, para excluir domingos)
-  // const fechasFiltradas = fechas.filter(fecha => {...});
+  // funcion auxiliar para determinar si una celda debe renderizar un examen
+  const shouldRenderExamen = (fecha, modulo, examenAsignado) => {
+    if (!examenAsignado) return false;
+
+    return examenAsignado.moduloInicial === modulo.ORDEN;
+  };
 
   return (
     <div className="table-wrapper">
@@ -32,18 +37,32 @@ export default function CalendarGrid({
               <td className="horario-col">
                 {mod.INICIO_MODULO} - {mod.FIN_MODULO}
               </td>
-              {fechas.map(({ fecha }) => (
-                <CalendarCell
-                  key={`${fecha}-${mod.ID_MODULO}`}
-                  fecha={fecha}
-                  modulo={mod}
-                  selectedSala={selectedSala}
-                  selectedExam={selectedExam}
-                  reservas={reservas}
-                  modulosSeleccionados={modulosSeleccionados}
-                  onSelectModulo={onSelectModulo}
-                />
-              ))}
+              {fechas.map(({ fecha }) => {
+                const examenAsignado = obtenerExamenParaCelda(fecha, mod.ORDEN);
+                const renderExamen = shouldRenderExamen(
+                  fecha,
+                  mod,
+                  examenAsignado
+                );
+
+                return (
+                  <CalendarCell
+                    key={`${fecha}-${mod.ID_MODULO}`}
+                    fecha={fecha}
+                    modulo={mod}
+                    selectedSala={selectedSala}
+                    selectedExam={selectedExam}
+                    reservas={reservas}
+                    modulosSeleccionados={modulosSeleccionados}
+                    onSelectModulo={onSelectModulo}
+                    examenAsignado={renderExamen ? examenAsignado : null}
+                    isPartOfExamen={examenAsignado !== null}
+                    onModulosChange={onModulosChange}
+                    onRemoveExamen={onRemoveExamen}
+                    modulosCount={examenAsignado?.modulosCount || 1}
+                  />
+                );
+              })}
             </tr>
           ))}
         </tbody>

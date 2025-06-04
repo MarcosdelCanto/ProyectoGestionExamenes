@@ -7,6 +7,7 @@ import './Login.css';
 const Login = () => {
   const [email_usuario, setEmail] = useState('');
   const [password_usuario, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false); // Estado para la visibilidad
   const [error, setError] = useState('');
   const navigate = useNavigate();
 
@@ -24,12 +25,13 @@ const Login = () => {
     }
   };
 
+  const toggleShowPassword = () => {
+    setShowPassword(!showPassword);
+  };
+
   return (
     <div className="login-wrapper d-flex align-items-center justify-content-center vh-100">
-      <div
-        className="card p-4 shadow"
-        style={{ maxWidth: '400px', width: '100%' }}
-      >
+      <div className="card p-4 shadow login-card">
         <div className="text-center mb-4">
           <img
             src="/images/logoduoc.svg.png"
@@ -57,15 +59,30 @@ const Login = () => {
             <label htmlFor="password_usuario" className="form-label">
               Contraseña
             </label>
-            <input
-              type="password"
-              className="form-control"
-              id="password_usuario"
-              value={password_usuario}
-              onChange={(e) => setPassword(e.target.value)}
-              required
-            />
+            <div className="input-group">
+              <input
+                type={showPassword ? 'text' : 'password'} // Tipo dinámico
+                className="form-control"
+                id="password_usuario"
+                value={password_usuario}
+                onChange={(e) => setPassword(e.target.value)}
+                required
+              />
+              <button
+                className="btn password-toggle-btn" // Cambiado btn-outline-secondary y añadido password-toggle-btn
+                type="button"
+                id="button-toggle-password"
+                onClick={toggleShowPassword}
+              >
+                {showPassword ? (
+                  <i className="bi bi-eye-slash-fill"></i> // Icono de ojo tachado
+                ) : (
+                  <i className="bi bi-eye-fill"></i> // Icono de ojo
+                )}
+              </button>
+            </div>
           </div>
+
           <button type="submit" className="btn btn-primary w-100">
             Entrar
           </button>

@@ -1,0 +1,42 @@
+.sala-selector-container {
+  flex: 0 0 20%;
+  display: flex;
+  flex-direction: column;
+  height: 100%; /* Ocupa toda la altura del padre */
+  background-color: var(--white);
+  border-radius: 4px;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+  overflow: hidden; /* Para controlar el desbordamiento */
+}
+.search-box {
+  flex: 1;
+  overflow-y: auto;
+  margin-bottom: 0; /* Removemos el margin bottom */
+  border-top: 1px solid #dee2e6;
+}
+.top-controls {
+  padding: 10px;
+  background-color: #f8f9fa;
+  border-bottom: 1px solid #dee2e6;
+}
+.search-box {
+  max-height: 200px;
+  overflow-y: auto;
+  margin-bottom: 1rem;
+}
+
+.tabla-seleccion {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.tabla-seleccion th,
+.tabla-seleccion td {
+  border: 1px solid #ddd;
+  padding: 0.5rem;
+  text-align: left;
+}
+
+.fila-seleccionada {
+  background: rgba(39, 174, 96, 0.2);
+}

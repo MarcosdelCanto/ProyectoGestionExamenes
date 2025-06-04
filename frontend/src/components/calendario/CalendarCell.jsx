@@ -1,9 +1,10 @@
-import React from 'react';
+import React, { memo } from 'react';
 import { format } from 'date-fns';
 import { useDroppable } from '@dnd-kit/core';
-import './CalendarioStyles.css';
+import './styles/Calendar.css';
+import ExamenPostIt from './ExamenPostIt';
 
-export default function CalendarCell({
+const CalendarCell = memo(function CalendarCell({
   fecha,
   modulo,
   selectedSala,
@@ -11,9 +12,17 @@ export default function CalendarCell({
   reservas,
   modulosSeleccionados,
   onSelectModulo,
+  examenAsignado,
+  isPartOfExamen,
+  onModulosChange,
+  onRemoveExamen,
+  modulosCount,
 }) {
-  const { setNodeRef, isOver } = useDroppable({
-    id: `droppable-${fecha}-${modulo.ORDEN}`,
+  // Configuración de la zona donde se puede soltar - un punto crucial
+  const droppableId = `droppable-${fecha}-${modulo.ORDEN}`;
+
+  const { isOver, setNodeRef } = useDroppable({
+    id: droppableId,
     data: {
       type: 'celda-calendario',
       fecha,
@@ -21,6 +30,7 @@ export default function CalendarCell({
     },
   });
 
+  // Verificación de reservas
   const estaReservado = reservas.some(
     (r) =>
       r.SALA_ID_SALA === selectedSala?.ID_SALA &&
@@ -28,10 +38,12 @@ export default function CalendarCell({
       r.Modulos.some((m) => m.MODULO_ID_MODULO === modulo.ID_MODULO)
   );
 
+  // Verificación de selección
   const estaSeleccionado = modulosSeleccionados.some(
     (m) => m.fecha === fecha && m.numero === modulo.ORDEN
   );
 
+  // Clases CSS
   let cellClassName = 'calendar-cell';
   if (estaReservado) {
     cellClassName += ' reservado';
@@ -41,14 +53,53 @@ export default function CalendarCell({
   if (isOver) {
     cellClassName += ' drop-hover';
   }
+  if (isPartOfExamen && !examenAsignado) {
+    cellClassName += ' part-of-examen';
+  }
+  if (examenAsignado) {
+    cellClassName += ' contains-examen';
+  }
+
+  // Manejador de clic
+  const handleClick = () => {
+    if (!estaReservado && !isPartOfExamen && onSelectModulo) {
+      onSelectModulo(fecha, modulo.ORDEN);
+    }
+  };
 
   return (
     <td
       ref={setNodeRef}
       className={cellClassName}
-      onClick={() => !estaReservado && onSelectModulo(fecha, modulo.ORDEN)}
+      onClick={handleClick}
+      data-celda-id={droppableId}
     >
-      {/* Contenido opcional de la celda */}
+      {examenAsignado ? (
+        <ExamenPostIt
+          examen={examenAsignado.examen}
+          modulosCount={examenAsignado.modulosCount}
+          onModulosChange={
+            onModulosChange
+              ? (id, count) => onModulosChange(id, count)
+              : undefined
+          }
+          onRemove={onRemoveExamen}
+          isPreview={false}
+          style={
+            modulosCount > 1
+              ? {
+                  height: `${modulosCount * 40}px`,
+                  position: 'absolute',
+                  zIndex: 5,
+                }
+              : undefined
+          }
+          fecha={fecha}
+          moduloInicial={examenAsignado.moduloInicial}
+        />
+      ) : null}
     </td>
   );
-}
+});
+
+export default CalendarCell;
