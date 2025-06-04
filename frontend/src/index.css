@@ -93,6 +93,57 @@ button:focus-visible {
   transform: none !important; /* Importante para anular el transform de Bootstrap que lo oculta fuera de la pantalla */
 }
 
+/* Estilos para el offcanvas-header y el logo */
+.offcanvas-header {
+  display: flex;
+  align-items: center;
+  /* justify-content se manejará por las clases de minimizado/expandido */
+  padding: var(--bs-offcanvas-padding-y) var(--bs-offcanvas-padding-x); /* Usa variables de Bootstrap si es posible */
+}
+
+.sidebar-logo-container {
+  flex-grow: 1; /* Permite que el contenedor del logo ocupe espacio */
+  display: flex;
+  align-items: center;
+  overflow: hidden; /* Importante para la transición de max-width */
+  transition:
+    opacity 0.25s ease-in-out,
+    max-width 0.25s ease-in-out;
+}
+
+.sidebar-logo {
+  max-height: 50px; /* Altura máxima deseada para el logo */
+  width: auto; /* Mantiene la proporción del logo */
+  max-width: 100%; /* Asegura que no desborde su contenedor */
+  object-fit: contain; /* Asegura que el logo se escale bien dentro de su espacio */
+  transition: opacity 0.25s ease-in-out; /* Transición para la aparición/desaparición */
+}
+
+/* Estado minimizado: Ocultar logo y ajustar header */
+.sidebar-minimized-custom .offcanvas-header {
+  justify-content: center; /* Centra el botón de toggle */
+}
+
+.sidebar-minimized-custom .sidebar-logo-container {
+  opacity: 0;
+  max-width: 0; /* Encoge el contenedor del logo */
+  pointer-events: none;
+}
+
+/* Estado expandido: Mostrar logo y ajustar header */
+.sidebar-expanded-custom .offcanvas-header {
+  justify-content: space-between; /* Espacio entre logo y botón */
+}
+
+.sidebar-expanded-custom .sidebar-logo-container {
+  opacity: 1;
+  /* Ajusta este max-width según el espacio que quieras que ocupe el logo */
+  max-width: calc(
+    var(--sidebar-width-expanded) - 100px
+  ); /* Ejemplo: ancho expandido menos espacio para el botón y padding */
+  pointer-events: auto;
+}
+
 /* Contenedor del texto del enlace */
 .sidebar-link-text {
   transition:
@@ -113,10 +164,6 @@ button:focus-visible {
   margin-left: 0; /* Sin margen cuando está oculto */
 }
 
-.sidebar-minimized-custom .nav-link {
-  justify-content: center; /* Centra el icono */
-}
-
 .sidebar-minimized-custom .nav-link .bi {
   margin-right: 0 !important; /* El icono no necesita margen si no hay texto */
 }
@@ -128,21 +175,17 @@ button:focus-visible {
 /* Estado expandido: Mostrar texto y título del offcanvas */
 .sidebar-expanded-custom .sidebar-link-text {
   opacity: 1;
-  /* Calcula el ancho máximo para el texto: Ancho expandido - padding - tamaño icono - margen icono */
   max-width: calc(
     var(--sidebar-width-expanded) - (2 * var(--sidebar-padding-x)) -
       var(--sidebar-icon-size) - 0.5rem
   );
   margin-left: 0.5rem; /* Espacio entre el icono y el texto */
+  pointer-events: auto;
 }
 
 .sidebar-expanded-custom .offcanvas-title {
   opacity: 1;
   pointer-events: auto;
-}
-
-.sidebar-expanded-custom .nav-link {
-  justify-content: flex-start; /* Alineación normal */
 }
 
 .sidebar-expanded-custom .nav-link .bi {
@@ -157,10 +200,14 @@ button:focus-visible {
 .nav-link {
   display: flex;
   align-items: center;
+  justify-content: flex-start; /* SIEMPRE flex-start */
+  padding-left: 1rem; /* Padding fijo para todos los estados */
 }
 
 .nav-link .bi {
   flex-shrink: 0; /* Evita que el icono se encoja */
+  width: var(--sidebar-icon-size);
+  text-align: center; /* Centra el icono dentro de su espacio fijo */
   /* El tamaño del icono se puede definir aquí o heredar */
 }
 

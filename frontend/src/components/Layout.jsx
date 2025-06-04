@@ -12,7 +12,9 @@ export default function Layout({ children }) {
   const location = useLocation();
   const offcanvasRef = useRef(null);
   const offcanvasInstanceRef = useRef(null);
-  const [isSidebarMinimized, setIsSidebarMinimized] = useState(true); // Inicia minimizado
+  const [isSidebarMinimized, setIsSidebarMinimized] = useState(true);
+  const [isLogoVisibleForRender, setIsLogoVisibleForRender] =
+    useState(!isSidebarMinimized);
 
   const handleLogout = () => {
     authLogout();
@@ -69,6 +71,21 @@ export default function Layout({ children }) {
     }
   }, []);
 
+  // Efecto para manejar la visibilidad del logo con retardo
+  useEffect(() => {
+    let timer;
+    if (isSidebarMinimized) {
+      // Si se está minimizando, esperar a que termine la animación CSS antes de ocultar el logo del DOM
+      timer = setTimeout(() => {
+        setIsLogoVisibleForRender(false);
+      }, 250); // Asegúrate que este tiempo (250ms) coincida con tu transición CSS
+    } else {
+      // Si se está expandiendo, mostrar el logo inmediatamente en el DOM
+      setIsLogoVisibleForRender(true);
+    }
+    return () => clearTimeout(timer); // Limpiar el temporizador si el componente se desmonta o el estado cambia
+  }, [isSidebarMinimized]);
+
   if (loading) {
     return (
       <div className="d-flex justify-content-center align-items-center vh-100">
@@ -93,21 +110,20 @@ export default function Layout({ children }) {
         aria-labelledby="offcanvasSidebarLabel"
       >
         <div className="offcanvas-header">
-          <h5 className="offcanvas-title" id="offcanvasSidebarLabel">
-            {!isSidebarMinimized ? (
+          {/* Contenedor del logo */}
+          <div className="sidebar-logo-container">
+            {/* Renderizar el logo basado en isLogoVisibleForRender */}
+            {isLogoVisibleForRender && (
               <img
-                src="/images/logoduoc.svg.png"
+                src="/images/logoduoc.svg.png" // Asegúrate que la ruta sea correcta
                 alt="Logo Institucional"
-                className="me-3"
-                style={{ height: '50px' }}
+                className="sidebar-logo img-fluid" // Añade clases para control CSS
               />
-            ) : (
-              ''
             )}
-          </h5>
+          </div>
           <button
             type="button"
-            className="btn"
+            className="btn" // Botón para minimizar/expandir
             aria-label={isSidebarMinimized ? 'Expandir menú' : 'Minimizar menú'}
             onClick={() => setIsSidebarMinimized(!isSidebarMinimized)}
           >
@@ -124,14 +140,20 @@ export default function Layout({ children }) {
               to="/"
               className="nav-link fw-bold text-dark d-flex align-items-center"
             >
-              <i className="bi bi-house-door-fill me-2"></i>
+              <div className="sidebar-icon-container">
+                <i className="bi bi-house-door-fill"></i>
+              </div>
+
               <span className="sidebar-link-text">Inicio</span>
             </Link>
             <Link
               to="/mis-reservas"
               className="nav-link text-dark d-flex align-items-center"
             >
-              <i className="bi bi-calendar-check-fill me-2"></i>
+              <div className="sidebar-icon-container">
+                <i className="bi bi-calendar-check-fill"></i>
+              </div>
+
               <span className="sidebar-link-text">Exámenes Programados</span>
             </Link>
             {hasPermission('VIEW_CALENDARIO') && (
@@ -139,7 +161,10 @@ export default function Layout({ children }) {
                 to="/calendario"
                 className="nav-link text-dark d-flex align-items-center"
               >
-                <i className="bi bi-calendar3 me-2"></i>
+                <div className="sidebar-icon-container">
+                  <i className="bi bi-calendar3"></i>
+                </div>
+
                 <span className="sidebar-link-text">Calendario</span>
               </Link>
             )}
@@ -148,7 +173,10 @@ export default function Layout({ children }) {
                 to="/examen"
                 className="nav-link text-dark d-flex align-items-center"
               >
-                <i className="bi bi-file-earmark-text-fill me-2"></i>
+                <div className="sidebar-icon-container">
+                  <i className="bi bi-file-earmark-text-fill"></i>
+                </div>
+
                 <span className="sidebar-link-text">Gestión de Exámenes</span>
               </Link>
             )}
@@ -157,7 +185,10 @@ export default function Layout({ children }) {
                 to="/reservas/crear"
                 className="nav-link text-dark d-flex align-items-center"
               >
-                <i className="bi bi-calendar-plus-fill me-2"></i>
+                <div className="sidebar-icon-container">
+                  <i className="bi bi-calendar-plus-fill"></i>
+                </div>
+
                 <span className="sidebar-link-text">Crear Reserva</span>
               </Link>
             )}
@@ -166,7 +197,9 @@ export default function Layout({ children }) {
                 to="/reserva/docente/pendientes"
                 className="nav-link text-dark d-flex align-items-center"
               >
-                <i className="bi bi-calendar-event-fill me-2"></i>
+                <div className="sidebar-icon-container">
+                  <i className="bi bi-calendar-event-fill"></i>
+                </div>
                 <span className="sidebar-link-text">Reservas Pendientes</span>
               </Link>
             )}
@@ -175,7 +208,9 @@ export default function Layout({ children }) {
                 to="/salas"
                 className="nav-link text-dark d-flex align-items-center"
               >
-                <i className="bi bi-door-open-fill me-2"></i>
+                <div className="sidebar-icon-container">
+                  <i className="bi bi-door-open-fill"></i>
+                </div>
                 <span className="sidebar-link-text">Gestión de Salas</span>
               </Link>
             )}
@@ -184,7 +219,9 @@ export default function Layout({ children }) {
                 to="/asignaturas"
                 className="nav-link text-dark d-flex align-items-center"
               >
-                <i className="bi bi-book-fill me-2"></i>
+                <div className="sidebar-icon-container">
+                  <i className="bi bi-book-fill"></i>
+                </div>
                 <span className="sidebar-link-text">
                   Gestión de Asignaturas
                 </span>
@@ -195,7 +232,10 @@ export default function Layout({ children }) {
                 to="/modulos"
                 className="nav-link text-dark d-flex align-items-center"
               >
-                <i className="bi bi-grid-1x2-fill me-2"></i>
+                <div className="sidebar-icon-container">
+                  <i className="bi bi-grid-1x2-fill"></i>
+                </div>
+
                 <span className="sidebar-link-text">Gestión de Módulos</span>
               </Link>
             )}
@@ -204,7 +244,9 @@ export default function Layout({ children }) {
                 to="/usuarios"
                 className="nav-link text-dark d-flex align-items-center"
               >
-                <i className="bi bi-people-fill me-2"></i>
+                <div className="sidebar-icon-container">
+                  <i className="bi bi-people-fill"></i>
+                </div>
                 <span className="sidebar-link-text">Gestión de Usuarios</span>
               </Link>
             )}
@@ -213,7 +255,10 @@ export default function Layout({ children }) {
                 to="/carga-datos"
                 className="nav-link text-dark d-flex align-items-center"
               >
-                <i className="bi bi-upload me-2"></i>
+                <div className="sidebar-icon-container">
+                  <i className="bi bi-upload"></i>
+                </div>
+
                 <span className="sidebar-link-text">Carga de Datos Masiva</span>
               </Link>
             )}
@@ -222,7 +267,10 @@ export default function Layout({ children }) {
                 to="/roles"
                 className="nav-link text-dark d-flex align-items-center"
               >
-                <i className="bi bi-shield-lock-fill me-2"></i>
+                <div className="sidebar-icon-container">
+                  <i className="bi bi-shield-lock-fill"></i>
+                </div>
+
                 <span className="sidebar-link-text">Gestión de Permisos</span>
               </Link>
             )}
@@ -231,7 +279,10 @@ export default function Layout({ children }) {
                 to="/reportes"
                 className="nav-link fw-bold text-dark d-flex align-items-center"
               >
-                <i className="bi bi-file-bar-graph-fill me-2"></i>
+                <div className="sidebar-icon-container">
+                  <i className="bi bi-file-bar-graph-fill"></i>
+                </div>
+
                 <span className="sidebar-link-text">Reportes</span>
               </Link>
             )}
@@ -242,7 +293,10 @@ export default function Layout({ children }) {
               className="btn btn-danger w-100 d-flex align-items-center justify-content-center"
               onClick={handleLogout}
             >
-              <i className="bi bi-box-arrow-right me-2"></i>
+              <div className="sidebar-icon-container">
+                <i className="bi bi-box-arrow-right"></i>
+              </div>
+
               <span className="sidebar-link-text">Cerrar sesión</span>
             </button>
           </div>
