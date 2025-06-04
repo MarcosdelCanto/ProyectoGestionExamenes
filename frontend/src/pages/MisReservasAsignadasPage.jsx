@@ -167,9 +167,7 @@ const MisReservasAsignadasPage = () => {
         <br />
         {asignaciones.length > 0 && (
           <>
-            <h3 className="display-7 mb-3 mt-4">
-              Exámenes que Requieren Revisión
-            </h3>
+            <h3 className="display-6 mb-3">Exámenes que Requieren Revisión</h3>
             <hr />
             <Table striped bordered hover responsive size="sm">
               <thead className="table-light sticky-top">
