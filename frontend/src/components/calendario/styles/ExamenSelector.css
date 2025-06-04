@@ -2,47 +2,109 @@
   flex: 1 1 auto;
   display: flex;
   flex-direction: column;
-  height: 100%; /* Ocupa toda la altura del padre */
-  background-color: var(--white);
-  border-radius: 4px;
-  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
-  overflow: hidden; /* Para controlar el desbordamiento */
+  height: 100%;
+  background-color: #ffffff;
+  border-radius: 8px;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15); /* Sombra más sutil */
+  overflow: hidden;
 }
-.vista-examenes-postits {
-  flex: 1;
-  overflow-y: auto;
-  padding: 10px;
-  border-top: 1px solid #dee2e6;
-}
+
 .examenes-container {
   width: 100%;
   height: 100%;
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  padding: 0;
+  margin: 0;
+}
+/* Corrección principal: definición adecuada del grid */
+.vista-examenes-postits {
+  display: grid;
+  grid-template-columns: repeat(
+    auto-fill,
+    minmax(180px, 1fr)
+  ); /* Elementos más pequeños */
+  gap: 10px; /* Menos espacio entre elementos */
+  padding: 10px; /* Menos padding en la cuadrícula */
+  overflow-y: auto;
+  height: calc(100% - 60px); /* Ajuste para la paginación */
+  align-content: start; /* Alinear al inicio para mejor visualización */
 }
 .draggable-examen {
   transform: translate3d(0, 0, 0);
   cursor: grab;
   touch-action: none;
+  width: 100%;
+  border-radius: 4px; /* Bordes menos redondeados */
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12); /* Sombra más sutil */
+  transition:
+    transform 0.2s,
+    box-shadow 0.2s;
+  margin: 0; /* Eliminar márgenes */
 }
 
 .draggable-examen:active {
   cursor: grabbing;
+  box-shadow: 0 5px 10px rgba(0, 0, 0, 0.15);
 }
+
+.draggable-examen:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+}
+
+/* Remover la clase examen-selector que podría estar interfiriendo */
 .examen-selector {
-  margin-bottom: 1rem;
-  overflow-x: auto;
+  display: none; /* Si no se usa, mejor ocultarla */
+}
+/* Controles de búsqueda y filtro */
+.examen-search-container {
+  padding: 10px;
+  background-color: #f8f9fa;
+  border-bottom: 1px solid #dee2e6;
   display: flex;
-  gap: 0.75rem;
-  padding-bottom: 0.5rem;
+  gap: 8px;
+  align-items: center;
 }
 
-.examen-selector::-webkit-scrollbar {
-  height: 6px;
+/* Paginación mejorada */
+.pagination-controls {
+  background-color: #f8f9fa;
+  padding: 8px 10px; /* Menos padding */
+  border-top: 1px solid #dee2e6;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 15px;
+  margin-top: auto; /* Empujar al fondo */
+}
+/* Asegurar que los elementos ocupen el espacio adecuado */
+.contenedor-examenes-pendientes {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  max-height: 100%;
+  overflow: hidden;
 }
 
-.examen-selector::-webkit-scrollbar-thumb {
-  background: var(--secondary-color);
-  border-radius: 3px;
+/* Responsive adjustments */
+@media (max-width: 576px) {
+  .vista-examenes-postits {
+    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+    gap: 8px;
+  }
+}
+
+/* Responsive para pantallas medianas */
+@media (min-width: 577px) and (max-width: 992px) {
+  .vista-examenes-postits {
+    grid-template-columns: repeat(auto-fill, minmax(170px, 1fr));
+  }
+}
+
+/* Para pantallas grandes */
+@media (min-width: 993px) {
+  .vista-examenes-postits {
+    grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  }
 }

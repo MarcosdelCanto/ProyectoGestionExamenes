@@ -179,23 +179,117 @@ export default function AgendaSemanal({
     },
     []
   );
+  const verificarConflictoAlRedimensionar = useCallback(
+    (examenId, fecha, moduloInicial, nuevaCantidadModulos) => {
+      console.log('Verificando conflictos para:', {
+        examenId,
+        fecha,
+        moduloInicial,
+        nuevaCantidadModulos,
+      });
+
+      // Verificamos si hay suficientes módulos disponibles en el calendario
+      const ultimoModuloNecesario = moduloInicial + nuevaCantidadModulos - 1;
+      const ultimoModuloDisponible = Math.max(...modulos.map((m) => m.ORDEN));
+
+      if (ultimoModuloNecesario > ultimoModuloDisponible) {
+        console.log('Fuera de rango: intenta usar módulos que no existen');
+        return true; // Hay conflicto
+      }
+
+      // Recorremos todos los módulos que ocuparía el examen con el nuevo tamaño
+      // Empezamos desde 1 porque el módulo inicial ya lo ocupa este examen
+      for (let i = 1; i < nuevaCantidadModulos; i++) {
+        const ordenActual = moduloInicial + i;
+
+        // Verificar si el módulo existe en la estructura de modulos
+        const moduloExiste = modulos.some((m) => m.ORDEN === ordenActual);
+        if (!moduloExiste) {
+          console.log('Módulo fuera de rango:', ordenActual);
+          return true; // Hay conflicto
+        }
+
+        // Si hay otro examen diferente al actual en ese módulo
+        const examenEnModulo = examenesAsignados.find(
+          (asignado) =>
+            asignado.examen.ID_EXAMEN !== examenId &&
+            asignado.fecha === fecha &&
+            ordenActual >= asignado.moduloInicial &&
+            ordenActual < asignado.moduloInicial + asignado.modulosCount
+        );
+
+        if (examenEnModulo) {
+          console.log(
+            'Conflicto con otro examen:',
+            examenEnModulo.examen.NOMBRE_ASIGNATURA
+          );
+          return true; // Hay conflicto
+        }
+
+        // Si el módulo está reservado para otra actividad
+        const estaReservado = reservas.some(
+          (r) =>
+            r.SALA_ID_SALA === selectedSala?.ID_SALA &&
+            format(new Date(r.FECHA_RESERVA), 'yyyy-MM-dd') === fecha &&
+            r.Modulos.some((m) => {
+              const moduloReservado = modulos.find(
+                (mod) => mod.ID_MODULO === m.MODULO_ID_MODULO
+              );
+              return moduloReservado && moduloReservado.ORDEN === ordenActual;
+            })
+        );
+
+        if (estaReservado) {
+          console.log('Módulo reservado:', ordenActual);
+          return true; // Hay conflicto
+        }
+      }
+
+      // Si llegamos aquí, no hay conflictos
+      console.log('No hay conflictos, se puede redimensionar');
+      return false;
+    },
+    [modulos, examenesAsignados, reservas, selectedSala]
+  );
+
   // funcion para actualizar modulos de un examen existente
   const actualizarModulosExamen = useCallback(
     (examenId, nuevosCant) => {
-      // El estado `examenesConModulos` no está definido en este componente.
-      // `examenesConModulosModificados` se usa para rastrear cambios en el ExamenSelector
-      // antes de que el examen sea arrastrado.
-      // Esta función es para actualizar la cantidad de módulos de un examen
-      // que ya ha sido asignado y está en la tabla.
-      setExamenesAsignados((prev) =>
-        prev.map((asignado) =>
+      console.log('Actualizando módulos de examen:', examenId, 'a', nuevosCant);
+
+      setExamenesAsignados((prev) => {
+        // Encontramos el examen a actualizar
+        const examenToUpdate = prev.find(
+          (asignado) => asignado.examen.ID_EXAMEN === examenId
+        );
+
+        if (!examenToUpdate) {
+          console.warn('No se encontró el examen a actualizar');
+          return prev;
+        }
+
+        // Verificamos si hay conflictos
+        const hayConflicto = verificarConflictoAlRedimensionar(
+          examenId,
+          examenToUpdate.fecha,
+          examenToUpdate.moduloInicial,
+          nuevosCant
+        );
+
+        if (hayConflicto) {
+          console.warn('No se puede actualizar por conflicto');
+          return prev;
+        }
+
+        // Si no hay conflicto, actualizamos
+        return prev.map((asignado) =>
           asignado.examen.ID_EXAMEN === examenId
             ? { ...asignado, modulosCount: nuevosCant }
             : asignado
-        )
-      );
+        );
+      });
     },
-    [setExamenesAsignados]
+    [verificarConflictoAlRedimensionar]
   );
   // funcion para eliminar un examen de la tabla
   const eliminarExamen = useCallback(
@@ -230,7 +324,6 @@ export default function AgendaSemanal({
     },
     [examenesAsignados]
   );
-
   // Efecto para procesar drops de examenes en la tabla
   useEffect(() => {
     if (draggedExamen && dropTargetCell && selectedSala) {
@@ -506,6 +599,7 @@ export default function AgendaSemanal({
               obtenerExamenParaCelda={obtenerExamenParaCelda}
               onModulosChange={actualizarModulosExamen}
               onRemoveExamen={eliminarExamen}
+              onCheckConflict={verificarConflictoAlRedimensionar}
             />
             {puedeConfirmar && (
               <button

@@ -16,6 +16,7 @@ const CalendarCell = memo(function CalendarCell({
   isPartOfExamen,
   onModulosChange,
   onRemoveExamen,
+  onCheckConflict, // Asegúrate de incluir esta prop
   modulosCount,
 }) {
   // Configuración de la zona donde se puede soltar - un punto crucial
@@ -84,18 +85,16 @@ const CalendarCell = memo(function CalendarCell({
               : undefined
           }
           onRemove={onRemoveExamen}
+          onCheckConflict={onCheckConflict} // Asegúrate de pasar esta prop
           isPreview={false}
-          style={
-            modulosCount > 1
-              ? {
-                  height: `${modulosCount * 40}px`,
-                  position: 'absolute',
-                  zIndex: 5,
-                }
-              : undefined
-          }
           fecha={fecha}
           moduloInicial={examenAsignado.moduloInicial}
+          style={{
+            position: 'absolute',
+            height: `${examenAsignado.modulosCount * 40}px`,
+            width: '100%',
+            zIndex: 10,
+          }}
         />
       ) : null}
     </td>

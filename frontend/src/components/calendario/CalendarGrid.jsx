@@ -14,6 +14,7 @@ export default function CalendarGrid({
   obtenerExamenParaCelda,
   onModulosChange,
   onRemoveExamen,
+  onCheckConflict,
 }) {
   if (!modulos || modulos.length === 0) {
     return <p className="aviso-seleccion">No hay módulos para mostrar.</p>;
@@ -59,6 +60,7 @@ export default function CalendarGrid({
                     isPartOfExamen={examenAsignado !== null}
                     onModulosChange={onModulosChange}
                     onRemoveExamen={onRemoveExamen}
+                    onCheckConflict={onCheckConflict}
                     modulosCount={examenAsignado?.modulosCount || 1}
                   />
                 );
