@@ -2,26 +2,29 @@ import React, { useState, useRef, useEffect } from 'react';
 import { FaGripLines, FaArrowsAltV, FaTimes } from 'react-icons/fa';
 import './styles/PostIt.css';
 import { is } from 'date-fns/locale';
+import { set } from 'date-fns';
 
 export default function ExamenPostIt({
   examen,
-  setNodeRef, // Referencia para DndKit
-  style, // Estilos aplicados por DndKit
+  setNodeRef,
+  style,
   onModulosChange,
-  onRemove, // Función para eliminar el examen
+  onRemove,
+  onCheckConflict, // Añadir esta prop explícitamente
   minModulos = 1,
   maxModulos = 12,
-  isPreview = false, // Nuevo prop para diferenciar vista previa vs colocado
-  dragHandleListeners, // Listeners para el drag handle
-  isBeingDragged, // Para saber si el elemento está siendo arrastrado por dnd-kit
+  isPreview = false,
+  dragHandleListeners,
+  isBeingDragged,
   fecha,
-  moduloInicial, // Módulo inicial del examen
+  moduloInicial,
   ...props
 }) {
   const [modulosCount, setModulosCount] = useState(
     examen?.CANTIDAD_MODULOS_EXAMEN || 1
   );
   const [isResizing, setIsResizing] = useState(false);
+  const [resizeError, setResizeError] = useState(null);
   const startResizeRef = useRef(null);
   const startHeightRef = useRef(null);
   const moduleHeightRef = useRef(40);
@@ -47,6 +50,61 @@ export default function ExamenPostIt({
     return colors[hash % colors.length] || '#fffacd';
   };
 
+  // Modificar la función handleResizeMove para manejar mejor los errores
+  const handleResizeMove = (e) => {
+    if (!isResizing) return;
+    e.preventDefault();
+
+    // Limitar la frecuencia de actualizaciones para mejorar el rendimiento
+    const now = Date.now();
+    if (now - lastResizeUpdateRef.current < 30) return; // Limitar a 30ms
+    lastResizeUpdateRef.current = now;
+
+    const deltaY = e.clientY - startResizeRef.current;
+    const baseHeight = startHeightRef.current || 40;
+    const newHeight = Math.max(40, baseHeight + deltaY);
+
+    const newModulosCount = Math.max(
+      minModulos,
+      Math.min(maxModulos, Math.round(newHeight / moduleHeightRef.current))
+    );
+
+    if (newModulosCount !== modulosCount) {
+      // Primero verificar si la función existe antes de usarla
+      if (
+        onCheckConflict &&
+        typeof onCheckConflict === 'function' &&
+        fecha &&
+        moduloInicial
+      ) {
+        try {
+          const hasConflict = onCheckConflict(
+            examen.ID_EXAMEN,
+            fecha,
+            moduloInicial,
+            newModulosCount
+          );
+
+          if (hasConflict) {
+            setResizeError('¡Conflicto! Hay otro examen en esa posición');
+            return;
+          } else {
+            setResizeError(null);
+          }
+        } catch (error) {
+          console.error('Error al verificar conflictos:', error);
+          // No permitir cambios si hay error en la verificación
+          return;
+        }
+      }
+
+      // Si no hay conflicto o no se puede verificar, permitir el cambio
+      setModulosCount(newModulosCount);
+      if (onModulosChange) {
+        onModulosChange(examen.ID_EXAMEN, newModulosCount);
+      }
+    }
+  };
   // Manejadores para el redimensionamiento - solo si NO es vista previa
   const handleResizeStart = (e) => {
     if (isPreview) return; // No permitir redimensionamiento en vista previa
@@ -61,35 +119,9 @@ export default function ExamenPostIt({
     document.addEventListener('mouseup', handleResizeEnd);
   };
 
-  const handleResizeMove = (e) => {
-    if (!isResizing) return;
-    e.preventDefault();
-
-    // Limitar la frecuencia de actualizaciones para evitar problemas de rendimiento
-    const now = Date.now();
-    if (now - lastResizeUpdateRef.current < 30) return; // Actualizar cada 50ms
-    lastResizeUpdateRef.current = now;
-
-    const deltaY = e.clientY - startResizeRef.current;
-    const baseHeight = startHeightRef.current || 40;
-    const newHeight = Math.max(40, baseHeight + deltaY);
-
-    // Calcular nuevos módulos basados en la altura
-    const newModulosCount = Math.max(
-      minModulos,
-      Math.min(maxModulos, Math.round(newHeight / moduleHeightRef.current))
-    );
-
-    if (newModulosCount !== modulosCount) {
-      setModulosCount(newModulosCount);
-      if (onModulosChange) {
-        onModulosChange(examen.ID_EXAMEN, newModulosCount);
-      }
-    }
-  };
-
   const handleResizeEnd = () => {
     setIsResizing(false);
+    setResizeError(null);
     document.removeEventListener('mousemove', handleResizeMove);
     document.removeEventListener('mouseup', handleResizeEnd);
   };
@@ -156,7 +188,7 @@ export default function ExamenPostIt({
       style={finalStyles}
       className={`examen-post-it ${isPreview ? 'preview' : 'placed'} ${
         isBeingDragged ? 'dragging' : ''
-      } ${isResizing ? 'resizing' : ''}`}
+      } ${isResizing ? 'resizing' : ''} ${resizeError ? 'error-resize' : ''}`}
       data-modulos={modulosCount}
       data-fecha={fecha}
       data-modulo-inicial={moduloInicial}
@@ -267,7 +299,7 @@ export default function ExamenPostIt({
           <strong>Módulos:</strong> {modulosCount}
         </div>
       </div>
-
+      {resizeError && <div className="resize-error-message">{resizeError}</div>}
       {!isPreview && (
         <div
           style={{

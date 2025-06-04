@@ -19,17 +19,29 @@
 }
 .calendar-cell {
   position: relative;
-  min-height: 40px;
   height: 40px;
+  min-height: 40px;
+  vertical-align: top;
   padding: 0 !important;
+  border: 1px solid #dee2e6;
   overflow: visible !important;
+  z-index: 1;
 }
 .calendar-cell.contains-examen {
-  background-color: transparent;
+  overflow: visible !important;
   z-index: 2;
 }
 .calendar-cell.part-of-examen {
   background-color: rgba(255, 255, 200, 0.1);
+}
+/* Asegurar que los exámenes colocados se muestren correctamente */
+.examen-post-it.placed {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  width: 100%;
+  z-index: 10;
 }
 .calendar-cell:hover {
   background-color: #f1f8ff;
@@ -76,6 +88,10 @@
   left: 40px;
   z-index: 2;
 }
+/* Mejoras para la apariencia de los módulos */
+[data-modulos='1'] {
+  height: 40px;
+}
 [data-modulos='2'] {
   height: 80px;
 }
@@ -84,6 +100,30 @@
 }
 [data-modulos='4'] {
   height: 160px;
+}
+[data-modulos='5'] {
+  height: 200px;
+}
+[data-modulos='6'] {
+  height: 240px;
+}
+[data-modulos='7'] {
+  height: 280px;
+}
+[data-modulos='8'] {
+  height: 320px;
+}
+[data-modulos='9'] {
+  height: 360px;
+}
+[data-modulos='10'] {
+  height: 400px;
+}
+[data-modulos='11'] {
+  height: 440px;
+}
+[data-modulos='12'] {
+  height: 480px;
 }
 /* Encabezado del calendario */
 .calendar-table thead th {
