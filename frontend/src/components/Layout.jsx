@@ -1,9 +1,9 @@
 // src/components/Layout.jsx
-import React from 'react';
-import { Link } from 'react-router-dom';
-import { useNavigate } from 'react-router-dom';
+import React, { useEffect, useRef } from 'react'; // Importa useRef y useEffect
+import { Link, useLocation, useNavigate } from 'react-router-dom'; // Importa useLocation
 import { getCurrentUser, logout as authLogout } from '../services/authService'; // Asegúrate que la ruta sea correcta
 import { usePermission } from '../hooks/usePermission'; // Asegúrate que la ruta sea correcta
+import { Offcanvas } from 'bootstrap'; // Importa Offcanvas de Bootstrap
 
 export default function Layout({ children }) {
   const navigate = useNavigate();
@@ -11,11 +11,56 @@ export default function Layout({ children }) {
   // Utilizamos el hook para obtener los permisos.
   // Asumimos que este hook funciona y 'hasPermission' devuelve true/false correctamente.
   const { hasPermission, loading } = usePermission();
+  const location = useLocation(); // Hook para obtener la ubicación actual (ruta)
+  const offcanvasRef = useRef(null); // Ref para el elemento Offcanvas
+  const offcanvasInstanceRef = useRef(null); // Ref para la instancia de Bootstrap Offcanvas
 
   const handleLogout = () => {
     authLogout();
     navigate('/login');
   };
+
+  // Inicializar la instancia de Offcanvas de Bootstrap cuando el componente se monta
+  useEffect(() => {
+    if (offcanvasRef.current) {
+      offcanvasInstanceRef.current = new Offcanvas(offcanvasRef.current);
+    }
+
+    // Función de limpieza para destruir la instancia de Offcanvas cuando el componente se desmonta
+    return () => {
+      if (offcanvasInstanceRef.current) {
+        // Intenta usar el método dispose de Bootstrap si está disponible
+        if (typeof offcanvasInstanceRef.current.dispose === 'function') {
+          offcanvasInstanceRef.current.dispose();
+        }
+        // Como fallback, asegúrate de que el overflow del body se resetee
+        if (document.body.style.overflow === 'hidden') {
+          document.body.style.overflow = '';
+          document.body.style.paddingRight = ''; // Bootstrap también puede añadir padding
+        }
+      }
+    };
+  }, []); // El array vacío asegura que esto se ejecute solo al montar y desmontar
+
+  // Efecto para cerrar el Offcanvas cuando cambia la ruta
+  useEffect(() => {
+    if (offcanvasInstanceRef.current && offcanvasInstanceRef.current._isShown) {
+      offcanvasInstanceRef.current.hide();
+    }
+    // Fallback adicional por si Bootstrap no limpia el overflow correctamente en todas las navegaciones SPA
+    // Un pequeño delay puede ayudar si el JS de Bootstrap aún se está ejecutando.
+    const timeoutId = setTimeout(() => {
+      if (
+        document.body.style.overflow === 'hidden' &&
+        (!offcanvasInstanceRef.current ||
+          !offcanvasInstanceRef.current._isShown)
+      ) {
+        document.body.style.overflow = '';
+        document.body.style.paddingRight = ''; // Bootstrap también puede añadir padding
+      }
+    }, 0);
+    return () => clearTimeout(timeoutId); // Limpiar el timeout si el componente se desmonta o el efecto se re-ejecuta
+  }, [location.pathname]); // Este efecto se ejecuta cada vez que cambia el pathname
 
   if (loading) {
     return (
@@ -56,9 +101,10 @@ export default function Layout({ children }) {
 
       {/* Sidebar (Offcanvas) */}
       <div
+        ref={offcanvasRef} // Asigna la ref al div del Offcanvas
         className="offcanvas offcanvas-start bg-light"
         tabIndex="-1"
-        id="offcanvasSidebar"
+        id="offcanvasSidebar" // Este ID es el que usa data-bs-target
         aria-labelledby="offcanvasSidebarLabel"
       >
         <div className="offcanvas-header">
