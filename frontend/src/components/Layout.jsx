@@ -294,10 +294,10 @@ export default function Layout({ children }) {
               onClick={handleLogout}
             >
               <div className="sidebar-icon-container">
-                <i className="bi bi-box-arrow-right"></i>
+                <i className="bi bi-box-arrow-right me-2"></i>
               </div>
 
-              <span className="sidebar-link-text">Cerrar sesión</span>
+              <span className="sidebar-link-text"> Cerrar sesión</span>
             </button>
           </div>
         </div>
