@@ -131,16 +131,18 @@ export default function AgendaSemanal({
     return eachDayOfInterval({
       start,
       end: addDays(start, 6), // 5 días después del lunes = sábado
-    }).map((date) => {
-      const fechaStr = format(date, 'yyyy-MM-dd');
-      return {
-        fecha: fechaStr,
-        diaNumero: format(date, 'd'),
-        diaNombre: format(date, 'EEEE', { locale: es }),
-        esHoy: fechaStr === format(new Date(), 'yyyy-MM-dd'),
-        esSeleccionado: fechaStr === selectedDateStr,
-      };
-    });
+    })
+      .map((date) => {
+        const fechaStr = format(date, 'yyyy-MM-dd');
+        return {
+          fecha: fechaStr,
+          diaNumero: format(date, 'd'),
+          diaNombre: format(date, 'EEEE', { locale: es }),
+          esHoy: fechaStr === format(new Date(), 'yyyy-MM-dd'),
+          esSeleccionado: fechaStr === selectedDateStr,
+        };
+      })
+      .filter((fecha) => fecha.diaNombre.toLowerCase() !== 'domingo');
   };
   const fechas = useMemo(
     () => getWeekDates(fechaBase, fechaSeleccionada),
