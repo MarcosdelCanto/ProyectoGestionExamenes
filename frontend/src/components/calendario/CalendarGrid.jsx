@@ -38,7 +38,7 @@ export default function CalendarGrid({
               <td className="horario-col">
                 {mod.INICIO_MODULO} - {mod.FIN_MODULO}
               </td>
-              {fechas.map(({ fecha }) => {
+              {fechas.map(({ fecha, esSeleccionado }) => {
                 const examenAsignado = obtenerExamenParaCelda(fecha, mod.ORDEN);
                 const renderExamen = shouldRenderExamen(
                   fecha,
@@ -62,6 +62,7 @@ export default function CalendarGrid({
                     onRemoveExamen={onRemoveExamen}
                     onCheckConflict={onCheckConflict}
                     modulosCount={examenAsignado?.modulosCount || 1}
+                    esDiaSeleccionado={esSeleccionado}
                   />
                 );
               })}

@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo, useCallback, use } from 'react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import {
   format,
   startOfWeek,
@@ -14,29 +14,6 @@ import CalendarGrid from './CalendarGrid';
 import FilterModalSalas from './FilterModalSalas';
 import './styles/AgendaSemanal.css'; // Importar los estilos
 
-//funcion para obtener las fechas de la semana actual
-const getWeekDates = (currentDate) => {
-  if (!isValid(new Date(currentDate))) {
-    currentDate = new Date();
-  }
-  // Obtener el lunes de la semana
-  const start = startOfWeek(new Date(currentDate), {
-    weekStartsOn: 1,
-    locale: es,
-  });
-
-  // Generar 7 días a partir del lunes
-  return eachDayOfInterval({
-    start,
-    end: addDays(start, 6), // 5 días después del lunes = sábado
-  }).map((date) => ({
-    fecha: format(date, 'yyyy-MM-dd'),
-    diaNumero: format(date, 'd'),
-    diaNombre: format(date, 'EEEE', { locale: es }),
-    esHoy: format(date, 'yyyy-MM-dd') === format(new Date(), 'yyyy-MM-dd'),
-  }));
-};
-
 export default function AgendaSemanal({
   draggedExamen, // Este es el examen que se está arrastrando (viene de DndContext en CalendarioPage)
   dropTargetCell, // Esta es la celda donde se soltó (viene de DndContext en CalendarioPage)
@@ -46,6 +23,7 @@ export default function AgendaSemanal({
   const [salas, setSalas] = useState([]);
   const [selectedSala, setSelectedSala] = useState(null);
   const [searchTermSala, setSearchTermSala] = useState('');
+  const [searchTermExamenes, setSearchTermExamenes] = useState('');
   const [isLoadingSalas, setIsLoadingSalas] = useState(true);
   const [showSalaFilterModal, setShowSalaFilterModal] = useState(false);
   const [selectedSede, setSelectedSede] = useState(''); // Para el filtro de sede en el modal
@@ -65,6 +43,7 @@ export default function AgendaSemanal({
   const [selectedExamInternal, setSelectedExamInternal] = useState(null); // Examen seleccionado para la reserva
   const [modulosSeleccionados, setModulosSeleccionados] = useState([]);
   const [fechaBase, setFechaBase] = useState(new Date());
+  const [fechaSeleccionada, setFechaSeleccionada] = useState(new Date());
   const [isLoadingModulos, setIsLoadingModulos] = useState(true);
   const [isLoadingReservas, setIsLoadingReservas] = useState(true);
 
@@ -119,8 +98,50 @@ export default function AgendaSemanal({
     }
     loadInitialData();
   }, []);
+  const handleDateChange = useCallback((e) => {
+    const selectedDate = new Date(e.target.value);
 
-  const fechas = useMemo(() => getWeekDates(fechaBase), [fechaBase]);
+    const startOfSelectedWeek = startOfWeek(selectedDate, {
+      weekStartsOn: 1, // Lunes como primer día de la semana
+      locale: es,
+    });
+    setFechaBase(startOfSelectedWeek);
+  }, []);
+
+  //funcion para obtener las fechas de la semana actual
+  const getWeekDates = (currentDate, selectedDate) => {
+    if (!isValid(new Date(currentDate))) {
+      currentDate = new Date();
+    }
+    // Obtener el lunes de la semana
+    const start = startOfWeek(new Date(currentDate), {
+      weekStartsOn: 1,
+      locale: es,
+    });
+    // convertir la fecha seleccionada a formato de comparacion
+    const selectedDateStr = selectedDate
+      ? format(selectedDate, 'yyyy-MM-dd')
+      : null;
+
+    // Generar 7 días a partir del lunes
+    return eachDayOfInterval({
+      start,
+      end: addDays(start, 6), // 5 días después del lunes = sábado
+    }).map((date) => {
+      const fechaStr = format(date, 'yyyy-MM-dd');
+      return {
+        fecha: fechaStr,
+        diaNumero: format(date, 'd'),
+        diaNombre: format(date, 'EEEE', { locale: es }),
+        esHoy: fechaStr === format(new Date(), 'yyyy-MM-dd'),
+        esSeleccionado: fechaStr === selectedDateStr,
+      };
+    });
+  };
+  const fechas = useMemo(
+    () => getWeekDates(fechaBase, fechaSeleccionada),
+    [fechaBase, fechaSeleccionada]
+  );
 
   // Filtrado de salas
   const filteredSalas = useMemo(() => {
@@ -150,7 +171,23 @@ export default function AgendaSemanal({
     }
     return tempSalas;
   }, [salas, searchTermSala, selectedSede, selectedEdificio]);
+  // Filtrado de exámenes
+  const filteredExamenes = useMemo(() => {
+    if (!examenes) return [];
 
+    return examenes.filter((examen) => {
+      const matchesSearchTerm =
+        !searchTermExamenes ||
+        examen.NOMBRE_ASIGNATURA?.toLowerCase().includes(
+          searchTermExamenes.toLowerCase()
+        ) ||
+        examen.NOMBRE_SECCION?.toLowerCase().includes(
+          searchTermExamenes.toLowerCase()
+        );
+
+      return matchesSearchTerm;
+    });
+  }, [examenes, searchTermExamenes]);
   const handleSelectSala = useCallback((sala) => {
     setSelectedSala(sala);
     setSelectedExamInternal(null); // Limpiar examen seleccionado al cambiar de sala
@@ -179,117 +216,23 @@ export default function AgendaSemanal({
     },
     []
   );
-  const verificarConflictoAlRedimensionar = useCallback(
-    (examenId, fecha, moduloInicial, nuevaCantidadModulos) => {
-      console.log('Verificando conflictos para:', {
-        examenId,
-        fecha,
-        moduloInicial,
-        nuevaCantidadModulos,
-      });
-
-      // Verificamos si hay suficientes módulos disponibles en el calendario
-      const ultimoModuloNecesario = moduloInicial + nuevaCantidadModulos - 1;
-      const ultimoModuloDisponible = Math.max(...modulos.map((m) => m.ORDEN));
-
-      if (ultimoModuloNecesario > ultimoModuloDisponible) {
-        console.log('Fuera de rango: intenta usar módulos que no existen');
-        return true; // Hay conflicto
-      }
-
-      // Recorremos todos los módulos que ocuparía el examen con el nuevo tamaño
-      // Empezamos desde 1 porque el módulo inicial ya lo ocupa este examen
-      for (let i = 1; i < nuevaCantidadModulos; i++) {
-        const ordenActual = moduloInicial + i;
-
-        // Verificar si el módulo existe en la estructura de modulos
-        const moduloExiste = modulos.some((m) => m.ORDEN === ordenActual);
-        if (!moduloExiste) {
-          console.log('Módulo fuera de rango:', ordenActual);
-          return true; // Hay conflicto
-        }
-
-        // Si hay otro examen diferente al actual en ese módulo
-        const examenEnModulo = examenesAsignados.find(
-          (asignado) =>
-            asignado.examen.ID_EXAMEN !== examenId &&
-            asignado.fecha === fecha &&
-            ordenActual >= asignado.moduloInicial &&
-            ordenActual < asignado.moduloInicial + asignado.modulosCount
-        );
-
-        if (examenEnModulo) {
-          console.log(
-            'Conflicto con otro examen:',
-            examenEnModulo.examen.NOMBRE_ASIGNATURA
-          );
-          return true; // Hay conflicto
-        }
-
-        // Si el módulo está reservado para otra actividad
-        const estaReservado = reservas.some(
-          (r) =>
-            r.SALA_ID_SALA === selectedSala?.ID_SALA &&
-            format(new Date(r.FECHA_RESERVA), 'yyyy-MM-dd') === fecha &&
-            r.Modulos.some((m) => {
-              const moduloReservado = modulos.find(
-                (mod) => mod.ID_MODULO === m.MODULO_ID_MODULO
-              );
-              return moduloReservado && moduloReservado.ORDEN === ordenActual;
-            })
-        );
-
-        if (estaReservado) {
-          console.log('Módulo reservado:', ordenActual);
-          return true; // Hay conflicto
-        }
-      }
-
-      // Si llegamos aquí, no hay conflictos
-      console.log('No hay conflictos, se puede redimensionar');
-      return false;
-    },
-    [modulos, examenesAsignados, reservas, selectedSala]
-  );
-
   // funcion para actualizar modulos de un examen existente
   const actualizarModulosExamen = useCallback(
     (examenId, nuevosCant) => {
-      console.log('Actualizando módulos de examen:', examenId, 'a', nuevosCant);
-
-      setExamenesAsignados((prev) => {
-        // Encontramos el examen a actualizar
-        const examenToUpdate = prev.find(
-          (asignado) => asignado.examen.ID_EXAMEN === examenId
-        );
-
-        if (!examenToUpdate) {
-          console.warn('No se encontró el examen a actualizar');
-          return prev;
-        }
-
-        // Verificamos si hay conflictos
-        const hayConflicto = verificarConflictoAlRedimensionar(
-          examenId,
-          examenToUpdate.fecha,
-          examenToUpdate.moduloInicial,
-          nuevosCant
-        );
-
-        if (hayConflicto) {
-          console.warn('No se puede actualizar por conflicto');
-          return prev;
-        }
-
-        // Si no hay conflicto, actualizamos
-        return prev.map((asignado) =>
+      // El estado `examenesConModulos` no está definido en este componente.
+      // `examenesConModulosModificados` se usa para rastrear cambios en el ExamenSelector
+      // antes de que el examen sea arrastrado.
+      // Esta función es para actualizar la cantidad de módulos de un examen
+      // que ya ha sido asignado y está en la tabla.
+      setExamenesAsignados((prev) =>
+        prev.map((asignado) =>
           asignado.examen.ID_EXAMEN === examenId
             ? { ...asignado, modulosCount: nuevosCant }
             : asignado
-        );
-      });
+        )
+      );
     },
-    [verificarConflictoAlRedimensionar]
+    [setExamenesAsignados]
   );
   // funcion para eliminar un examen de la tabla
   const eliminarExamen = useCallback(
@@ -312,18 +255,23 @@ export default function AgendaSemanal({
     [selectedExamInternal]
   );
 
-  // Funcion para obtener el examen asignado a una celda
+  // Funcion para obtener el examen asignado a una celda - revisada
   const obtenerExamenParaCelda = useCallback(
     (fecha, ordenModulo) => {
-      return examenesAsignados.find(
+      // Agregando logs para depuración
+      const encontrado = examenesAsignados.find(
         (asignado) =>
           asignado.fecha === fecha &&
           ordenModulo >= asignado.moduloInicial &&
           ordenModulo < asignado.moduloInicial + asignado.modulosCount
       );
+
+      // Si este es el primer módulo del examen, mostrarlo completo
+      return encontrado;
     },
     [examenesAsignados]
   );
+
   // Efecto para procesar drops de examenes en la tabla
   useEffect(() => {
     if (draggedExamen && dropTargetCell && selectedSala) {
@@ -395,6 +343,54 @@ export default function AgendaSemanal({
     obtenerExamenParaCelda,
     onDropProcessed,
   ]);
+
+  // Verificar conflictos al redimensionar un examen
+  const verificarConflictoAlRedimensionar = useCallback(
+    (examenId, fecha, moduloInicial, nuevaCantidadModulos) => {
+      if (!selectedSala) return false;
+
+      // Convertir el ID a número si es string
+      const examenIdNum =
+        typeof examenId === 'string' ? parseInt(examenId, 10) : examenId;
+
+      // Verificar si hay conflicto con otros exámenes
+      for (let i = 0; i < nuevaCantidadModulos; i++) {
+        const ordenActual = moduloInicial + i;
+
+        // Verificar si el módulo existe
+        const moduloExiste = modulos.some((m) => m.ORDEN === ordenActual);
+        if (!moduloExiste) {
+          console.log(`Módulo ${ordenActual} no existe`);
+          return true; // Hay conflicto si el módulo no existe
+        }
+
+        // Obtener cualquier examen que ya esté en esta celda
+        const examenEnCelda = obtenerExamenParaCelda(fecha, ordenActual);
+
+        // Si hay un examen en la celda y NO es parte del mismo examen que estamos redimensionando
+        if (examenEnCelda) {
+          // Verificar si el examen es diferente al que estamos redimensionando
+          const esOtroExamen = examenEnCelda.examen.ID_EXAMEN !== examenIdNum;
+
+          // Verificar si es parte del mismo examen (para módulos ya ocupados)
+          const esParteDeMismoExamen =
+            moduloInicial <= examenEnCelda.moduloInicial &&
+            moduloInicial + nuevaCantidadModulos > examenEnCelda.moduloInicial;
+
+          // Solo hay conflicto si es otro examen Y no es parte del mismo examen
+          if (esOtroExamen && !esParteDeMismoExamen) {
+            console.log(
+              `Conflicto: hay otro examen (${examenEnCelda.examen.ID_EXAMEN}) en módulo ${ordenActual}`
+            );
+            return true;
+          }
+        }
+      }
+
+      return false; // No hay conflictos
+    },
+    [selectedSala, modulos, obtenerExamenParaCelda]
+  );
 
   // funcion para modificar los modulos de un examen asignado
   const handleModificarModulos = useCallback((examenId, nuevaCantidad) => {
@@ -560,9 +556,10 @@ export default function AgendaSemanal({
 
   return (
     <div className="agenda-semanal-container">
-      {/* Fila Superior: Selectores */}
-      <div className="top-row">
-        <div className="sala-selector-container">
+      {/* Fila de selectores de sala y semana */}
+      <div className="selectors-row">
+        <div className="selector-container">
+          <div className="selector-label">Seleccionar Sala</div>
           <SalaSelector
             salas={salas}
             searchTerm={searchTermSala}
@@ -574,49 +571,111 @@ export default function AgendaSemanal({
             onOpenFilterModal={() => setShowSalaFilterModal(true)}
           />
         </div>
-        <div className="examen-selector-container">
-          <ExamenSelector
-            examenes={examenes} // Pasar los exámenes cargados aquí
-            isLoadingExamenes={isLoadingExamenes}
-            onExamenModulosChange={handleExamenModulosChange}
-          />
+
+        <div className="selector-container">
+          <div className="selector-label">Seleccionar Semana</div>
+          <div className="input-group">
+            <input
+              type="date"
+              className="form-control"
+              value={format(fechaSeleccionada, 'yyyy-MM-dd')}
+              onChange={(e) => {
+                const newDate = new Date(e.target.value);
+                setFechaSeleccionada(newDate);
+
+                //calcular el inicio de la semana para la fecha seleccionada
+                const weekStart = startOfWeek(newDate, {
+                  weekStartsOn: 1, // Lunes como primer día de la semana
+                  locale: es,
+                });
+                setFechaBase(weekStart);
+              }}
+            />
+            <button
+              className="btn btn-outline-secondary"
+              onClick={() => {
+                const today = new Date();
+                setFechaSeleccionada(today);
+
+                // Establecer el inicio de la semana actual
+                const weekStart = startOfWeek(today, {
+                  weekStartsOn: 1,
+                  locale: es,
+                });
+                setFechaBase(weekStart);
+              }}
+              title="Ir a hoy"
+            >
+              Hoy
+            </button>
+          </div>
         </div>
       </div>
-      {/* Sección del Calendario */}
-      <main className="details-section">
-        {isLoadingModulos || isLoadingSalas ? ( // isLoadingSalas también es relevante aquí
-          <p className="aviso-seleccion">Cargando datos del calendario...</p>
-        ) : selectedSala ? (
-          <>
-            <CalendarGrid
-              fechas={fechas}
-              modulos={modulos}
-              selectedSala={selectedSala}
-              selectedExam={selectedExamInternal} // Pasar el examen que se está intentando reservar
-              reservas={reservas}
-              modulosSeleccionados={modulosSeleccionados}
-              onSelectModulo={handleSelectModulo}
-              obtenerExamenParaCelda={obtenerExamenParaCelda}
-              onModulosChange={actualizarModulosExamen}
-              onRemoveExamen={eliminarExamen}
-              onCheckConflict={verificarConflictoAlRedimensionar}
-            />
-            {puedeConfirmar && (
-              <button
-                onClick={handleConfirmReserva}
-                className="btn btn-primary btn-confirmar-reserva"
-              >
-                Confirmar Reserva para {selectedExamInternal?.NOMBRE_ASIGNATURA}
-              </button>
-            )}
-          </>
-        ) : (
-          <p className="aviso-seleccion">
-            Selecciona una sala para ver disponibilidad
-          </p>
-        )}
-      </main>
 
+      {/* Contenido principal: exámenes y calendario */}
+      <div className="main-content">
+        {/* Sección de exámenes pendientes */}
+        <div className="examenes-pendientes">
+          <div className="examenes-title">
+            <h4>Exámenes Pendientes</h4>
+            <span className="badge">{filteredExamenes?.length || 0}</span>
+          </div>
+          <div className="examenes-content">
+            <ExamenSelector
+              examenes={filteredExamenes}
+              isLoadingExamenes={isLoadingExamenes}
+              onExamenModulosChange={handleExamenModulosChange}
+              searchTerm={searchTermExamenes}
+              setSearchTerm={setSearchTermExamenes}
+            />
+          </div>
+        </div>
+
+        {/* Sección de calendario */}
+        <div className="calendar-container">
+          <div className="calendar-title">
+            <h4>Calendario Semanal</h4>
+          </div>
+          <div className="calendar-content">
+            {isLoadingModulos || isLoadingSalas ? (
+              <p className="aviso-seleccion">
+                Cargando datos del calendario...
+              </p>
+            ) : selectedSala ? (
+              <>
+                <CalendarGrid
+                  fechas={fechas}
+                  modulos={modulos}
+                  selectedSala={selectedSala}
+                  selectedExam={selectedExamInternal}
+                  reservas={reservas}
+                  modulosSeleccionados={modulosSeleccionados}
+                  onSelectModulo={handleSelectModulo}
+                  obtenerExamenParaCelda={obtenerExamenParaCelda}
+                  onModulosChange={actualizarModulosExamen}
+                  onRemoveExamen={eliminarExamen}
+                  onCheckConflict={verificarConflictoAlRedimensionar}
+                />
+                {puedeConfirmar && (
+                  <button
+                    onClick={handleConfirmReserva}
+                    className="btn btn-primary btn-confirmar-reserva"
+                  >
+                    Confirmar Reserva para{' '}
+                    {selectedExamInternal?.NOMBRE_ASIGNATURA}
+                  </button>
+                )}
+              </>
+            ) : (
+              <p className="aviso-seleccion">
+                Selecciona una sala para ver disponibilidad
+              </p>
+            )}
+          </div>
+        </div>
+      </div>
+
+      {/* Modales */}
       <FilterModalSalas
         isOpen={showSalaFilterModal}
         onClose={() => setShowSalaFilterModal(false)}

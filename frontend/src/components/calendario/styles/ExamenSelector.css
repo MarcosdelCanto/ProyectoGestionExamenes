@@ -1,46 +1,43 @@
 .examen-selector-container {
-  flex: 1 1 auto;
   display: flex;
   flex-direction: column;
   height: 100%;
-  background-color: #ffffff;
-  border-radius: 8px;
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15); /* Sombra más sutil */
   overflow: hidden;
 }
 
 .examenes-container {
-  width: 100%;
-  height: 100%;
+  flex: 1;
   display: flex;
   flex-direction: column;
-  padding: 0;
-  margin: 0;
+  height: 100%;
+  overflow: hidden;
 }
-/* Corrección principal: definición adecuada del grid */
+
+/* Lista de exámenes que se puede desplazar */
 .vista-examenes-postits {
-  display: grid;
-  grid-template-columns: repeat(
-    auto-fill,
-    minmax(180px, 1fr)
-  ); /* Elementos más pequeños */
-  gap: 10px; /* Menos espacio entre elementos */
-  padding: 10px; /* Menos padding en la cuadrícula */
+  flex: 1;
+  padding: 12px;
   overflow-y: auto;
-  height: calc(100% - 60px); /* Ajuste para la paginación */
-  align-content: start; /* Alinear al inicio para mejor visualización */
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 10px;
 }
+
+/* Estilos para cada examen arrastrable */
 .draggable-examen {
   transform: translate3d(0, 0, 0);
   cursor: grab;
   touch-action: none;
+  height: 120px !important;
+  max-height: 120px !important;
   width: 100%;
-  border-radius: 4px; /* Bordes menos redondeados */
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12); /* Sombra más sutil */
+  border-radius: 4px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12);
   transition:
     transform 0.2s,
     box-shadow 0.2s;
-  margin: 0; /* Eliminar márgenes */
+  margin: 0;
+  overflow: hidden;
 }
 
 .draggable-examen:active {
@@ -49,14 +46,15 @@
 }
 
 .draggable-examen:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+  transform: translateY(-1px);
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.12);
 }
 
-/* Remover la clase examen-selector que podría estar interfiriendo */
-.examen-selector {
-  display: none; /* Si no se usa, mejor ocultarla */
+.draggable-examen-wrapper {
+  height: 120px;
+  width: 100%;
 }
+
 /* Controles de búsqueda y filtro */
 .examen-search-container {
   padding: 10px;
@@ -67,24 +65,30 @@
   align-items: center;
 }
 
-/* Paginación mejorada */
+/* Paginación */
 .pagination-controls {
+  padding: 8px 10px;
   background-color: #f8f9fa;
-  padding: 8px 10px; /* Menos padding */
   border-top: 1px solid #dee2e6;
   display: flex;
   justify-content: center;
   align-items: center;
-  gap: 15px;
-  margin-top: auto; /* Empujar al fondo */
+  gap: 10px;
 }
-/* Asegurar que los elementos ocupen el espacio adecuado */
-.contenedor-examenes-pendientes {
+
+.pagination-info {
+  font-size: 0.9rem;
+  color: #6c757d;
+}
+
+/* Mensajes cuando no hay exámenes */
+.no-exams-message {
   display: flex;
-  flex-direction: column;
+  justify-content: center;
+  align-items: center;
   height: 100%;
-  max-height: 100%;
-  overflow: hidden;
+  color: #6c757d;
+  font-style: italic;
 }
 
 /* Responsive adjustments */

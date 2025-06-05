@@ -20,20 +20,21 @@
   border-radius: 6px; /* Bordes más redondeados */
   overflow: hidden;
 }
+
 .examen-post-it.preview {
-  min-height: 120px; /* Altura mínima reducida */
-  height: 120px;
-  max-height: 120px;
+  min-height: 120px; /* Altura mínima fija */
+  height: 120px; /* Altura FIJA para todas las tarjetas */
+  max-height: 120px; /* Altura máxima igual a la altura fija */
   width: 100%;
   display: flex;
   flex-direction: column;
   padding: 0;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1); /* Sombra más sutil */
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
   transition:
     transform 0.2s,
     box-shadow 0.2s;
-  border-radius: 4px; /* Bordes menos redondeados */
-  overflow: hidden;
+  border-radius: 4px;
+  overflow: hidden; /* Importante: oculta el contenido que se desborda */
   margin: 0; /* Sin márgenes */
 }
 .examen-post-it .header {
@@ -41,28 +42,37 @@
   border-bottom: 1px solid rgba(0, 0, 0, 0.1);
   background-color: rgba(255, 255, 255, 0.5);
   font-weight: 600;
-  font-size: 0.7rem; /* Texto ligeramente más pequeño */
+  font-size: 0.75rem; /* Texto ligeramente más pequeño */
   line-height: 1.2;
   display: flex;
   justify-content: space-between;
   align-items: center;
-  height: 32px;
+  height: 32px; /* Altura fija para el encabezado */
   max-height: 32px;
+  overflow: hidden; /* Ocultar texto que se desborda */
+}
+/* Hacer que el título se trunque con elipsis */
+.examen-post-it .header span {
+  white-space: nowrap;
   overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 85%; /* Dejar espacio para los controles */
 }
 /* Estilos para el contenido del examen */
 .examen-post-it .content {
   flex: 1;
+  max-height: calc(120px - 32px - 2px);
   padding: 8px 10px;
   display: flex;
   flex-direction: column;
   justify-content: space-between;
+  overflow: hidden;
 }
 /* Estilos para los detalles del examen */
 .examen-post-it .detail {
   display: flex;
   justify-content: space-between;
-  margin-bottom: 5px;
+  margin-bottom: 4px;
   font-size: 0.75rem;
   line-height: 1.3;
 }
@@ -76,9 +86,15 @@
   border-radius: 3px;
   padding: 2px 6px;
   font-size: 0.7rem;
-  margin-top: 5px;
+  margin-top: auto;
   text-align: center;
   font-weight: 500;
+  height: 18px;
+}
+.vista-examenes-postits [data-modulos] {
+  height: 120px !important;
+  min-height: 120px !important;
+  max-height: 120px !important;
 }
 /* Efecto hover más sutil */
 .draggable-examen:hover {

@@ -66,6 +66,8 @@ export default function SalaSelector({
   const noHayResultadosDeBusqueda =
     searchTerm && !tieneSalasParaMostrar && !isLoadingSalas;
 
+  // Ajustar para el nuevo diseño simplificado
+
   return (
     <div className="sala-selector-panel">
       {/* Contenedor para el selector y el botón de filtro */}

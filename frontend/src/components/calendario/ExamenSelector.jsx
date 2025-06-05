@@ -46,7 +46,8 @@ function DraggableExamenPostIt({ examen, onModulosChange }) {
         margin: 0,
         padding: 0,
         width: '100%',
-        height: '100%',
+        height: '120px',
+        maxHeight: '120px',
       }}
       {...attributes}
       {...listeners}
@@ -58,7 +59,7 @@ function DraggableExamenPostIt({ examen, onModulosChange }) {
         onModulosChange={handleModulosChange}
         isPreview={true}
         isBeingDragged={isDragging}
-        handleRemove={() => {}} // Manejador vacío
+        // Manejador vacío
       />
     </div>
   );
@@ -139,6 +140,8 @@ export default function ExamenSelector({
   examenes,
   isLoadingExamenes,
   onExamenModulosChange,
+  searchTerm,
+  setSearchTerm,
 }) {
   const [searchTermExamenes, setSearchTermExamenes] = useState('');
   const [selectedEscuela, setSelectedEscuela] = useState('');
@@ -223,71 +226,69 @@ export default function ExamenSelector({
   };
 
   return (
-    <>
-      <div className="contenedor-examenes-pendientes">
-        <div className="examen-search-container">
-          <div className="input-group input-group-sm">
-            <span className="input-group-text bg-light">
-              <FaSearch />
-            </span>
-            <input
-              type="search"
-              className="form-control"
-              placeholder="Buscar Examen..."
-              value={searchTermExamenes}
-              onChange={handleSearchExamenes}
-            />
-          </div>
-          <button
-            className="btn btn-light btn-sm"
-            onClick={() => setShowFilterModal(true)}
-            title="Más filtros"
-          >
-            <FaFilter />
-          </button>
+    <div className="examen-selector-container">
+      <div className="examen-search-container">
+        <div className="input-group input-group-sm">
+          <span className="input-group-text bg-light">
+            <FaSearch />
+          </span>
+          <input
+            type="search"
+            className="form-control"
+            placeholder="Buscar Examen..."
+            value={searchTermExamenes}
+            onChange={handleSearchExamenes}
+          />
         </div>
-
-        {tieneExamenesParaMostrar ? (
-          <div className="examenes-container">
-            <div className="vista-examenes-postits">
-              {paginatedExamenes.map((ex) => (
-                <div className="draggable-examen-wrapper" key={ex.ID_EXAMEN}>
-                  <DraggableExamenPostIt
-                    examen={ex}
-                    onModulosChange={handleModulosChange}
-                  />
-                </div>
-              ))}
-            </div>
-
-            <div className="pagination-controls">
-              <button
-                className="btn btn-sm btn-light"
-                onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
-                disabled={currentPage === 1}
-              >
-                Anterior
-              </button>
-              <span className="pagination-info">
-                {currentPage} / {totalPages}
-              </span>
-              <button
-                className="btn btn-sm btn-light"
-                onClick={() =>
-                  setCurrentPage((prev) => Math.min(prev + 1, totalPages))
-                }
-                disabled={currentPage === totalPages}
-              >
-                Siguiente
-              </button>
-            </div>
-          </div>
-        ) : (
-          <div className="d-flex justify-content-center align-items-center h-100">
-            <p className="text-muted">No hay exámenes disponibles.</p>
-          </div>
-        )}
+        <button
+          className="btn btn-light btn-sm"
+          onClick={() => setShowFilterModal(true)}
+          title="Más filtros"
+        >
+          <FaFilter />
+        </button>
       </div>
+
+      {tieneExamenesParaMostrar ? (
+        <div className="examenes-container">
+          <div className="vista-examenes-postits">
+            {paginatedExamenes.map((ex) => (
+              <div className="draggable-examen-wrapper" key={ex.ID_EXAMEN}>
+                <DraggableExamenPostIt
+                  examen={ex}
+                  onModulosChange={handleModulosChange}
+                />
+              </div>
+            ))}
+          </div>
+
+          <div className="pagination-controls">
+            <button
+              className="btn btn-sm btn-light"
+              onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
+              disabled={currentPage === 1}
+            >
+              Anterior
+            </button>
+            <span className="pagination-info">
+              {currentPage} / {totalPages}
+            </span>
+            <button
+              className="btn btn-sm btn-light"
+              onClick={() =>
+                setCurrentPage((prev) => Math.min(prev + 1, totalPages))
+              }
+              disabled={currentPage === totalPages}
+            >
+              Siguiente
+            </button>
+          </div>
+        </div>
+      ) : (
+        <div className="no-exams-message">
+          <p>No hay exámenes disponibles.</p>
+        </div>
+      )}
 
       <FilterModal
         isOpen={showFilterModal}
@@ -299,6 +300,6 @@ export default function ExamenSelector({
         selectedAsignatura={selectedAsignatura}
         setSelectedAsignatura={setSelectedAsignatura}
       />
-    </>
+    </div>
   );
 }
