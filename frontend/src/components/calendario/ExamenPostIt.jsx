@@ -78,6 +78,11 @@ export default function ExamenPostIt({
         moduloInicial
       ) {
         try {
+          // Agregamos un console.log para depuración
+          console.log(
+            `Verificando redimensionamiento: ID=${examen.ID_EXAMEN}, fecha=${fecha}, módulo=${moduloInicial}, nuevos=${newModulosCount}`
+          );
+
           const hasConflict = onCheckConflict(
             examen.ID_EXAMEN,
             fecha,
@@ -86,14 +91,18 @@ export default function ExamenPostIt({
           );
 
           if (hasConflict) {
-            setResizeError('¡Conflicto! Hay otro examen en esa posición');
+            console.log('Se detectó un conflicto');
+            setResizeError(
+              'No se puede redimensionar: conflicto con otro examen o fuera del rango de módulos'
+            );
             return;
           } else {
+            console.log('No hay conflicto, permitiendo redimensionamiento');
             setResizeError(null);
           }
         } catch (error) {
           console.error('Error al verificar conflictos:', error);
-          // No permitir cambios si hay error en la verificación
+          setResizeError('Error al verificar disponibilidad');
           return;
         }
       }
@@ -178,7 +187,12 @@ export default function ExamenPostIt({
   };
 
   // Usar estilos diferentes basados en si es vista previa o no
-  const finalStyles = isPreview ? previewStyles : placedStyles;
+  const finalStyles = {
+    ...(isPreview ? previewStyles : placedStyles),
+    backgroundColor: getPostItColor(),
+    position: isPreview ? 'relative' : 'absolute',
+    zIndex: isResizing ? 100 : isPreview ? 1 : 50,
+  };
 
   if (!examen) return null;
 

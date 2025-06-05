@@ -18,6 +18,7 @@ const CalendarCell = memo(function CalendarCell({
   onRemoveExamen,
   onCheckConflict, // Asegúrate de incluir esta prop
   modulosCount,
+  esDiaSeleccionado,
 }) {
   // Configuración de la zona donde se puede soltar - un punto crucial
   const droppableId = `droppable-${fecha}-${modulo.ORDEN}`;
@@ -57,8 +58,8 @@ const CalendarCell = memo(function CalendarCell({
   if (isPartOfExamen && !examenAsignado) {
     cellClassName += ' part-of-examen';
   }
-  if (examenAsignado) {
-    cellClassName += ' contains-examen';
+  if (esDiaSeleccionado) {
+    cellClassName += ' dia-seleccionado';
   }
 
   // Manejador de clic

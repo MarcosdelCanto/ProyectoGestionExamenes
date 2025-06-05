@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo, useCallback, use } from 'react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import {
   format,
   startOfWeek,
@@ -13,29 +13,6 @@ import ExamenSelector from './ExamenSelector'; // Importar ExamenSelector
 import CalendarGrid from './CalendarGrid';
 import FilterModalSalas from './FilterModalSalas';
 import './styles/AgendaSemanal.css'; // Importar los estilos
-
-//funcion para obtener las fechas de la semana actual
-const getWeekDates = (currentDate) => {
-  if (!isValid(new Date(currentDate))) {
-    currentDate = new Date();
-  }
-  // Obtener el lunes de la semana
-  const start = startOfWeek(new Date(currentDate), {
-    weekStartsOn: 1,
-    locale: es,
-  });
-
-  // Generar 7 días a partir del lunes
-  return eachDayOfInterval({
-    start,
-    end: addDays(start, 6), // 5 días después del lunes = sábado
-  }).map((date) => ({
-    fecha: format(date, 'yyyy-MM-dd'),
-    diaNumero: format(date, 'd'),
-    diaNombre: format(date, 'EEEE', { locale: es }),
-    esHoy: format(date, 'yyyy-MM-dd') === format(new Date(), 'yyyy-MM-dd'),
-  }));
-};
 
 export default function AgendaSemanal({
   draggedExamen, // Este es el examen que se está arrastrando (viene de DndContext en CalendarioPage)
@@ -66,6 +43,7 @@ export default function AgendaSemanal({
   const [selectedExamInternal, setSelectedExamInternal] = useState(null); // Examen seleccionado para la reserva
   const [modulosSeleccionados, setModulosSeleccionados] = useState([]);
   const [fechaBase, setFechaBase] = useState(new Date());
+  const [fechaSeleccionada, setFechaSeleccionada] = useState(new Date());
   const [isLoadingModulos, setIsLoadingModulos] = useState(true);
   const [isLoadingReservas, setIsLoadingReservas] = useState(true);
 
@@ -120,8 +98,50 @@ export default function AgendaSemanal({
     }
     loadInitialData();
   }, []);
+  const handleDateChange = useCallback((e) => {
+    const selectedDate = new Date(e.target.value);
 
-  const fechas = useMemo(() => getWeekDates(fechaBase), [fechaBase]);
+    const startOfSelectedWeek = startOfWeek(selectedDate, {
+      weekStartsOn: 1, // Lunes como primer día de la semana
+      locale: es,
+    });
+    setFechaBase(startOfSelectedWeek);
+  }, []);
+
+  //funcion para obtener las fechas de la semana actual
+  const getWeekDates = (currentDate, selectedDate) => {
+    if (!isValid(new Date(currentDate))) {
+      currentDate = new Date();
+    }
+    // Obtener el lunes de la semana
+    const start = startOfWeek(new Date(currentDate), {
+      weekStartsOn: 1,
+      locale: es,
+    });
+    // convertir la fecha seleccionada a formato de comparacion
+    const selectedDateStr = selectedDate
+      ? format(selectedDate, 'yyyy-MM-dd')
+      : null;
+
+    // Generar 7 días a partir del lunes
+    return eachDayOfInterval({
+      start,
+      end: addDays(start, 6), // 5 días después del lunes = sábado
+    }).map((date) => {
+      const fechaStr = format(date, 'yyyy-MM-dd');
+      return {
+        fecha: fechaStr,
+        diaNumero: format(date, 'd'),
+        diaNombre: format(date, 'EEEE', { locale: es }),
+        esHoy: fechaStr === format(new Date(), 'yyyy-MM-dd'),
+        esSeleccionado: fechaStr === selectedDateStr,
+      };
+    });
+  };
+  const fechas = useMemo(
+    () => getWeekDates(fechaBase, fechaSeleccionada),
+    [fechaBase, fechaSeleccionada]
+  );
 
   // Filtrado de salas
   const filteredSalas = useMemo(() => {
@@ -235,15 +255,19 @@ export default function AgendaSemanal({
     [selectedExamInternal]
   );
 
-  // Funcion para obtener el examen asignado a una celda
+  // Funcion para obtener el examen asignado a una celda - revisada
   const obtenerExamenParaCelda = useCallback(
     (fecha, ordenModulo) => {
-      return examenesAsignados.find(
+      // Agregando logs para depuración
+      const encontrado = examenesAsignados.find(
         (asignado) =>
           asignado.fecha === fecha &&
           ordenModulo >= asignado.moduloInicial &&
           ordenModulo < asignado.moduloInicial + asignado.modulosCount
       );
+
+      // Si este es el primer módulo del examen, mostrarlo completo
+      return encontrado;
     },
     [examenesAsignados]
   );
@@ -319,6 +343,54 @@ export default function AgendaSemanal({
     obtenerExamenParaCelda,
     onDropProcessed,
   ]);
+
+  // Verificar conflictos al redimensionar un examen
+  const verificarConflictoAlRedimensionar = useCallback(
+    (examenId, fecha, moduloInicial, nuevaCantidadModulos) => {
+      if (!selectedSala) return false;
+
+      // Convertir el ID a número si es string
+      const examenIdNum =
+        typeof examenId === 'string' ? parseInt(examenId, 10) : examenId;
+
+      // Verificar si hay conflicto con otros exámenes
+      for (let i = 0; i < nuevaCantidadModulos; i++) {
+        const ordenActual = moduloInicial + i;
+
+        // Verificar si el módulo existe
+        const moduloExiste = modulos.some((m) => m.ORDEN === ordenActual);
+        if (!moduloExiste) {
+          console.log(`Módulo ${ordenActual} no existe`);
+          return true; // Hay conflicto si el módulo no existe
+        }
+
+        // Obtener cualquier examen que ya esté en esta celda
+        const examenEnCelda = obtenerExamenParaCelda(fecha, ordenActual);
+
+        // Si hay un examen en la celda y NO es parte del mismo examen que estamos redimensionando
+        if (examenEnCelda) {
+          // Verificar si el examen es diferente al que estamos redimensionando
+          const esOtroExamen = examenEnCelda.examen.ID_EXAMEN !== examenIdNum;
+
+          // Verificar si es parte del mismo examen (para módulos ya ocupados)
+          const esParteDeMismoExamen =
+            moduloInicial <= examenEnCelda.moduloInicial &&
+            moduloInicial + nuevaCantidadModulos > examenEnCelda.moduloInicial;
+
+          // Solo hay conflicto si es otro examen Y no es parte del mismo examen
+          if (esOtroExamen && !esParteDeMismoExamen) {
+            console.log(
+              `Conflicto: hay otro examen (${examenEnCelda.examen.ID_EXAMEN}) en módulo ${ordenActual}`
+            );
+            return true;
+          }
+        }
+      }
+
+      return false; // No hay conflictos
+    },
+    [selectedSala, modulos, obtenerExamenParaCelda]
+  );
 
   // funcion para modificar los modulos de un examen asignado
   const handleModificarModulos = useCallback((examenId, nuevaCantidad) => {
@@ -506,9 +578,36 @@ export default function AgendaSemanal({
             <input
               type="date"
               className="form-control"
-              value={format(fechaBase, 'yyyy-MM-dd')}
-              onChange={(e) => setFechaBase(new Date(e.target.value))}
+              value={format(fechaSeleccionada, 'yyyy-MM-dd')}
+              onChange={(e) => {
+                const newDate = new Date(e.target.value);
+                setFechaSeleccionada(newDate);
+
+                //calcular el inicio de la semana para la fecha seleccionada
+                const weekStart = startOfWeek(newDate, {
+                  weekStartsOn: 1, // Lunes como primer día de la semana
+                  locale: es,
+                });
+                setFechaBase(weekStart);
+              }}
             />
+            <button
+              className="btn btn-outline-secondary"
+              onClick={() => {
+                const today = new Date();
+                setFechaSeleccionada(today);
+
+                // Establecer el inicio de la semana actual
+                const weekStart = startOfWeek(today, {
+                  weekStartsOn: 1,
+                  locale: es,
+                });
+                setFechaBase(weekStart);
+              }}
+              title="Ir a hoy"
+            >
+              Hoy
+            </button>
           </div>
         </div>
       </div>
