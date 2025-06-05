@@ -65,22 +65,6 @@
   align-items: center;
 }
 
-/* Paginación */
-.pagination-controls {
-  padding: 8px 10px;
-  background-color: #f8f9fa;
-  border-top: 1px solid #dee2e6;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  gap: 10px;
-}
-
-.pagination-info {
-  font-size: 0.9rem;
-  color: #6c757d;
-}
-
 /* Mensajes cuando no hay exámenes */
 .no-exams-message {
   display: flex;

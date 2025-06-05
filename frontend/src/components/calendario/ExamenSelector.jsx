@@ -140,16 +140,12 @@ export default function ExamenSelector({
   examenes,
   isLoadingExamenes,
   onExamenModulosChange,
-  searchTerm,
-  setSearchTerm,
 }) {
   const [searchTermExamenes, setSearchTermExamenes] = useState('');
   const [selectedEscuela, setSelectedEscuela] = useState('');
   const [selectedCarrera, setSelectedCarrera] = useState('');
   const [selectedAsignatura, setSelectedAsignatura] = useState('');
   const [showFilterModal, setShowFilterModal] = useState(false);
-  const [currentPage, setCurrentPage] = useState(1);
-  const itemsPerPage = 5; // Ajusta según necesites
 
   const handleSearchExamenes = (event) => {
     setSearchTermExamenes(event.target.value);
@@ -193,38 +189,6 @@ export default function ExamenSelector({
   const tieneExamenesParaMostrar =
     filteredExamenes && filteredExamenes.length > 0;
 
-  // Calcular exámenes para la página actual
-  const paginatedExamenes = useMemo(() => {
-    const startIndex = (currentPage - 1) * itemsPerPage;
-    return filteredExamenes.slice(startIndex, startIndex + itemsPerPage);
-  }, [filteredExamenes, currentPage]);
-
-  const totalPages = Math.ceil(filteredExamenes.length / itemsPerPage);
-
-  // Estilo para el panel principal que contiene todo el ExamenSelector
-  const panelPrincipalStyle = {
-    display: 'flex',
-    flexDirection: 'column',
-    height: '100%', // Ocupa toda la altura disponible
-    backgroundColor: '#fff',
-    borderRadius: '4px',
-    boxShadow: '0 2px 5px rgba(0, 0, 0, 0.1)',
-    overflow: 'hidden',
-  };
-
-  const topControlsContainerStyle = {
-    padding: '10px',
-    backgroundColor: '#f8f9fa',
-    borderBottom: '1px solid #dee2e6',
-    display: 'flex',
-    gap: '10px',
-    alignItems: 'center',
-  };
-
-  const searchInputContainerStyle = {
-    flexGrow: 1,
-  };
-
   return (
     <div className="examen-selector-container">
       <div className="examen-search-container">
@@ -252,7 +216,7 @@ export default function ExamenSelector({
       {tieneExamenesParaMostrar ? (
         <div className="examenes-container">
           <div className="vista-examenes-postits">
-            {paginatedExamenes.map((ex) => (
+            {filteredExamenes.map((ex) => (
               <div className="draggable-examen-wrapper" key={ex.ID_EXAMEN}>
                 <DraggableExamenPostIt
                   examen={ex}
@@ -260,28 +224,6 @@ export default function ExamenSelector({
                 />
               </div>
             ))}
-          </div>
-
-          <div className="pagination-controls">
-            <button
-              className="btn btn-sm btn-light"
-              onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
-              disabled={currentPage === 1}
-            >
-              Anterior
-            </button>
-            <span className="pagination-info">
-              {currentPage} / {totalPages}
-            </span>
-            <button
-              className="btn btn-sm btn-light"
-              onClick={() =>
-                setCurrentPage((prev) => Math.min(prev + 1, totalPages))
-              }
-              disabled={currentPage === totalPages}
-            >
-              Siguiente
-            </button>
           </div>
         </div>
       ) : (
