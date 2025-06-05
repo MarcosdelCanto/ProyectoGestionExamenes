@@ -15,9 +15,9 @@ import FilterModalSalas from './FilterModalSalas';
 import './styles/AgendaSemanal.css'; // Importar los estilos
 
 export default function AgendaSemanal({
-  draggedExamen, // Este es el examen que se está arrastrando (viene de DndContext en CalendarioPage)
-  dropTargetCell, // Esta es la celda donde se soltó (viene de DndContext en CalendarioPage)
-  onDropProcessed, // Función para limpiar el estado de drag/drop en CalendarioPage
+  draggedExamen,
+  dropTargetCell,
+  onDropProcessed,
 }) {
   // Estados para Salas
   const [salas, setSalas] = useState([]);
@@ -51,6 +51,10 @@ export default function AgendaSemanal({
   const [examenesAsignados, setExamenesAsignados] = useState([]);
   const [examenesConModulosModificados, setExamenesConModulosModificados] =
     useState({});
+
+  // Nuevo estado para controlar el procesamiento
+  const [isProcessingDrop, setIsProcessingDrop] = useState(false);
+  const [lastProcessedDrop, setLastProcessedDrop] = useState(null);
 
   // Carga de datos inicial (salas, exámenes, módulos, reservas)
   useEffect(() => {
@@ -272,71 +276,124 @@ export default function AgendaSemanal({
     [examenesAsignados]
   );
 
-  // Efecto para procesar drops de examenes en la tabla
+  // Efecto optimizado para procesar drops
   useEffect(() => {
-    if (draggedExamen && dropTargetCell && selectedSala) {
-      console.log('Procesando drop de examen:', {
-        draggedExamen,
-        dropTargetCell,
-      });
-      const { fecha, modulo } = dropTargetCell;
-      const modulosNecesarios = draggedExamen.CANTIDAD_MODULOS_EXAMEN;
-
-      let hayConflicto = false;
-
-      for (let i = 0; i < modulosNecesarios; i++) {
-        const ordenActual = modulo.ORDEN + i;
-        // Verificar si el módulo existe
-        const moduloExiste = modulos.some((m) => m.ORDEN === ordenActual);
-        if (!moduloExiste) {
-          hayConflicto = true;
-          break;
-        }
-        // verficar si ya hay un examen asignado
-        const hayExamenAsignado = obtenerExamenParaCelda(fecha, ordenActual);
-        if (hayExamenAsignado) {
-          hayConflicto = true;
-          break;
-        }
-        // Verificar si el módulo ya está reservado
-        const estaReservado = reservas.some(
-          (r) =>
-            r.SALA_ID_SALA === selectedSala.ID_SALA &&
-            format(new Date(r.FECHA_RESERVA), 'yyyy-MM-dd') === fecha &&
-            r.Modulos.some((m) => {
-              const moduloReservado = modulos.find(
-                (mod) => mod.ID_MODULO === m.MODULO_ID_MODULO
-              );
-              return moduloReservado && moduloReservado.ORDEN === ordenActual;
-            })
-        );
-        if (estaReservado) {
-          hayConflicto = true;
-          break;
-        }
-      }
-      if (!hayConflicto) {
-        // Si NO hay conflicto, entonces agregar el examen
-        agregarExamenATabla(
-          draggedExamen,
-          fecha,
-          modulo.ORDEN,
-          modulosNecesarios
-        );
-      } else {
-        // Si hay conflicto, mostrar alerta
-        alert(
-          'No se puede colocar el examen aquí. Los módulos están ocupados, fuera de rango o ya existe un examen solapado.'
-        );
-      }
-      if (onDropProcessed) {
-        onDropProcessed();
-      }
+    // Verificar si hay datos válidos para procesar
+    if (!draggedExamen || !dropTargetCell || !selectedSala) {
+      return;
     }
+
+    // Crear un identificador único para este drop
+    const dropId = `${draggedExamen.ID_EXAMEN}-${dropTargetCell.fecha}-${dropTargetCell.modulo.ORDEN}`;
+
+    // Evitar procesar el mismo drop múltiples veces
+    if (isProcessingDrop || lastProcessedDrop === dropId) {
+      return;
+    }
+
+    console.log('Procesando drop de examen:', {
+      draggedExamen,
+      dropTargetCell,
+      dropId,
+    });
+
+    const procesarDrop = async () => {
+      setIsProcessingDrop(true);
+      setLastProcessedDrop(dropId);
+
+      try {
+        const { fecha, modulo } = dropTargetCell;
+        const modulosNecesarios = draggedExamen.CANTIDAD_MODULOS_EXAMEN;
+
+        // Validación inicial
+        if (!modulosNecesarios || modulosNecesarios <= 0) {
+          alert('Error: El examen no tiene una cantidad válida de módulos.');
+          return;
+        }
+
+        let hayConflicto = false;
+        const conflictos = [];
+
+        // Verificar conflictos de manera más eficiente
+        for (let i = 0; i < modulosNecesarios; i++) {
+          const ordenActual = modulo.ORDEN + i;
+
+          // Verificar si el módulo existe
+          const moduloExiste = modulos.some((m) => m.ORDEN === ordenActual);
+          if (!moduloExiste) {
+            conflictos.push(`Módulo ${ordenActual} no existe`);
+            hayConflicto = true;
+            continue;
+          }
+
+          // Verificar si ya hay un examen asignado
+          const hayExamenAsignado = obtenerExamenParaCelda(fecha, ordenActual);
+          if (hayExamenAsignado) {
+            conflictos.push(
+              `Módulo ${ordenActual} ya tiene un examen asignado`
+            );
+            hayConflicto = true;
+            continue;
+          }
+
+          // Verificar reservas existentes
+          const estaReservado = reservas.some(
+            (r) =>
+              r.SALA_ID_SALA === selectedSala.ID_SALA &&
+              format(new Date(r.FECHA_RESERVA), 'yyyy-MM-dd') === fecha &&
+              r.Modulos?.some((m) => {
+                const moduloReservado = modulos.find(
+                  (mod) => mod.ID_MODULO === m.MODULO_ID_MODULO
+                );
+                return moduloReservado && moduloReservado.ORDEN === ordenActual;
+              })
+          );
+
+          if (estaReservado) {
+            conflictos.push(`Módulo ${ordenActual} ya está reservado`);
+            hayConflicto = true;
+          }
+        }
+
+        if (!hayConflicto) {
+          // Procesar el drop exitosamente
+          agregarExamenATabla(
+            draggedExamen,
+            fecha,
+            modulo.ORDEN,
+            modulosNecesarios
+          );
+          console.log('Drop procesado exitosamente');
+        } else {
+          // Mostrar conflictos específicos
+          alert(
+            `No se puede colocar el examen aquí:\n${conflictos.join('\n')}`
+          );
+        }
+      } catch (error) {
+        console.error('Error procesando drop:', error);
+        alert('Error al procesar el examen. Inténtalo de nuevo.');
+      } finally {
+        setIsProcessingDrop(false);
+
+        // Limpiar estados después de un pequeño delay
+        setTimeout(() => {
+          if (onDropProcessed) {
+            onDropProcessed();
+          }
+        }, 100);
+      }
+    };
+
+    procesarDrop();
   }, [
-    draggedExamen,
-    dropTargetCell,
-    selectedSala,
+    draggedExamen?.ID_EXAMEN, // Solo el ID en lugar del objeto completo
+    dropTargetCell?.fecha,
+    dropTargetCell?.modulo?.ORDEN,
+    selectedSala?.ID_SALA, // Solo el ID en lugar del objeto completo
+    isProcessingDrop,
+    lastProcessedDrop,
+    // Remover dependencias que cambian frecuentemente
     modulos,
     reservas,
     agregarExamenATabla,
@@ -344,70 +401,12 @@ export default function AgendaSemanal({
     onDropProcessed,
   ]);
 
-  // Verificar conflictos al redimensionar un examen
-  const verificarConflictoAlRedimensionar = useCallback(
-    (examenId, fecha, moduloInicial, nuevaCantidadModulos) => {
-      if (!selectedSala) return false;
+  // Limpiar el estado cuando se cambie de sala o se resetee
+  useEffect(() => {
+    setLastProcessedDrop(null);
+    setIsProcessingDrop(false);
+  }, [selectedSala?.ID_SALA]);
 
-      // Convertir el ID a número si es string
-      const examenIdNum =
-        typeof examenId === 'string' ? parseInt(examenId, 10) : examenId;
-
-      // Verificar si hay conflicto con otros exámenes
-      for (let i = 0; i < nuevaCantidadModulos; i++) {
-        const ordenActual = moduloInicial + i;
-
-        // Verificar si el módulo existe
-        const moduloExiste = modulos.some((m) => m.ORDEN === ordenActual);
-        if (!moduloExiste) {
-          console.log(`Módulo ${ordenActual} no existe`);
-          return true; // Hay conflicto si el módulo no existe
-        }
-
-        // Obtener cualquier examen que ya esté en esta celda
-        const examenEnCelda = obtenerExamenParaCelda(fecha, ordenActual);
-
-        // Si hay un examen en la celda y NO es parte del mismo examen que estamos redimensionando
-        if (examenEnCelda) {
-          // Verificar si el examen es diferente al que estamos redimensionando
-          const esOtroExamen = examenEnCelda.examen.ID_EXAMEN !== examenIdNum;
-
-          // Verificar si es parte del mismo examen (para módulos ya ocupados)
-          const esParteDeMismoExamen =
-            moduloInicial <= examenEnCelda.moduloInicial &&
-            moduloInicial + nuevaCantidadModulos > examenEnCelda.moduloInicial;
-
-          // Solo hay conflicto si es otro examen Y no es parte del mismo examen
-          if (esOtroExamen && !esParteDeMismoExamen) {
-            console.log(
-              `Conflicto: hay otro examen (${examenEnCelda.examen.ID_EXAMEN}) en módulo ${ordenActual}`
-            );
-            return true;
-          }
-        }
-      }
-
-      return false; // No hay conflictos
-    },
-    [selectedSala, modulos, obtenerExamenParaCelda]
-  );
-
-  // funcion para modificar los modulos de un examen asignado
-  const handleModificarModulos = useCallback((examenId, nuevaCantidad) => {
-    setExamenesAsignados((prev) =>
-      prev.map((asignado) =>
-        asignado.examen.ID_EXAMEN === examenId
-          ? { ...asignado, modulosCount: nuevaCantidad }
-          : asignado
-      )
-    );
-    setExamenesConModulosModificados((prev) => ({
-      ...prev,
-      [examenId]: nuevaCantidad,
-    }));
-  }, []);
-
-  // Selección de módulos en el calendario
   const handleSelectModulo = useCallback(
     (fecha, orden) => {
       // Esta función podría ya no ser necesaria si la selección de módulos
@@ -553,6 +552,78 @@ export default function AgendaSemanal({
     flexDirection: 'column', // Para que el contenido interno se apile verticalmente
     overflowY: 'auto', // Si la lista de exámenes es muy larga
   };
+
+  // Función para verificar conflictos al redimensionar un examen
+  const verificarConflictoAlRedimensionar = useCallback(
+    (examenAsignado, nuevaCantidadModulos) => {
+      const { fecha, moduloInicial } = examenAsignado;
+
+      // Verificar que los nuevos módulos no excedan el rango disponible
+      const moduloFinal = moduloInicial + nuevaCantidadModulos - 1;
+      const moduloMaximo = Math.max(...modulos.map((m) => m.ORDEN));
+
+      if (moduloFinal > moduloMaximo) {
+        return {
+          hayConflicto: true,
+          mensaje: `No hay suficientes módulos disponibles. Se necesitan ${nuevaCantidadModulos} módulos pero solo hay hasta el módulo ${moduloMaximo}.`,
+        };
+      }
+
+      // Verificar que no haya conflictos con otros exámenes asignados
+      for (
+        let i = moduloInicial;
+        i < moduloInicial + nuevaCantidadModulos;
+        i++
+      ) {
+        const examenEnModulo = examenesAsignados.find(
+          (asignado) =>
+            asignado.fecha === fecha &&
+            asignado.examen.ID_EXAMEN !== examenAsignado.examen.ID_EXAMEN &&
+            i >= asignado.moduloInicial &&
+            i < asignado.moduloInicial + asignado.modulosCount
+        );
+
+        if (examenEnModulo) {
+          return {
+            hayConflicto: true,
+            mensaje: `Conflicto en el módulo ${i}: Ya hay un examen asignado (${examenEnModulo.examen.NOMBRE_ASIGNATURA}).`,
+          };
+        }
+      }
+
+      // Verificar conflictos con reservas existentes
+      for (
+        let i = moduloInicial;
+        i < moduloInicial + nuevaCantidadModulos;
+        i++
+      ) {
+        const estaReservado = reservas.some(
+          (r) =>
+            r.SALA_ID_SALA === selectedSala?.ID_SALA &&
+            format(new Date(r.FECHA_RESERVA), 'yyyy-MM-dd') === fecha &&
+            r.Modulos?.some((m) => {
+              const moduloReservado = modulos.find(
+                (mod) => mod.ID_MODULO === m.MODULO_ID_MODULO
+              );
+              return moduloReservado && moduloReservado.ORDEN === i;
+            })
+        );
+
+        if (estaReservado) {
+          return {
+            hayConflicto: true,
+            mensaje: `Conflicto en el módulo ${i}: El módulo ya está reservado.`,
+          };
+        }
+      }
+
+      return {
+        hayConflicto: false,
+        mensaje: null,
+      };
+    },
+    [modulos, examenesAsignados, reservas, selectedSala]
+  );
 
   return (
     <div className="agenda-semanal-container">

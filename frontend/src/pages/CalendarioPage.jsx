@@ -20,18 +20,16 @@ export function CalendarioPage() {
     })
   );
 
-  const hanldeDragStart = (event) => {
+  const handleDragStart = (event) => {
     console.log('Drag Start detected:', event);
+    setDraggedExamen(null);
+    setDropTargetCell(null);
   };
 
   // Manejador de fin de arrastre
   const handleDragEnd = (event) => {
     const { active, over } = event;
     console.log('Drag ended:', { active, over });
-
-    // Limpiar estados previos
-    setDraggedExamen(null);
-    setDropTargetCell(null);
 
     // Si hay un drop válido
     if (
@@ -40,10 +38,13 @@ export function CalendarioPage() {
       over.data.current?.type === 'celda-calendario'
     ) {
       console.log('Valid drop detected!');
-
       // Configurar el estado para procesar el drop
       setDraggedExamen(active.data.current.examen);
       setDropTargetCell(over.data.current);
+    } else {
+      // Si no hay drop válido, limpiar estados
+      setDraggedExamen(null);
+      setDropTargetCell(null);
     }
   };
 
@@ -58,7 +59,7 @@ export function CalendarioPage() {
     <Layout>
       <DndContext
         sensors={sensors}
-        onDragStart={hanldeDragStart}
+        onDragStart={handleDragStart}
         onDragEnd={handleDragEnd}
       >
         <div className="container-fluid mt-3 calendario-page-container">
