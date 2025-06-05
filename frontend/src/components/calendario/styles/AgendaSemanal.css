@@ -50,6 +50,12 @@
   box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
 }
 
+.examenes-content {
+  flex-grow: 1; /* Permite que este contenedor crezca */
+  overflow-y: auto;
+  min-height: 0;
+}
+
 /* Título de la sección de exámenes pendientes */
 .examenes-title {
   padding: 12px 15px;
