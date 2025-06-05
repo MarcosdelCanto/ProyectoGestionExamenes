@@ -726,6 +726,8 @@ export default function AgendaSemanal({
                   onModulosChange={actualizarModulosExamen}
                   onRemoveExamen={eliminarExamen}
                   onCheckConflict={verificarConflictoAlRedimensionar}
+                  draggedExamen={draggedExamen}
+                  dropTargetCell={dropTargetCell}
                 />
                 {puedeConfirmar && (
                   <button

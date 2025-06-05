@@ -15,6 +15,9 @@ export default function CalendarGrid({
   onModulosChange,
   onRemoveExamen,
   onCheckConflict,
+  // Nuevas props opcionales para drag & drop
+  draggedExamen = null,
+  dropTargetCell = null,
 }) {
   if (!modulos || modulos.length === 0) {
     return <p className="aviso-seleccion">No hay módulos para mostrar.</p>;
@@ -46,6 +49,12 @@ export default function CalendarGrid({
                   examenAsignado
                 );
 
+                // Determinar si esta celda es el target actual del drag
+                const esDropTarget =
+                  dropTargetCell &&
+                  dropTargetCell.fecha === fecha &&
+                  dropTargetCell.modulo.ORDEN === mod.ORDEN;
+
                 return (
                   <CalendarCell
                     key={`${fecha}-${mod.ID_MODULO}`}
@@ -63,6 +72,9 @@ export default function CalendarGrid({
                     onCheckConflict={onCheckConflict}
                     modulosCount={examenAsignado?.modulosCount || 1}
                     esDiaSeleccionado={esSeleccionado}
+                    // Nuevas props para drag & drop
+                    draggedExamen={draggedExamen}
+                    esDropTarget={esDropTarget}
                   />
                 );
               })}

@@ -214,3 +214,43 @@
 .vista-examenes-postits .examen-post-it:hover {
   background-color: inherit;
 }
+
+/* Agregar estas reglas al final del archivo CSS existente */
+
+/* Estados durante drag & drop */
+.calendar-cell {
+  transition: all 0.2s ease;
+}
+
+/* Celda siendo targeted durante drag */
+.calendar-cell.drop-target {
+  background-color: #fff3e0 !important;
+  border: 2px solid #ff9800 !important;
+  box-shadow: 0 0 8px rgba(255, 152, 0, 0.4);
+}
+
+/* Examen siendo arrastrado */
+.examen-card.dragging {
+  opacity: 0.6;
+  transform: rotate(2deg);
+}
+
+/* Indicador de drag activo */
+.drag-active {
+  cursor: grabbing !important;
+}
+
+/* Feedback visual simple */
+.drag-feedback {
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  background: rgba(0, 0, 0, 0.8);
+  color: white;
+  padding: 10px 15px;
+  border-radius: 6px;
+  z-index: 1000;
+  font-size: 14px;
+  max-width: 250px;
+  pointer-events: none;
+}

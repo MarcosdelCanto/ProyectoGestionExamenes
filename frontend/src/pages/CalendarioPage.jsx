@@ -7,38 +7,56 @@ import {
 } from '@dnd-kit/core';
 import AgendaSemanal from '../components/calendario/AgendaSemanal';
 import Layout from '../components/Layout';
+import DragFeedback from '../components/calendario/DragFeedback';
 import './CalendarioPage.css';
 
 export function CalendarioPage() {
   const [draggedExamen, setDraggedExamen] = useState(null);
   const [dropTargetCell, setDropTargetCell] = useState(null);
+  const [hoverTargetCell, setHoverTargetCell] = useState(null); // Nueva variable para hover
 
   const sensors = useSensors(
     useSensor(PointerSensor, {
-      // Temporalmente sin activationConstraint para prueba
-      // activationConstraint: { delay: 100, tolerance: 5 },
+      activationConstraint: { delay: 100, tolerance: 5 }, // Reactivar para mejor UX
     })
   );
 
   const handleDragStart = (event) => {
     console.log('Drag Start detected:', event);
-    setDraggedExamen(null);
+    // Guardar el examen que se está arrastrando
+    if (event.active.data.current?.type === 'examen') {
+      setDraggedExamen(event.active.data.current.examen);
+    }
     setDropTargetCell(null);
+    setHoverTargetCell(null); // Limpiar hover
   };
 
-  // Manejador de fin de arrastre
+  // Este maneja solo el feedback visual, NO el procesamiento
+  const handleDragOver = (event) => {
+    const { over } = event;
+
+    if (over && over.data.current?.type === 'celda-calendario') {
+      setHoverTargetCell(over.data.current); // Solo para feedback visual
+    } else {
+      setHoverTargetCell(null);
+    }
+  };
+
   const handleDragEnd = (event) => {
     const { active, over } = event;
     console.log('Drag ended:', { active, over });
 
-    // Si hay un drop válido
+    // Limpiar hover inmediatamente
+    setHoverTargetCell(null);
+
+    // Si hay un drop válido, AQUÍ es donde se procesa realmente
     if (
       over &&
       active.data.current?.type === 'examen' &&
       over.data.current?.type === 'celda-calendario'
     ) {
       console.log('Valid drop detected!');
-      // Configurar el estado para procesar el drop
+      // Solo aquí se activa el procesamiento real
       setDraggedExamen(active.data.current.examen);
       setDropTargetCell(over.data.current);
     } else {
@@ -51,23 +69,28 @@ export function CalendarioPage() {
   const handleDropProcessed = () => {
     setDraggedExamen(null);
     setDropTargetCell(null);
+    setHoverTargetCell(null);
   };
-
-  // handleSelectSala y filteredSalas ya no son necesarios aquí
 
   return (
     <Layout>
       <DndContext
         sensors={sensors}
         onDragStart={handleDragStart}
+        onDragOver={handleDragOver}
         onDragEnd={handleDragEnd}
       >
         <div className="container-fluid mt-3 calendario-page-container">
-          {/* AgendaSemanal ahora es el componente principal que organiza su interior */}
           <AgendaSemanal
             draggedExamen={draggedExamen}
-            dropTargetCell={dropTargetCell}
+            dropTargetCell={dropTargetCell} // Solo para procesamiento real
             onDropProcessed={handleDropProcessed}
+          />
+
+          {/* Usar hoverTargetCell para feedback visual */}
+          <DragFeedback
+            draggedExamen={draggedExamen}
+            dropTargetCell={hoverTargetCell} // Feedback con hover, no con drop real
           />
         </div>
       </DndContext>
