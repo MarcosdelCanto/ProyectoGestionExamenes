@@ -20,7 +20,7 @@ export default function ExamenPostIt({
   moduloInicial,
   ...props
 }) {
-  const [modulosCount, setModulosCount] = useState(
+  const [moduloscount, setModulosCount] = useState(
     examen?.CANTIDAD_MODULOS_EXAMEN || 1
   );
   const [isResizing, setIsResizing] = useState(false);
@@ -69,7 +69,7 @@ export default function ExamenPostIt({
       Math.min(maxModulos, Math.round(newHeight / moduleHeightRef.current))
     );
 
-    if (newModulosCount !== modulosCount) {
+    if (newModulosCount !== moduloscount) {
       // Primero verificar si la función existe antes de usarla
       if (
         onCheckConflict &&
@@ -174,7 +174,7 @@ export default function ExamenPostIt({
     ...baseStyles,
     padding: '4px',
     width: '120px',
-    height: `${60 + (modulosCount - 1) * 20}px`,
+    height: `${60 + (moduloscount - 1) * 20}px`,
     cursor: 'grab',
   };
 
@@ -183,7 +183,7 @@ export default function ExamenPostIt({
     padding: '4px',
     width: '100%',
     height: '100%',
-    minHeight: `${40 * modulosCount}px`, // Altura basada en cantidad de módulos
+    minHeight: `${40 * moduloscount}px`, // Altura basada en cantidad de módulos
   };
 
   // Usar estilos diferentes basados en si es vista previa o no
@@ -203,7 +203,7 @@ export default function ExamenPostIt({
       className={`examen-post-it ${isPreview ? 'preview' : 'placed'} ${
         isBeingDragged ? 'dragging' : ''
       } ${isResizing ? 'resizing' : ''} ${resizeError ? 'error-resize' : ''}`}
-      data-modulos={modulosCount}
+      data-modulos={moduloscount}
       data-fecha={fecha}
       data-modulo-inicial={moduloInicial}
       {...props}
@@ -261,12 +261,12 @@ export default function ExamenPostIt({
         )}
         <div className="detail">
           <span className="detail-label">Módulos:</span>
-          <span>{modulosCount}</span>
+          <span>{moduloscount}</span>
         </div>
 
         {isPreview && (
           <div className="modulos-indicator">
-            {modulosCount} {modulosCount === 1 ? 'módulo' : 'módulos'}
+            {moduloscount} {moduloscount === 1 ? 'módulo' : 'módulos'}
           </div>
         )}
       </div>

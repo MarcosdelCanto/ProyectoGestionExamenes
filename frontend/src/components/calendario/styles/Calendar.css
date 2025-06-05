@@ -58,7 +58,10 @@
 }
 
 /* Hover para las celdas del calendario */
-.calendar-table .calendar-cell:hover {
+.calendar-table
+  .calendar-cell:hover:not(.contains-examen):not(.con-examen):not(
+    .part-of-examen
+  ) {
   background-color: #f1f8ff;
 }
 

@@ -17,7 +17,7 @@ const CalendarCell = memo(function CalendarCell({
   onModulosChange,
   onRemoveExamen,
   onCheckConflict, // Asegúrate de incluir esta prop
-  modulosCount,
+  moduloscount,
   esDiaSeleccionado,
 }) {
   // Configuración de la zona donde se puede soltar - un punto crucial
@@ -79,7 +79,7 @@ const CalendarCell = memo(function CalendarCell({
       {examenAsignado ? (
         <ExamenPostIt
           examen={examenAsignado.examen}
-          modulosCount={examenAsignado.modulosCount}
+          moduloscount={examenAsignado.moduloscount}
           onModulosChange={
             onModulosChange
               ? (id, count) => onModulosChange(id, count)
@@ -92,7 +92,7 @@ const CalendarCell = memo(function CalendarCell({
           moduloInicial={examenAsignado.moduloInicial}
           style={{
             position: 'absolute',
-            height: `${examenAsignado.modulosCount * 40}px`,
+            height: `${examenAsignado.moduloscount * 40}px`,
             width: '100%',
             zIndex: 10,
           }}

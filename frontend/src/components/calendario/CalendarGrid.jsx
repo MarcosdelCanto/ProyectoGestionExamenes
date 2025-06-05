@@ -70,7 +70,7 @@ export default function CalendarGrid({
                     onModulosChange={onModulosChange}
                     onRemoveExamen={onRemoveExamen}
                     onCheckConflict={onCheckConflict}
-                    modulosCount={examenAsignado?.modulosCount || 1}
+                    moduloscount={examenAsignado?.moduloscount || 1}
                     esDiaSeleccionado={esSeleccionado}
                     // Nuevas props para drag & drop
                     draggedExamen={draggedExamen}

@@ -216,7 +216,7 @@ export default function AgendaSemanal({
           examen,
           fecha,
           moduloInicial: moduloOrden,
-          modulosCount: cantidadModulos,
+          moduloscount: cantidadModulos,
         },
       ]);
     },
@@ -233,7 +233,7 @@ export default function AgendaSemanal({
       setExamenesAsignados((prev) =>
         prev.map((asignado) =>
           asignado.examen.ID_EXAMEN === examenId
-            ? { ...asignado, modulosCount: nuevosCant }
+            ? { ...asignado, moduloscount: nuevosCant }
             : asignado
         )
       );
@@ -269,7 +269,7 @@ export default function AgendaSemanal({
         (asignado) =>
           asignado.fecha === fecha &&
           ordenModulo >= asignado.moduloInicial &&
-          ordenModulo < asignado.moduloInicial + asignado.modulosCount
+          ordenModulo < asignado.moduloInicial + asignado.moduloscount
       );
 
       // Si este es el primer módulo del examen, mostrarlo completo
@@ -582,7 +582,7 @@ export default function AgendaSemanal({
             asignado.fecha === fecha &&
             asignado.examen.ID_EXAMEN !== examenAsignado.examen.ID_EXAMEN &&
             i >= asignado.moduloInicial &&
-            i < asignado.moduloInicial + asignado.modulosCount
+            i < asignado.moduloInicial + asignado.moduloscount
         );
 
         if (examenEnModulo) {
