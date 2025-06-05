@@ -1,24 +1,53 @@
 .sala-selector-container {
-  flex: 0 0 20%;
+  width: 100%;
   display: flex;
   flex-direction: column;
-  height: 100%; /* Ocupa toda la altura del padre */
-  background-color: var(--white);
   border-radius: 4px;
-  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
-  overflow: hidden; /* Para controlar el desbordamiento */
+  overflow: hidden;
+  border: 1px solid #dee2e6;
 }
+
+.sala-search-container {
+  padding: 10px;
+  background-color: #f8f9fa;
+  border-bottom: 1px solid #dee2e6;
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.sala-option {
+  padding: 8px 12px;
+  cursor: pointer;
+  transition: background-color 0.2s;
+  border-bottom: 1px solid #eee;
+}
+
+.sala-option:last-child {
+  border-bottom: none;
+}
+
+.sala-option:hover {
+  background-color: #f1f8ff;
+}
+
+.sala-option.selected {
+  background-color: rgba(40, 167, 69, 0.15);
+}
+
 .search-box {
   flex: 1;
   overflow-y: auto;
   margin-bottom: 0; /* Removemos el margin bottom */
   border-top: 1px solid #dee2e6;
 }
+
 .top-controls {
   padding: 10px;
   background-color: #f8f9fa;
   border-bottom: 1px solid #dee2e6;
 }
+
 .search-box {
   max-height: 200px;
   overflow-y: auto;

@@ -3,33 +3,121 @@
   flex-direction: column;
   height: 100%;
   overflow: hidden;
-}
-.top-row {
-  display: flex;
-  margin-bottom: 20px;
-  min-height: 300px;
+  padding: 20px;
   gap: 20px;
 }
-.details-section {
-  flex-grow: 1;
+
+/* Fila superior con los selectores de sala y semana */
+.selectors-row {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 20px;
+}
+
+.selector-container {
+  width: 48%;
+}
+
+.selector-label {
+  font-weight: 500;
+  margin-bottom: 8px;
+  color: #333;
+}
+
+/* Contenedor principal que divide exámenes y calendario */
+.main-content {
+  display: flex;
+  height: calc(100% - 80px);
+  gap: 20px;
+}
+
+/* Contenedor de exámenes pendientes */
+.examenes-pendientes {
+  flex: 0 0 300px; /* ancho fijo */
+  overflow: hidden;
   display: flex;
   flex-direction: column;
-  overflow-y: auto;
-  padding: 10px 0;
   background-color: #fff;
-  border-radius: 4px;
-  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+  border-radius: 8px;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
 }
+
+/* Título de la sección de exámenes pendientes */
+.examenes-title {
+  padding: 12px 15px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 1px solid #eee;
+  background-color: #f8f9fa;
+}
+
+.examenes-title h4 {
+  margin: 0;
+  font-size: 16px;
+}
+
+.badge {
+  background-color: #007bff;
+  color: white;
+  border-radius: 50%;
+  padding: 2px 8px;
+  font-size: 12px;
+}
+
+/* Contenedor del calendario */
+.calendar-container {
+  flex: 1;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  background-color: #fff;
+  border-radius: 8px;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+}
+
+/* Título del calendario */
+.calendar-title {
+  padding: 12px 15px;
+  border-bottom: 1px solid #eee;
+  background-color: #f8f9fa;
+}
+
+.calendar-title h4 {
+  margin: 0;
+  font-size: 16px;
+}
+
+/* Sección del calendario (contenido) */
+.calendar-content {
+  flex: 1;
+  overflow: auto;
+  padding: 0;
+}
+
 /* Aviso de selección */
 .aviso-seleccion {
   text-align: center;
   color: #6c757d;
   padding: 20px;
-  font-size: 1.1rem;
+  font-size: 1rem;
 }
 
 /* Botón de confirmar reserva */
 .btn-confirmar-reserva {
-  align-self: flex-end;
+  align-self: center;
   margin-top: 15px;
+  margin-bottom: 15px;
+}
+
+/* Estilos responsivos */
+@media (max-width: 992px) {
+  .main-content {
+    flex-direction: column;
+  }
+
+  .examenes-pendientes {
+    flex: 0 0 300px;
+    width: 100%;
+  }
 }

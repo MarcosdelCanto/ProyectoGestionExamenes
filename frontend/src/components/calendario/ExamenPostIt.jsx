@@ -201,7 +201,7 @@ export default function ExamenPostIt({
             {...dragHandleListeners}
             style={{
               float: 'left',
-              marginRight: '8px',
+              marginRight: '5px',
               cursor: 'grab',
               paddingTop: '2px',
             }}
@@ -209,7 +209,9 @@ export default function ExamenPostIt({
             <FaGripLines />
           </div>
         )}
-        <span title={examen.NOMBRE_ASIGNATURA}>{examen.NOMBRE_ASIGNATURA}</span>
+        <span title={examen.NOMBRE_ASIGNATURA} className="examen-titulo">
+          {examen.NOMBRE_ASIGNATURA}
+        </span>
         {/* Botón de eliminar - solo visible cuando no es preview */}
         {!isPreview && (
           <button
@@ -221,8 +223,7 @@ export default function ExamenPostIt({
               cursor: 'pointer',
               fontSize: '14px',
               padding: '0',
-              marginLeft: '8px',
-              float: 'right',
+              marginLeft: '5px',
             }}
             title="Eliminar examen"
           >

@@ -1,8 +1,10 @@
+/* Optimizar para el nuevo layout */
+
 /* Estilos para el contenedor de la tabla de calendario */
 .table-wrapper {
   width: 100%;
   overflow-x: auto;
-  margin-bottom: 15px;
+  height: 100%;
 }
 
 /* Estilos básicos para la tabla de calendario */
@@ -10,7 +12,7 @@
   width: 100%;
   border-collapse: collapse;
   table-layout: fixed;
-  font-size: 0.9rem;
+  font-size: 0.85rem;
 }
 
 /* Estilos para celdas y encabezados de la tabla de calendario */
@@ -100,14 +102,15 @@
 }
 
 .calendar-table .horario-col {
-  width: 100px !important;
-  min-width: 100px;
-  max-width: 100px;
+  width: 80px !important;
+  min-width: 80px;
+  max-width: 80px;
   white-space: nowrap;
   background-color: #f8f9fa;
   position: sticky;
   left: 40px;
   z-index: 2;
+  font-size: 0.75rem;
 }
 
 /* Mejoras para la apariencia de los módulos (solo para el calendario) */

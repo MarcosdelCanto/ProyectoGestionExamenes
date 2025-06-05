@@ -22,57 +22,35 @@ export default function SalaSelector({
     salas &&
     salas.length === 0;
 
+  // Ajustar para el nuevo diseño simplificado
+
   return (
-    <div
-      className="sala-selector-panel"
-      style={{
-        height: '100%',
-        display: 'flex',
-        flexDirection: 'column',
-      }}
-    >
-      {/* Contenedor para el buscador y el botón de filtro */}
-      <div className="d-flex mb-2 gap-2 align-items-center">
-        <div className="input-group input-group-sm flex-grow-1">
+    <div className="sala-selector-container">
+      <div className="sala-search-container">
+        <div className="input-group input-group-sm">
           <span className="input-group-text bg-light">
             <FaSearch />
           </span>
           <input
             type="search"
             className="form-control"
-            placeholder="Buscar Sala por Cód, Nombre, Edificio..."
-            value={searchTerm} // Usar el searchTerm del padre
-            onChange={onSearch} // Usar onSearch del padre
-            aria-label="Buscar sala"
+            placeholder="Buscar Sala..."
+            value={searchTerm}
+            onChange={onSearch}
           />
         </div>
         <button
           className="btn btn-light btn-sm"
-          onClick={onOpenFilterModal} // Llamar a la función para abrir el modal
-          title="Filtrar salas"
+          onClick={onOpenFilterModal}
+          title="Más filtros"
         >
           <FaFilter />
         </button>
       </div>
 
-      <div
-        className="table-responsive"
-        style={{
-          maxHeight: '120px', // Ajustado para mostrar ~4-5 filas antes de necesitar scroll
-          overflowY: 'auto',
-          minHeight: '80px',
-          backgroundColor: '#f8f9fa',
-        }}
-      >
+      <div className="sala-list">
         {isLoadingSalas ? (
-          <div className="d-flex justify-content-center align-items-center h-120 p-0.5">
-            <div
-              className="spinner-border spinner-border-sm text-primary"
-              role="status"
-            >
-              <span className="visually-hidden">Cargando salas...</span>
-            </div>
-          </div>
+          <div className="p-3 text-center text-muted">Cargando salas...</div>
         ) : tieneSalasParaMostrar ? (
           <table
             className="table table-sm tabla-seleccion m-0"
