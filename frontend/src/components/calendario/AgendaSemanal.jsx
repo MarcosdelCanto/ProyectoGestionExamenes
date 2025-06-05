@@ -628,7 +628,7 @@ export default function AgendaSemanal({
   return (
     <div className="agenda-semanal-container">
       {/* Fila de selectores de sala y semana */}
-      <div className="selectors-row">
+      <div className="selectors-row mt-3">
         <div className="selector-container">
           <div className="selector-label">Seleccionar Sala</div>
           <SalaSelector
@@ -684,7 +684,7 @@ export default function AgendaSemanal({
       </div>
 
       {/* Contenido principal: exámenes y calendario */}
-      <div className="main-content">
+      <div className="main-content mb-3">
         {/* Sección de exámenes pendientes */}
         <div className="examenes-pendientes">
           <div className="examenes-title">

@@ -1,7 +1,7 @@
 .agenda-semanal-container {
   display: flex;
   flex-direction: column;
-  height: 100%;
+  height: 100vh; /* Cambiar a altura completa del viewport */
   overflow: hidden;
 }
 .top-row {
@@ -17,6 +17,7 @@
   display: flex;
   justify-content: space-between;
   margin-bottom: 20px;
+  flex-shrink: 0; /* Evitar que se encoja */
 }
 
 .selector-container {
@@ -32,13 +33,15 @@
 /* Contenedor principal que divide exámenes y calendario */
 .main-content {
   display: flex;
-  height: calc(100% - 80px);
+  flex: 1; /* Tomar todo el espacio restante */
   gap: 20px;
+  min-height: 0; /* Importante para flexbox */
 }
 
 /* Contenedor de exámenes pendientes */
 .examenes-pendientes {
   flex: 0 0 300px; /* ancho fijo */
+  height: 100%; /* Misma altura que el contenedor padre */
   overflow: hidden;
   display: flex;
   flex-direction: column;
@@ -55,6 +58,7 @@
   align-items: center;
   border-bottom: 1px solid #eee;
   background-color: #f8f9fa;
+  flex-shrink: 0; /* Evitar que se encoja */
 }
 
 .examenes-title h4 {
@@ -70,9 +74,18 @@
   font-size: 12px;
 }
 
+/* Contenido de exámenes */
+.calendar-content {
+  flex: 1;
+  overflow: hidden; /* Cambiar de auto a hidden */
+  padding: 0;
+  min-height: 0; /* Importante para flexbox */
+}
+
 /* Contenedor del calendario */
 .calendar-container {
   flex: 1;
+  height: 100%; /* Misma altura que el contenedor padre */
   overflow: hidden;
   display: flex;
   flex-direction: column;
@@ -86,6 +99,7 @@
   padding: 12px 15px;
   border-bottom: 1px solid #eee;
   background-color: #f8f9fa;
+  flex-shrink: 0; /* Evitar que se encoja */
 }
 
 .calendar-title h4 {
@@ -96,8 +110,9 @@
 /* Sección del calendario (contenido) */
 .calendar-content {
   flex: 1;
-  overflow: auto;
+  overflow: hidden;
   padding: 0;
+  min-height: 0; /* Importante para flexbox */
 }
 
 /* Aviso de selección */
@@ -119,10 +134,20 @@
 @media (max-width: 992px) {
   .main-content {
     flex-direction: column;
+    height: auto; /* En móvil permitir altura automática */
   }
 
   .examenes-pendientes {
     flex: 0 0 300px;
     width: 100%;
+    height: 300px; /* Altura fija en móvil */
+  }
+
+  .calendar-container {
+    height: auto; /* Altura automática en móvil */
+  }
+
+  .calendar-content {
+    overflow: visible; /* En móvil permitir scroll si es necesario */
   }
 }

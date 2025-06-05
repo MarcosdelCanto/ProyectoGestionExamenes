@@ -80,7 +80,7 @@ export function CalendarioPage() {
         onDragOver={handleDragOver}
         onDragEnd={handleDragEnd}
       >
-        <div className="container-fluid mt-3 calendario-page-container">
+        <div className="container-fluid calendario-page-container">
           <AgendaSemanal
             draggedExamen={draggedExamen}
             dropTargetCell={dropTargetCell} // Solo para procesamiento real

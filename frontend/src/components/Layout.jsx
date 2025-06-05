@@ -121,7 +121,7 @@ export default function Layout({ children }) {
         onClick={handleOverlayClick}
       ></div>
 
-      <main className="flex-grow-1 p-4 bg-light overflow-auto app-main content-shifted-for-minimized-sidebar">
+      <main className="flex-grow-1 bg-light overflow-auto app-main content-shifted-for-minimized-sidebar">
         {children}
       </main>
 
