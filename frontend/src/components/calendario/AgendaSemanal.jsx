@@ -8,11 +8,14 @@ import {
   set,
 } from 'date-fns';
 import { es } from 'date-fns/locale';
+import { Modal } from 'react-bootstrap'; // Agregar import de Modal
 import SalaSelector from './SalaSelector';
-import ExamenSelector from './ExamenSelector'; // Importar ExamenSelector
+import ExamenSelector from './ExamenSelector';
 import CalendarGrid from './CalendarGrid';
 import FilterModalSalas from './FilterModalSalas';
-import './styles/AgendaSemanal.css'; // Importar los estilos
+import ReservaForm from '../reservas/ReservaForm'; // Agregar import de ReservaForm
+import { crearReservaParaExamenExistenteService } from '../../services/reservaService'; // Agregar import del servicio
+import './styles/AgendaSemanal.css';
 
 export default function AgendaSemanal({
   draggedExamen,
@@ -55,6 +58,13 @@ export default function AgendaSemanal({
   // Nuevo estado para controlar el procesamiento
   const [isProcessingDrop, setIsProcessingDrop] = useState(false);
   const [lastProcessedDrop, setLastProcessedDrop] = useState(null);
+
+  // Nuevos estados para la modal de reserva
+  const [showReservaModal, setShowReservaModal] = useState(false);
+  const [reservaModalData, setReservaModalData] = useState(null);
+  const [loadingReservaModal, setLoadingReservaModal] = useState(false);
+  const [modalError, setModalError] = useState(null);
+  const [modalSuccess, setModalSuccess] = useState(null);
 
   // Carga de datos inicial (salas, exámenes, módulos, reservas)
   useEffect(() => {
@@ -225,11 +235,6 @@ export default function AgendaSemanal({
   // funcion para actualizar modulos de un examen existente
   const actualizarModulosExamen = useCallback(
     (examenId, nuevosCant) => {
-      // El estado `examenesConModulos` no está definido en este componente.
-      // `examenesConModulosModificados` se usa para rastrear cambios en el ExamenSelector
-      // antes de que el examen sea arrastrado.
-      // Esta función es para actualizar la cantidad de módulos de un examen
-      // que ya ha sido asignado y está en la tabla.
       setExamenesAsignados((prev) =>
         prev.map((asignado) =>
           asignado.examen.ID_EXAMEN === examenId
@@ -358,14 +363,30 @@ export default function AgendaSemanal({
         }
 
         if (!hayConflicto) {
-          // Procesar el drop exitosamente
-          agregarExamenATabla(
-            draggedExamen,
-            fecha,
-            modulo.ORDEN,
-            modulosNecesarios
-          );
-          console.log('Drop procesado exitosamente');
+          // En lugar de agregar directamente, preparar datos para la modal
+          const modulosParaReserva = [];
+          for (let i = 0; i < modulosNecesarios; i++) {
+            const ordenActual = modulo.ORDEN + i;
+            const moduloObj = modulos.find((m) => m.ORDEN === ordenActual);
+            if (moduloObj) {
+              modulosParaReserva.push(moduloObj.ID_MODULO);
+            }
+          }
+
+          // Preparar datos para la modal
+          setReservaModalData({
+            examenId: draggedExamen.ID_EXAMEN,
+            fechaReserva: fecha,
+            salaId: selectedSala.ID_SALA,
+            modulosIds: modulosParaReserva,
+            examenNombre:
+              draggedExamen.NOMBRE_ASIGNATURA || draggedExamen.NOMBRE_EXAMEN,
+            salaNombre: selectedSala.NOMBRE_SALA,
+            modulosTexto: `Módulos ${modulo.ORDEN} - ${modulo.ORDEN + modulosNecesarios - 1}`,
+          });
+
+          setShowReservaModal(true);
+          console.log('Modal de reserva abierta con datos:', reservaModalData);
         } else {
           // Mostrar conflictos específicos
           alert(
@@ -389,16 +410,14 @@ export default function AgendaSemanal({
 
     procesarDrop();
   }, [
-    draggedExamen?.ID_EXAMEN, // Solo el ID en lugar del objeto completo
+    draggedExamen?.ID_EXAMEN,
     dropTargetCell?.fecha,
     dropTargetCell?.modulo?.ORDEN,
-    selectedSala?.ID_SALA, // Solo el ID en lugar del objeto completo
+    selectedSala?.ID_SALA,
     isProcessingDrop,
     lastProcessedDrop,
-    // Remover dependencias que cambian frecuentemente
     modulos,
     reservas,
-    agregarExamenATabla,
     obtenerExamenParaCelda,
     onDropProcessed,
   ]);
@@ -522,39 +541,6 @@ export default function AgendaSemanal({
     setShowSalaFilterModal(false);
     // La re-filtración de salas ocurrirá automáticamente debido a los cambios en selectedSede/selectedEdificio
   };
-
-  const puedeConfirmar =
-    selectedSala &&
-    selectedExamInternal &&
-    modulosSeleccionados.length > 0 &&
-    selectedExamInternal.CANTIDAD_MODULOS_EXAMEN ===
-      modulosSeleccionados.length;
-
-  // Estilos para la fila superior (SalaSelector y ExamenSelector)
-  const topRowStyle = {
-    display: 'flex',
-    marginBottom: '20px',
-    minHeight: '200px', // Altura mínima para la fila superior, ajustar según necesidad
-    // alignItems: 'stretch', // Para que los hijos intenten tener la misma altura
-  };
-
-  const salaSelectorContainerStyle = {
-    flex: '0 0 20%', // SalaSelector ocupa el 20%
-    marginRight: '15px', // Espacio entre los selectores
-    // Para asegurar que el contenido interno se expanda si es necesario
-    display: 'flex',
-    flexDirection: 'column', // Para que el contenido interno se apile verticalmente
-    // overflowY: 'auto', // Si la lista de salas es muy larga
-  };
-
-  const examenSelectorContainerStyle = {
-    flex: '1 1 auto', // ExamenSelector ocupa el resto del espacio
-    // Para asegurar que el contenido interno se expanda si es necesario
-    display: 'flex',
-    flexDirection: 'column', // Para que el contenido interno se apile verticalmente
-    overflowY: 'auto', // Si la lista de exámenes es muy larga
-  };
-
   // Función para verificar conflictos al redimensionar un examen
   const verificarConflictoAlRedimensionar = useCallback(
     (examenAsignado, nuevaCantidadModulos) => {
@@ -618,7 +604,6 @@ export default function AgendaSemanal({
           };
         }
       }
-
       return {
         hayConflicto: false,
         mensaje: null,
@@ -626,6 +611,58 @@ export default function AgendaSemanal({
     },
     [modulos, examenesAsignados, reservas, selectedSala]
   );
+
+  const handleCloseReservaModal = () => {
+    setShowReservaModal(false);
+    setReservaModalData(null);
+    setModalError(null);
+    setModalSuccess(null);
+  };
+
+  const handleCreateReserva = async (formDataPayload) => {
+    setLoadingReservaModal(true);
+    setModalError(null);
+    setModalSuccess(null);
+
+    try {
+      const response =
+        await crearReservaParaExamenExistenteService(formDataPayload);
+
+      // Agregar el examen al calendario visualmente
+      if (reservaModalData) {
+        agregarExamenATabla(
+          {
+            ID_EXAMEN: reservaModalData.examenId,
+            NOMBRE_ASIGNATURA: reservaModalData.examenNombre,
+            CANTIDAD_MODULOS_EXAMEN: reservaModalData.modulosIds.length,
+          },
+          reservaModalData.fechaReserva,
+          modulos.find((m) => reservaModalData.modulosIds.includes(m.ID_MODULO))
+            ?.ORDEN || 1,
+          reservaModalData.modulosIds.length
+        );
+      }
+
+      setModalSuccess(
+        response.message || 'Reserva creada exitosamente y programada.'
+      );
+
+      // Cerrar modal después de un breve delay para mostrar el mensaje
+      setTimeout(() => {
+        handleCloseReservaModal();
+      }, 2000);
+    } catch (err) {
+      setModalError(err.details || err.error || 'Error al crear la reserva.');
+    } finally {
+      setLoadingReservaModal(false);
+    }
+  };
+
+  const puedeConfirmar =
+    selectedExamInternal &&
+    modulosSeleccionados.length > 0 &&
+    modulosSeleccionados.length ===
+      selectedExamInternal.CANTIDAD_MODULOS_EXAMEN;
 
   return (
     <div className="agenda-semanal-container">
@@ -762,6 +799,64 @@ export default function AgendaSemanal({
         onSetSelectedEdificio={setSelectedEdificio}
         onAplicarFiltros={handleAplicarFiltrosSalas}
       />
+
+      {/* Nueva Modal de Reserva */}
+      {reservaModalData && (
+        <Modal
+          show={showReservaModal}
+          onHide={handleCloseReservaModal}
+          size="lg"
+          backdrop="static"
+        >
+          <Modal.Header closeButton>
+            <Modal.Title>Crear Reserva de Examen</Modal.Title>
+          </Modal.Header>
+          <Modal.Body>
+            <div className="mb-3 p-3 bg-light rounded">
+              <h6>Resumen del examen a programar:</h6>
+              <p className="mb-1">
+                <strong>Examen:</strong> {reservaModalData.examenNombre}
+              </p>
+              <p className="mb-1">
+                <strong>Sala:</strong> {reservaModalData.salaNombre}
+              </p>
+              <p className="mb-1">
+                <strong>Fecha:</strong>{' '}
+                {new Date(reservaModalData.fechaReserva).toLocaleDateString(
+                  'es-CL'
+                )}
+              </p>
+              <p className="mb-0">
+                <strong>Horario:</strong> {reservaModalData.modulosTexto}
+              </p>
+            </div>
+            {modalSuccess && (
+              <div className="alert alert-success" role="alert">
+                {modalSuccess}
+              </div>
+            )}
+            {modalError && (
+              <div className="alert alert-danger" role="alert">
+                {modalError}
+              </div>
+            )}
+
+            <ReservaForm
+              initialData={{
+                ID_EXAMEN: reservaModalData.examenId,
+                FECHA_RESERVA: reservaModalData.fechaReserva,
+                ID_SALA: reservaModalData.salaId,
+                MODULOS_IDS: reservaModalData.modulosIds,
+              }}
+              onSubmit={handleCreateReserva}
+              onCancel={handleCloseReservaModal}
+              isLoadingExternally={loadingReservaModal}
+              submitButtonText="Crear Reserva"
+              isEditMode={true} // Para que los campos vengan pre-llenados y algunos deshabilitados
+            />
+          </Modal.Body>
+        </Modal>
+      )}
     </div>
   );
 }
