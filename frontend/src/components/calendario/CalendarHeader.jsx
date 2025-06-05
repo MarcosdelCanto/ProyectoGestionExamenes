@@ -9,8 +9,8 @@ export default function CalendarHeader({ fechas }) {
   return (
     <thead>
       <tr>
-        <th className="orden-col">N°</th>
-        <th className="horario-col">Horario</th>
+        <th className="orden-col calendar-table">N°</th>
+        <th className="horario-col calendar-table">Horario</th>
         {fechas.map(
           ({ fecha, diaNombre, diaNumero, esHoy, esSeleccionado }) => (
             <th

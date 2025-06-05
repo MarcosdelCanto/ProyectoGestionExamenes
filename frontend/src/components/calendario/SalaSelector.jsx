@@ -178,21 +178,6 @@ export default function SalaSelector({
           <FaFilter />
         </button>
       </div>
-
-      {/* Información de la sala seleccionada */}
-      {selectedSala && (
-        <div
-          className="alert alert-info py-2 mb-0"
-          style={{ fontSize: '0.875rem' }}
-        >
-          <strong>Sala seleccionada:</strong> {selectedSala.NOMBRE_SALA}
-          {selectedSala.EDIFICIO && (
-            <span className="ms-2">
-              <small className="text-muted">({selectedSala.EDIFICIO})</small>
-            </span>
-          )}
-        </div>
-      )}
     </div>
   );
 }

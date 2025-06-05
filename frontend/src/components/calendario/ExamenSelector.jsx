@@ -20,15 +20,18 @@ function DraggableExamenPostIt({ examen, onModulosChange }) {
     });
 
   // estilo de transformacion controlados por dnd-kit
-  const style = transform
-    ? {
-        transform: `translate3d(${transform.x}px, ${transform.y}px, 0)`,
-        zIndex: isDragging ? 1000 : 'auto',
-        opacity: isDragging ? 0.8 : 1,
-        cursor: isDragging ? 'grabbing' : 'grab',
-        touchAction: 'none', // Evitar problemas de arrastre en dispositivos táctiles
-      }
-    : undefined;
+  const style = {
+    touchAction: 'none', // Evitar problemas de arrastre en dispositivos táctiles
+    cursor: isDragging ? 'grabbing' : 'grab',
+    ...(isDragging
+      ? {
+          // Estilos cuando se está arrastrando (y DragOverlay está activo)
+          opacity: 0, // Hacer el original completamente transparente
+          pointerEvents: 'none', // Evitar que intercepte eventos
+        }
+      : {}), // Sin estilos adicionales si no se arrastra (DragOverlay no visible)
+    // El transform lo aplica dnd-kit directamente al elemento si no usamos DragOverlay
+  };
 
   // Manejador para el cambio de módulos
   const handleModulosChange = (id, newCount) => {
@@ -38,6 +41,13 @@ function DraggableExamenPostIt({ examen, onModulosChange }) {
     }
   };
 
+  // Si se está arrastrando y DragOverlay está activo, no necesitamos renderizar el contenido
+  // del ExamenPostIt original, solo el contenedor para que dnd-kit lo siga "moviendo".
+  // Sin embargo, para simplificar y evitar que el ExamenPostIt interno desaparezca
+  // y cause un re-renderizado potencialmente problemático, simplemente lo haremos invisible
+  // con opacity: 0 en el `style` del div contenedor.
+  // El `transform` ya no se aplica manualmente aquí si DragOverlay está en uso,
+  // pero dnd-kit podría seguir aplicando transformaciones al nodo si no se usa DragOverlay.
   return (
     <div
       ref={setNodeRef}
