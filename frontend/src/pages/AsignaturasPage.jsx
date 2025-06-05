@@ -535,31 +535,27 @@ export default function AsignaturasPage() {
   // Calcular datos para la página actual
   const indexOfLastAsignatura = currentPageAsignaturas * itemsPerPage;
   const indexOfFirstAsignatura = indexOfLastAsignatura - itemsPerPage;
-  const currentAsignaturas = asignaturas.slice(
-    indexOfFirstAsignatura,
-    indexOfLastAsignatura
-  );
+  const currentAsignaturas = Array.isArray(asignaturas)
+    ? asignaturas.slice(indexOfFirstAsignatura, indexOfLastAsignatura)
+    : [];
 
   const indexOfLastSeccion = currentPageSecciones * itemsPerPage;
   const indexOfFirstSeccion = indexOfLastSeccion - itemsPerPage;
-  const currentSecciones = secciones.slice(
-    indexOfFirstSeccion,
-    indexOfLastSeccion
-  );
+  const currentSecciones = Array.isArray(secciones)
+    ? secciones.slice(indexOfFirstSeccion, indexOfLastSeccion)
+    : [];
 
   const indexOfLastCarrera = currentPageCarreras * itemsPerPage;
   const indexOfFirstCarrera = indexOfLastCarrera - itemsPerPage;
-  const currentCarreras = carreras.slice(
-    indexOfFirstCarrera,
-    indexOfLastCarrera
-  );
+  const currentCarreras = Array.isArray(carreras)
+    ? carreras.slice(indexOfFirstCarrera, indexOfLastCarrera)
+    : [];
 
   const indexOfLastEscuela = currentPageEscuelas * itemsPerPage;
   const indexOfFirstEscuela = indexOfLastEscuela - itemsPerPage;
-  const currentEscuelas = escuelas.slice(
-    indexOfFirstEscuela,
-    indexOfLastEscuela
-  );
+  const currentEscuelas = Array.isArray(escuelas)
+    ? escuelas.slice(indexOfFirstEscuela, indexOfLastEscuela)
+    : [];
 
   const handleSetTab = (tabName) => {
     setActiveTab(tabName);

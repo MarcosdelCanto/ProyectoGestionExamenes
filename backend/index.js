@@ -29,7 +29,7 @@ import permisosRoutes from './routes/permiso.routes.js'; // Nueva importación
 import dashboardRoutes from './routes/dashboard.routes.js'; // Importar rutas del dashboard
 import reservaRoutes from './routes/reserva.routes.js'; // Importar rutas de reserva
 import reportsRoutes from './routes/reports.routes.js'; // Importar rutas de reportes
-
+import publicRoutes from './routes/public.routes.js'; // Importar rutas públicas
 const app = express();
 
 app.use(
@@ -101,6 +101,7 @@ async function startServer() {
     app.use('/api', calendarioRoutes);
     app.use('/api/reserva', reservaRoutes); // Usar rutas de reserva
     app.use('/api/reports', reportsRoutes); // Asegúrate de que las rutas de reportes estén correctamente definidas
+    app.use('/api/public', publicRoutes); // Nuevo prefijo para rutas públicas
 
     const PORT = process.env.PORT || 3000;
     server.listen(PORT, () =>

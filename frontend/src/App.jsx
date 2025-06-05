@@ -24,6 +24,7 @@ import ReportesPage from './pages/ReportesPage';
 import DocenteReservasPage from './pages/DocenteReservasPage';
 import CrearReservaPage from './pages/CrearReservaPage';
 import MisReservasAsignadasPage from './pages/MisReservasAsignadasPage.jsx';
+import ConsultaExamenes from './pages/ConsultaExamenes.jsx';
 
 // Componentes
 import PrivateRoute from './components/PrivateRoute';
@@ -40,6 +41,7 @@ function App() {
       <Routes>
         {/* Ruta pública de login */}
         <Route path="/login" element={<Login />} />
+        <Route path="/consulta-examenes" element={<ConsultaExamenes />} />
 
         {/* Página de acceso no autorizado */}
         <Route path="/unauthorized" element={<UnauthorizedPage />} />

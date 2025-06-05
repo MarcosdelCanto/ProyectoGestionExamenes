@@ -3,8 +3,13 @@
   flex-direction: column;
   height: 100%;
   overflow: hidden;
-  padding: 20px;
+}
+.top-row {
+  /* display: flex; */
+  margin-bottom: 20px;
+  min-height: 300px;
   gap: 20px;
+  width: 100%;
 }
 
 /* Fila superior con los selectores de sala y semana */

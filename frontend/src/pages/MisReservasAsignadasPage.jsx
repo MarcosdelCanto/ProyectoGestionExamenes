@@ -43,10 +43,6 @@ const MisReservasAsignadasPage = () => {
 
   const handleOpenEditModal = (reservaId) => {
     const reserva = asignaciones.find((a) => a.ID_RESERVA === reservaId);
-    console.log(
-      '[DEBUG MisReservasAsignadasPage] Reserva encontrada:',
-      JSON.stringify(reserva, null, 2)
-    );
     if (reserva) {
       // Asegúrate de que 'reserva' tenga los campos necesarios para 'initialData' de ReservaForm
       // Específicamente ID_EXAMEN, ID_SALA, y MODULOS_IDS (array de números)
@@ -171,9 +167,7 @@ const MisReservasAsignadasPage = () => {
         <br />
         {asignaciones.length > 0 && (
           <>
-            <h3 className="display-7 mb-3 mt-4">
-              Exámenes que Requieren Revisión
-            </h3>
+            <h3 className="display-6 mb-3">Exámenes que Requieren Revisión</h3>
             <hr />
             <Table striped bordered hover responsive size="sm">
               <thead className="table-light sticky-top">

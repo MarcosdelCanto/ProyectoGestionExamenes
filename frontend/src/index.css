@@ -19,6 +19,17 @@ body,
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+
+  --sidebar-width-expanded: 280px; /* Ancho estándar de offcanvas-start de Bootstrap, ajústalo si es diferente */
+  --sidebar-width-minimized: 80px; /* Ancho que definiste para el sidebar minimizado */
+  --sidebar-icon-size: 1.5rem; /* Ajusta según el tamaño de tus iconos */
+  --sidebar-padding-x: 0.75rem; /* Ajusta según el padding de tus .nav-link */
+}
+
+/* Nueva clase para empujar el contenido principal */
+.content-shifted-for-minimized-sidebar {
+  margin-left: var(--sidebar-width-minimized);
+  transition: margin-left 0.25s ease-in-out; /* Opcional, si alguna vez cambia este margen */
 }
 
 a {
@@ -62,6 +73,140 @@ button:focus-visible {
   outline: 4px auto -webkit-focus-ring-color;
 }
 
+/* Estilos para el sidebar minimizado */
+.offcanvas.sidebar-minimized-custom {
+  width: var(--sidebar-width-minimized) !important;
+  transition: width 0.25s ease-in-out;
+  overflow: hidden;
+}
+
+/* Estilos para el sidebar expandido */
+.offcanvas.sidebar-expanded-custom {
+  width: var(--sidebar-width-expanded) !important;
+  transition: width 0.25s ease-in-out;
+  overflow: hidden;
+}
+
+/* Asegurar que el offcanvas sea visible y no tenga transformaciones que lo oculten por defecto */
+.offcanvas.offcanvas-start.show {
+  transform: none !important;
+  overflow: hidden;
+}
+
+.offcanvas-body {
+  overflow: hidden !important; /* Evita scroll durante transiciones */
+  padding: 0; /* Opcional: eliminar padding por defecto */
+}
+/* Estilos para el offcanvas-header y el logo */
+.offcanvas-header {
+  display: flex;
+  align-items: center;
+  /* justify-content se manejará por las clases de minimizado/expandido */
+  padding: var(--bs-offcanvas-padding-y) var(--bs-offcanvas-padding-x); /* Usa variables de Bootstrap si es posible */
+}
+
+.sidebar-logo-container {
+  flex-grow: 1; /* Permite que el contenedor del logo ocupe espacio */
+  display: flex;
+  align-items: center;
+  overflow: hidden; /* Importante para la transición de max-width */
+  transition: opacity 0.25s ease-in-out;
+}
+
+.sidebar-logo {
+  max-height: 50px; /* Altura máxima deseada para el logo */
+  width: auto; /* Mantiene la proporción del logo */
+  max-width: 100%; /* Asegura que no desborde su contenedor */
+  object-fit: contain; /* Asegura que el logo se escale bien dentro de su espacio */
+  transition: opacity 0.25s ease-in-out; /* Transición para la aparición/desaparición */
+}
+
+/* Estado minimizado: Ocultar logo y ajustar header */
+.sidebar-minimized-custom .offcanvas-header {
+  justify-content: center; /* Centra el botón de toggle */
+}
+
+.sidebar-minimized-custom .sidebar-logo-container {
+  opacity: 0;
+  width: 0; /* Encoge el contenedor del logo */
+  pointer-events: none;
+}
+
+/* Estado expandido: Mostrar logo y ajustar header */
+.sidebar-expanded-custom .offcanvas-header {
+  justify-content: space-between; /* Espacio entre logo y botón */
+}
+
+.sidebar-expanded-custom .sidebar-logo-container {
+  opacity: 1;
+  width: auto;
+  pointer-events: auto;
+}
+
+/* Contenedor del texto del enlace */
+.sidebar-link-text {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis; /* Muestra '...' si el texto es muy largo para el ancho fijo */
+}
+
+/* Estado minimizado: Ocultar texto y título del offcanvas */
+.sidebar-minimized-custom .sidebar-link-text,
+.sidebar-minimized-custom .offcanvas-title {
+  display: none;
+  pointer-events: none;
+}
+
+.sidebar-minimized-custom .nav-link .bi {
+  margin-right: 0 !important; /* El icono no necesita margen si no hay texto */
+}
+
+.sidebar-minimized-custom .offcanvas-header {
+  justify-content: center;
+}
+
+/* Estado expandido: Mostrar texto y título del offcanvas */
+.sidebar-expanded-custom .sidebar-link-text {
+  display: block;
+  opacity: 1;
+  pointer-events: auto;
+  visibility: visible;
+}
+
+.sidebar-expanded-custom .offcanvas-title {
+  display: block;
+  opacity: 1;
+  pointer-events: auto;
+  visibility: visible;
+}
+
+.sidebar-expanded-custom .nav-link .bi {
+  margin-right: 0; /* El margen ahora lo controla el .sidebar-link-text con margin-left */
+}
+
+.sidebar-expanded-custom .offcanvas-header {
+  justify-content: space-between; /* Alineación normal */
+}
+
+/* Ajustes generales para los enlaces del sidebar */
+.nav-link {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start; /* SIEMPRE flex-start */
+  padding-left: 1rem;
+  gap: 0.5rem;
+  overflow: hidden;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.nav-link .bi {
+  flex-shrink: 0; /* Evita que el icono se encoja */
+  width: var(--sidebar-icon-size);
+  text-align: center; /* Centra el icono dentro de su espacio fijo */
+  /* El tamaño del icono se puede definir aquí o heredar */
+}
+
 @media (prefers-color-scheme: light) {
   :root {
     color: #213547;
@@ -73,4 +218,33 @@ button:focus-visible {
   button {
     background-color: #f9f9f9;
   }
+}
+
+/* Overlay para bloquear interacción con el contenido principal */
+.sidebar-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background-color: rgba(0, 0, 0, 0.5); /* Fondo semi-transparente */
+  z-index: 1040; /* Menor que el offcanvas (1045) pero mayor que el contenido */
+  opacity: 0;
+  visibility: hidden;
+  transition:
+    opacity 0.25s ease-in-out,
+    visibility 0.25s ease-in-out;
+  pointer-events: none;
+}
+
+/* Mostrar overlay cuando el sidebar está expandido */
+.sidebar-overlay.show {
+  opacity: 1;
+  visibility: visible;
+  pointer-events: all; /* Permite hacer clic para cerrar */
+}
+
+/* Asegurar que el offcanvas tenga un z-index mayor */
+.offcanvas.offcanvas-start {
+  z-index: 1045 !important; /* Mayor que el overlay */
 }
