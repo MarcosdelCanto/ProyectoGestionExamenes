@@ -17,6 +17,7 @@ import {
   crearReservaParaExamenExistenteService,
   fetchAllReservas,
   fetchReservaById,
+  deleteReserva, // ← AGREGAR ESTA LÍNEA
 } from '../../services/reservaService';
 import './styles/AgendaSemanal.css';
 
@@ -57,6 +58,9 @@ export default function AgendaSemanal({
   const [loadingReservaModal, setLoadingReservaModal] = useState(false);
   const [modalError, setModalError] = useState(null);
   const [modalSuccess, setModalSuccess] = useState(null);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [reservaToDelete, setReservaToDelete] = useState(null);
+  const [loadingDelete, setLoadingDelete] = useState(false);
 
   // Carga de datos inicial
   useEffect(() => {
@@ -742,6 +746,87 @@ export default function AgendaSemanal({
     }
   };
 
+  const handleShowDeleteModal = useCallback(
+    (examenAsignado) => {
+      console.log('=== DEBUG handleShowDeleteModal ===');
+      console.log('examenAsignado recibido:', examenAsignado);
+      console.log('esReservaConfirmada:', examenAsignado?.esReservaConfirmada);
+
+      if (examenAsignado.esReservaConfirmada) {
+        console.log('Es reserva confirmada, buscando en reservas...');
+        console.log('reservas disponibles:', reservas);
+        console.log('selectedSala:', selectedSala);
+
+        const reservaCompleta = reservas.find(
+          (r) =>
+            r.ID_EXAMEN === examenAsignado.examen.ID_EXAMEN &&
+            r.ID_SALA === selectedSala.ID_SALA &&
+            format(new Date(r.FECHA_RESERVA), 'yyyy-MM-dd') ===
+              examenAsignado.fecha
+        );
+
+        console.log('reservaCompleta encontrada:', reservaCompleta);
+
+        if (reservaCompleta) {
+          console.log('Abriendo modal de eliminación...');
+          setReservaToDelete(reservaCompleta);
+          setShowDeleteModal(true);
+        } else {
+          console.log('ERROR: No se encontró la reserva completa');
+          alert('Error: No se pudo encontrar la reserva para eliminar.');
+        }
+      } else {
+        console.log('ERROR: No es una reserva confirmada');
+        alert('Error: Solo se pueden eliminar reservas confirmadas.');
+      }
+    },
+    [reservas, selectedSala]
+  );
+
+  const handleCloseDeleteModal = useCallback(() => {
+    setShowDeleteModal(false);
+    setReservaToDelete(null);
+  }, []);
+
+  const handleConfirmDelete = useCallback(async () => {
+    if (!reservaToDelete) return;
+
+    setLoadingDelete(true);
+
+    try {
+      await deleteReserva(reservaToDelete.ID_RESERVA);
+
+      setReservas((prevReservas) =>
+        prevReservas.filter((r) => r.ID_RESERVA !== reservaToDelete.ID_RESERVA)
+      );
+
+      if (reservaToDelete.Examen) {
+        setExamenes((prevExamenes) => {
+          const yaExiste = prevExamenes.some(
+            (e) => e.ID_EXAMEN === reservaToDelete.ID_EXAMEN
+          );
+
+          if (!yaExiste) {
+            return [...prevExamenes, reservaToDelete.Examen];
+          }
+          return prevExamenes;
+        });
+      }
+
+      handleCloseDeleteModal();
+      alert(
+        'Reserva eliminada exitosamente. El examen ha vuelto a la lista de pendientes.'
+      );
+    } catch (error) {
+      console.error('Error al eliminar reserva:', error);
+      alert(
+        `Error al eliminar la reserva: ${error.message || 'Error desconocido'}`
+      );
+    } finally {
+      setLoadingDelete(false);
+    }
+  }, [reservaToDelete, handleCloseDeleteModal]);
+
   const handleAplicarFiltrosSalas = () => {
     setShowSalaFilterModal(false);
   };
@@ -841,6 +926,7 @@ export default function AgendaSemanal({
                   obtenerExamenParaCelda={obtenerExamenParaCelda}
                   onModulosChange={actualizarModulosExamen}
                   onRemoveExamen={eliminarExamen}
+                  onDeleteReserva={handleShowDeleteModal} // ← AGREGAR ESTA LÍNEA
                   onCheckConflict={verificarConflictoAlRedimensionar}
                   draggedExamen={draggedExamen}
                   dropTargetCell={dropTargetCell}
@@ -876,6 +962,69 @@ export default function AgendaSemanal({
         onAplicarFiltros={handleAplicarFiltrosSalas}
       />
 
+      <Modal
+        show={showDeleteModal}
+        onHide={handleCloseDeleteModal}
+        centered
+        backdrop="static"
+      >
+        <Modal.Header closeButton>
+          <Modal.Title>Confirmar Eliminación</Modal.Title>
+        </Modal.Header>
+        <Modal.Body>
+          <p>¿Estás seguro de que deseas eliminar esta reserva?</p>
+          {reservaToDelete && (
+            <div className="alert alert-warning">
+              <strong>Examen:</strong>{' '}
+              {reservaToDelete.Examen?.NOMBRE_ASIGNATURA || 'Sin nombre'}
+              <br />
+              <strong>Fecha:</strong>{' '}
+              {new Date(reservaToDelete.FECHA_RESERVA).toLocaleDateString(
+                'es-CL'
+              )}
+              <br />
+              <strong>Módulos:</strong> {reservaToDelete.MODULOS?.length || 0}
+            </div>
+          )}
+          <p className="text-muted">
+            <small>
+              Esta acción no se puede deshacer. El examen volverá a aparecer en
+              la lista de exámenes pendientes.
+            </small>
+          </p>
+        </Modal.Body>
+        <Modal.Footer>
+          <button
+            type="button"
+            className="btn btn-secondary"
+            onClick={handleCloseDeleteModal}
+            disabled={loadingDelete}
+          >
+            Cancelar
+          </button>
+          <button
+            type="button"
+            className="btn btn-danger"
+            onClick={handleConfirmDelete}
+            disabled={loadingDelete}
+          >
+            {loadingDelete ? (
+              <>
+                <span
+                  className="spinner-border spinner-border-sm me-2"
+                  role="status"
+                  aria-hidden="true"
+                ></span>
+                Eliminando...
+              </>
+            ) : (
+              'Confirmar Eliminación'
+            )}
+          </button>
+        </Modal.Footer>
+      </Modal>
+
+      {/* Modal existente de reserva */}
       {reservaModalData && (
         <Modal
           show={showReservaModal}

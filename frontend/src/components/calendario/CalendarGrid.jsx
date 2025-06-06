@@ -14,11 +14,14 @@ export default function CalendarGrid({
   obtenerExamenParaCelda,
   onModulosChange,
   onRemoveExamen,
+  onDeleteReserva, // ← VERIFICAR QUE ESTÉ AQUÍ
   onCheckConflict,
-  // Nuevas props opcionales para drag & drop
   draggedExamen = null,
   dropTargetCell = null,
 }) {
+  // AGREGAR LOG TEMPORAL
+  console.log('CalendarGrid recibió onDeleteReserva:', typeof onDeleteReserva);
+
   if (!modulos || modulos.length === 0) {
     return <p className="aviso-seleccion">No hay módulos para mostrar.</p>;
   }
@@ -49,7 +52,6 @@ export default function CalendarGrid({
                   examenAsignado
                 );
 
-                // Determinar si esta celda es el target actual del drag
                 const esDropTarget =
                   dropTargetCell &&
                   dropTargetCell.fecha === fecha &&
@@ -69,10 +71,10 @@ export default function CalendarGrid({
                     isPartOfExamen={examenAsignado !== null}
                     onModulosChange={onModulosChange}
                     onRemoveExamen={onRemoveExamen}
+                    onDeleteReserva={onDeleteReserva} // ← VERIFICAR QUE ESTÉ AQUÍ
                     onCheckConflict={onCheckConflict}
                     moduloscount={examenAsignado?.moduloscount || 1}
                     esDiaSeleccionado={esSeleccionado}
-                    // Nuevas props para drag & drop
                     draggedExamen={draggedExamen}
                     esDropTarget={esDropTarget}
                   />

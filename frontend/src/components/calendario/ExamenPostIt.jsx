@@ -8,9 +8,12 @@ export default function ExamenPostIt({
   examen,
   setNodeRef,
   style,
+  moduloscount, // ← AGREGAR SI NO ESTÁ
+  esReservaConfirmada = false, // ← AGREGAR
   onModulosChange,
   onRemove,
-  onCheckConflict, // Añadir esta prop explícitamente
+  onDeleteReserva, // ← AGREGAR
+  onCheckConflict,
   minModulos = 1,
   maxModulos = 12,
   isPreview = false,
@@ -18,9 +21,10 @@ export default function ExamenPostIt({
   isBeingDragged,
   fecha,
   moduloInicial,
+  examenAsignadoCompleto, // ← AGREGAR
   ...props
 }) {
-  const [moduloscount, setModulosCount] = useState(
+  const [moduloscountState, setModulosCount] = useState(
     examen?.CANTIDAD_MODULOS_EXAMEN || 1
   );
   const [isResizing, setIsResizing] = useState(false);
@@ -69,7 +73,7 @@ export default function ExamenPostIt({
       Math.min(maxModulos, Math.round(newHeight / moduleHeightRef.current))
     );
 
-    if (newModulosCount !== moduloscount) {
+    if (newModulosCount !== moduloscountState) {
       // Primero verificar si la función existe antes de usarla
       if (
         onCheckConflict &&
@@ -142,6 +146,27 @@ export default function ExamenPostIt({
     }
   };
 
+  // AGREGAR: Función para manejar la eliminación
+  const handleDelete = (e) => {
+    e.stopPropagation();
+
+    console.log('=== DEBUG ExamenPostIt handleDelete ===');
+    console.log('esReservaConfirmada:', esReservaConfirmada);
+    console.log('onDeleteReserva:', typeof onDeleteReserva);
+    console.log('onRemove:', typeof onRemove);
+    console.log('examenAsignadoCompleto:', examenAsignadoCompleto);
+
+    if (esReservaConfirmada && onDeleteReserva && examenAsignadoCompleto) {
+      console.log('Llamando a onDeleteReserva...');
+      onDeleteReserva(examenAsignadoCompleto);
+    } else if (!esReservaConfirmada && onRemove) {
+      console.log('Llamando a onRemove...');
+      onRemove(examen.ID_EXAMEN);
+    } else {
+      console.log('ERROR: No se puede eliminar - faltan props o configuración');
+    }
+  };
+
   // Limpieza de event listeners
   useEffect(() => {
     return () => {
@@ -174,7 +199,7 @@ export default function ExamenPostIt({
     ...baseStyles,
     padding: '4px',
     width: '120px',
-    height: `${60 + (moduloscount - 1) * 20}px`,
+    height: `${60 + (moduloscountState - 1) * 20}px`,
     cursor: 'grab',
   };
 
@@ -183,7 +208,7 @@ export default function ExamenPostIt({
     padding: '4px',
     width: '100%',
     height: '100%',
-    minHeight: `${40 * moduloscount}px`, // Altura basada en cantidad de módulos
+    minHeight: `${40 * moduloscountState}px`, // Altura basada en cantidad de módulos
   };
 
   // Usar estilos diferentes basados en si es vista previa o no
@@ -203,7 +228,7 @@ export default function ExamenPostIt({
       className={`examen-post-it ${isPreview ? 'preview' : 'placed'} ${
         isBeingDragged ? 'dragging' : ''
       } ${isResizing ? 'resizing' : ''} ${resizeError ? 'error-resize' : ''}`}
-      data-modulos={moduloscount}
+      data-modulos={moduloscountState}
       data-fecha={fecha}
       data-modulo-inicial={moduloInicial}
       {...props}
@@ -229,7 +254,7 @@ export default function ExamenPostIt({
         {/* Botón de eliminar - solo visible cuando no es preview */}
         {!isPreview && (
           <button
-            onClick={handleRemove}
+            onClick={handleDelete} // ← CAMBIAR AQUÍ
             style={{
               background: 'none',
               border: 'none',
@@ -239,7 +264,8 @@ export default function ExamenPostIt({
               padding: '0',
               marginLeft: '5px',
             }}
-            title="Eliminar examen"
+            title={esReservaConfirmada ? 'Eliminar reserva' : 'Quitar examen'}
+            aria-label="Eliminar examen"
           >
             <FaTimes />
           </button>
@@ -261,12 +287,12 @@ export default function ExamenPostIt({
         )}
         <div className="detail">
           <span className="detail-label">Módulos:</span>
-          <span>{moduloscount}</span>
+          <span>{moduloscountState}</span>
         </div>
 
         {isPreview && (
           <div className="modulos-indicator">
-            {moduloscount} {moduloscount === 1 ? 'módulo' : 'módulos'}
+            {moduloscountState} {moduloscountState === 1 ? 'módulo' : 'módulos'}
           </div>
         )}
       </div>

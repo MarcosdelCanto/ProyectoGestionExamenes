@@ -16,10 +16,25 @@ const CalendarCell = memo(function CalendarCell({
   isPartOfExamen,
   onModulosChange,
   onRemoveExamen,
-  onCheckConflict, // Asegúrate de incluir esta prop
+  onDeleteReserva, // ← VERIFICAR QUE ESTÉ AQUÍ
+  onCheckConflict,
   moduloscount,
   esDiaSeleccionado,
+  draggedExamen,
+  esDropTarget,
 }) {
+  // AGREGAR LOG TEMPORAL
+  if (examenAsignado) {
+    console.log(
+      'CalendarCell tiene examen con esReservaConfirmada:',
+      examenAsignado.esReservaConfirmada
+    );
+    console.log(
+      'CalendarCell recibió onDeleteReserva:',
+      typeof onDeleteReserva
+    );
+  }
+
   // Configuración de la zona donde se puede soltar - un punto crucial
   const droppableId = `droppable-${fecha}-${modulo.ORDEN}`;
 
@@ -80,16 +95,19 @@ const CalendarCell = memo(function CalendarCell({
         <ExamenPostIt
           examen={examenAsignado.examen}
           moduloscount={examenAsignado.moduloscount}
+          esReservaConfirmada={examenAsignado.esReservaConfirmada} // ← VERIFICAR QUE ESTÉ AQUÍ
           onModulosChange={
             onModulosChange
               ? (id, count) => onModulosChange(id, count)
               : undefined
           }
           onRemove={onRemoveExamen}
-          onCheckConflict={onCheckConflict} // Asegúrate de pasar esta prop
+          onDeleteReserva={onDeleteReserva} // ← VERIFICAR QUE ESTÉ AQUÍ
+          onCheckConflict={onCheckConflict}
           isPreview={false}
           fecha={fecha}
           moduloInicial={examenAsignado.moduloInicial}
+          examenAsignadoCompleto={examenAsignado} // ← VERIFICAR QUE ESTÉ AQUÍ
           style={{
             position: 'absolute',
             height: `${examenAsignado.moduloscount * 40}px`,
