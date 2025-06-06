@@ -13,8 +13,12 @@ import SalaSelector from './SalaSelector';
 import ExamenSelector from './ExamenSelector';
 import CalendarGrid from './CalendarGrid';
 import FilterModalSalas from './FilterModalSalas';
-import ReservaForm from '../reservas/ReservaForm'; // Agregar import de ReservaForm
-import { crearReservaParaExamenExistenteService } from '../../services/reservaService'; // Agregar import del servicio
+import ReservaForm from '../reservas/ReservaForm';
+import {
+  crearReservaParaExamenExistenteService,
+  fetchAllReservas,
+  fetchReservaById, // Agregar esta importación
+} from '../../services/reservaService'; // Agregar import del servicio
 import './styles/AgendaSemanal.css';
 
 export default function AgendaSemanal({
@@ -36,8 +40,9 @@ export default function AgendaSemanal({
   const [sedesDisponibles, setSedesDisponibles] = useState([]);
   const [edificiosDisponibles, setEdificiosDisponibles] = useState([]);
 
-  // Estados para Exámenes (si ExamenSelector no los carga internamente)
+  // Estados para Exámenes
   const [examenes, setExamenes] = useState([]);
+  const [todosLosExamenesOriginal, setTodosLosExamenesOriginal] = useState([]); // NUEVO: Array completo de exámenes
   const [isLoadingExamenes, setIsLoadingExamenes] = useState(true);
 
   // Estados para el Calendario y la lógica de reserva
@@ -73,36 +78,109 @@ export default function AgendaSemanal({
       setIsLoadingExamenes(true);
       setIsLoadingModulos(true);
       setIsLoadingReservas(true);
+
       try {
+        // Cargar datos que no requieren autenticación primero
         const [salasRes, examenesRes, modulosRes, sedesRes, edificiosRes] =
           await Promise.all([
             fetch('/api/salas'),
             fetch('/api/examenes'),
-            fetch('/api/modulos'), // Asegúrate que estos endpoints sean correctos
-            fetch('/api/sede'), // Endpoint para obtener sedes
-            fetch('/api/edificio'), // Endpoint para obtener edificios
+            fetch('/api/modulos'),
+            fetch('/api/sede'),
+            fetch('/api/edificio'),
           ]);
 
         if (!salasRes.ok) throw new Error('Error cargando salas');
         setSalas(await salasRes.json());
 
         if (!examenesRes.ok) throw new Error('Error cargando exámenes');
-        setExamenes(await examenesRes.json());
+        const todosLosExamenes = await examenesRes.json();
+        console.log('Todos los exámenes cargados:', todosLosExamenes);
+
+        // NUEVO: Mantener una referencia completa de todos los exámenes
+        setTodosLosExamenesOriginal(todosLosExamenes);
 
         if (!modulosRes.ok) throw new Error('Error cargando módulos');
-        setModulos(await modulosRes.json());
-
-        setReservas([]);
+        const modulosData = await modulosRes.json();
+        console.log('Módulos cargados:', modulosData);
+        setModulos(modulosData);
 
         if (!sedesRes.ok) throw new Error('Error cargando sedes');
         setSedesDisponibles(await sedesRes.json());
 
         if (!edificiosRes.ok) throw new Error('Error cargando edificios');
         setEdificiosDisponibles(await edificiosRes.json());
+
+        // Cargar reservas por separado usando el servicio (con autenticación)
+        try {
+          const reservasData = await fetchAllReservas();
+          console.log('Reservas cargadas desde API:', reservasData);
+
+          // Cargar detalles completos de cada reserva
+          const reservasCompletas = await Promise.all(
+            reservasData.map(async (reserva) => {
+              try {
+                const reservaCompleta = await fetchReservaById(
+                  reserva.ID_RESERVA
+                );
+                console.log(
+                  `Reserva completa ${reserva.ID_RESERVA}:`,
+                  reservaCompleta
+                );
+                return reservaCompleta;
+              } catch (error) {
+                console.error(
+                  `Error cargando detalles de reserva ${reserva.ID_RESERVA}:`,
+                  error
+                );
+                return reserva;
+              }
+            })
+          );
+
+          // NUEVO: Procesar reservas para incluir información completa del examen
+          const reservasConExamenes = reservasCompletas.map((reserva) => {
+            if (!reserva.Examen && reserva.ID_EXAMEN) {
+              const examenCompleto = todosLosExamenes.find(
+                (e) => e.ID_EXAMEN === reserva.ID_EXAMEN
+              );
+              console.log(
+                `Asociando examen ${reserva.ID_EXAMEN} a reserva ${reserva.ID_RESERVA}:`,
+                examenCompleto
+              );
+              return {
+                ...reserva,
+                Examen: examenCompleto,
+              };
+            }
+            return reserva;
+          });
+
+          console.log('Reservas procesadas con exámenes:', reservasConExamenes);
+          setReservas(reservasConExamenes);
+
+          // Filtrar exámenes que ya tienen reservas confirmadas
+          const examenesConReserva = reservasConExamenes.map(
+            (r) => r.ID_EXAMEN
+          );
+          console.log('IDs de exámenes con reserva:', examenesConReserva);
+
+          const examenesSinReserva = todosLosExamenes.filter(
+            (examen) => !examenesConReserva.includes(examen.ID_EXAMEN)
+          );
+          console.log(
+            'Exámenes sin reserva (para mostrar en selector):',
+            examenesSinReserva
+          );
+
+          setExamenes(examenesSinReserva);
+        } catch (reservasError) {
+          console.error('Error cargando reservas:', reservasError);
+          setReservas([]);
+          setExamenes(todosLosExamenes);
+        }
       } catch (error) {
         console.error('Error al cargar datos iniciales:', error);
-
-        // Manejar errores individuales si es necesario
       } finally {
         setIsLoadingSalas(false);
         setIsLoadingExamenes(false);
@@ -110,6 +188,7 @@ export default function AgendaSemanal({
         setIsLoadingReservas(false);
       }
     }
+
     loadInitialData();
   }, []);
   const handleDateChange = useCallback((e) => {
@@ -266,21 +345,136 @@ export default function AgendaSemanal({
     [selectedExamInternal]
   );
 
-  // Funcion para obtener el examen asignado a una celda - revisada
+  // Modificar la función obtenerExamenParaCelda para simplificar y debuggear
   const obtenerExamenParaCelda = useCallback(
     (fecha, ordenModulo) => {
-      // Agregando logs para depuración
-      const encontrado = examenesAsignados.find(
+      console.log('Buscando examen para celda:', {
+        fecha,
+        ordenModulo,
+        selectedSala: selectedSala?.ID_SALA,
+      });
+      console.log('Reservas disponibles:', reservas);
+
+      // Primero buscar en exámenes asignados localmente (drag & drop temporal)
+      const examenAsignado = examenesAsignados.find(
         (asignado) =>
           asignado.fecha === fecha &&
           ordenModulo >= asignado.moduloInicial &&
           ordenModulo < asignado.moduloInicial + asignado.moduloscount
       );
 
-      // Si este es el primer módulo del examen, mostrarlo completo
-      return encontrado;
+      if (examenAsignado) {
+        console.log('Encontrado examen asignado localmente:', examenAsignado);
+        return examenAsignado;
+      }
+
+      // Si no hay sala seleccionada, no buscar en reservas
+      if (!selectedSala) {
+        return null;
+      }
+
+      // Buscar en reservas confirmadas
+      const reservaEncontrada = reservas.find((reserva) => {
+        const mismaSala = reserva.ID_SALA === selectedSala.ID_SALA;
+        const mismaFecha =
+          format(new Date(reserva.FECHA_RESERVA), 'yyyy-MM-dd') === fecha;
+
+        console.log('Verificando reserva:', {
+          reservaId: reserva.ID_RESERVA,
+          mismaSala,
+          mismaFecha,
+          fechaReserva: format(new Date(reserva.FECHA_RESERVA), 'yyyy-MM-dd'),
+          fechaBuscada: fecha,
+          salaReserva: reserva.ID_SALA,
+          salaBuscada: selectedSala.ID_SALA,
+        });
+
+        if (!mismaSala || !mismaFecha) {
+          return false;
+        }
+
+        // AQUÍ ESTÁ EL PROBLEMA: Los módulos vienen con diferente estructura
+        // Los módulos de la reserva son objetos completos: {ID_MODULO: 46, NOMBRE_MODULO: "Modulo 19", ...}
+        // No necesitas buscar en el array de módulos, solo comparar directamente
+        const tieneModulo = reserva.MODULOS?.some((moduloReserva) => {
+          // CAMBIO: Comparar directamente el nombre del módulo con el orden
+          // El NOMBRE_MODULO viene como "Modulo 19", necesitamos extraer el número
+          const numeroModulo = parseInt(
+            moduloReserva.NOMBRE_MODULO.replace('Modulo ', '')
+          );
+          const coincide = numeroModulo === ordenModulo;
+
+          console.log('Verificando módulo:', {
+            moduloReserva: moduloReserva,
+            numeroModuloExtraido: numeroModulo,
+            ordenBuscado: ordenModulo,
+            coincide,
+          });
+
+          return coincide;
+        });
+
+        return tieneModulo;
+      });
+
+      if (reservaEncontrada) {
+        console.log('Encontrada reserva:', reservaEncontrada);
+
+        // Obtener la información del examen
+        let examenInfo = reservaEncontrada.Examen;
+
+        // Si no hay información del examen en la reserva, buscarla en el array completo
+        if (!examenInfo && reservaEncontrada.ID_EXAMEN) {
+          examenInfo = todosLosExamenesOriginal.find(
+            (e) => e.ID_EXAMEN === reservaEncontrada.ID_EXAMEN
+          );
+          console.log('Examen encontrado en array original:', examenInfo);
+        }
+
+        if (examenInfo) {
+          // CAMBIO: Calcular el módulo inicial usando el nombre del módulo
+          const ordenesModulos = reservaEncontrada.MODULOS.map(
+            (moduloReserva) => {
+              const numeroModulo = parseInt(
+                moduloReserva.NOMBRE_MODULO.replace('Modulo ', '')
+              );
+              return numeroModulo;
+            }
+          ).filter((orden) => !isNaN(orden));
+
+          const moduloInicial = Math.min(...ordenesModulos);
+
+          console.log('Módulos de la reserva:', {
+            ordenesModulos,
+            moduloInicial,
+            ordenBuscado: ordenModulo,
+          });
+
+          // Solo mostrar el examen en el primer módulo de la reserva
+          if (ordenModulo === moduloInicial) {
+            const resultado = {
+              id: `reserva-${reservaEncontrada.ID_RESERVA}-${fecha}-${moduloInicial}`,
+              examen: examenInfo,
+              fecha: fecha,
+              moduloInicial: moduloInicial,
+              moduloscount: reservaEncontrada.MODULOS.length, // Cambio: usar MODULOS en mayúscula
+              esReservaConfirmada: true,
+            };
+            console.log('Retornando examen de reserva:', resultado);
+            return resultado;
+          }
+        }
+      }
+
+      return null;
     },
-    [examenesAsignados]
+    [
+      examenesAsignados,
+      reservas,
+      selectedSala,
+      modulos,
+      todosLosExamenesOriginal,
+    ]
   );
 
   // Efecto optimizado para procesar drops
@@ -346,11 +540,11 @@ export default function AgendaSemanal({
           // Verificar reservas existentes
           const estaReservado = reservas.some(
             (r) =>
-              r.SALA_ID_SALA === selectedSala.ID_SALA &&
+              r.ID_SALA === selectedSala.ID_SALA &&
               format(new Date(r.FECHA_RESERVA), 'yyyy-MM-dd') === fecha &&
               r.Modulos?.some((m) => {
                 const moduloReservado = modulos.find(
-                  (mod) => mod.ID_MODULO === m.MODULO_ID_MODULO
+                  (mod) => mod.ID_MODULO === m.ID_MODULO
                 );
                 return moduloReservado && moduloReservado.ORDEN === ordenActual;
               })
@@ -480,7 +674,7 @@ export default function AgendaSemanal({
     const modulosParaAPI = modulosSeleccionados
       .map((mSel) => {
         const modOriginal = modulos.find((mod) => mod.ORDEN === mSel.numero);
-        return modOriginal ? { MODULO_ID_MODULO: modOriginal.ID_MODULO } : null;
+        return modOriginal ? { ID_MODULO: modOriginal.ID_MODULO } : null;
       })
       .filter((m) => m !== null);
 
@@ -493,8 +687,8 @@ export default function AgendaSemanal({
 
     return {
       FECHA_RESERVA: modulosSeleccionados[0].fecha,
-      SALA_ID_SALA: selectedSala.ID_SALA,
-      EXAMEN_ID_EXAMEN: selectedExamInternal.ID_EXAMEN,
+      ID_SALA: selectedSala.ID_SALA,
+      ID_EXAMEN: selectedExamInternal.ID_EXAMEN,
       Modulos: modulosParaAPI,
     };
   }, [selectedSala, selectedExamInternal, modulosSeleccionados, modulos]);
@@ -587,11 +781,11 @@ export default function AgendaSemanal({
       ) {
         const estaReservado = reservas.some(
           (r) =>
-            r.SALA_ID_SALA === selectedSala?.ID_SALA &&
+            r.ID_SALA === selectedSala?.ID_SALA &&
             format(new Date(r.FECHA_RESERVA), 'yyyy-MM-dd') === fecha &&
             r.Modulos?.some((m) => {
               const moduloReservado = modulos.find(
-                (mod) => mod.ID_MODULO === m.MODULO_ID_MODULO
+                (mod) => mod.ID_MODULO === m.ID_MODULO
               );
               return moduloReservado && moduloReservado.ORDEN === i;
             })
@@ -641,6 +835,32 @@ export default function AgendaSemanal({
             ?.ORDEN || 1,
           reservaModalData.modulosIds.length
         );
+
+        // NUEVO: Remover el examen del selector de exámenes
+        setExamenes((prevExamenes) =>
+          prevExamenes.filter(
+            (examen) => examen.ID_EXAMEN !== reservaModalData.examenId
+          )
+        );
+
+        // NUEVO: Actualizar el estado de reservas para persistencia
+        const nuevaReserva = {
+          ID_RESERVA: response.data?.ID_RESERVA || Date.now(), // Usar ID real o temporal
+          ID_SALA: reservaModalData.salaId,
+          FECHA_RESERVA: reservaModalData.fechaReserva,
+          ID_EXAMEN: reservaModalData.examenId,
+          Modulos: reservaModalData.modulosIds.map((moduloId) => ({
+            ID_MODULO: moduloId,
+          })),
+          // Agregar información del examen para mostrarlo en el calendario
+          Examen: {
+            ID_EXAMEN: reservaModalData.examenId,
+            NOMBRE_ASIGNATURA: reservaModalData.examenNombre,
+            CANTIDAD_MODULOS_EXAMEN: reservaModalData.modulosIds.length,
+          },
+        };
+
+        setReservas((prevReservas) => [...prevReservas, nuevaReserva]);
       }
 
       setModalSuccess(
@@ -850,7 +1070,7 @@ export default function AgendaSemanal({
               }}
               onSubmit={handleCreateReserva}
               onCancel={handleCloseReservaModal}
-              isLoadingExternally={loadingReservaModal}
+              isLoadingExternamente={loadingReservaModal}
               submitButtonText="Crear Reserva"
               isEditMode={true} // Para que los campos vengan pre-llenados y algunos deshabilitados
             />
