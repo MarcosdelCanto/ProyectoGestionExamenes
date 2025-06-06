@@ -23,18 +23,6 @@ const CalendarCell = memo(function CalendarCell({
   draggedExamen,
   esDropTarget,
 }) {
-  // AGREGAR LOG TEMPORAL
-  if (examenAsignado) {
-    console.log(
-      'CalendarCell tiene examen con esReservaConfirmada:',
-      examenAsignado.esReservaConfirmada
-    );
-    console.log(
-      'CalendarCell recibió onDeleteReserva:',
-      typeof onDeleteReserva
-    );
-  }
-
   // Configuración de la zona donde se puede soltar - un punto crucial
   const droppableId = `droppable-${fecha}-${modulo.ORDEN}`;
 

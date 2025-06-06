@@ -283,80 +283,80 @@ export default function AgendaSemanal({
   );
 
   const obtenerExamenParaCelda = useCallback(
-    (fecha, ordenModulo) => {
-      // Buscar en exámenes asignados localmente
-      const examenAsignado = examenesAsignados.find(
-        (asignado) =>
-          asignado.fecha === fecha &&
-          ordenModulo >= asignado.moduloInicial &&
-          ordenModulo < asignado.moduloInicial + asignado.moduloscount
-      );
+    (fecha, moduloOrden) => {
+      // Primero verificar reservas confirmadas
+      for (const reserva of reservas) {
+        if (
+          reserva.ID_SALA === selectedSala?.ID_SALA &&
+          format(new Date(reserva.FECHA_RESERVA), 'yyyy-MM-dd') === fecha
+        ) {
+          const modulosReserva = reserva.MODULOS || reserva.Modulos || [];
 
-      if (examenAsignado) {
-        return examenAsignado;
-      }
+          // Verificar si este módulo es parte de la reserva
+          const perteneceAReserva = modulosReserva.some((m) => {
+            const orden = m.ID_MODULO
+              ? modulos.find((mod) => mod.ID_MODULO === m.ID_MODULO)?.ORDEN
+              : m.ORDEN;
+            return orden === moduloOrden;
+          });
 
-      if (!selectedSala) {
-        return null;
-      }
+          if (perteneceAReserva) {
+            // Calcular el módulo inicial correctamente
+            const moduloInicial = Math.min(
+              ...modulosReserva
+                .map((m) => {
+                  const orden = m.ID_MODULO
+                    ? modulos.find((mod) => mod.ID_MODULO === m.ID_MODULO)
+                        ?.ORDEN
+                    : m.ORDEN;
+                  return orden;
+                })
+                .filter((orden) => orden !== undefined)
+            );
 
-      // Buscar en reservas confirmadas
-      const reservaEncontrada = reservas.find((reserva) => {
-        const mismaSala = reserva.ID_SALA === selectedSala.ID_SALA;
-        const mismaFecha =
-          format(new Date(reserva.FECHA_RESERVA), 'yyyy-MM-dd') === fecha;
+            const cantidadModulos = modulosReserva.length;
 
-        if (!mismaSala || !mismaFecha) {
-          return false;
-        }
-
-        const tieneModulo = reserva.MODULOS?.some((moduloReserva) => {
-          const numeroModulo = parseInt(
-            moduloReserva.NOMBRE_MODULO.replace('Modulo ', '')
-          );
-          return numeroModulo === ordenModulo;
-        });
-
-        return tieneModulo;
-      });
-
-      if (reservaEncontrada) {
-        let examenInfo = reservaEncontrada.Examen;
-
-        if (!examenInfo && reservaEncontrada.ID_EXAMEN) {
-          examenInfo = todosLosExamenesOriginal.find(
-            (e) => e.ID_EXAMEN === reservaEncontrada.ID_EXAMEN
-          );
-        }
-
-        if (examenInfo) {
-          const ordenesModulos = reservaEncontrada.MODULOS.map(
-            (moduloReserva) => {
-              const numeroModulo = parseInt(
-                moduloReserva.NOMBRE_MODULO.replace('Modulo ', '')
-              );
-              return numeroModulo;
-            }
-          ).filter((orden) => !isNaN(orden));
-
-          const moduloInicial = Math.min(...ordenesModulos);
-
-          if (ordenModulo === moduloInicial) {
             return {
-              id: `reserva-${reservaEncontrada.ID_RESERVA}-${fecha}-${moduloInicial}`,
-              examen: examenInfo,
-              fecha: fecha,
-              moduloInicial: moduloInicial,
-              moduloscount: reservaEncontrada.MODULOS.length,
+              examen: reserva.Examen,
+              moduloscount: cantidadModulos,
               esReservaConfirmada: true,
+              fecha,
+              moduloInicial: moduloInicial,
             };
           }
         }
       }
 
+      // Luego verificar exámenes temporales
+      if (selectedExamInternal && modulosSeleccionados.length > 0) {
+        const perteneceASeleccion = modulosSeleccionados.some(
+          (m) => m.fecha === fecha && m.numero === moduloOrden
+        );
+
+        if (perteneceASeleccion) {
+          const moduloInicialTemporal = Math.min(
+            ...modulosSeleccionados.map((m) => m.numero)
+          );
+
+          return {
+            examen: selectedExamInternal,
+            moduloscount: modulosSeleccionados.length,
+            esReservaConfirmada: false,
+            fecha,
+            moduloInicial: moduloInicialTemporal,
+          };
+        }
+      }
+
       return null;
     },
-    [examenesAsignados, reservas, selectedSala, todosLosExamenesOriginal]
+    [
+      reservas,
+      selectedSala,
+      selectedExamInternal,
+      modulosSeleccionados,
+      modulos,
+    ]
   );
 
   // Procesamiento de drag and drop
@@ -603,27 +603,7 @@ export default function AgendaSemanal({
         };
       }
 
-      for (
-        let i = moduloInicial;
-        i < moduloInicial + nuevaCantidadModulos;
-        i++
-      ) {
-        const examenEnModulo = examenesAsignados.find(
-          (asignado) =>
-            asignado.fecha === fecha &&
-            asignado.examen.ID_EXAMEN !== examenAsignado.examen.ID_EXAMEN &&
-            i >= asignado.moduloInicial &&
-            i < asignado.moduloInicial + asignado.moduloscount
-        );
-
-        if (examenEnModulo) {
-          return {
-            hayConflicto: true,
-            mensaje: `Conflicto en el módulo ${i}: Ya hay un examen asignado (${examenEnModulo.examen.NOMBRE_ASIGNATURA}).`,
-          };
-        }
-      }
-
+      // ... resto del código igual, PERO también corregir aquí:
       for (
         let i = moduloInicial;
         i < moduloInicial + nuevaCantidadModulos;
@@ -633,7 +613,9 @@ export default function AgendaSemanal({
           (r) =>
             r.ID_SALA === selectedSala?.ID_SALA &&
             format(new Date(r.FECHA_RESERVA), 'yyyy-MM-dd') === fecha &&
-            r.Modulos?.some((m) => {
+            r.MODULOS?.some((m) => {
+              // CAMBIO: MODULOS en mayúscula
+              // CAMBIO: Usar la estructura correcta
               const moduloReservado = modulos.find(
                 (mod) => mod.ID_MODULO === m.ID_MODULO
               );
@@ -648,6 +630,7 @@ export default function AgendaSemanal({
           };
         }
       }
+
       return {
         hayConflicto: false,
         mensaje: null,
@@ -748,15 +731,7 @@ export default function AgendaSemanal({
 
   const handleShowDeleteModal = useCallback(
     (examenAsignado) => {
-      console.log('=== DEBUG handleShowDeleteModal ===');
-      console.log('examenAsignado recibido:', examenAsignado);
-      console.log('esReservaConfirmada:', examenAsignado?.esReservaConfirmada);
-
       if (examenAsignado.esReservaConfirmada) {
-        console.log('Es reserva confirmada, buscando en reservas...');
-        console.log('reservas disponibles:', reservas);
-        console.log('selectedSala:', selectedSala);
-
         const reservaCompleta = reservas.find(
           (r) =>
             r.ID_EXAMEN === examenAsignado.examen.ID_EXAMEN &&
@@ -765,18 +740,13 @@ export default function AgendaSemanal({
               examenAsignado.fecha
         );
 
-        console.log('reservaCompleta encontrada:', reservaCompleta);
-
         if (reservaCompleta) {
-          console.log('Abriendo modal de eliminación...');
           setReservaToDelete(reservaCompleta);
           setShowDeleteModal(true);
         } else {
-          console.log('ERROR: No se encontró la reserva completa');
           alert('Error: No se pudo encontrar la reserva para eliminar.');
         }
       } else {
-        console.log('ERROR: No es una reserva confirmada');
         alert('Error: Solo se pueden eliminar reservas confirmadas.');
       }
     },

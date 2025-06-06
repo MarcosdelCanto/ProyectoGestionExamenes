@@ -1,18 +1,16 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { FaGripLines, FaArrowsAltV, FaTimes } from 'react-icons/fa';
+import { FaArrowsAltV } from 'react-icons/fa';
 import './styles/PostIt.css';
-import { is } from 'date-fns/locale';
-import { set } from 'date-fns';
 
 export default function ExamenPostIt({
   examen,
   setNodeRef,
   style,
-  moduloscount, // ← AGREGAR SI NO ESTÁ
-  esReservaConfirmada = false, // ← AGREGAR
+  moduloscount,
+  esReservaConfirmada = false, // ← NUEVA PROP
   onModulosChange,
   onRemove,
-  onDeleteReserva, // ← AGREGAR
+  onDeleteReserva, // ← NUEVA PROP
   onCheckConflict,
   minModulos = 1,
   maxModulos = 12,
@@ -21,7 +19,7 @@ export default function ExamenPostIt({
   isBeingDragged,
   fecha,
   moduloInicial,
-  examenAsignadoCompleto, // ← AGREGAR
+  examenAsignadoCompleto, // ← NUEVA PROP
   ...props
 }) {
   const [moduloscountState, setModulosCount] = useState(
@@ -150,20 +148,10 @@ export default function ExamenPostIt({
   const handleDelete = (e) => {
     e.stopPropagation();
 
-    console.log('=== DEBUG ExamenPostIt handleDelete ===');
-    console.log('esReservaConfirmada:', esReservaConfirmada);
-    console.log('onDeleteReserva:', typeof onDeleteReserva);
-    console.log('onRemove:', typeof onRemove);
-    console.log('examenAsignadoCompleto:', examenAsignadoCompleto);
-
     if (esReservaConfirmada && onDeleteReserva && examenAsignadoCompleto) {
-      console.log('Llamando a onDeleteReserva...');
       onDeleteReserva(examenAsignadoCompleto);
     } else if (!esReservaConfirmada && onRemove) {
-      console.log('Llamando a onRemove...');
       onRemove(examen.ID_EXAMEN);
-    } else {
-      console.log('ERROR: No se puede eliminar - faltan props o configuración');
     }
   };
 
@@ -233,96 +221,76 @@ export default function ExamenPostIt({
       data-modulo-inicial={moduloInicial}
       {...props}
     >
-      <div className="header">
-        {isPreview && dragHandleListeners && (
-          <div
-            className="drag-handle-activator"
-            {...dragHandleListeners}
-            style={{
-              float: 'left',
-              marginRight: '5px',
-              cursor: 'grab',
-              paddingTop: '2px',
-            }}
-          >
-            <FaGripLines />
-          </div>
-        )}
-        <span title={examen.NOMBRE_ASIGNATURA} className="examen-titulo">
-          {examen.NOMBRE_ASIGNATURA}
-        </span>
-        {/* Botón de eliminar - solo visible cuando no es preview */}
-        {!isPreview && (
-          <button
-            onClick={handleDelete} // ← CAMBIAR AQUÍ
-            style={{
-              background: 'none',
-              border: 'none',
-              color: '#f00',
-              cursor: 'pointer',
-              fontSize: '14px',
-              padding: '0',
-              marginLeft: '5px',
-            }}
-            title={esReservaConfirmada ? 'Eliminar reserva' : 'Quitar examen'}
-            aria-label="Eliminar examen"
-          >
-            <FaTimes />
-          </button>
-        )}
-      </div>
-
-      <div className="content">
-        <div className="detail">
-          <span className="detail-label">Sección:</span>
-          <span title={examen.NOMBRE_SECCION}>
-            {examen.NOMBRE_SECCION || 'N/A'}
-          </span>
+      <div className="examen-content">
+        <div className="examen-header">
+          <span className="examen-title">{examen.NOMBRE_ASIGNATURA}</span>
+          {!isPreview && (
+            <button
+              className="btn-remove"
+              onClick={handleDelete} // ← CAMBIAR AQUÍ
+              aria-label="Eliminar examen"
+              title={esReservaConfirmada ? 'Eliminar reserva' : 'Quitar examen'}
+            >
+              ✕
+            </button>
+          )}
         </div>
-        {examen.CANT_ALUMNOS && (
+
+        <div className="content">
           <div className="detail">
-            <span className="detail-label">Alumnos:</span>
-            <span>{examen.CANT_ALUMNOS}</span>
+            <span className="detail-label">Sección:</span>
+            <span title={examen.NOMBRE_SECCION}>
+              {examen.NOMBRE_SECCION || 'N/A'}
+            </span>
           </div>
-        )}
-        <div className="detail">
-          <span className="detail-label">Módulos:</span>
-          <span>{moduloscountState}</span>
+          {examen.CANT_ALUMNOS && (
+            <div className="detail">
+              <span className="detail-label">Alumnos:</span>
+              <span>{examen.CANT_ALUMNOS}</span>
+            </div>
+          )}
+          <div className="detail">
+            <span className="detail-label">Módulos:</span>
+            <span>{moduloscountState}</span>
+          </div>
+
+          {isPreview && (
+            <div className="modulos-indicator">
+              {moduloscountState}{' '}
+              {moduloscountState === 1 ? 'módulo' : 'módulos'}
+            </div>
+          )}
         </div>
 
-        {isPreview && (
-          <div className="modulos-indicator">
-            {moduloscountState} {moduloscountState === 1 ? 'módulo' : 'módulos'}
+        {/* Mensaje de error de redimensionamiento */}
+        {resizeError && (
+          <div className="resize-error-message">{resizeError}</div>
+        )}
+
+        {!isPreview && (
+          <div
+            style={{
+              cursor: 'ns-resize',
+              height: '10px',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              borderTop: '1px solid #ddd',
+              backgroundColor: 'rgba(0,0,0,0.05)',
+              fontSize: '10px',
+              position: 'absolute',
+              bottom: '0',
+              left: '0',
+              right: '0',
+            }}
+            onMouseDown={handleResizeStart}
+            onTouchStart={handleResizeStart}
+            className="resize-handle"
+          >
+            <FaArrowsAltV />
           </div>
         )}
       </div>
-
-      {/* Mensaje de error de redimensionamiento */}
-      {resizeError && <div className="resize-error-message">{resizeError}</div>}
-
-      {!isPreview && (
-        <div
-          style={{
-            cursor: 'ns-resize',
-            height: '10px',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            borderTop: '1px solid #ddd',
-            backgroundColor: 'rgba(0,0,0,0.05)',
-            fontSize: '10px',
-            position: 'absolute',
-            bottom: '0',
-            left: '0',
-            right: '0',
-          }}
-          onMouseDown={handleResizeStart}
-          onTouchStart={handleResizeStart}
-          className="resize-handle"
-        >
-          <FaArrowsAltV />
-        </div>
-      )}
     </div>
   );
 }

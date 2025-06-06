@@ -14,23 +14,37 @@ export default function CalendarGrid({
   obtenerExamenParaCelda,
   onModulosChange,
   onRemoveExamen,
-  onDeleteReserva, // ← VERIFICAR QUE ESTÉ AQUÍ
+  onDeleteReserva,
   onCheckConflict,
   draggedExamen = null,
   dropTargetCell = null,
 }) {
-  // AGREGAR LOG TEMPORAL
-  console.log('CalendarGrid recibió onDeleteReserva:', typeof onDeleteReserva);
-
   if (!modulos || modulos.length === 0) {
     return <p className="aviso-seleccion">No hay módulos para mostrar.</p>;
   }
 
-  // funcion auxiliar para determinar si una celda debe renderizar un examen
+  // AGREGAR: Set para rastrear exámenes ya renderizados por día
+  const examenesRenderizadosPorDia = new Map();
+
+  // MEJORAR: función auxiliar para determinar si una celda debe renderizar un examen
   const shouldRenderExamen = (fecha, modulo, examenAsignado) => {
     if (!examenAsignado) return false;
 
-    return examenAsignado.moduloInicial === modulo.ORDEN;
+    const esModuloInicial = examenAsignado.moduloInicial === modulo.ORDEN;
+
+    if (!esModuloInicial) return false;
+
+    const claveExamen = `${fecha}-${examenAsignado.examen.ID_EXAMEN}-${examenAsignado.moduloInicial}`;
+
+    if (examenesRenderizadosPorDia.has(claveExamen)) {
+      // console.log('DUPLICADO DETECTADO Y EVITADO:', claveExamen);
+      return false;
+    }
+
+    examenesRenderizadosPorDia.set(claveExamen, true);
+    // console.log('RENDERIZANDO EXAMEN:', claveExamen);
+
+    return true;
   };
 
   return (
@@ -67,11 +81,11 @@ export default function CalendarGrid({
                     reservas={reservas}
                     modulosSeleccionados={modulosSeleccionados}
                     onSelectModulo={onSelectModulo}
-                    examenAsignado={renderExamen ? examenAsignado : null}
-                    isPartOfExamen={examenAsignado !== null}
+                    examenAsignado={renderExamen ? examenAsignado : null} // Solo si debe renderizar
+                    isPartOfExamen={examenAsignado !== null} // Siempre que haya examen asignado
                     onModulosChange={onModulosChange}
                     onRemoveExamen={onRemoveExamen}
-                    onDeleteReserva={onDeleteReserva} // ← VERIFICAR QUE ESTÉ AQUÍ
+                    onDeleteReserva={onDeleteReserva}
                     onCheckConflict={onCheckConflict}
                     moduloscount={examenAsignado?.moduloscount || 1}
                     esDiaSeleccionado={esSeleccionado}
