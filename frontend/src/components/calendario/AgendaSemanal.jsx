@@ -103,10 +103,10 @@ export default function AgendaSemanal({
           const reservasCompletas = await Promise.all(
             reservasData.map(async (reserva) => {
               try {
-                const reservaCompleta = await fetchReservaById(
+                const reservacompleta = await fetchReservaById(
                   reserva.ID_RESERVA
                 );
-                return reservaCompleta;
+                return reservacompleta;
               } catch (error) {
                 return reserva;
               }
@@ -732,7 +732,7 @@ export default function AgendaSemanal({
   const handleShowDeleteModal = useCallback(
     (examenAsignado) => {
       if (examenAsignado.esReservaConfirmada) {
-        const reservaCompleta = reservas.find(
+        const reservacompleta = reservas.find(
           (r) =>
             r.ID_EXAMEN === examenAsignado.examen.ID_EXAMEN &&
             r.ID_SALA === selectedSala.ID_SALA &&
@@ -740,8 +740,8 @@ export default function AgendaSemanal({
               examenAsignado.fecha
         );
 
-        if (reservaCompleta) {
-          setReservaToDelete(reservaCompleta);
+        if (reservacompleta) {
+          setReservaToDelete(reservacompleta);
           setShowDeleteModal(true);
         } else {
           alert('Error: No se pudo encontrar la reserva para eliminar.');
@@ -893,10 +893,9 @@ export default function AgendaSemanal({
                   reservas={reservas}
                   modulosSeleccionados={modulosSeleccionados}
                   onSelectModulo={handleSelectModulo}
-                  obtenerExamenParaCelda={obtenerExamenParaCelda}
                   onModulosChange={actualizarModulosExamen}
                   onRemoveExamen={eliminarExamen}
-                  onDeleteReserva={handleShowDeleteModal} // ← AGREGAR ESTA LÍNEA
+                  onDeleteReserva={handleShowDeleteModal}
                   onCheckConflict={verificarConflictoAlRedimensionar}
                   draggedExamen={draggedExamen}
                   dropTargetCell={dropTargetCell}
