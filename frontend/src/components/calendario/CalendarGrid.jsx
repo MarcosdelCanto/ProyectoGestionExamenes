@@ -14,11 +14,12 @@ export default function CalendarGrid({
   onModulosChange,
   onRemoveExamen,
   onDeleteReserva,
-  onCheckConflict,
+  onCheckConflict, // ← Viene de AgendaSemanal
+  draggedExamen = null,
   dropTargetCell = null,
 }) {
   // USAR EL HOOK: Centralizar toda la lógica de datos
-  const { getCellData, shouldRenderExamen } = useCalendarData({
+  const { getCellData, shouldRenderExamen, checkConflict } = useCalendarData({
     reservas,
     selectedSala,
     selectedExam,
@@ -58,7 +59,7 @@ export default function CalendarGrid({
                     onModulosChange={onModulosChange}
                     onRemoveExamen={onRemoveExamen}
                     onDeleteReserva={onDeleteReserva}
-                    onCheckConflict={onCheckConflict}
+                    onCheckConflict={checkConflict} // ← USAR LA FUNCIÓN DEL HOOK
                     esDropTarget={
                       dropTargetCell?.fecha === fecha &&
                       dropTargetCell?.modulo?.ORDEN === modulo.ORDEN

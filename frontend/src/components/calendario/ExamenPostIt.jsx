@@ -148,10 +148,20 @@ export default function ExamenPostIt({
   const handleDelete = (e) => {
     e.stopPropagation();
 
+    console.log('=== DEBUG ExamenPostIt handleDelete ===');
+    console.log('esReservaConfirmada:', esReservaConfirmada);
+    console.log('onDeleteReserva:', typeof onDeleteReserva);
+    console.log('onRemove:', typeof onRemove);
+    console.log('examenAsignadoCompleto:', examenAsignadoCompleto);
+
     if (esReservaConfirmada && onDeleteReserva && examenAsignadoCompleto) {
+      console.log('Llamando a onDeleteReserva...');
       onDeleteReserva(examenAsignadoCompleto);
     } else if (!esReservaConfirmada && onRemove) {
+      console.log('Llamando a onRemove...');
       onRemove(examen.ID_EXAMEN);
+    } else {
+      console.log('ERROR: No se puede eliminar - faltan props o configuración');
     }
   };
 

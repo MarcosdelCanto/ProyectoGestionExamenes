@@ -73,7 +73,7 @@ const CalendarCell = memo(function CalendarCell({
           fecha={fecha}
           moduloInicial={cellData.moduloInicial}
           examenAsignadoCompleto={cellData}
-          reservacompleta={cellData.reservacompleta}
+          reservacompleta={cellData.reservaCompleta} // ← CAMBIAR: era reservacompleta, ahora reservaCompleta
           style={{
             position: 'absolute',
             height: `${cellData.modulosTotal * 40}px`,

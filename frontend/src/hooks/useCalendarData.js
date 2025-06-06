@@ -111,10 +111,72 @@ export function useCalendarData({
     [calendarData]
   );
 
+  // NUEVA FUNCIÓN: Verificar conflictos para redimensionamiento
+  const checkConflict = useCallback(
+    (examenId, fecha, moduloInicial, nuevaCantidadModulos) => {
+      console.log('🔍 Verificando conflicto:', {
+        examenId,
+        fecha,
+        moduloInicial,
+        nuevaCantidadModulos,
+      });
+
+      // Validar parámetros
+      if (!fecha || !moduloInicial || !nuevaCantidadModulos) {
+        console.log('❌ Parámetros inválidos');
+        return true;
+      }
+
+      // Verificar que los módulos existan
+      for (let i = 0; i < nuevaCantidadModulos; i++) {
+        const ordenActual = moduloInicial + i;
+        const moduloExiste = modulos.some((m) => m.ORDEN === ordenActual);
+
+        if (!moduloExiste) {
+          console.log(`❌ Módulo ${ordenActual} no existe`);
+          return true;
+        }
+      }
+
+      // Verificar conflictos con reservas existentes (excluyendo el examen actual)
+      for (let i = 0; i < nuevaCantidadModulos; i++) {
+        const ordenActual = moduloInicial + i;
+
+        const hayConflicto = reservas.some((reserva) => {
+          // Excluir el mismo examen
+          if (reserva.ID_EXAMEN === examenId) return false;
+
+          // Verificar misma sala y fecha
+          if (reserva.ID_SALA !== selectedSala?.ID_SALA) return false;
+          if (format(new Date(reserva.FECHA_RESERVA), 'yyyy-MM-dd') !== fecha)
+            return false;
+
+          // Verificar si algún módulo de la reserva conflicta
+          return reserva.MODULOS?.some((m) => {
+            const moduloInfo = modulos.find(
+              (mod) => mod.ID_MODULO === m.ID_MODULO
+            );
+            return moduloInfo?.ORDEN === ordenActual;
+          });
+        });
+
+        if (hayConflicto) {
+          console.log(`❌ Conflicto en módulo ${ordenActual}`);
+          return true;
+        }
+      }
+
+      console.log('✅ Sin conflictos');
+      return false;
+    },
+    [reservas, selectedSala, modulos]
+  );
+
   return {
     getCellData,
     shouldRenderExamen,
     isCellOccupied,
     getCellType,
+    checkConflict, // ← NUEVA FUNCIÓN
   };
 }

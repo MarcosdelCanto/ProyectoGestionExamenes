@@ -351,6 +351,37 @@ export default function AgendaSemanal({
     setReservas,
   ]);
 
+  // IMPLEMENTAR: Función para manejar cambios de módulos
+  const handleModulosChange = useCallback(
+    (examenId, nuevaCantidadModulos) => {
+      console.log('📝 Cambio de módulos:', { examenId, nuevaCantidadModulos });
+
+      // Actualizar en modulosSeleccionados si es el examen seleccionado
+      if (selectedExamInternal?.ID_EXAMEN === examenId) {
+        setModulosSeleccionados((prev) => {
+          if (prev.length === 0) return prev;
+
+          // Mantener solo la cantidad necesaria de módulos
+          const fechaBase = prev[0]?.fecha;
+          const moduloBase = Math.min(...prev.map((m) => m.numero));
+
+          const nuevosModulos = [];
+          for (let i = 0; i < nuevaCantidadModulos; i++) {
+            nuevosModulos.push({
+              fecha: fechaBase,
+              numero: moduloBase + i,
+            });
+          }
+
+          return nuevosModulos;
+        });
+      }
+
+      // Aquí podrías también actualizar reservas temporales si es necesario
+    },
+    [selectedExamInternal]
+  );
+
   // RENDERIZADO SIMPLIFICADO
   if (
     isLoadingSalas ||
@@ -438,10 +469,10 @@ export default function AgendaSemanal({
                   reservas={reservas}
                   modulosSeleccionados={modulosSeleccionados}
                   onSelectModulo={handleSelectModulo}
-                  onModulosChange={() => {}} // Implementar si es necesario
+                  onModulosChange={handleModulosChange} // ← IMPLEMENTADO
                   onRemoveExamen={eliminarExamen}
                   onDeleteReserva={handleShowDeleteModal}
-                  onCheckConflict={() => {}} // Implementar si es necesario
+                  onCheckConflict={() => {}} // ← Ya no se usa aquí, se maneja en el hook
                   draggedExamen={draggedExamen}
                   dropTargetCell={dropTargetCell}
                 />
