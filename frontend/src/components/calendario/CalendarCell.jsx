@@ -44,6 +44,11 @@ const CalendarCell = memo(function CalendarCell({
     if (cellState.partOfExamen) classes.push('part-of-examen');
     if (cellState.diaSeleccionado) classes.push('dia-seleccionado');
 
+    // Si la celda va a renderizar un examen, añadir la clase 'con-examen'
+    // para asegurar overflow: visible (definido en Calendar.css)
+    if (shouldRenderExamen && cellData) {
+      classes.push('con-examen');
+    }
     return classes.join(' ');
   };
 

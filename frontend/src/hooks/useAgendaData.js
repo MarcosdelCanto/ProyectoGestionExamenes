@@ -66,10 +66,23 @@ export function useAgendaData() {
               return reserva;
             });
 
-            setReservas(reservasConExamenes);
+            // Cuando se cargan las reservas, incluir la cantidad de módulos de la reserva:
+            const reservasConModulos = reservasConExamenes.map((reserva) => ({
+              ...reserva,
+              MODULOS_RESERVA_COUNT: reserva.MODULOS?.length || 0, // ← Contar módulos de la reserva
+              Examen: {
+                ...reserva.Examen,
+                MODULOS_RESERVA:
+                  reserva.MODULOS?.length ||
+                  reserva.Examen?.CANTIDAD_MODULOS_EXAMEN ||
+                  3,
+              },
+            }));
+
+            setReservas(reservasConModulos);
 
             // Filtrar exámenes que ya tienen reserva
-            const examenesConReserva = reservasConExamenes.map(
+            const examenesConReserva = reservasConModulos.map(
               (r) => r.ID_EXAMEN
             );
             const examenesSinReserva = todosLosExamenes.filter(

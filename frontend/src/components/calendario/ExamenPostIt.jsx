@@ -22,8 +22,14 @@ export default function ExamenPostIt({
   examenAsignadoCompleto, // ← NUEVA PROP
   ...props
 }) {
-  const [moduloscountState, setModulosCount] = useState(
-    examen?.CANTIDAD_MODULOS_EXAMEN || 1
+  const [moduloscountState, setModuloscountState] = useState(
+    // NUEVA PRIORIDAD - usar módulos de la RESERVA:
+    moduloscount || // 1. Prop explícita
+      examen?.MODULOS?.length || // 2. Módulos de reserva (array MODULOS)
+      examen?.MODULOS_IDS_ARRAY?.length || // 3. Módulos de reserva (array IDs)
+      examen?.CANTIDAD_MODULOS_RESERVA || // 4. Campo calculado de reserva
+      examen?.CANTIDAD_MODULOS_EXAMEN || // 5. Módulos del examen (fallback)
+      3 // 6. Default
   );
   const [isResizing, setIsResizing] = useState(false);
   const [resizeError, setResizeError] = useState(null);
@@ -110,7 +116,7 @@ export default function ExamenPostIt({
       }
 
       // Si no hay conflicto o no se puede verificar, permitir el cambio
-      setModulosCount(newModulosCount);
+      setModuloscountState(newModulosCount);
       if (onModulosChange) {
         onModulosChange(examen.ID_EXAMEN, newModulosCount);
       }
@@ -286,6 +292,7 @@ export default function ExamenPostIt({
               bottom: '0',
               left: '0',
               right: '0',
+              zIndex: 1,
             }}
             onMouseDown={handleResizeStart}
             onTouchStart={handleResizeStart}

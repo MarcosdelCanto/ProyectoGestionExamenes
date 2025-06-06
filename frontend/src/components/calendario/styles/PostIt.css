@@ -76,6 +76,7 @@
   display: flex;
   flex-direction: column;
   height: 100%;
+  position: relative;
 }
 
 .examen-header {
@@ -111,6 +112,11 @@
 .content {
   flex: 1;
   font-size: 0.7rem;
+  /* Asegurar espacio para el resize-handle. */
+  /* El resize-handle tiene una altura definida (e.g., 10px). */
+  padding-bottom: calc(
+    var(--resize-handle-height, 10px) + 5px
+  ); /* Añade un pequeño margen extra */
 }
 
 .detail {
@@ -167,9 +173,7 @@
 
 /* === CALENDAR CELL INTEGRATION === */
 .calendar-cell .examen-post-it.is-placed {
-  /* Ya no necesitamos !important */
   width: 100%;
-  height: 100%;
 }
 
 /* === HOVER EFFECTS === */
@@ -332,6 +336,60 @@
 }
 .examen-post-it.error-resize {
   box-shadow: 0 0 8px 2px rgba(255, 0, 0, 0.7) !important;
+}
+
+/* ALTURA DINÁMICA BASADA EN MÓDULOS - Solo para exámenes colocados */
+.calendar-table .calendar-cell .examen-post-it.is-placed[data-modulos='1'] {
+  height: 40px !important;
+}
+.calendar-table .calendar-cell .examen-post-it.is-placed[data-modulos='2'] {
+  height: 80px !important;
+}
+.calendar-table .calendar-cell .examen-post-it.is-placed[data-modulos='3'] {
+  height: 120px !important;
+}
+.calendar-table .calendar-cell .examen-post-it.is-placed[data-modulos='4'] {
+  height: 160px !important;
+}
+.calendar-table .calendar-cell .examen-post-it.is-placed[data-modulos='5'] {
+  height: 200px !important;
+}
+.calendar-table .calendar-cell .examen-post-it.is-placed[data-modulos='6'] {
+  height: 240px !important;
+}
+.calendar-table .calendar-cell .examen-post-it.is-placed[data-modulos='7'] {
+  height: 280px !important;
+}
+.calendar-table .calendar-cell .examen-post-it.is-placed[data-modulos='8'] {
+  height: 320px !important;
+}
+.calendar-table .calendar-cell .examen-post-it.is-placed[data-modulos='9'] {
+  height: 360px !important;
+}
+.calendar-table .calendar-cell .examen-post-it.is-placed[data-modulos='10'] {
+  height: 400px !important;
+}
+.calendar-table .calendar-cell .examen-post-it.is-placed[data-modulos='11'] {
+  height: 440px !important;
+}
+.calendar-table .calendar-cell .examen-post-it.is-placed[data-modulos='12'] {
+  height: 480px !important;
+}
+
+/* ASEGURAR que los preview mantengan altura fija */
+.examen-post-it:not(.is-placed)[data-modulos] {
+  height: 120px !important; /* Mantener altura fija para preview */
+}
+
+/* PERMITIR que las celdas muestren contenido desbordado */
+.calendar-table .calendar-cell {
+  overflow: visible !important;
+}
+
+/* Z-INDEX para que el resize handle funcione */
+.calendar-table .calendar-cell .examen-post-it .resize-handle {
+  z-index: 9999 !important;
+  position: relative !important;
 }
 
 @keyframes pulsate {

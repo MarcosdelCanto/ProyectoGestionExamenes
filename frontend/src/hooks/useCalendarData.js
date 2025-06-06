@@ -19,8 +19,19 @@ export function useCalendarData({
 
         const fecha = format(new Date(reserva.FECHA_RESERVA), 'yyyy-MM-dd');
         const modulosReserva = reserva.MODULOS || [];
+        const cantidadModulosReal =
+          modulosReserva.length ||
+          reserva.MODULOS_RESERVA_COUNT ||
+          reserva.Examen?.CANTIDAD_MODULOS_EXAMEN ||
+          3;
 
-        if (modulosReserva.length === 0) return;
+        console.log('🔍 Procesando reserva:', {
+          id: reserva.ID_RESERVA,
+          modulosArray: modulosReserva,
+          cantidadCalculada: cantidadModulosReal,
+        });
+
+        if (cantidadModulosReal === 0) return;
 
         // Calcular módulo inicial una sola vez
         const ordenesModulos = modulosReserva
@@ -41,7 +52,7 @@ export function useCalendarData({
           data.set(key, {
             tipo: 'reserva',
             examen: reserva.Examen,
-            modulosTotal: modulosReserva.length,
+            modulosTotal: cantidadModulosReal,
             moduloInicial,
             reservaCompleta: reserva, // ← CORREGIR nombre de prop
             fecha,
@@ -91,7 +102,8 @@ export function useCalendarData({
   // SIMPLIFICAR: Una función simple para determinar si renderizar
   const shouldRenderExamen = useCallback((cellData) => {
     if (!cellData) return false;
-    return cellData.moduloInicial === cellData.orden;
+    // Convertir a número para asegurar la comparación correcta
+    return Number(cellData.moduloInicial) === Number(cellData.orden);
   }, []);
 
   // ÚTIL: Función para verificar si una celda está ocupada
