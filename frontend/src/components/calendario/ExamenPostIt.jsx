@@ -173,48 +173,44 @@ export default function ExamenPostIt({
     };
   }, [isResizing]);
 
-  // Base styles para ambas vistas (preview y colocado)
-  const baseStyles = {
-    backgroundColor: getPostItColor(),
-    border: '1px solid #d0d0d0',
-    borderRadius: '4px',
-    boxShadow: isResizing
-      ? '0 0 8px rgba(0,0,255,0.5)'
-      : '1px 1px 4px rgba(0,0,0,0.2)',
-    fontSize: '0.75rem',
-    display: 'flex',
-    flexDirection: 'column',
-    overflow: 'hidden',
-    boxSizing: 'border-box',
-    position: 'relative',
-    userSelect: 'none',
-    transition: isResizing ? 'none' : 'height 0.1s ease-out',
-    ...style,
+  // SIMPLIFICAR: Un solo objeto de estilos
+  const getStyles = () => {
+    const baseStyles = {
+      backgroundColor: getPostItColor(),
+      // Solo los estilos que realmente necesitan ser dinámicos
+      height: isPreview
+        ? `${60 + (moduloscountState - 1) * 20}px`
+        : `${40 * moduloscountState}px`,
+      width: isPreview ? '120px' : '100%',
+      zIndex: isResizing ? 100 : isPreview ? 1 : 50,
+      // Combinar con estilos externos
+      ...style,
+    };
+
+    return baseStyles;
   };
 
-  // Estilos específicos para vista previa vs colocado
-  const previewStyles = {
-    ...baseStyles,
-    padding: '4px',
-    width: '120px',
-    height: `${60 + (moduloscountState - 1) * 20}px`,
-    cursor: 'grab',
-  };
+  // USAR en el JSX:
+  const finalStyles = getStyles();
 
-  const placedStyles = {
-    ...baseStyles,
-    padding: '4px',
-    width: '100%',
-    height: '100%',
-    minHeight: `${40 * moduloscountState}px`, // Altura basada en cantidad de módulos
-  };
+  // NUEVA FUNCIÓN: Determinar la clase principal
+  const getMainClass = () => {
+    let classes = [];
 
-  // Usar estilos diferentes basados en si es vista previa o no
-  const finalStyles = {
-    ...(isPreview ? previewStyles : placedStyles),
-    backgroundColor: getPostItColor(),
-    position: isPreview ? 'relative' : 'absolute',
-    zIndex: isResizing ? 100 : isPreview ? 1 : 50,
+    // Estado principal
+    if (isPreview) classes.push('is-preview');
+    else classes.push('is-placed');
+
+    // Estados temporales
+    if (isBeingDragged) classes.push('is-dragging');
+    if (isResizing) classes.push('is-resizing');
+    if (resizeError) classes.push('has-error');
+
+    // Tipo de examen
+    if (esReservaConfirmada) classes.push('is-confirmed');
+    else classes.push('is-pending');
+
+    return classes.join(' ');
   };
 
   if (!examen) return null;
@@ -223,9 +219,7 @@ export default function ExamenPostIt({
     <div
       ref={setNodeRef}
       style={finalStyles}
-      className={`examen-post-it ${isPreview ? 'preview' : 'placed'} ${
-        isBeingDragged ? 'dragging' : ''
-      } ${isResizing ? 'resizing' : ''} ${resizeError ? 'error-resize' : ''}`}
+      className={`examen-post-it ${getMainClass()}`} // ← UNA SOLA FUNCIÓN
       data-modulos={moduloscountState}
       data-fecha={fecha}
       data-modulo-inicial={moduloInicial}

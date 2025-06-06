@@ -13,6 +13,175 @@
   --shadow-resizing: 0 0 8px rgba(0, 0, 255, 0.5);
 }
 
+/* === BASE STYLES === */
+.examen-post-it {
+  border: 1px solid #d0d0d0;
+  border-radius: 4px;
+  box-shadow: 1px 1px 4px rgba(0, 0, 0, 0.2);
+  font-size: 0.75rem;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  box-sizing: border-box;
+  position: relative;
+  user-select: none;
+  transition: all 0.2s ease;
+}
+
+/* === ESTADOS PRINCIPALES === */
+.examen-post-it.is-preview {
+  position: relative;
+  padding: 4px;
+  cursor: grab;
+}
+
+.examen-post-it.is-placed {
+  position: absolute;
+  padding: 4px;
+  top: 0;
+  left: 0;
+  right: 0;
+}
+
+/* === ESTADOS TEMPORALES === */
+.examen-post-it.is-dragging {
+  transform: rotate(3deg);
+  box-shadow: 0 8px 16px rgba(0, 0, 0, 0.3);
+  z-index: 1000;
+}
+
+.examen-post-it.is-resizing {
+  border: 2px solid #007bff;
+  box-shadow: 0 0 8px rgba(0, 123, 255, 0.5);
+  transition: none; /* Sin animación durante resize */
+}
+
+.examen-post-it.has-error {
+  border-color: #dc3545;
+  background-color: #f8d7da !important;
+}
+
+/* === TIPOS DE EXAMEN === */
+.examen-post-it.is-confirmed {
+  border-left: 4px solid #28a745;
+}
+
+.examen-post-it.is-pending {
+  border-left: 4px solid #ffc107;
+}
+
+/* === CONTENIDO === */
+.examen-content {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+.examen-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 4px;
+}
+
+.examen-title {
+  font-weight: bold;
+  line-height: 1.2;
+  flex: 1;
+  word-break: break-word;
+}
+
+.btn-remove {
+  background: none;
+  border: none;
+  color: #6c757d;
+  font-size: 12px;
+  padding: 0;
+  width: 16px;
+  height: 16px;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+.btn-remove:hover {
+  color: #dc3545;
+}
+
+.content {
+  flex: 1;
+  font-size: 0.7rem;
+}
+
+.detail {
+  margin-bottom: 2px;
+  display: flex;
+  gap: 4px;
+}
+
+.detail-label {
+  font-weight: 500;
+  color: #666;
+}
+
+/* === RESIZE HANDLE === */
+.resize-handle {
+  cursor: ns-resize;
+  height: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-top: 1px solid #ddd;
+  background-color: rgba(0, 0, 0, 0.05);
+  font-size: 10px;
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  opacity: 0.7;
+  transition: opacity 0.2s ease;
+}
+
+.resize-handle:hover {
+  opacity: 1;
+  background-color: rgba(0, 123, 255, 0.1);
+}
+
+.examen-post-it.is-resizing .resize-handle {
+  background-color: rgba(0, 123, 255, 0.2);
+}
+
+/* === ERROR MESSAGES === */
+.resize-error-message {
+  position: absolute;
+  bottom: 20px;
+  left: 4px;
+  right: 4px;
+  background: #dc3545;
+  color: white;
+  font-size: 0.6rem;
+  padding: 2px 4px;
+  border-radius: 2px;
+  z-index: 10;
+}
+
+/* === CALENDAR CELL INTEGRATION === */
+.calendar-cell .examen-post-it.is-placed {
+  /* Ya no necesitamos !important */
+  width: 100%;
+  height: 100%;
+}
+
+/* === HOVER EFFECTS === */
+.calendar-cell:hover:not(.contains-examen) {
+  background-color: #f1f8ff;
+}
+
+/* === DRAG PREVIEW === */
+.examen-post-it.is-preview.is-dragging {
+  opacity: 0.5;
+}
+
 .examen-post-it {
   transition:
     box-shadow 0.2s,
