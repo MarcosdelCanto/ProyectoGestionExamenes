@@ -11,6 +11,7 @@ const ReservaForm = ({
   isLoadingExternally = false,
   submitButtonText = 'Guardar',
   isEditMode = false,
+  onModulosChange,
 }) => {
   const [formData, setFormData] = useState({
     examenId: '',
@@ -79,19 +80,29 @@ const ReservaForm = ({
 
     setFormData((prev) => {
       const currentModulosIds = prev.modulosIds || [];
+      let newModulosIds;
+
       if (checked) {
         // Añadir si no está presente
-        return {
-          ...prev,
-          modulosIds: [...new Set([...currentModulosIds, moduloId])],
-        };
+        newModulosIds = [...new Set([...currentModulosIds, moduloId])];
       } else {
         // Remover
-        return {
-          ...prev,
-          modulosIds: currentModulosIds.filter((id) => id !== moduloId),
-        };
+        newModulosIds = currentModulosIds.filter((id) => id !== moduloId);
       }
+
+      // NUEVO: Llamar al callback cuando cambien los módulos
+      if (onModulosChange) {
+        console.log('Llamando onModulosChange desde ReservaForm:', {
+          nuevaCantidad: newModulosIds.length,
+          nuevosModulosIds: newModulosIds,
+        });
+        onModulosChange(newModulosIds.length, newModulosIds);
+      }
+
+      return {
+        ...prev,
+        modulosIds: newModulosIds,
+      };
     });
   };
 
@@ -136,63 +147,17 @@ const ReservaForm = ({
       return;
     }
 
+    // CORREGIR: Usar los nombres que espera el backend
     const payload = {
-      // Inicializar payload con campos que no son IDs problemáticos
+      modulos: formData.modulosIds,
       fecha_reserva: formData.fechaReserva,
-      modulos: formData.modulosIds, // <--- CAMBIO DE NOMBRE AQUÍ de modulos_ids a modulos
+      sala_id_sala: parseInt(formData.salaId, 10),
+      examen_id_examen: isEditMode
+        ? Number(initialData.ID_EXAMEN)
+        : parseInt(formData.examenId, 10),
     };
 
-    // Manejo de examenId
-    if (isEditMode) {
-      // En modo edición, el examenId viene de initialData y está deshabilitado.
-      // Usamos initialData.ID_EXAMEN directamente.
-      // El error NJS-105 indica que el backend espera un número.
-      if (initialData && initialData.ID_EXAMEN != null) {
-        // No es null ni undefined
-        const idExamenNum = Number(initialData.ID_EXAMEN);
-
-        if (!isNaN(idExamenNum)) {
-          payload.examen_id_examen = idExamenNum;
-        } else {
-          // initialData.ID_EXAMEN no es null pero no se pudo convertir a número válido
-          setError(
-            `El ID de examen original (${initialData.ID_EXAMEN}) es inválido.`
-          );
-          return;
-        }
-      } else {
-        // initialData.ID_EXAMEN es null o undefined.
-        // Si el backend requiere un número aquí, esto es un problema de datos o lógica.
-        setError(
-          'El ID de examen original es requerido para la edición y no fue proporcionado o es inválido.'
-        );
-        return;
-      }
-    } else {
-      // Modo creación
-      const idExamenNum = parseInt(formData.examenId, 10);
-
-      if (!isNaN(idExamenNum)) {
-        payload.examen_id_examen = idExamenNum;
-      } else {
-        // Esta validación ya debería estar cubierta por las validaciones de campos requeridos.
-        setError('Debe seleccionar un examen válido.');
-        return;
-      }
-    }
-
-    // Manejo de salaId (siempre editable y requerido)
-    const idSalaNum = parseInt(formData.salaId, 10);
-
-    if (!isNaN(idSalaNum)) {
-      payload.sala_id_sala = idSalaNum;
-    } else {
-      // Esta validación ya debería estar cubierta.
-      setError('Debe seleccionar una sala válida.');
-      return;
-    }
-
-    onSubmit(payload); // El padre maneja si es create o update
+    onSubmit(payload);
   };
 
   if (loadingData) {
