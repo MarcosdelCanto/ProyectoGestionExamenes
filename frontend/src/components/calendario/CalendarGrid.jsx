@@ -14,9 +14,10 @@ export default function CalendarGrid({
   onModulosChange,
   onRemoveExamen,
   onDeleteReserva,
-  onCheckConflict, // ← Viene de AgendaSemanal
+  onCheckConflict,
   draggedExamen = null,
   dropTargetCell = null,
+  hoverTargetCell = null, // ← AGREGAR ESTA PROP
 }) {
   // USAR EL HOOK: Centralizar toda la lógica de datos
   const { getCellData, shouldRenderExamen, checkConflict } = useCalendarData({
@@ -47,6 +48,15 @@ export default function CalendarGrid({
                 const cellData = getCellData(fecha, modulo.ORDEN);
                 const shouldRender = shouldRenderExamen(cellData);
 
+                // SEPARAR: hover preview vs drop target
+                const esHoverTarget =
+                  hoverTargetCell?.fecha === fecha &&
+                  hoverTargetCell?.modulo?.ORDEN === modulo.ORDEN;
+
+                const esDropTarget =
+                  dropTargetCell?.fecha === fecha &&
+                  dropTargetCell?.modulo?.ORDEN === modulo.ORDEN;
+
                 return (
                   <CalendarCell
                     key={`${fecha}-${modulo.ID_MODULO}`}
@@ -59,11 +69,10 @@ export default function CalendarGrid({
                     onModulosChange={onModulosChange}
                     onRemoveExamen={onRemoveExamen}
                     onDeleteReserva={onDeleteReserva}
-                    onCheckConflict={checkConflict} // ← USAR LA FUNCIÓN DEL HOOK
-                    esDropTarget={
-                      dropTargetCell?.fecha === fecha &&
-                      dropTargetCell?.modulo?.ORDEN === modulo.ORDEN
-                    }
+                    onCheckConflict={checkConflict}
+                    esDropTarget={esDropTarget} // ← Solo para procesamiento final
+                    esHoverTarget={esHoverTarget} // ← NUEVA: Para preview en tiempo real
+                    draggedExamen={draggedExamen} // ← Para mostrar preview del examen
                   />
                 );
               })}

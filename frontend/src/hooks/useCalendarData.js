@@ -25,11 +25,11 @@ export function useCalendarData({
           reserva.Examen?.CANTIDAD_MODULOS_EXAMEN ||
           3;
 
-        console.log('🔍 Procesando reserva:', {
-          id: reserva.ID_RESERVA,
-          modulosArray: modulosReserva,
-          cantidadCalculada: cantidadModulosReal,
-        });
+        // console.log('🔍 Procesando reserva:', {
+        //   id: reserva.ID_RESERVA,
+        //   modulosArray: modulosReserva,
+        //   cantidadCalculada: cantidadModulosReal,
+        // });
 
         if (cantidadModulosReal === 0) return;
 

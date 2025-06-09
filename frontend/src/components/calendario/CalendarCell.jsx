@@ -6,30 +6,33 @@ import ExamenPostIt from './ExamenPostIt';
 const CalendarCell = memo(function CalendarCell({
   fecha,
   modulo,
-  cellData, // ← NUEVA PROP: datos pre-calculados
-  shouldRenderExamen, // ← NUEVA PROP: decisión pre-calculada
+  cellData,
+  shouldRenderExamen,
   esDiaSeleccionado,
   onSelectModulo,
   onModulosChange,
   onRemoveExamen,
   onDeleteReserva,
   onCheckConflict,
-  esDropTarget,
+  esDropTarget, // ← Solo para procesamiento final
+  esHoverTarget, // ← NUEVA: Para preview visual
+  draggedExamen, // ← NUEVA: Para mostrar preview
 }) {
   const droppableId = `droppable-${fecha}-${modulo.ORDEN}`;
 
-  const { isOver, setNodeRef } = useDroppable({
+  const { setNodeRef } = useDroppable({
+    // ← QUITAR isOver
     id: droppableId,
     data: { type: 'celda-calendario', fecha, modulo },
   });
 
-  // SIMPLIFICAR: Estados de celda pre-calculados
+  // CORREGIR: Estados de celda - usar esHoverTarget en lugar de isOver
   const cellState = {
     ocupada: !!cellData,
     reservada: cellData?.tipo === 'reserva',
     seleccionada: cellData?.tipo === 'temporal',
     partOfExamen: cellData && !shouldRenderExamen,
-    dropHover: isOver || esDropTarget,
+    dropHover: esHoverTarget, // ← CAMBIO CRÍTICO: Solo usar esHoverTarget
     diaSeleccionado: esDiaSeleccionado,
   };
 
@@ -40,12 +43,10 @@ const CalendarCell = memo(function CalendarCell({
     if (cellState.reservada) classes.push('reservado');
     else if (cellState.seleccionada) classes.push('seleccionado');
 
-    if (cellState.dropHover) classes.push('drop-hover');
+    if (cellState.dropHover) classes.push('drop-hover'); // ← Ahora solo se activa con esHoverTarget
     if (cellState.partOfExamen) classes.push('part-of-examen');
     if (cellState.diaSeleccionado) classes.push('dia-seleccionado');
 
-    // Si la celda va a renderizar un examen, añadir la clase 'con-examen'
-    // para asegurar overflow: visible (definido en Calendar.css)
     if (shouldRenderExamen && cellData) {
       classes.push('con-examen');
     }
@@ -66,6 +67,7 @@ const CalendarCell = memo(function CalendarCell({
       onClick={handleClick}
       data-celda-id={droppableId}
     >
+      {/* Contenido existente de la celda */}
       {shouldRenderExamen && cellData && (
         <ExamenPostIt
           examen={cellData.examen}
@@ -78,7 +80,7 @@ const CalendarCell = memo(function CalendarCell({
           fecha={fecha}
           moduloInicial={cellData.moduloInicial}
           examenAsignadoCompleto={cellData}
-          reservacompleta={cellData.reservaCompleta} // ← CAMBIAR: era reservacompleta, ahora reservaCompleta
+          reservacompleta={cellData.reservaCompleta}
           style={{
             position: 'absolute',
             height: `${cellData.modulosTotal * 40}px`,
@@ -86,6 +88,24 @@ const CalendarCell = memo(function CalendarCell({
             zIndex: 10,
           }}
         />
+      )}
+
+      {/* NUEVO: Preview del examen siendo arrastrado */}
+      {esHoverTarget && draggedExamen && !cellData && (
+        <div className="drag-preview">
+          <ExamenPostIt
+            examen={draggedExamen}
+            isPreview={true}
+            moduloscount={draggedExamen.CANTIDAD_MODULOS_EXAMEN || 3}
+            style={{
+              position: 'absolute',
+              height: `${(draggedExamen.CANTIDAD_MODULOS_EXAMEN || 3) * 40}px`,
+              width: '100%',
+              opacity: 0.7,
+              zIndex: 5,
+            }}
+          />
+        </div>
       )}
     </td>
   );

@@ -34,6 +34,22 @@
   overflow: visible !important; /* ← CLAVE */
 }
 
+/* Asegurar que las celdas permitan contenido interno */
+.calendar-cell {
+  position: relative;
+  padding: 0;
+  border: 1px solid #ddd;
+  height: 40px;
+  vertical-align: top;
+  /* NO usar overflow: hidden aquí */
+}
+
+.calendar-cell.con-examen {
+  /* Permitir que el contenido interno sea visible */
+  overflow: visible;
+  /* O usar overflow: visible si es necesario */
+}
+
 /* Celdas que contienen exámenes */
 .calendar-table .calendar-cell.contains-examen {
   overflow: visible !important;
@@ -82,8 +98,9 @@
 
 /* Celdas durante una operación de arrastre */
 .calendar-table .calendar-cell.drop-hover {
-  background-color: rgba(0, 123, 255, 0.2);
-  border: 2px dashed #007bff;
+  background-color: rgba(0, 123, 255, 0.15) !important;
+  border: 2px solid #007bff !important;
+  box-shadow: inset 0 0 10px rgba(0, 123, 255, 0.3);
   z-index: 10;
 }
 
@@ -280,4 +297,40 @@
 .calendar-table .calendar-cell .examen-post-it {
   /* position: relative; */
   z-index: 100 !important;
+}
+
+/* PostIt dentro de la celda */
+.examen-post-it {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  border: 1px solid #333;
+  border-radius: 4px;
+  overflow: hidden; /* Contenido interno controlado */
+  z-index: 10;
+}
+
+/* === HOVER PREVIEW MEJORADO === */
+.calendar-cell.drop-hover {
+  background-color: rgba(0, 123, 255, 0.15) !important;
+  border: 2px solid #007bff !important;
+  box-shadow: inset 0 0 10px rgba(0, 123, 255, 0.3);
+  position: relative;
+}
+
+/* === PREVIEW DEL DRAG === */
+.drag-preview {
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  right: 2px;
+  bottom: 2px;
+  pointer-events: none;
+  z-index: 5;
+}
+
+/* === ASEGURAR QUE NO HAY CONFLICTOS === */
+.calendar-cell:not(.drop-hover) {
+  border: 1px solid #ddd;
 }

@@ -23,8 +23,9 @@ import { crearReservaParaExamenExistenteService } from '../../services/reservaSe
 import './styles/AgendaSemanal.css';
 
 export default function AgendaSemanal({
-  draggedExamen,
-  dropTargetCell,
+  draggedExamen, // ← Para procesar el drop final
+  dropTargetCell, // ← Para procesar el drop final
+  hoverTargetCell, // ← NUEVA: Para preview en tiempo real
   onDropProcessed,
 }) {
   // HOOKS PERSONALIZADOS - Toda la lógica compleja separada
@@ -354,32 +355,53 @@ export default function AgendaSemanal({
   // IMPLEMENTAR: Función para manejar cambios de módulos
   const handleModulosChange = useCallback(
     (examenId, nuevaCantidadModulos) => {
-      console.log('📝 Cambio de módulos:', { examenId, nuevaCantidadModulos });
+      console.log('📝 Cambio de módulos recibido:', {
+        examenId,
+        nuevaCantidadModulos,
+      });
 
-      // Actualizar en modulosSeleccionados si es el examen seleccionado
-      if (selectedExamInternal?.ID_EXAMEN === examenId) {
-        setModulosSeleccionados((prev) => {
-          if (prev.length === 0) return prev;
+      // Actualizar reservas confirmadas
+      const reservaAfectada = reservas.find(
+        (r) => r.ID_EXAMEN === examenId || r.Examen?.ID_EXAMEN === examenId
+      );
 
-          // Mantener solo la cantidad necesaria de módulos
-          const fechaBase = prev[0]?.fecha;
-          const moduloBase = Math.min(...prev.map((m) => m.numero));
+      if (reservaAfectada) {
+        console.log('📝 Actualizando reserva:', reservaAfectada.ID_RESERVA);
 
-          const nuevosModulos = [];
-          for (let i = 0; i < nuevaCantidadModulos; i++) {
-            nuevosModulos.push({
-              fecha: fechaBase,
-              numero: moduloBase + i,
-            });
-          }
+        setReservas((prevReservas) =>
+          prevReservas.map((reserva) => {
+            if (reserva.ID_RESERVA === reservaAfectada.ID_RESERVA) {
+              const updatedReserva = {
+                ...reserva,
+                CANTIDAD_MODULOS_RESERVA: nuevaCantidadModulos,
+              };
 
-          return nuevosModulos;
-        });
+              // Si tiene examen asociado, actualizarlo también
+              if (reserva.Examen) {
+                updatedReserva.Examen = {
+                  ...reserva.Examen,
+                  CANTIDAD_MODULOS_EXAMEN: nuevaCantidadModulos,
+                };
+              }
+
+              console.log('✅ Reserva actualizada:', updatedReserva);
+              return updatedReserva;
+            }
+            return reserva;
+          })
+        );
+
+        // TODO: Aquí deberías hacer una llamada al backend para persistir el cambio
+        // updateReservaModulos(reservaAfectada.ID_RESERVA, nuevaCantidadModulos);
       }
 
-      // Aquí podrías también actualizar reservas temporales si es necesario
+      // Actualizar exámenes pendientes si es necesario
+      if (selectedExamInternal?.ID_EXAMEN === examenId) {
+        console.log('📝 Actualizando examen pendiente seleccionado');
+        // Lógica para exámenes pendientes...
+      }
     },
-    [selectedExamInternal]
+    [reservas, setReservas, selectedExamInternal]
   );
 
   // RENDERIZADO SIMPLIFICADO
@@ -475,6 +497,7 @@ export default function AgendaSemanal({
                   onCheckConflict={() => {}} // ← Ya no se usa aquí, se maneja en el hook
                   draggedExamen={draggedExamen}
                   dropTargetCell={dropTargetCell}
+                  hoverTargetCell={hoverTargetCell} // ← AGREGAR ESTA LÍNEA
                 />
                 {puedeConfirmar && (
                   <button
