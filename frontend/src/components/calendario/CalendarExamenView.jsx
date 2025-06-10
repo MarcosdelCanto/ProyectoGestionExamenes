@@ -4,7 +4,7 @@ import './styles/PostIt.css';
 
 export default function CalendarExamenView({
   examen,
-  modulosCount,
+  moduloscount,
   onModulosChange,
   onRemove,
   minModulos = 1,
@@ -78,11 +78,11 @@ export default function CalendarExamenView({
       minModulos,
       Math.min(
         maxModulos,
-        modulosCount + Math.round(deltaY / moduleHeightRef.current)
+        moduloscount + Math.round(deltaY / moduleHeightRef.current)
       )
     );
 
-    if (newModulosCount !== modulosCount && onModulosChange) {
+    if (newModulosCount !== moduloscount && onModulosChange) {
       onModulosChange(examen.ID_EXAMEN, newModulosCount);
     }
   };
@@ -123,7 +123,7 @@ export default function CalendarExamenView({
       </div>
       <div className="calendar-examen-view__details">
         <div>Sección: {examen.NOMBRE_SECCION || 'N/A'}</div>
-        <div>Módulos: {modulosCount}</div>
+        <div>Módulos: {moduloscount}</div>
       </div>
       <div
         className="calendar-examen-view__resize-handle"

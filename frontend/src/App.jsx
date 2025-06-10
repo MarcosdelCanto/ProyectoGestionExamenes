@@ -72,13 +72,7 @@ function App() {
           />
         </Route>
 
-        <Route
-          element={
-            <PrivateRoute /* Sin requiredPermissions si el backend ya filtra por rol */
-            />
-          }
-        >
-          {/* ... otras rutas ... */}
+        <Route element={<PrivateRoute />}>
           <Route path="/mis-reservas" element={<MisReservasAsignadasPage />} />
         </Route>
 

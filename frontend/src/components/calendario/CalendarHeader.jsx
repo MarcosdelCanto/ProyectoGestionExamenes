@@ -9,21 +9,21 @@ export default function CalendarHeader({ fechas }) {
   return (
     <thead>
       <tr>
-        <th className="orden-col">N°</th>
-        <th className="horario-col">Horario</th>
-        {fechas.map(({ fecha, diaNombre, diaNumero, esHoy }) => (
-          <th
-            key={fecha}
-            className={`calendar-header-cell ${esHoy ? 'today' : ''}`}
-          >
-            <div className="calendar-header-day">
-              <span className="day-name">
-                {diaNombre.charAt(0).toUpperCase() + diaNombre.slice(1, 3)}
-              </span>
-              <span className="day-number">{diaNumero}</span>
-            </div>
-          </th>
-        ))}
+        <th className="orden-col calendar-table">N°</th>
+        <th className="horario-col calendar-table">Horario</th>
+        {fechas.map(
+          ({ fecha, diaNombre, diaNumero, esHoy, esSeleccionado }) => (
+            <th
+              key={fecha}
+              className={`calendar-header-cell ${esHoy ? 'hoy' : ''} ${esSeleccionado ? 'seleccionado' : ''}`}
+            >
+              <div className="calendar-header-day">
+                <div className="day-name">{diaNombre}</div>
+                <div className="day-number">{diaNumero}</div>
+              </div>
+            </th>
+          )
+        )}
       </tr>
     </thead>
   );

@@ -77,6 +77,7 @@ const ReservaForm = ({
   isLoadingExternally = false,
   submitButtonText = 'Guardar',
   isEditMode = false,
+  onModulosChange,
 }) => {
   // --- Estados del formulario ---
   // Estados para almacenar los valores originales de la reserva en modo edición
@@ -803,6 +804,7 @@ const ReservaForm = ({
     if (!fechaReserva)
       return setError('Debe seleccionar una fecha de reserva.');
 
+    // CORREGIR: Usar los nombres que espera el backend
     const payload = {
       fecha_reserva: fechaReserva,
       sala_id_sala: sala.value,

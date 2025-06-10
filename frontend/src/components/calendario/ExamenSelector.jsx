@@ -20,15 +20,18 @@ function DraggableExamenPostIt({ examen, onModulosChange }) {
     });
 
   // estilo de transformacion controlados por dnd-kit
-  const style = transform
-    ? {
-        transform: `translate3d(${transform.x}px, ${transform.y}px, 0)`,
-        zIndex: isDragging ? 1000 : 'auto',
-        opacity: isDragging ? 0.8 : 1,
-        cursor: isDragging ? 'grabbing' : 'grab',
-        touchAction: 'none', // Evitar problemas de arrastre en dispositivos táctiles
-      }
-    : undefined;
+  const style = {
+    touchAction: 'none', // Evitar problemas de arrastre en dispositivos táctiles
+    cursor: isDragging ? 'grabbing' : 'grab',
+    ...(isDragging
+      ? {
+          // Estilos cuando se está arrastrando (y DragOverlay está activo)
+          opacity: 0, // Hacer el original completamente transparente
+          pointerEvents: 'none', // Evitar que intercepte eventos
+        }
+      : {}), // Sin estilos adicionales si no se arrastra (DragOverlay no visible)
+    // El transform lo aplica dnd-kit directamente al elemento si no usamos DragOverlay
+  };
 
   // Manejador para el cambio de módulos
   const handleModulosChange = (id, newCount) => {
@@ -38,20 +41,35 @@ function DraggableExamenPostIt({ examen, onModulosChange }) {
     }
   };
 
+  // Si se está arrastrando y DragOverlay está activo, no necesitamos renderizar el contenido
+  // del ExamenPostIt original, solo el contenedor para que dnd-kit lo siga "moviendo".
+  // Sin embargo, para simplificar y evitar que el ExamenPostIt interno desaparezca
+  // y cause un re-renderizado potencialmente problemático, simplemente lo haremos invisible
+  // con opacity: 0 en el `style` del div contenedor.
+  // El `transform` ya no se aplica manualmente aquí si DragOverlay está en uso,
+  // pero dnd-kit podría seguir aplicando transformaciones al nodo si no se usa DragOverlay.
   return (
     <div
       ref={setNodeRef}
-      style={style}
+      style={{
+        ...style,
+        margin: 0,
+        padding: 0,
+        width: '100%',
+        height: '120px',
+        maxHeight: '120px',
+      }}
       {...attributes}
       {...listeners}
       data-modulos={currentModulos}
+      className="draggable-examen"
     >
       <ExamenPostIt
         examen={{ ...examen, CANTIDAD_MODULOS_EXAMEN: currentModulos }}
         onModulosChange={handleModulosChange}
         isPreview={true}
         isBeingDragged={isDragging}
-        handleRemove={() => {}} //agrega un manejador vacio o remover si no se usa
+        // Manejador vacío
       />
     </div>
   );
@@ -70,43 +88,6 @@ function FilterModal({
   // escuelas, carreras, asignaturas // Props para poblar los selects
 }) {
   if (!isOpen) return null;
-
-  const modalStyle = {
-    position: 'fixed',
-    top: '50%',
-    left: '50%',
-    transform: 'translate(-50%, -50%)',
-    backgroundColor: 'white',
-    padding: '25px',
-    borderRadius: '8px',
-    boxShadow: '0 5px 15px rgba(0,0,0,0.3)',
-    zIndex: 1050,
-    width: '90%',
-    maxWidth: '500px',
-  };
-
-  const backdropStyle = {
-    position: 'fixed',
-    top: '0',
-    left: '0',
-    width: '100%',
-    height: '100%',
-    backgroundColor: 'rgba(0,0,0,0.5)',
-    zIndex: 1040,
-  };
-
-  const headerStyle = {
-    display: 'flex',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: '10px',
-  };
-
-  const selectContainerStyle = {
-    display: 'flex',
-    flexDirection: 'column',
-    gap: '15px',
-  };
 
   return (
     <>
@@ -175,8 +156,6 @@ export default function ExamenSelector({
   const [selectedCarrera, setSelectedCarrera] = useState('');
   const [selectedAsignatura, setSelectedAsignatura] = useState('');
   const [showFilterModal, setShowFilterModal] = useState(false);
-  const [currentPage, setCurrentPage] = useState(1);
-  const itemsPerPage = 5; // Ajusta según necesites
 
   const handleSearchExamenes = (event) => {
     setSearchTermExamenes(event.target.value);
@@ -220,136 +199,48 @@ export default function ExamenSelector({
   const tieneExamenesParaMostrar =
     filteredExamenes && filteredExamenes.length > 0;
 
-  // Calcular exámenes para la página actual
-  const paginatedExamenes = useMemo(() => {
-    const startIndex = (currentPage - 1) * itemsPerPage;
-    return filteredExamenes.slice(startIndex, startIndex + itemsPerPage);
-  }, [filteredExamenes, currentPage]);
-
-  const totalPages = Math.ceil(filteredExamenes.length / itemsPerPage);
-
-  // Estilo para el panel principal que contiene todo el ExamenSelector
-  const panelPrincipalStyle = {
-    display: 'flex',
-    flexDirection: 'column',
-    height: '100%', // Ocupa toda la altura disponible
-    backgroundColor: '#fff',
-    borderRadius: '4px',
-    boxShadow: '0 2px 5px rgba(0, 0, 0, 0.1)',
-    overflow: 'hidden',
-  };
-
-  const topControlsContainerStyle = {
-    padding: '10px',
-    backgroundColor: '#f8f9fa',
-    borderBottom: '1px solid #dee2e6',
-    display: 'flex',
-    gap: '10px',
-    alignItems: 'center',
-  };
-
-  const searchInputContainerStyle = {
-    flexGrow: 1,
-  };
-
-  // Estilo para la sección que contendrá el Swiper
-  const seccionExamenesStyle = {
-    flex: '1',
-    overflowY: 'auto',
-    padding: '10px',
-  };
-
   return (
-    <>
-      <div
-        style={panelPrincipalStyle}
-        className="examen-selector-panel-integrado"
-      >
-        <div style={topControlsContainerStyle}>
-          <div
-            className="input-group input-group-sm"
-            style={searchInputContainerStyle}
-          >
-            <span className="input-group-text bg-light">
-              <FaSearch />
-            </span>
-            <input
-              type="search"
-              className="form-control"
-              placeholder="Buscar Examen por nombre/sección..."
-              value={searchTermExamenes}
-              onChange={handleSearchExamenes}
-              aria-label="Buscar examen"
-            />
-          </div>
-          <button
-            className="btn btn-light btn-sm"
-            onClick={() => setShowFilterModal(true)}
-            title="Más filtros"
-          >
-            <FaFilter />
-          </button>
+    <div className="examen-selector-container">
+      <div className="examen-search-container">
+        <div className="input-group input-group-sm">
+          <span className="input-group-text bg-light">
+            <FaSearch />
+          </span>
+          <input
+            type="search"
+            className="form-control"
+            placeholder="Buscar Examen..."
+            value={searchTermExamenes}
+            onChange={handleSearchExamenes}
+          />
         </div>
-
-        <div
-          style={seccionExamenesStyle}
-          className="vista-examenes-postits" // Asegúrate que esta clase no tenga estilos conflictivos
+        <button
+          className="btn btn-light btn-sm"
+          onClick={() => setShowFilterModal(true)}
+          title="Más filtros"
         >
-          {isLoadingExamenes ? (
-            <div className="d-flex justify-content-center align-items-center w-100 h-100">
-              <div className="spinner-border text-primary" role="status">
-                <span className="visually-hidden">Cargando...</span>
-              </div>
-            </div>
-          ) : tieneExamenesParaMostrar ? (
-            <div className="examenes-container">
-              <div
-                className="d-flex flex-wrap gap-2 justify-content-center"
-                style={{ minHeight: '200px' }}
-              >
-                {paginatedExamenes.map((ex) => (
-                  <DraggableExamenPostIt
-                    key={ex.ID_EXAMEN}
-                    examen={ex}
-                    onModulosChange={handleModulosChange}
-                  />
-                ))}
-              </div>
-
-              {/* Controles de paginación */}
-              <div className="d-flex justify-content-center mt-2 gap-2">
-                <button
-                  className="btn btn-sm btn-secondary"
-                  onClick={() =>
-                    setCurrentPage((prev) => Math.max(prev - 1, 1))
-                  }
-                  disabled={currentPage === 1}
-                >
-                  Anterior
-                </button>
-                <span className="d-flex align-items-center">
-                  Página {currentPage} de {totalPages}
-                </span>
-                <button
-                  className="btn btn-sm btn-secondary"
-                  onClick={() =>
-                    setCurrentPage((prev) => Math.min(prev + 1, totalPages))
-                  }
-                  disabled={currentPage === totalPages}
-                >
-                  Siguiente
-                </button>
-              </div>
-            </div>
-          ) : (
-            <div className="d-flex justify-content-center align-items-center w-100 h-100">
-              <p className="text-muted fst-italic">
-                No hay exámenes para mostrar.
-              </p>
-            </div>
-          )}
-        </div>
+          <FaFilter />
+        </button>
       </div>
+
+      {tieneExamenesParaMostrar ? (
+        <div className="examenes-container">
+          <div className="vista-examenes-postits">
+            {filteredExamenes.map((ex) => (
+              <div className="draggable-examen-wrapper" key={ex.ID_EXAMEN}>
+                <DraggableExamenPostIt
+                  examen={ex}
+                  onModulosChange={handleModulosChange}
+                />
+              </div>
+            ))}
+          </div>
+        </div>
+      ) : (
+        <div className="no-exams-message">
+          <p>No hay exámenes disponibles.</p>
+        </div>
+      )}
 
       <FilterModal
         isOpen={showFilterModal}
@@ -361,6 +252,6 @@ export default function ExamenSelector({
         selectedAsignatura={selectedAsignatura}
         setSelectedAsignatura={setSelectedAsignatura}
       />
-    </>
+    </div>
   );
 }

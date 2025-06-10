@@ -14,13 +14,109 @@
 }
 
 .examen-post-it {
-  transition: box-shadow 0.2s;
+  transition:
+    box-shadow 0.2s,
+    transform 0.2s;
+  border-radius: 6px; /* Bordes más redondeados */
+  overflow: hidden;
+}
+
+.examen-post-it.preview {
+  min-height: 120px; /* Altura mínima fija */
+  height: 120px; /* Altura FIJA para todas las tarjetas */
+  max-height: 120px; /* Altura máxima igual a la altura fija */
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  padding: 0;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  transition:
+    transform 0.2s,
+    box-shadow 0.2s;
+  border-radius: 4px;
+  overflow: hidden; /* Importante: oculta el contenido que se desborda */
+  margin: 0; /* Sin márgenes */
+}
+.examen-post-it .header {
+  padding: 8px 10px; /* Padding reducido */
+  border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+  background-color: rgba(255, 255, 255, 0.5);
+  font-weight: 600;
+  font-size: 0.75rem; /* Texto ligeramente más pequeño */
+  line-height: 1.2;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  height: 32px; /* Altura fija para el encabezado */
+  max-height: 32px;
+  overflow: hidden; /* Ocultar texto que se desborda */
+}
+/* Hacer que el título se trunque con elipsis */
+.examen-post-it .header span {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 85%; /* Dejar espacio para los controles */
+}
+/* Estilos para el contenido del examen */
+.examen-post-it .content {
+  flex: 1;
+  max-height: calc(120px - 32px - 2px);
+  padding: 8px 10px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  overflow: hidden;
+}
+/* Estilos para los detalles del examen */
+.examen-post-it .detail {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 4px;
+  font-size: 0.75rem;
+  line-height: 1.3;
+}
+.examen-post-it .detail-label {
+  font-weight: 500;
+  color: #555;
+}
+/* Mejoras para el indicador de módulos */
+.examen-post-it .modulos-indicator {
+  background-color: rgba(0, 0, 0, 0.08);
+  border-radius: 3px;
+  padding: 2px 6px;
+  font-size: 0.7rem;
+  margin-top: auto;
+  text-align: center;
+  font-weight: 500;
+  height: 18px;
+}
+.vista-examenes-postits [data-modulos] {
+  height: 120px !important;
+  min-height: 120px !important;
+  max-height: 120px !important;
+}
+/* Efecto hover más sutil */
+.draggable-examen:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.12);
 }
 .examen-post-it.placed {
-  z-index: 5;
-  width: 100%;
-  left: 0;
+  position: absolute;
   top: 0;
+  left: 0;
+  width: 100%;
+  z-index: 100;
+}
+/* Asegurar que el manejo del drag esté bien configurado */
+.examen-post-it .drag-handle-activator {
+  cursor: grab;
+  padding: 4px;
+  color: #555;
+}
+
+.examen-post-it .drag-handle-activator:active {
+  cursor: grabbing;
 }
 /* Aplicar efecto hover y transición de transform solo si NO se está arrastrando */
 .examen-post-it:not(.dragging):hover {
@@ -46,10 +142,47 @@
 [data-modulos] {
   height: auto !important;
 }
+.resize-error-message {
+  position: absolute;
+  bottom: 10px;
+  left: 0;
+  right: 0;
+  background-color: rgba(255, 0, 0, 0.8);
+  color: white;
+  padding: 3px;
+  font-size: 11px;
+  text-align: center;
+  z-index: 100;
+  border-radius: 0 0 4px 4px;
+  animation: pulsate 1.5s infinite;
+}
 .examen-post-it.resizing {
   pointer-events: auto !important;
   user-select: none !important;
   cursor: ns-resize !important;
+}
+.examen-post-it.error-resize {
+  box-shadow: 0 0 8px 2px rgba(255, 0, 0, 0.7) !important;
+}
+
+@keyframes pulsate {
+  0%,
+  100% {
+    opacity: 0.8;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+
+@keyframes fadeInOut {
+  0%,
+  100% {
+    opacity: 0.7;
+  }
+  50% {
+    opacity: 1;
+  }
 }
 /* Estilos para post-it redimensionables */
 .drag-handle {

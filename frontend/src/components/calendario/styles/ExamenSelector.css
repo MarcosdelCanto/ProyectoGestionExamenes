@@ -1,48 +1,98 @@
 .examen-selector-container {
-  flex: 1 1 auto;
   display: flex;
   flex-direction: column;
-  height: 100%; /* Ocupa toda la altura del padre */
-  background-color: var(--white);
-  border-radius: 4px;
-  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
-  overflow: hidden; /* Para controlar el desbordamiento */
+  height: 100%;
+  overflow: hidden;
 }
+
+.examenes-container {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  overflow: hidden;
+}
+
+/* Lista de exámenes que se puede desplazar */
 .vista-examenes-postits {
   flex: 1;
+  padding: 12px;
   overflow-y: auto;
-  padding: 10px;
-  border-top: 1px solid #dee2e6;
-}
-.examenes-container {
-  width: 100%;
-  height: 100%;
-  display: flex;
-  flex-direction: column;
+  display: grid;
+  grid-template-columns: 1fr;
   gap: 10px;
 }
+
+/* Estilos para cada examen arrastrable */
 .draggable-examen {
   transform: translate3d(0, 0, 0);
   cursor: grab;
   touch-action: none;
+  height: 120px !important;
+  max-height: 120px !important;
+  width: 100%;
+  border-radius: 4px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12);
+  transition:
+    transform 0.2s,
+    box-shadow 0.2s;
+  margin: 0;
+  overflow: hidden;
 }
 
 .draggable-examen:active {
   cursor: grabbing;
+  box-shadow: 0 5px 10px rgba(0, 0, 0, 0.15);
 }
-.examen-selector {
-  margin-bottom: 1rem;
-  overflow-x: auto;
+
+.draggable-examen:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.12);
+}
+
+.draggable-examen-wrapper {
+  height: 120px;
+  width: 100%;
+}
+
+/* Controles de búsqueda y filtro */
+.examen-search-container {
+  padding: 10px;
+  background-color: #f8f9fa;
+  border-bottom: 1px solid #dee2e6;
   display: flex;
-  gap: 0.75rem;
-  padding-bottom: 0.5rem;
+  gap: 8px;
+  align-items: center;
 }
 
-.examen-selector::-webkit-scrollbar {
-  height: 6px;
+/* Mensajes cuando no hay exámenes */
+.no-exams-message {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 100%;
+  color: #6c757d;
+  font-style: italic;
 }
 
-.examen-selector::-webkit-scrollbar-thumb {
-  background: var(--secondary-color);
-  border-radius: 3px;
+/* Responsive adjustments */
+@media (max-width: 576px) {
+  .vista-examenes-postits {
+    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+    gap: 8px;
+  }
+}
+
+/* Responsive para pantallas medianas */
+@media (min-width: 577px) and (max-width: 992px) {
+  .vista-examenes-postits {
+    grid-template-columns: repeat(auto-fill, minmax(170px, 1fr));
+  }
+}
+
+/* Para pantallas grandes */
+@media (min-width: 993px) {
+  .vista-examenes-postits {
+    grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  }
 }

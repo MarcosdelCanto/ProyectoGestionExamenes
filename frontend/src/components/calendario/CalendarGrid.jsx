@@ -14,7 +14,14 @@ export default function CalendarGrid({
   obtenerExamenParaCelda,
   onModulosChange,
   onRemoveExamen,
+  onDeleteReserva, // ← VERIFICAR QUE ESTÉ AQUÍ
+  onCheckConflict,
+  draggedExamen = null,
+  dropTargetCell = null,
 }) {
+  // AGREGAR LOG TEMPORAL
+  console.log('CalendarGrid recibió onDeleteReserva:', typeof onDeleteReserva);
+
   if (!modulos || modulos.length === 0) {
     return <p className="aviso-seleccion">No hay módulos para mostrar.</p>;
   }
@@ -37,13 +44,18 @@ export default function CalendarGrid({
               <td className="horario-col">
                 {mod.INICIO_MODULO} - {mod.FIN_MODULO}
               </td>
-              {fechas.map(({ fecha }) => {
+              {fechas.map(({ fecha, esSeleccionado }) => {
                 const examenAsignado = obtenerExamenParaCelda(fecha, mod.ORDEN);
                 const renderExamen = shouldRenderExamen(
                   fecha,
                   mod,
                   examenAsignado
                 );
+
+                const esDropTarget =
+                  dropTargetCell &&
+                  dropTargetCell.fecha === fecha &&
+                  dropTargetCell.modulo.ORDEN === mod.ORDEN;
 
                 return (
                   <CalendarCell
@@ -59,7 +71,12 @@ export default function CalendarGrid({
                     isPartOfExamen={examenAsignado !== null}
                     onModulosChange={onModulosChange}
                     onRemoveExamen={onRemoveExamen}
-                    modulosCount={examenAsignado?.modulosCount || 1}
+                    onDeleteReserva={onDeleteReserva} // ← VERIFICAR QUE ESTÉ AQUÍ
+                    onCheckConflict={onCheckConflict}
+                    moduloscount={examenAsignado?.moduloscount || 1}
+                    esDiaSeleccionado={esSeleccionado}
+                    draggedExamen={draggedExamen}
+                    esDropTarget={esDropTarget}
                   />
                 );
               })}

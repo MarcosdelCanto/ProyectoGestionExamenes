@@ -16,8 +16,25 @@ const CalendarCell = memo(function CalendarCell({
   isPartOfExamen,
   onModulosChange,
   onRemoveExamen,
-  modulosCount,
+  onDeleteReserva, // ← VERIFICAR QUE ESTÉ AQUÍ
+  onCheckConflict,
+  moduloscount,
+  esDiaSeleccionado,
+  draggedExamen,
+  esDropTarget,
 }) {
+  // AGREGAR LOG TEMPORAL
+  if (examenAsignado) {
+    console.log(
+      'CalendarCell tiene examen con esReservaConfirmada:',
+      examenAsignado.esReservaConfirmada
+    );
+    console.log(
+      'CalendarCell recibió onDeleteReserva:',
+      typeof onDeleteReserva
+    );
+  }
+
   // Configuración de la zona donde se puede soltar - un punto crucial
   const droppableId = `droppable-${fecha}-${modulo.ORDEN}`;
 
@@ -56,8 +73,8 @@ const CalendarCell = memo(function CalendarCell({
   if (isPartOfExamen && !examenAsignado) {
     cellClassName += ' part-of-examen';
   }
-  if (examenAsignado) {
-    cellClassName += ' contains-examen';
+  if (esDiaSeleccionado) {
+    cellClassName += ' dia-seleccionado';
   }
 
   // Manejador de clic
@@ -77,25 +94,26 @@ const CalendarCell = memo(function CalendarCell({
       {examenAsignado ? (
         <ExamenPostIt
           examen={examenAsignado.examen}
-          modulosCount={examenAsignado.modulosCount}
+          moduloscount={examenAsignado.moduloscount}
+          esReservaConfirmada={examenAsignado.esReservaConfirmada} // ← VERIFICAR QUE ESTÉ AQUÍ
           onModulosChange={
             onModulosChange
               ? (id, count) => onModulosChange(id, count)
               : undefined
           }
           onRemove={onRemoveExamen}
+          onDeleteReserva={onDeleteReserva} // ← VERIFICAR QUE ESTÉ AQUÍ
+          onCheckConflict={onCheckConflict}
           isPreview={false}
-          style={
-            modulosCount > 1
-              ? {
-                  height: `${modulosCount * 40}px`,
-                  position: 'absolute',
-                  zIndex: 5,
-                }
-              : undefined
-          }
           fecha={fecha}
           moduloInicial={examenAsignado.moduloInicial}
+          examenAsignadoCompleto={examenAsignado} // ← VERIFICAR QUE ESTÉ AQUÍ
+          style={{
+            position: 'absolute',
+            height: `${examenAsignado.moduloscount * 40}px`,
+            width: '100%',
+            zIndex: 10,
+          }}
         />
       ) : null}
     </td>
