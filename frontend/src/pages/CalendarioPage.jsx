@@ -186,89 +186,94 @@ export function CalendarioPage() {
   };
 
   return (
-    <div className="calendario-page">
-      <DndContext
-        sensors={sensors}
-        collisionDetection={closestCenter}
-        onDragStart={handleDragStart}
-        onDragOver={handleDragOver}
-        onDragEnd={handleDragEnd}
-        onDragCancel={handleDragCancel}
-      >
-        <div className="container-fluid calendario-page-container">
-          <AgendaSemanal
-            draggedExamen={draggedExamen}
-            dropTargetCell={dropTargetCell}
-            hoverTargetCell={hoverTargetCell}
-            onDropProcessed={handleDropProcessed}
-          />
-
-          {/* Feedback solo cuando está siendo arrastrado Y dentro del calendario */}
-          <DragFeedback
-            draggedExamen={activeDraggableExamen}
-            dropTargetCell={hoverTargetCell}
-          />
-
-          {/* DEBUG: Mostrar posición del mouse (temporal) */}
-          {isDragging && (
-            <div
-              style={{
-                position: 'fixed',
-                top: '10px',
-                right: '10px',
-                background: 'rgba(0,0,0,0.8)',
-                color: 'white',
-                padding: '10px',
-                borderRadius: '4px',
-                fontSize: '12px',
-                zIndex: 9999,
-                maxWidth: '300px',
-              }}
-            >
-              <div>
-                Mouse: {mousePosition.x}, {mousePosition.y}
-              </div>
-              <div>
-                Dentro calendario: {isMouseInsideCalendar() ? '✅' : '❌'}
-              </div>
-              <div>Hover activo: {hoverTargetCell ? '✅' : '❌'}</div>
-              <div>Drop target: {dropTargetCell ? '✅' : '❌'}</div>
-              {hoverTargetCell && (
-                <div style={{ color: '#90EE90' }}>
-                  Hover: {hoverTargetCell.fecha} - M
-                  {hoverTargetCell.modulo.ORDEN}
-                </div>
-              )}
-              {dropTargetCell && (
-                <div style={{ color: '#FFB6C1' }}>
-                  Drop: {dropTargetCell.fecha} - M{dropTargetCell.modulo.ORDEN}
-                </div>
-              )}
-              <div
-                style={{ marginTop: '5px', fontSize: '10px', color: '#DDD' }}
-              >
-                El problema probablemente está en CalendarGrid
-              </div>
-            </div>
-          )}
-        </div>
-
-        <DragOverlay>
-          {activeDraggableExamen ? (
-            <ExamenPostIt
-              examen={activeDraggableExamen}
-              isPreview={true}
-              isDragOverlay={true}
-              moduloscount={activeDraggableExamen.CANTIDAD_MODULOS_EXAMEN || 3}
-              style={{
-                transform: 'rotate(5deg)',
-                boxShadow: '0 8px 16px rgba(0,0,0,0.3)',
-              }}
+    <Layout>
+      <div className="calendario-page">
+        <DndContext
+          sensors={sensors}
+          collisionDetection={closestCenter}
+          onDragStart={handleDragStart}
+          onDragOver={handleDragOver}
+          onDragEnd={handleDragEnd}
+          onDragCancel={handleDragCancel}
+        >
+          <div className="container-fluid calendario-page-container">
+            <AgendaSemanal
+              draggedExamen={draggedExamen}
+              dropTargetCell={dropTargetCell}
+              hoverTargetCell={hoverTargetCell}
+              onDropProcessed={handleDropProcessed}
             />
-          ) : null}
-        </DragOverlay>
-      </DndContext>
-    </div>
+
+            {/* Feedback solo cuando está siendo arrastrado Y dentro del calendario */}
+            <DragFeedback
+              draggedExamen={activeDraggableExamen}
+              dropTargetCell={hoverTargetCell}
+            />
+
+            {/* DEBUG: Mostrar posición del mouse (temporal) */}
+            {isDragging && (
+              <div
+                style={{
+                  position: 'fixed',
+                  top: '10px',
+                  right: '10px',
+                  background: 'rgba(0,0,0,0.8)',
+                  color: 'white',
+                  padding: '10px',
+                  borderRadius: '4px',
+                  fontSize: '12px',
+                  zIndex: 9999,
+                  maxWidth: '300px',
+                }}
+              >
+                <div>
+                  Mouse: {mousePosition.x}, {mousePosition.y}
+                </div>
+                <div>
+                  Dentro calendario: {isMouseInsideCalendar() ? '✅' : '❌'}
+                </div>
+                <div>Hover activo: {hoverTargetCell ? '✅' : '❌'}</div>
+                <div>Drop target: {dropTargetCell ? '✅' : '❌'}</div>
+                {hoverTargetCell && (
+                  <div style={{ color: '#90EE90' }}>
+                    Hover: {hoverTargetCell.fecha} - M
+                    {hoverTargetCell.modulo.ORDEN}
+                  </div>
+                )}
+                {dropTargetCell && (
+                  <div style={{ color: '#FFB6C1' }}>
+                    Drop: {dropTargetCell.fecha} - M
+                    {dropTargetCell.modulo.ORDEN}
+                  </div>
+                )}
+                <div
+                  style={{ marginTop: '5px', fontSize: '10px', color: '#DDD' }}
+                >
+                  El problema probablemente está en CalendarGrid
+                </div>
+              </div>
+            )}
+          </div>
+
+          <DragOverlay>
+            {activeDraggableExamen ? (
+              <ExamenPostIt
+                examen={activeDraggableExamen}
+                isPreview={true}
+                isDragOverlay={true}
+                moduloscount={
+                  activeDraggableExamen.CANTIDAD_MODULOS_EXAMEN || 3
+                }
+                style={{
+                  transform: 'rotate(5deg)',
+                  boxShadow: '0 8px 16px rgba(0,0,0,0.3)',
+                }}
+              />
+            ) : null}
+          </DragOverlay>
+        </DndContext>
+      </div>
+    </Layout>
   );
 }
 
