@@ -1,5 +1,6 @@
 // routes/examen.routes.js
-import { Router } from 'express';
+import express from 'express'; // Importar express por defecto
+const { Router } = express; // Extraer Router del objeto express
 import {
   getAllExamenes,
   getExamenById,
@@ -10,8 +11,16 @@ import {
 } from '../controllers/examen.controller.js';
 import { authMiddleware } from '../middlewares/auth.middleware.js';
 import { checkPermission } from '../middlewares/permission.middleware.js';
+import { getAvailableExamsForUser } from '../controllers/examen.controller.js'; // Asegúrate de que este controlador exista
 
 const router = Router();
+
+router.get(
+  '/examenes/disponibles',
+  authMiddleware,
+  checkPermission(['CREATE_RESERVAS_EXAMEN']),
+  getAvailableExamsForUser
+);
 
 router.get('/para-selector', authMiddleware, getAllExamenesForSelect); // Para el dropdown, usualmente no requiere permiso específico más allá de estar logueado
 
@@ -23,6 +32,13 @@ router.get(
   getAllExamenes
 );
 
+router.post(
+  '/',
+  authMiddleware,
+  checkPermission(['CREATE_EXAMENES']), // ID_PERMISO: 46
+  createExamen
+);
+
 router.get(
   '/:id',
   authMiddleware,
@@ -30,12 +46,6 @@ router.get(
   getExamenById
 );
 
-router.post(
-  '/',
-  authMiddleware,
-  checkPermission(['CREATE_EXAMENES']), // ID_PERMISO: 46
-  createExamen
-);
 router.put(
   '/:id',
   authMiddleware,

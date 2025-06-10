@@ -1,88 +1,220 @@
-// src/pages/DocenteReservasPage.jsx
-import React, { useState, useEffect, useCallback } from 'react';
-import Layout from '../components/Layout'; // Tu componente Layout principal
-import {
-  getMisReservasPendientesDocente,
-  actualizarConfirmacionReservaDocente,
-} from '../services/reservaService'; // Ajusta la ruta si es necesario
-import { Modal, Button, Form, Table, Spinner, Alert } from 'react-bootstrap'; // Usaremos react-bootstrap para el modal y tabla
+// src/pages/MisReservasAsignadasPage.jsx
 
-const DocenteReservasPage = () => {
-  const [reservasPendientes, setReservasPendientes] = useState([]);
+import React, { useState, useEffect, useCallback } from 'react';
+import {
+  Table,
+  Spinner,
+  Alert,
+  Button,
+  Modal,
+  Tabs,
+  Tab,
+  Card,
+  Badge,
+  Form,
+} from 'react-bootstrap';
+import Layout from '../components/Layout'; // Ajusta la ruta a tu Layout principal
+import ReservaForm from '../components/reservas/ReservaForm'; // Importa el formulario reutilizable
+import * as authService from '../services/authService'; // Importa el servicio de autenticación
+// Se importan todos los servicios de reserva necesarios
+import {
+  fetchMisAsignacionesDeReservas,
+  updateReserva,
+  actualizarConfirmacionReservaDocente,
+} from '../services/reservaService';
+
+const MisReservasAsignadasPage = () => {
+  // Obtiene el usuario actual desde el servicio de autenticación
+  const user = authService.getCurrentUser();
+
+  // --- Estados para la página principal ---
+  const [asignaciones, setAsignaciones] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  // Determina la pestaña activa por defecto según el rol del usuario
+  const [activeTab, setActiveTab] = useState(
+    user.nombre_rol === 'DOCENTE' ? 'pendientes' : 'proximas'
+  );
 
-  const [showModal, setShowModal] = useState(false);
+  // --- Estados para el modal de EDICIÓN (para admins/coordinadores) ---
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [currentReservaToEdit, setCurrentReservaToEdit] = useState(null);
+  const [loadingEditModal, setLoadingEditModal] = useState(false);
+  const [modalEditError, setModalEditError] = useState(null);
+  const [modalEditSuccess, setModalEditSuccess] = useState(null);
+
+  // --- Estados para el modal de REVISIÓN (para docentes) ---
+  const [showRevisarModal, setShowRevisarModal] = useState(false);
   const [selectedReserva, setSelectedReserva] = useState(null);
   const [observaciones, setObservaciones] = useState('');
   const [nuevoEstadoConfirmacion, setNuevoEstadoConfirmacion] =
-    useState('CONFIRMADO'); // Por defecto 'CONFIRMADO'
+    useState('CONFIRMADO');
+  const [loadingRevisarModal, setLoadingRevisarModal] = useState(false);
 
-  const cargarReservas = useCallback(async () => {
+  // --- Carga de datos ---
+  const cargarAsignaciones = useCallback(async () => {
     setLoading(true);
     setError(null);
     try {
-      const data = await getMisReservasPendientesDocente();
-      setReservasPendientes(data || []);
+      const data = await fetchMisAsignacionesDeReservas();
+      setAsignaciones(data || []);
     } catch (err) {
-      setError('Error al cargar las reservas pendientes. Intente más tarde.');
-      setReservasPendientes([]);
+      setError('Error al cargar tus asignaciones. Intenta más tarde.');
     } finally {
       setLoading(false);
     }
   }, []);
 
   useEffect(() => {
-    cargarReservas();
-  }, [cargarReservas]);
+    cargarAsignaciones();
+  }, [cargarAsignaciones]);
 
-  const handleOpenModal = (reserva) => {
-    setSelectedReserva(reserva);
-    setObservaciones(reserva.OBSERVACIONES_DOCENTE || ''); // Precargar observaciones si existen
-    setNuevoEstadoConfirmacion(
-      reserva.ESTADO_CONFIRMACION_DOCENTE === 'REQUIERE_REVISION'
-        ? 'REQUIERE_REVISION'
-        : 'CONFIRMADO'
-    );
-    setShowModal(true);
+  // --- Lógica del Modal de Edición ---
+  const handleOpenEditModal = (reserva) => {
+    if (reserva) {
+      setCurrentReservaToEdit({
+        ID_RESERVA: reserva.ID_RESERVA,
+        ID_EXAMEN: reserva.ID_EXAMEN,
+        FECHA_RESERVA: reserva.FECHA_RESERVA,
+        ID_SALA: reserva.ID_SALA,
+        MODULOS_IDS: reserva.MODULOS_IDS_ARRAY || [],
+        DOCENTES_IDS: reserva.DOCENTES_IDS_ARRAY || [],
+      });
+      setShowEditModal(true);
+    }
+  };
+  const handleCloseEditModal = () => {
+    setShowEditModal(false);
+    setCurrentReservaToEdit(null);
+    setModalEditError(null);
+    setModalEditSuccess(null);
+  };
+  const handleUpdateReserva = async (formDataPayload) => {
+    if (!currentReservaToEdit?.ID_RESERVA) return;
+    setLoadingEditModal(true);
+    setModalEditError(null);
+    setModalEditSuccess(null);
+    try {
+      await updateReserva(currentReservaToEdit.ID_RESERVA, formDataPayload);
+      setModalEditSuccess('Reserva actualizada exitosamente.');
+      await cargarAsignaciones();
+      setTimeout(() => handleCloseEditModal(), 1500);
+    } catch (err) {
+      setModalEditError(
+        err.details || err.error || 'Error al actualizar la reserva.'
+      );
+    } finally {
+      setLoadingEditModal(false);
+    }
   };
 
-  const handleCloseModal = () => {
-    setShowModal(false);
+  // --- Lógica del Modal de Revisión para Docentes ---
+  const handleOpenRevisarModal = (reserva) => {
+    setSelectedReserva(reserva);
+    setObservaciones(reserva.OBSERVACIONES_DOCENTE || '');
+    setNuevoEstadoConfirmacion('CONFIRMADO');
+    setShowRevisarModal(true);
+  };
+  const handleCloseRevisarModal = () => {
+    setShowRevisarModal(false);
     setSelectedReserva(null);
     setObservaciones('');
-    setNuevoEstadoConfirmacion('CONFIRMADO');
   };
-
   const handleSubmitConfirmacion = async () => {
     if (!selectedReserva) return;
-    setLoading(true); // Reutilizamos el loading general para la acción
+    setLoadingRevisarModal(true);
+    setError(null);
     try {
       await actualizarConfirmacionReservaDocente(selectedReserva.ID_RESERVA, {
         nuevoEstado: nuevoEstadoConfirmacion,
         observaciones: observaciones,
       });
-      alert('Reserva actualizada correctamente.');
-      handleCloseModal();
-      cargarReservas(); // Recargar la lista
+      handleCloseRevisarModal();
+      await cargarAsignaciones();
     } catch (err) {
-      alert(
-        'Error al actualizar la reserva. Verifique los datos o intente más tarde.'
-      );
-      setError('Error al actualizar la reserva.'); // Podrías mostrar este error en la UI
+      // Idealmente, mostrar este error dentro del modal
+      setError('Error al actualizar la reserva.');
     } finally {
-      setLoading(false);
+      setLoadingRevisarModal(false);
     }
   };
 
-  if (loading && reservasPendientes.length === 0) {
-    // Mostrar spinner solo en la carga inicial
+  // --- Lógica de Permisos ---
+  const esAdminOComite =
+    user &&
+    ['ADMINISTRADOR', 'COORDINADOR CARRERA', 'COORDINADOR DOCENTE'].includes(
+      user.nombre_rol
+    );
+  const esDocente = user && user.nombre_rol === 'DOCENTE';
+
+  // --- Renderizado de Contenido de Pestañas ---
+  const renderTablaReservas = (data, esEditable = false) => {
+    if (data.length === 0) {
+      return (
+        <Alert variant="light" className="text-center mt-3">
+          No hay reservas que mostrar en esta categoría.
+        </Alert>
+      );
+    }
+    return (
+      <Table striped bordered hover responsive size="sm" className="mt-3">
+        <thead className="table-light">
+          <tr>
+            <th>Examen</th>
+            <th>Asignatura</th>
+            <th>Fecha</th>
+            <th>Horario</th>
+            <th>Sala</th>
+            <th>Confirmación Docente</th>
+            {esEditable && <th>Acciones</th>}
+          </tr>
+        </thead>
+        <tbody>
+          {data.map((res) => (
+            <tr key={res.ID_RESERVA}>
+              <td>{res.NOMBRE_EXAMEN}</td>
+              <td>{res.NOMBRE_ASIGNATURA}</td>
+              <td>{new Date(res.FECHA_RESERVA).toLocaleDateString('es-CL')}</td>
+              <td>
+                {res.HORA_INICIO} - {res.HORA_FIN}
+              </td>
+              <td>{res.NOMBRE_SALA}</td>
+              <td>
+                <Badge
+                  bg={
+                    res.ESTADO_CONFIRMACION_DOCENTE === 'CONFIRMADO'
+                      ? 'success'
+                      : res.ESTADO_CONFIRMACION_DOCENTE === 'PENDIENTE'
+                        ? 'warning'
+                        : 'danger'
+                  }
+                >
+                  {res.ESTADO_CONFIRMACION_DOCENTE}
+                </Badge>
+              </td>
+              {esEditable && (
+                <td>
+                  <Button
+                    variant="outline-primary"
+                    size="sm"
+                    onClick={() => handleOpenEditModal(res)}
+                  >
+                    Editar
+                  </Button>
+                </td>
+              )}
+            </tr>
+          ))}
+        </tbody>
+      </Table>
+    );
+  };
+
+  if (loading) {
     return (
       <Layout>
-        <div className="container-fluid mt-4 text-center">
-          <Spinner animation="border" role="status">
-            <span className="visually-hidden">Cargando reservas...</span>
-          </Spinner>
+        <div className="text-center mt-5">
+          <Spinner />
         </div>
       </Layout>
     );
@@ -90,155 +222,284 @@ const DocenteReservasPage = () => {
 
   return (
     <Layout>
-      <div className="container-fluid mt-4">
-        <h2>Mis Reservas de Examen Pendientes de Confirmación</h2>
+      <div className="container-fluid pt-4">
+        <div className="d-flex justify-content-between align-items-center">
+          <h2 className="display-6 mb-3">Programación de Exámenes</h2>
+          <Button
+            variant="outline-secondary"
+            size="sm"
+            onClick={cargarAsignaciones}
+            disabled={loading}
+          >
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              width="16"
+              height="16"
+              fill="currentColor"
+              className="bi bi-arrow-clockwise"
+              viewBox="0 0 16 16"
+            >
+              <path
+                fillRule="evenodd"
+                d="M8 3a5 5 0 1 0 4.546 2.914.5.5 0 0 1 .908-.417A6 6 0 1 1 8 2v1z"
+              />
+              <path d="M8 4.466V.534a.25.25 0 0 1 .41-.192l2.36 1.966c.12.1.12.284 0 .384L8.41 4.658A.25.25 0 0 1 8 4.466z" />
+            </svg>
+            <span className="ms-2">Actualizar</span>
+          </Button>
+        </div>
         <hr />
         {error && <Alert variant="danger">{error}</Alert>}
 
-        {reservasPendientes.length === 0 && !loading && (
-          <Alert variant="info">
-            No tienes reservas pendientes de confirmación.
-          </Alert>
-        )}
+        <Tabs
+          activeKey={activeTab}
+          onSelect={(k) => setActiveTab(k)}
+          id="reservas-tabs"
+          className="mb-3"
+          fill
+        >
+          <Tab eventKey="proximas" title="Mis Próximas Reservas">
+            <Card>
+              <Card.Body>{renderTablaReservas(asignaciones)}</Card.Body>
+            </Card>
+          </Tab>
 
-        {reservasPendientes.length > 0 && (
-          <Table striped bordered hover responsive size="sm">
-            <thead>
-              <tr>
-                <th>Examen</th>
-                <th>Asignatura</th>
-                <th>Sección</th>
-                <th>Fecha</th>
-                <th>Horario</th>
-                <th>Sala</th>
-                <th>Acciones</th>
-              </tr>
-            </thead>
-            <tbody>
-              {reservasPendientes.map((reserva) => (
-                <tr key={reserva.ID_RESERVA}>
-                  <td>{reserva.NOMBRE_EXAMEN}</td>
-                  <td>{reserva.NOMBRE_ASIGNATURA}</td>
-                  <td>{reserva.NOMBRE_SECCION}</td>
-                  <td>
-                    {new Date(reserva.FECHA_RESERVA).toLocaleDateString(
-                      'es-CL'
-                    )}
-                  </td>
-                  <td>
-                    {reserva.HORA_INICIO} - {reserva.HORA_FIN}
-                  </td>
-                  <td>
-                    {reserva.NOMBRE_SALA} ({reserva.NOMBRE_EDIFICIO} -
-                    {reserva.NOMBRE_SEDE})
-                  </td>
-                  <td>
-                    <Button
-                      variant="primary"
-                      size="sm"
-                      onClick={() => handleOpenModal(reserva)}
-                    >
-                      Revisar
-                    </Button>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </Table>
-        )}
+          {esAdminOComite && (
+            <Tab
+              eventKey="revision"
+              title={
+                <>
+                  Requieren Revisión{' '}
+                  <Badge bg="danger" pill>
+                    {
+                      asignaciones.filter(
+                        (res) =>
+                          res.ESTADO_CONFIRMACION_DOCENTE ===
+                          'REQUIERE_REVISION'
+                      ).length
+                    }
+                  </Badge>
+                </>
+              }
+            >
+              <Card>
+                <Card.Body>
+                  {renderTablaReservas(
+                    asignaciones.filter(
+                      (res) =>
+                        res.ESTADO_CONFIRMACION_DOCENTE === 'REQUIERE_REVISION'
+                    ),
+                    true
+                  )}
+                </Card.Body>
+              </Card>
+            </Tab>
+          )}
 
-        {/* Modal para Confirmación/Observaciones */}
-        {selectedReserva && (
-          <Modal show={showModal} onHide={handleCloseModal} centered>
-            <Modal.Header closeButton>
-              <Modal.Title>
-                Revisar Reserva: {selectedReserva.NOMBRE_EXAMEN}
-              </Modal.Title>
-            </Modal.Header>
-            <Modal.Body>
-              <h5>Detalles:</h5>
-              <p>
-                <strong>Asignatura:</strong> {selectedReserva.NOMBRE_ASIGNATURA}
-              </p>
-              <p>
-                <strong>Sección:</strong> {selectedReserva.NOMBRE_SECCION}
-              </p>
-              <p>
-                <strong>Fecha:</strong>
-                {new Date(selectedReserva.FECHA_RESERVA).toLocaleDateString(
-                  'es-CL'
-                )}
-              </p>
-              <p>
-                <strong>Horario:</strong> {selectedReserva.HORA_INICIO} -
-                {selectedReserva.HORA_FIN}
-              </p>
-              <p>
-                <strong>Sala:</strong> {selectedReserva.NOMBRE_SALA} (
-                {selectedReserva.NOMBRE_EDIFICIO} -{selectedReserva.NOMBRE_SEDE}
-                )
-              </p>
-
-              <Form.Group className="mb-3">
-                <Form.Label>Observaciones (opcional):</Form.Label>
-                <Form.Control
-                  as="textarea"
-                  rows={3}
-                  value={observaciones}
-                  onChange={(e) => setObservaciones(e.target.value)}
-                />
-              </Form.Group>
-              <Form.Group>
-                <Form.Label>Acción:</Form.Label>
-                <div>
-                  <Form.Check
-                    type="radio"
-                    label="Confirmar Reserva"
-                    name="estadoConfirmacion"
-                    id="estado CONFIRMADO"
-                    value=" CONFIRMADO"
-                    checked={nuevoEstadoConfirmacion === ' CONFIRMADO'}
-                    onChange={(e) => setNuevoEstadoConfirmacion(e.target.value)}
-                  />
-                  <Form.Check
-                    type="radio"
-                    label="Requiere Revisión (con observaciones)"
-                    name="estadoConfirmacion"
-                    id="estadoRequiereRevision"
-                    value="REQUIERE_REVISION"
-                    checked={nuevoEstadoConfirmacion === 'REQUIERE_REVISION'}
-                    onChange={(e) => setNuevoEstadoConfirmacion(e.target.value)}
-                  />
-                </div>
-              </Form.Group>
-            </Modal.Body>
-            <Modal.Footer>
-              <Button variant="secondary" onClick={handleCloseModal}>
-                Cancelar
-              </Button>
-              <Button
-                variant="primary"
-                onClick={handleSubmitConfirmacion}
-                disabled={loading}
-              >
-                {loading ? (
-                  <Spinner
-                    as="span"
-                    animation="border"
+          {esDocente && (
+            <Tab
+              eventKey="pendientes"
+              title={
+                <>
+                  Pendientes de Confirmación{' '}
+                  <Badge bg="warning" pill>
+                    {
+                      asignaciones.filter(
+                        (res) => res.ESTADO_CONFIRMACION_DOCENTE === 'PENDIENTE'
+                      ).length
+                    }
+                  </Badge>
+                </>
+              }
+            >
+              <Card>
+                <Card.Body>
+                  <Table
+                    striped
+                    bordered
+                    hover
+                    responsive
                     size="sm"
-                    role="status"
-                    aria-hidden="true"
-                  />
-                ) : (
-                  'Enviar Actualización'
-                )}
-              </Button>
-            </Modal.Footer>
-          </Modal>
-        )}
+                    className="mt-3"
+                  >
+                    <thead className="table-light">
+                      <tr>
+                        <th>Examen</th>
+                        <th>Asignatura</th>
+                        <th>Fecha</th>
+                        <th>Horario</th>
+                        <th>Sala</th>
+                        <th>Acciones</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {asignaciones
+                        .filter(
+                          (res) =>
+                            res.ESTADO_CONFIRMACION_DOCENTE === 'PENDIENTE'
+                        )
+                        .map((res) => (
+                          <tr key={res.ID_RESERVA}>
+                            <td>{res.NOMBRE_EXAMEN}</td>
+                            <td>{res.NOMBRE_ASIGNATURA}</td>
+                            <td>
+                              {new Date(res.FECHA_RESERVA).toLocaleDateString(
+                                'es-CL'
+                              )}
+                            </td>
+                            <td>
+                              {res.HORA_INICIO} - {res.HORA_FIN}
+                            </td>
+                            <td>{res.NOMBRE_SALA}</td>
+                            <td>
+                              <Button
+                                variant="success"
+                                size="sm"
+                                onClick={() => handleOpenRevisarModal(res)}
+                              >
+                                Revisar y Confirmar
+                              </Button>
+                            </td>
+                          </tr>
+                        ))}
+                    </tbody>
+                  </Table>
+                  {asignaciones.filter(
+                    (res) => res.ESTADO_CONFIRMACION_DOCENTE === 'PENDIENTE'
+                  ).length === 0 && (
+                    <Alert variant="light" className="text-center">
+                      No tienes reservas pendientes de confirmación.
+                    </Alert>
+                  )}
+                </Card.Body>
+              </Card>
+            </Tab>
+          )}
+        </Tabs>
       </div>
+
+      {/* Modal de EDICIÓN (para admins/coordinadores) */}
+      {currentReservaToEdit && (
+        <Modal
+          show={showEditModal}
+          onHide={handleCloseEditModal}
+          size="lg"
+          backdrop="static"
+          centered
+        >
+          <Modal.Header closeButton>
+            <Modal.Title>
+              Editar Reserva #{currentReservaToEdit.ID_RESERVA}
+            </Modal.Title>
+          </Modal.Header>
+          <Modal.Body>
+            {modalEditError && (
+              <Alert
+                variant="danger"
+                onClose={() => setModalEditError(null)}
+                dismissible
+              >
+                {modalEditError}
+              </Alert>
+            )}
+            {modalEditSuccess && (
+              <Alert variant="success">{modalEditSuccess}</Alert>
+            )}
+            <ReservaForm
+              key={currentReservaToEdit.ID_RESERVA}
+              initialData={currentReservaToEdit}
+              onSubmit={handleUpdateReserva}
+              onCancel={handleCloseEditModal}
+              isLoadingExternally={loadingEditModal}
+              submitButtonText="Guardar Cambios"
+              isEditMode={true}
+            />
+          </Modal.Body>
+        </Modal>
+      )}
+
+      {/* Modal de REVISIÓN (para docentes) */}
+      {selectedReserva && (
+        <Modal
+          show={showRevisarModal}
+          onHide={handleCloseRevisarModal}
+          centered
+        >
+          <Modal.Header closeButton>
+            <Modal.Title>
+              Revisar Reserva: {selectedReserva.NOMBRE_EXAMEN}
+            </Modal.Title>
+          </Modal.Header>
+          <Modal.Body>
+            <h5>Detalles de la Reserva</h5>
+            <p>
+              <strong>Asignatura:</strong> {selectedReserva.NOMBRE_ASIGNATURA}
+            </p>
+            <p>
+              <strong>Fecha:</strong>{' '}
+              {new Date(selectedReserva.FECHA_RESERVA).toLocaleDateString(
+                'es-CL'
+              )}{' '}
+              | <strong>Horario:</strong> {selectedReserva.HORA_INICIO} -{' '}
+              {selectedReserva.HORA_FIN}
+            </p>
+            <p>
+              <strong>Sala:</strong> {selectedReserva.NOMBRE_SALA} (
+              {selectedReserva.NOMBRE_EDIFICIO})
+            </p>
+            <hr />
+            <Form.Group className="mb-3">
+              <Form.Label>Observaciones (opcional)</Form.Label>
+              <Form.Control
+                as="textarea"
+                rows={3}
+                value={observaciones}
+                onChange={(e) => setObservaciones(e.target.value)}
+                placeholder="Ej: La sala no cuenta con proyector, se necesita otra."
+              />
+            </Form.Group>
+            <Form.Group>
+              <Form.Label className="fw-bold">Acción a Realizar:</Form.Label>
+              <div>
+                <Form.Check
+                  type="radio"
+                  label="Confirmar Reserva"
+                  name="estadoConfirmacion"
+                  value="CONFIRMADO"
+                  checked={nuevoEstadoConfirmacion === 'CONFIRMADO'}
+                  onChange={(e) => setNuevoEstadoConfirmacion(e.target.value)}
+                />
+                <Form.Check
+                  type="radio"
+                  label="Requiere Revisión (dejar observaciones)"
+                  name="estadoConfirmacion"
+                  value="REQUIERE_REVISION"
+                  checked={nuevoEstadoConfirmacion === 'REQUIERE_REVISION'}
+                  onChange={(e) => setNuevoEstadoConfirmacion(e.target.value)}
+                />
+              </div>
+            </Form.Group>
+          </Modal.Body>
+          <Modal.Footer>
+            <Button variant="secondary" onClick={handleCloseRevisarModal}>
+              Cancelar
+            </Button>
+            <Button
+              variant="primary"
+              onClick={handleSubmitConfirmacion}
+              disabled={loadingRevisarModal}
+            >
+              {loadingRevisarModal ? (
+                <Spinner as="span" size="sm" />
+              ) : (
+                'Enviar Actualización'
+              )}
+            </Button>
+          </Modal.Footer>
+        </Modal>
+      )}
     </Layout>
   );
 };
 
-export default DocenteReservasPage;
+export default MisReservasAsignadasPage;

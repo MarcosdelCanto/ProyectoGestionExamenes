@@ -1,5 +1,6 @@
 // backend/routes/public.routes.js
-import { Router } from 'express';
+import express from 'express'; // Importar express por defecto
+const { Router } = express; // Extraer Router del objeto express
 import { consultarReservasPublico } from '../controllers/public.controller.js'; // Crearemos este controlador
 
 const router = Router();

@@ -233,3 +233,76 @@ export const getUsuarios = async (req, res) => {
     }
   }
 };
+//obtener una lista de usuarios con rol docente
+export const getDocentes = async (req, res) => {
+  let connection;
+  try {
+    connection = await getConnection();
+    const sql = `
+      SELECT u.ID_USUARIO, u.NOMBRE_USUARIO, u.EMAIL_USUARIO
+      FROM USUARIO u
+      WHERE u.ROL_ID_ROL = 2 -- Filtrar directamente por el ID es más rápido
+      ORDER BY u.NOMBRE_USUARIO
+    `;
+
+    const result = await connection.execute(
+      sql,
+      {},
+      { outFormat: oracledb.OUT_FORMAT_OBJECT }
+    );
+    res.json(result.rows);
+  } catch (error) {
+    handleError(res, error, 'Error al obtener docentes');
+  } finally {
+    if (connection) {
+      try {
+        await connection.close();
+      } catch (err) {
+        console.error('Error closing connection for getDocentes', err);
+      }
+    }
+  }
+};
+// VERSIÓN CORREGIDA de searchDocentes
+export const searchDocentes = async (req, res) => {
+  const searchTerm = req.query.q || '';
+  if (!searchTerm) {
+    return res.json([]);
+  }
+
+  let connection;
+  try {
+    connection = await getConnection();
+    const sql = `
+      SELECT
+          u.ID_USUARIO,
+          u.NOMBRE_USUARIO,
+          (SELECT LISTAGG(s.NOMBRE_SECCION, ', ') WITHIN GROUP (ORDER BY s.NOMBRE_SECCION)
+          FROM USUARIOSECCION us
+          JOIN SECCION s ON us.SECCION_ID_SECCION = s.ID_SECCION
+          WHERE us.USUARIO_ID_USUARIO = u.ID_USUARIO) AS SECCIONES
+      FROM USUARIO u
+      JOIN ROL r ON u.ROL_ID_ROL = r.ID_ROL
+      WHERE r.NOMBRE_ROL = 'DOCENTE' -- O el rol correcto
+        AND UPPER(u.NOMBRE_USUARIO) LIKE :searchTerm
+    `;
+
+    const result = await connection.execute(
+      sql,
+      { searchTerm: `%${searchTerm.toUpperCase()}%` }, // Usar named binds
+      { outFormat: oracledb.OUT_FORMAT_OBJECT }
+    );
+
+    res.json(result.rows);
+  } catch (error) {
+    handleError(res, error, 'Error al buscar docentes');
+  } finally {
+    if (connection) {
+      try {
+        await connection.close();
+      } catch (err) {
+        console.error('Error closing connection for searchDocentes', err);
+      }
+    }
+  }
+};

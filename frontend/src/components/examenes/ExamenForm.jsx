@@ -25,19 +25,67 @@ function ExamenForm({ initial, onSubmit, onCancel }) {
   const [estados, setEstados] = useState([]);
 
   useEffect(() => {
+    // Opcional: podrías añadir estados de carga para los desplegables
+    // const [loadingSecciones, setLoadingSecciones] = useState(true);
+    // const [loadingEstados, setLoadingEstados] = useState(true);
+
     const fetchData = async () => {
       try {
         const [seccionesRes, estadosRes] = await Promise.all([
           fetch('http://localhost:3000/api/seccion'),
           fetch('http://localhost:3000/api/estado'),
         ]);
-        const seccionesData = await seccionesRes.json();
-        const estadosData = await estadosRes.json();
-        setSecciones(seccionesData);
-        setEstados(estadosData);
+
+        // Procesar secciones
+        if (seccionesRes.ok) {
+          const seccionesData = await seccionesRes.json();
+          if (Array.isArray(seccionesData)) {
+            setSecciones(seccionesData);
+          } else {
+            console.error(
+              'La API /api/seccion no devolvió un array:',
+              seccionesData
+            );
+            setSecciones([]); // Asegurar que secciones sea un array
+          }
+        } else {
+          console.error(
+            'Error al obtener secciones:',
+            seccionesRes.status,
+            seccionesRes.statusText
+          );
+          setSecciones([]); // Asegurar que secciones sea un array
+        }
+
+        // Procesar estados
+        if (estadosRes.ok) {
+          const estadosData = await estadosRes.json();
+          if (Array.isArray(estadosData)) {
+            setEstados(estadosData);
+          } else {
+            console.error(
+              'La API /api/estado no devolvió un array:',
+              estadosData
+            );
+            setEstados([]); // Asegurar que estados sea un array para prevenir el error .map
+          }
+        } else {
+          console.error(
+            'Error al obtener estados:',
+            estadosRes.status,
+            estadosRes.statusText
+          );
+          setEstados([]); // Asegurar que estados sea un array
+        }
       } catch (error) {
-        console.error('Error al cargar datos:', error);
+        console.error(
+          'Error al cargar datos (error de red o parseo JSON):',
+          error
+        );
+        setSecciones([]); // Fallback a array vacío en caso de error crítico
+        setEstados([]); // Fallback a array vacío en caso de error crítico
       }
+      // finally { setLoadingSecciones(false); setLoadingEstados(false); }
     };
     fetchData();
   }, []);

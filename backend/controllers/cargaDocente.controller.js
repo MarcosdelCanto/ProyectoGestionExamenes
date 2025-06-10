@@ -181,12 +181,10 @@ export const handleCargaDocentes = async (req, res) => {
         details: errorsDetallados,
       });
     }
-    return res
-      .status(500)
-      .json({
-        error: 'Error interno al importar docentes.',
-        details: errorsDetallados,
-      });
+    return res.status(500).json({
+      error: 'Error interno al importar docentes.',
+      details: errorsDetallados,
+    });
   } finally {
     if (conn) await conn.close();
   }

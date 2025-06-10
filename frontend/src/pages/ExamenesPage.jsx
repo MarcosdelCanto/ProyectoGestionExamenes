@@ -144,12 +144,24 @@ export default function ExamenesPage() {
         <ExamenActions
           onAdd={() => openModalHandler('add')}
           onEdit={() => {
-            if (selectedExamenId) openModalHandler('edit', selectedExamenId);
-            else alert('Por favor, seleccione un examen para editar.');
+            // El botón debe estar deshabilitado por ExamenActions si no hay selectedExamenId
+            if (selectedExamenId) {
+              openModalHandler('edit', selectedExamenId);
+            } else {
+              console.warn(
+                'Intento de editar sin examen seleccionado. El botón debería estar deshabilitado.'
+              );
+            }
           }}
           onDelete={() => {
-            if (selectedExamenId) openModalHandler('delete', selectedExamenId);
-            else alert('Por favor, seleccione un examen para eliminar.');
+            // El botón debe estar deshabilitado por ExamenActions si no hay selectedExamenId
+            if (selectedExamenId) {
+              openModalHandler('delete', selectedExamenId);
+            } else {
+              console.warn(
+                'Intento de eliminar sin examen seleccionado. El botón debería estar deshabilitado.'
+              );
+            }
           }}
           isExamenSelected={!!selectedExamenId} // Para habilitar/deshabilitar botones
         />
@@ -171,15 +183,27 @@ export default function ExamenesPage() {
 
       {/* Modal para Crear/Editar Examen */}
       {showModal && (modalType === 'add' || modalType === 'edit') && (
-        <ExamenForm
+        <BootstrapModal
           show={showModal}
-          handleClose={closeModalHandler}
-          handleSubmit={handleFormSubmit}
-          initialData={modalType === 'edit' ? currentExamenData : null}
-          isProcessing={loading} // Puedes usar el 'loading' general o uno específico
-        />
+          onHide={closeModalHandler}
+          centered
+          size="lg"
+        >
+          <BootstrapModal.Header closeButton>
+            <BootstrapModal.Title>
+              {modalType === 'add' ? 'Agregar Nuevo Examen' : 'Editar Examen'}
+            </BootstrapModal.Title>
+          </BootstrapModal.Header>
+          <BootstrapModal.Body>
+            <ExamenForm
+              onSubmit={handleFormSubmit} // ExamenForm espera 'onSubmit'
+              initial={modalType === 'edit' ? currentExamenData : null} // ExamenForm espera 'initial'
+              onCancel={closeModalHandler} // ExamenForm espera 'onCancel'
+              // isProcessing={loading} // ExamenForm no usa esta prop actualmente, pero podría añadirse para deshabilitar el form
+            />
+          </BootstrapModal.Body>
+        </BootstrapModal>
       )}
-
       {/* Modal de Confirmación para Eliminar Examen */}
       {showModal && modalType === 'delete' && currentExamenData && (
         <BootstrapModal show={showModal} onHide={closeModalHandler} centered>

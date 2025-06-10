@@ -1,4 +1,5 @@
-import { Router } from 'express';
+import express from 'express'; // Importar express por defecto
+const { Router } = express; // Extraer Router del objeto express
 import {
   getReporteDetalladoExamenes,
   getReporteAlumnosReservas,

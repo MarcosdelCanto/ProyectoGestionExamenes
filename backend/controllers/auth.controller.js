@@ -24,7 +24,7 @@ export const login = async (req, res) => {
     conn = await getConnection();
     const result = await conn.execute(
       `SELECT
-         u.id_usuario, u.password_usuario AS hash, u.ROL_id_rol, r.NOMBRE_ROL
+         u.id_usuario, u.nombre_usuario, u.password_usuario AS hash, u.ROL_id_rol, r.NOMBRE_ROL
        FROM USUARIO U
        JOIN ROL R ON U.ROL_ID_ROL = R.id_rol
        WHERE email_usuario = :email_usuario`,
@@ -37,7 +37,7 @@ export const login = async (req, res) => {
     }
 
     const row = result.rows[0];
-    const { ID_USUARIO, HASH, ROL_ID_ROL, NOMBRE_ROL } = row;
+    const { ID_USUARIO, NOMBRE_USUARIO, HASH, ROL_ID_ROL, NOMBRE_ROL } = row;
 
     const coincide = await bcrypt.compare(password_usuario, HASH);
 
@@ -48,6 +48,7 @@ export const login = async (req, res) => {
     // Generar tokens
     const payload = {
       id_usuario: ID_USUARIO,
+      nombre_usuario: NOMBRE_USUARIO, // <-- AÑADIR NOMBRE DE USUARIO AL PAYLOAD
       rol_id_rol: ROL_ID_ROL,
       nombre_rol: NOMBRE_ROL,
     };
@@ -64,6 +65,7 @@ export const login = async (req, res) => {
       refreshToken,
       usuario: {
         id_usuario: ID_USUARIO,
+        nombre_usuario: NOMBRE_USUARIO, // <-- AÑADIR NOMBRE DE USUARIO A LA RESPUESTA
         email_usuario,
         ROL_ID_ROL, // Mantener formato original en mayúsculas
         rol_id_rol: ROL_ID_ROL, // Añadir formato en minúsculas para compatibilidad
@@ -96,6 +98,7 @@ export const handleRefreshToken = (req, res) => {
     const payload = verifyRefreshToken(token);
     const newAccessToken = generateAccessToken({
       id_usuario: payload.id_usuario,
+      nombre_usuario: payload.nombre_usuario, // <-- Asegurar que se propaga al refrescar
       rol_id_rol: payload.rol_id_rol, // Mantener consistencia
       nombre_rol: payload.nombre_rol,
     });

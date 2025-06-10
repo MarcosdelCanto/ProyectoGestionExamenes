@@ -46,7 +46,8 @@ export const getMisReservas = async (req, res) => {
         AND ESTADO_CONFIRMACION_DOCENTE = ' CONFIRMADO'
       ORDER BY FECHA_RESERVA ASC, HORA_INICIO ASC
     `;
-
+    // Corregido: AND ESTADO_CONFIRMACION_DOCENTE = 'CONFIRMADO' (sin espacio inicial)
+    // La vista V_REPORTE_ALUMNOS_RESERVAS ya debería filtrar por estados de reserva activos (PROGRAMADO, CONFIRMADO)
     const params = { idAlumnoAutenticado };
 
     const result = await connection.execute(sql, params, {

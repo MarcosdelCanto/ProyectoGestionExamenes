@@ -1,4 +1,5 @@
-import { Router } from 'express';
+import express from 'express'; // Importar express por defecto
+const { Router } = express; // Extraer Router del objeto express
 import { authMiddleware } from '../middlewares/auth.middleware.js';
 import { checkPermission } from '../middlewares/permission.middleware.js';
 
@@ -13,6 +14,7 @@ import {
   updateReserva, // Controlador para PUT /:id
   deleteReserva, // Controlador para DELETE /:id
   getMisAsignacionesDeReservas, // Controlador para GET /mis-asignaciones
+  descartarReserva, // Importar el nuevo controlador
 } from '../controllers/reserva.controller.js';
 
 const router = Router();
@@ -58,7 +60,12 @@ router.get(
   checkPermission(['VIEW_ALL_RESERVAS']), // Ej: Permiso para ver todas las reservas
   getAllReservas
 );
-
+router.post(
+  '/', // Tu ruta original para crear reservas
+  authMiddleware,
+  checkPermission(['CREATE_RESERVAS_EXAMEN']), // Permiso para el método original de creación
+  createReserva
+);
 router.get(
   '/:id',
   authMiddleware,
@@ -66,15 +73,8 @@ router.get(
   getReservaById
 );
 
-router.post(
-  '/', // Tu ruta original para crear reservas
-  authMiddleware,
-  checkPermission(['CREATE_RESERVAS_EXAMEN']), // Permiso para el método original de creación
-  createReserva
-);
-
 router.put(
-  '/:id',
+  '/actualizar/:id',
   authMiddleware,
   checkPermission(['UPDATE_RESERVA']), // Ej: Permiso para actualizar cualquier reserva
   updateReserva
@@ -85,6 +85,21 @@ router.delete(
   authMiddleware,
   checkPermission(['DELETE_RESERVA']), // Ej: Permiso para eliminar cualquier reserva
   deleteReserva
+);
+// --- RUTA PARA DESCARTAR RESERVA ---
+router.put(
+  '/:idReserva/descartar',
+  authMiddleware,
+  checkPermission(['UPDATE_RESERVA']), // Asumiendo que el mismo permiso de actualizar sirve para descartar
+  descartarReserva
+);
+
+// --- RUTA PARA DESCARTAR RESERVA ---
+router.put(
+  '/:idReserva/descartar',
+  authMiddleware,
+  checkPermission(['UPDATE_RESERVA']), // Asumiendo que el mismo permiso de actualizar sirve para descartar
+  descartarReserva
 );
 
 export default router;

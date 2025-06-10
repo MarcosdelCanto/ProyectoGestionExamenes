@@ -95,3 +95,60 @@ export const deleteModulo = async (id) => {
     throw error.response?.data || error;
   }
 };
+
+export const fetchAvailableModules = async (
+  fecha,
+  idSala,
+  idReservaExcluir = null
+) => {
+  console.log('[moduloService] fetchAvailableModules llamado con:', {
+    fecha,
+    idSala,
+    idReservaExcluir,
+  });
+  try {
+    const params = {
+      fecha_reserva: fecha,
+      sala_id: idSala,
+    };
+    if (idReservaExcluir !== null) {
+      params.reserva_id_excluir = idReservaExcluir;
+    }
+    const endpoint = '/modulo/disponibles'; // Corregido para coincidir con modulo.routes.js
+    console.log(
+      '[moduloService] Petición GET a:',
+      endpoint,
+      'con params:',
+      params
+    );
+
+    const response = await api.get(endpoint, { params });
+    console.log(
+      '[moduloService] Módulos disponibles recibidos:',
+      response.data
+    );
+    return response.data;
+  } catch (error) {
+    console.error('[moduloService] Error en fetchAvailableModules:', error);
+    if (error.response) {
+      console.error(
+        '[moduloService] Error response data:',
+        error.response.data
+      );
+      console.error(
+        '[moduloService] Error response status:',
+        error.response.status
+      );
+      console.error(
+        '[moduloService] Error response headers:',
+        error.response.headers
+      );
+    } else if (error.request) {
+      console.error('[moduloService] Error request:', error.request);
+    } else {
+      console.error('[moduloService] Error message:', error.message);
+    }
+    // Lanza el error para que el catch en ReservaForm.jsx lo maneje
+    throw error.response?.data || error;
+  }
+};

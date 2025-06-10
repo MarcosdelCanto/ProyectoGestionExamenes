@@ -1,4 +1,4 @@
-function ExamenActions({ onAdd, onEdit, onDelete, selectedExamen }) {
+function ExamenActions({ onAdd, onEdit, onDelete, isExamenSelected }) {
   return (
     <div className="mb-3">
       <button className="btn btn-success me-2" onClick={() => onAdd()}>
@@ -8,7 +8,7 @@ function ExamenActions({ onAdd, onEdit, onDelete, selectedExamen }) {
       <button
         className="btn btn-warning me-2"
         onClick={() => onEdit()}
-        disabled={!selectedExamen}
+        disabled={!isExamenSelected}
       >
         <i className="bi bi-pencil-square"></i>
         <span className="btn-responsive-text ms-2">Modificar Examen</span>
@@ -16,7 +16,7 @@ function ExamenActions({ onAdd, onEdit, onDelete, selectedExamen }) {
       <button
         className="btn btn-danger"
         onClick={() => onDelete()}
-        disabled={!selectedExamen}
+        disabled={!isExamenSelected}
       >
         <i className="bi bi-trash"></i>
         <span className="btn-responsive-text ms-2">Eliminar Examen</span>

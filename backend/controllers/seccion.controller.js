@@ -142,3 +142,36 @@ export const getSeccionesByAsignatura = async (req, res) => {
     if (connection) await connection.close();
   }
 };
+
+export const getDocentesBySeccion = async (req, res) => {
+  const { id } = req.params;
+  let connection;
+  try {
+    connection = await getConnection();
+    const sql = `
+      SELECT u.ID_USUARIO, u.NOMBRE_USUARIO
+      FROM USUARIO u
+      JOIN USUARIOSECCION us ON u.ID_USUARIO = us.USUARIO_ID_USUARIO
+      JOIN ROL r ON u.ROL_ID_ROL = r.ID_ROL
+      WHERE us.SECCION_ID_SECCION = :seccionId
+      AND r.NOMBRE_ROL = 'DOCENTE'
+    `;
+    const result = await connection.execute(
+      sql,
+      { seccionId: id },
+      { outFormat: oracledb.OUT_FORMAT_OBJECT }
+    );
+    res.json(result.rows);
+  } catch (error) {
+    console.error('Error al obtener docentes por seccion:', error);
+    res.status(500).json({ error: 'Error al obtener docentes por seccion' });
+  } finally {
+    if (connection) {
+      try {
+        await connection.close();
+      } catch (err) {
+        console.error(err);
+      }
+    }
+  }
+};

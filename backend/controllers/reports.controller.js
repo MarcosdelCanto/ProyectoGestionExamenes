@@ -35,6 +35,7 @@ export const getReporteDetalladoExamenes = async (req, res) => {
     };
 
     // Usamos la función genérica para todos los filtros numéricos simples
+    sql += ` AND V_REPORTE_EXAMENES_DETALLADO.NOMBRE_ESTADO_RESERVA != 'DESCARTADO'`; // Excluir reservas descartadas
     addCondition('ID_SEDE', 'sedeId', sedeId);
     addCondition('ID_ESCUELA', 'escuelaId', escuelaId);
     addCondition('ID_CARRERA', 'carreraId', carreraId);
@@ -107,6 +108,7 @@ export const getReporteAlumnosReservas = async (req, res) => {
       }
     };
 
+    sql += ` AND V_REPORTE_ALUMNOS_RESERVAS.ESTADO_RESERVA != 'DESCARTADO'`; // Excluir reservas descartadas
     addCondition('ID_SEDE', 'sedeId', sedeId);
     addCondition('ID_ESCUELA', 'escuelaId', escuelaId);
     addCondition('ID_CARRERA', 'carreraId', carreraId);

@@ -41,6 +41,7 @@ export const fetchReservaById = async (id) => {
  * @returns {Promise<object>} - Respuesta del servidor.
  */
 export const crearReservaParaExamenExistenteService = async (payload) => {
+  // Asegurarse que el nombre es el que se exporta
   try {
     // Usaremos un endpoint nuevo o ajustaremos el existente.
     // Si ajustas el existente, asegúrate que el backend sepa que no debe crear un examen.
@@ -54,7 +55,12 @@ export const crearReservaParaExamenExistenteService = async (payload) => {
       'Error al crear la reserva para examen existente:',
       error.response?.data || error.message
     );
-    throw error.response?.data || error;
+    const customError = new Error(
+      error.response?.data?.message || error.response?.data || error.message
+    );
+    customError.details = error.response?.data?.details;
+    customError.status = error.response?.status;
+    throw customError;
   }
 };
 
@@ -85,7 +91,11 @@ export const createReserva = async (data) => {
  */
 export const updateReserva = async (id, data) => {
   try {
-    const response = await api.put(`/reserva/${id}`, data);
+    console.log(
+      `[reservaService] updateReserva llamado. ID: ${id}, Data:`,
+      data
+    ); // Log para verificar
+    const response = await api.put(`/reserva/actualizar/${id}`, data);
     return response.data;
   } catch (error) {
     console.error(
@@ -169,3 +179,21 @@ export const fetchMisAsignacionesDeReservas = async () => {
 };
 
 // ... otras funciones de servicio de reservas que puedas tener
+
+export const descartarReserva = async (idReserva) => {
+  try {
+    const response = await api.put(`/reserva/${idReserva}/descartar`);
+    return response.data;
+  } catch (error) {
+    console.error(
+      `Error al descartar la reserva ${idReserva}:`,
+      error.response?.data || error.message
+    );
+    throw (
+      error.response?.data || {
+        error: 'Error de red o servidor',
+        details: error.message,
+      }
+    );
+  }
+};

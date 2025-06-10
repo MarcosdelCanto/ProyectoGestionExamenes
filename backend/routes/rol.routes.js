@@ -1,5 +1,6 @@
 // routes/rol.routes.js
-import { Router } from 'express';
+import express from 'express'; // Importar express por defecto
+const { Router } = express; // Extraer Router del objeto express
 import {
   fetchAllRoles,
   createRole,

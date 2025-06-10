@@ -13,6 +13,39 @@ export const fetchAllExamenes = async () => {
     throw error.response?.data || error;
   }
 };
+
+export const fetchUserActiveExams = async () => {
+  const endpoint = '/api/examen/examenes/disponibles'; // Verifica que esta sea la URL correcta
+  console.log(`[examenService] Solicitando exámenes desde: ${endpoint}`);
+  try {
+    // Si usas apiClient o axios:
+    const response = await api.get('/examen/examenes/disponibles');
+    // Si usas fetch:
+    // const rawResponse = await fetch(endpoint, { headers: { 'Authorization': `Bearer ${tuToken}` /* si es necesario */ } });
+    // if (!rawResponse.ok) throw new Error(`Error del servidor: ${rawResponse.status}`);
+    // const response = await rawResponse.json(); // O response.data si es axios
+
+    console.log('[examenService] Respuesta recibida del backend:', response);
+
+    // Si usas axios, la data usualmente está en response.data
+    // Si usas fetch y .json(), la data es la 'response' directamente.
+    const dataToReturn = response.data || response; // Ajusta según cómo obtengas la data
+
+    console.log(
+      '[examenService] Datos a retornar al componente:',
+      dataToReturn
+    );
+    return dataToReturn;
+  } catch (error) {
+    console.error(
+      '[examenService] Error al obtener los exámenes disponibles:',
+      error.response?.data || error.message,
+      error
+    );
+    throw error; // Re-lanza el error para que el componente lo maneje
+  }
+};
+
 /**
  * NUEVA FUNCIÓN: Obtiene los exámenes optimizados para un selector/dropdown.
  */

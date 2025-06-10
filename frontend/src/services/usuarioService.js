@@ -69,21 +69,38 @@ export const resetPassword = (id) =>
 
 export const fetchAllDocentes = async () => {
   try {
-    // ANTES (Llamada sin parámetros)
-    // const response = await api.get('/api/usuarios');
-
-    // DESPUÉS (Llamada con el parámetro para filtrar por rol de docente)
-    // Le pasamos el ID del rol "DOCENTE" a la API.
     // NOTA: Asegúrate de que el ID del rol 'DOCENTE' en tu tabla ROL sea realmente 2.
-    const response = await api.get('/usuarios', {
-      params: {
-        rolId: 2,
-      },
-    });
-
+    const response = await api.get('/usuarios/docentes');
+    if (!Array.isArray(response.data)) {
+      throw new Error('Se espera una lista de docentes');
+    }
     return response.data;
   } catch (error) {
     console.error('Error fetching docentes:', error);
+    throw error;
+  }
+};
+
+// NUEVA FUNCIÓN para buscar docentes por nombre (más escalable)
+export const searchDocentes = async (searchTerm) => {
+  try {
+    // El backend buscará docentes cuyo nombre contenga el término de búsqueda
+    const { data } = await api.get(`/usuarios/docentes/search?q=${searchTerm}`);
+    return data;
+  } catch (error) {
+    console.error('Error al buscar docentes:', error);
+    throw error;
+  }
+};
+export const fetchDocentesBySeccion = async (seccionId) => {
+  try {
+    const response = await api.get(`/seccion/secciones/${seccionId}/docentes`);
+    return response.data;
+  } catch (error) {
+    console.error(
+      `Error fetching docentes para la sección ${seccionId}:`,
+      error
+    );
     throw error;
   }
 };
