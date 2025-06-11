@@ -169,16 +169,6 @@ export default function Layout({ children }) {
 
               <span className="sidebar-link-text">Inicio</span>
             </Link>
-            <Link
-              to="/mis-reservas"
-              className="nav-link text-dark d-flex align-items-center"
-            >
-              <div className="sidebar-icon-container">
-                <i className="bi bi-calendar-check-fill"></i>
-              </div>
-
-              <span className="sidebar-link-text">Exámenes Programados</span>
-            </Link>
             {hasPermission('VIEW_CALENDARIO') && (
               <Link
                 to="/calendario"
@@ -191,18 +181,17 @@ export default function Layout({ children }) {
                 <span className="sidebar-link-text">Calendario</span>
               </Link>
             )}
-            {hasPermission('VIEW_EXAMENES') && (
-              <Link
-                to="/examen"
-                className="nav-link text-dark d-flex align-items-center"
-              >
-                <div className="sidebar-icon-container">
-                  <i className="bi bi-file-earmark-text-fill"></i>
-                </div>
+            <Link
+              to="/mis-reservas"
+              className="nav-link text-dark d-flex align-items-center"
+            >
+              <div className="sidebar-icon-container">
+                <i className="bi bi-calendar-check-fill"></i>
+              </div>
 
-                <span className="sidebar-link-text">Gestión de Exámenes</span>
-              </Link>
-            )}
+              <span className="sidebar-link-text">Exámenes Programados</span>
+            </Link>
+            {/*
             {hasPermission('CREATE_RESERVAS_EXAMEN') && (
               <Link
                 to="/reservas/crear"
@@ -225,7 +214,20 @@ export default function Layout({ children }) {
                 </div>
                 <span className="sidebar-link-text">Reservas Pendientes</span>
               </Link>
+            )}*/}
+            {hasPermission('VIEW_EXAMENES') && (
+              <Link
+                to="/examen"
+                className="nav-link text-dark d-flex align-items-center"
+              >
+                <div className="sidebar-icon-container">
+                  <i className="bi bi-file-earmark-text-fill"></i>
+                </div>
+
+                <span className="sidebar-link-text">Gestión de Exámenes</span>
+              </Link>
             )}
+
             {hasPermission('VIEW_SALAS') && (
               <Link
                 to="/salas"

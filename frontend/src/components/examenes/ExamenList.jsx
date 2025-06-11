@@ -61,7 +61,8 @@ function ExamenList({ examenes, selectedExamenId, onSelectExamen, loading }) {
                 {examen.NOMBRE_SECCION || examen.SECCION_ID_SECCION || 'N/A'}
               </td>
               <td>
-                {examen.NOMBRE_ESTADO || examen.ESTADO_ID_ESTADO || 'N/A'}
+                {examen.NOMBRE_ESTADO || 'N/A'}{' '}
+                {/* <-- CAMBIO AQUÍ: Usar NOMBRE_ESTADO */}
               </td>
             </tr>
           ))}
