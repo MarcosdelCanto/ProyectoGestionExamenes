@@ -17,8 +17,12 @@ function CarreraList({
   }
 
   return (
-    <div className="table-responsive">
+    <div className="table-responsive border mb-3">
+      {' '}
+      {/* Eliminado maxHeight y overflowY de un estilo inline si existiera, añadido mb-3 */}
       <Table bordered hover responsive="sm" className="mb-0">
+        {' '}
+        {/* mb-0 en la tabla si el div wrapper maneja el margen inferior */}
         <thead className="table-light">
           <tr>
             <th style={{ width: '5%' }} className="text-center align-middle">
