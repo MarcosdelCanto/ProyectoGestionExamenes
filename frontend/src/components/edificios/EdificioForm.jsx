@@ -1,21 +1,36 @@
 import { useState, useEffect } from 'react';
+import { fetchAllSedes } from '../../services/sedeService'; // Importar servicio
 
 function EdificioForm({ initial, onSubmit, onCancel }) {
   const [nombre, setNombre] = useState(initial?.NOMBRE_EDIFICIO || '');
   const [sigla, setSigla] = useState(initial?.SIGLA_EDIFICIO || '');
-  const [sedeId, setSedeId] = useState(
-    initial?.SEDE_ID_SEDE?.toString() || ''
-  );
+  const [sedeId, setSedeId] = useState(initial?.SEDE_ID_SEDE?.toString() || '');
   const [sedes, setSedes] = useState([]);
+
+  useEffect(() => {
+    if (initial) {
+      setNombre(initial.NOMBRE_EDIFICIO || '');
+      setSigla(initial.SIGLA_EDIFICIO || '');
+      setSedeId(initial.SEDE_ID_SEDE?.toString() || '');
+    } else {
+      setNombre('');
+      setSigla('');
+      setSedeId('');
+    }
+  }, [initial]);
 
   useEffect(() => {
     const fetchSedes = async () => {
       try {
-        const response = await fetch('http://localhost:3000/api/sede');
-        const data = await response.json();
-        setSedes(data);
+        const data = await fetchAllSedes(); // Usar servicio
+        if (Array.isArray(data)) {
+          setSedes(data);
+        } else {
+          setSedes([]);
+        }
       } catch (error) {
-        console.error('Error al obtener las sedes:', error);
+        // console.error('Error al obtener las sedes:', error);
+        setSedes([]);
       }
     };
     fetchSedes();

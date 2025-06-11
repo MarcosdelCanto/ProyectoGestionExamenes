@@ -186,7 +186,6 @@ const ModulosAgendadosChart = () => {
             <tbody>
               {chartState.data.map((item) => (
                 <tr key={item.hora}>
-                  {' '}
                   {/* Asume que 'hora' es único */}
                   <td>{item.hora}</td>
                   <td>{item.cantidad}</td>

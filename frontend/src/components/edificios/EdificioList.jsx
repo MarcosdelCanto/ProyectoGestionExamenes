@@ -19,17 +19,15 @@ function EdificioList({
   }
 
   return (
-    <div
-      className="table-responsive border"
-      style={{ maxHeight: '60vh', overflowY: 'auto', marginBottom: '1rem' }}
-    >
+    <div className="table-responsive border mb-3">
+      {/* Eliminado maxHeight y overflowY, usado mb-3 para margen */}
       <table className="table table-hover table-bordered mb-0">
         <thead className="table-light sticky-top">
           <tr>
             <th>ID</th>
             <th>Nombre</th>
             <th>Sigla</th>
-            <th>Sede</th>{' '}
+            <th>Sede</th>
             {/* Asumiendo que NOMBRE_SEDE viene con el objeto edificio */}
           </tr>
         </thead>
@@ -49,7 +47,7 @@ function EdificioList({
               <td>{e.ID_EDIFICIO || 'N/A'}</td>
               <td>{e.NOMBRE_EDIFICIO || 'N/A'}</td>
               <td>{e.SIGLA_EDIFICIO || 'N/A'}</td>
-              <td>{e.NOMBRE_SEDE || e.SEDE_ID_SEDE || 'N/A'}</td>{' '}
+              <td>{e.NOMBRE_SEDE || e.SEDE_ID_SEDE || 'N/A'}</td>
               {/* Mostrar NOMBRE_SEDE o el ID si el nombre no está */}
             </tr>
           ))}

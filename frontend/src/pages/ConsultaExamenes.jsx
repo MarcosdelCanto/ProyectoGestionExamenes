@@ -231,7 +231,7 @@ const ConsultaExamenes = () => {
         />
         <h1 className="h3 mt-3" style={{ color: '#0033a0' }}>
           Consulta de Exámenes Programados
-        </h1>{' '}
+        </h1>
         {/* Color Duoc UC */}
       </div>
 

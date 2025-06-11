@@ -14,10 +14,8 @@ function SedeList({ sedes, selectedSede, onSelectSede, loading }) {
   }
 
   return (
-    <div
-      className="table-responsive border"
-      style={{ maxHeight: '60vh', overflowY: 'auto', marginBottom: '1rem' }}
-    >
+    <div className="table-responsive border mb-3">
+      {/* Eliminado maxHeight y overflowY, usado mb-3 para margen */}
       <table className="table table-hover table-bordered mb-0">
         <thead className="table-light sticky-top">
           <tr>

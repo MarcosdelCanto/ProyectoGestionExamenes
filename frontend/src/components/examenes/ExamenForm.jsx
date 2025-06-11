@@ -1,4 +1,6 @@
 import { useState, useEffect } from 'react';
+import { fetchAllSecciones } from '../../services/seccionService'; // Importar servicio
+import { fetchAllEstados } from '../../services/estadoService'; // Importar servicio
 
 function ExamenForm({ initial, onSubmit, onCancel }) {
   const [nombre, setNombre] = useState(initial?.NOMBRE_EXAMEN || '');
@@ -24,68 +26,104 @@ function ExamenForm({ initial, onSubmit, onCancel }) {
   const [secciones, setSecciones] = useState([]);
   const [estados, setEstados] = useState([]);
 
+  // Efecto para actualizar el estado del formulario cuando 'initial' cambia (para el modo edición)
   useEffect(() => {
-    // Opcional: podrías añadir estados de carga para los desplegables
-    // const [loadingSecciones, setLoadingSecciones] = useState(true);
-    // const [loadingEstados, setLoadingEstados] = useState(true);
+    if (initial) {
+      setNombre(initial.NOMBRE_EXAMEN || '');
+      setInscritos(initial.INSCRITOS_EXAMEN || '');
+      setTipoProcesamiento(initial.TIPO_PROCESAMIENTO_EXAMEN || '');
+      setPlataforma(initial.PLATAFORMA_PROSE_EXAMEN || '');
+      setSituacionEvaluativa(initial.SITUACION_EVALUATIVA_EXAMEN || '');
+      setCantidadModulos(initial.CANTIDAD_MODULOS_EXAMEN || '');
 
+      // Manejar Sección
+      if (initial.SECCION_ID_SECCION) {
+        setSeccionId(initial.SECCION_ID_SECCION.toString());
+      } else if (initial.NOMBRE_SECCION && secciones.length > 0) {
+        // El NOMBRE_SECCION del examen parece ser el CODIGO_SECCION
+        const seccionEncontrada = secciones.find(
+          (s) => s.CODIGO_SECCION === initial.NOMBRE_SECCION
+        );
+        if (seccionEncontrada) {
+          setSeccionId(seccionEncontrada.ID_SECCION.toString());
+        } else {
+          // Opcional: intentar buscar por NOMBRE_SECCION si la búsqueda por código falla
+          const seccionPorNombrePuro = secciones.find(
+            (s) => s.NOMBRE_SECCION === initial.NOMBRE_SECCION
+          );
+          setSeccionId(
+            seccionPorNombrePuro
+              ? seccionPorNombrePuro.ID_SECCION.toString()
+              : ''
+          );
+        }
+      } else {
+        setSeccionId('');
+      }
+
+      // Manejar Estado
+      if (initial.ESTADO_ID_ESTADO) {
+        setEstadoId(initial.ESTADO_ID_ESTADO.toString());
+      } else if (initial.NOMBRE_ESTADO && estados.length > 0) {
+        const estadoEncontrado = estados.find(
+          (e) => e.NOMBRE_ESTADO === initial.NOMBRE_ESTADO
+        );
+        if (estadoEncontrado) {
+          setEstadoId(estadoEncontrado.ID_ESTADO.toString());
+        } else {
+          setEstadoId('');
+        }
+      } else {
+        setEstadoId('');
+      }
+    } else {
+      // Resetear para el modo "agregar"
+      setNombre('');
+      setInscritos('');
+      setTipoProcesamiento('');
+      setPlataforma('');
+      setSituacionEvaluativa('');
+      setCantidadModulos('');
+      setSeccionId('');
+      setEstadoId('');
+    }
+  }, [initial, secciones, estados]); // Añadir secciones y estados como dependencias
+
+  useEffect(() => {
     const fetchData = async () => {
       try {
         const [seccionesRes, estadosRes] = await Promise.all([
-          fetch('http://localhost:3000/api/seccion'),
-          fetch('http://localhost:3000/api/estado'),
+          fetchAllSecciones(), // Usar servicio
+          fetchAllEstados(), // Usar servicio
         ]);
 
-        // Procesar secciones
-        if (seccionesRes.ok) {
-          const seccionesData = await seccionesRes.json();
-          if (Array.isArray(seccionesData)) {
-            setSecciones(seccionesData);
-          } else {
-            console.error(
-              'La API /api/seccion no devolvió un array:',
-              seccionesData
-            );
-            setSecciones([]); // Asegurar que secciones sea un array
-          }
+        if (Array.isArray(seccionesRes)) {
+          setSecciones(seccionesRes);
         } else {
-          console.error(
-            'Error al obtener secciones:',
-            seccionesRes.status,
-            seccionesRes.statusText
-          );
-          setSecciones([]); // Asegurar que secciones sea un array
+          // console.error(
+          //   'Error: La API de secciones no devolvió un array:',
+          //   seccionesRes
+          // );
+          setSecciones([]);
         }
 
-        // Procesar estados
-        if (estadosRes.ok) {
-          const estadosData = await estadosRes.json();
-          if (Array.isArray(estadosData)) {
-            setEstados(estadosData);
-          } else {
-            console.error(
-              'La API /api/estado no devolvió un array:',
-              estadosData
-            );
-            setEstados([]); // Asegurar que estados sea un array para prevenir el error .map
-          }
+        if (Array.isArray(estadosRes)) {
+          setEstados(estadosRes);
         } else {
-          console.error(
-            'Error al obtener estados:',
-            estadosRes.status,
-            estadosRes.statusText
-          );
-          setEstados([]); // Asegurar que estados sea un array
+          // console.error(
+          //   'Error: La API de estados no devolvió un array:',
+          //   estadosRes
+          // );
+          setEstados([]);
         }
       } catch (error) {
-        console.error(
-          'Error al cargar datos (error de red o parseo JSON):',
-          error
-        );
+        // console.error(
+        //   'Error al cargar datos (error de red o parseo JSON):',
+        //   error
+        // );
         setSecciones([]); // Fallback a array vacío en caso de error crítico
         setEstados([]); // Fallback a array vacío en caso de error crítico
       }
-      // finally { setLoadingSecciones(false); setLoadingEstados(false); }
     };
     fetchData();
   }, []);

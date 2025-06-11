@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { fetchAllEdificios } from '../../services/edificioService'; // Importar servicio
 
 function SalaForm({ initial, onSubmit, onCancel }) {
   const [nombre, setNombre] = useState(initial?.NOMBRE_SALA || '');
@@ -9,13 +10,30 @@ function SalaForm({ initial, onSubmit, onCancel }) {
   const [edificios, setEdificios] = useState([]);
 
   useEffect(() => {
+    if (initial) {
+      setNombre(initial.NOMBRE_SALA || '');
+      setCapacidad(initial.CAPACIDAD_SALA || '');
+      setEdificioId(initial.EDIFICIO_ID_EDIFICIO?.toString() || '');
+    } else {
+      // Resetear para el modo "agregar"
+      setNombre('');
+      setCapacidad('');
+      setEdificioId('');
+    }
+  }, [initial]);
+
+  useEffect(() => {
     const fetchEdificios = async () => {
       try {
-        const response = await fetch('http://localhost:3000/api/edificio');
-        const data = await response.json();
-        setEdificios(data);
+        const data = await fetchAllEdificios(); // Usar servicio
+        if (Array.isArray(data)) {
+          setEdificios(data);
+        } else {
+          setEdificios([]);
+        }
       } catch (error) {
-        console.error('Error al cargar edificios:', error);
+        // console.error('Error al cargar edificios:', error);
+        setEdificios([]);
       }
     };
     fetchEdificios();

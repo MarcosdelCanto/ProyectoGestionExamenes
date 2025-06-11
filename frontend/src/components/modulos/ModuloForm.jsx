@@ -1,4 +1,5 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
+import { fetchAllEstados } from '../../services/estadoService'; // Importar el servicio
 
 function ModuloForm({ initial, onSubmit, onCancel }) {
   const [nombre, setNombre] = useState(initial?.NOMBRE_MODULO || '');
@@ -12,18 +13,32 @@ function ModuloForm({ initial, onSubmit, onCancel }) {
   useEffect(() => {
     const fetchEstados = async () => {
       try {
-        const response = await fetch('http://localhost:3000/api/estado');
-        const data = await response.json();
-        setEstados(data);
+        const data = await fetchAllEstados(); // Usar la función del servicio
+        if (Array.isArray(data)) {
+          setEstados(data);
+        } else {
+          // console.error('Error: La API de estados no devolvió un array:', data);
+          setEstados([]); // Set to empty array if data is not an array
+        }
       } catch (error) {
-        console.error('Error al obtener los estados:', error);
+        // El error ya se maneja y loguea en fetchAllEstados
+        // console.error('Error al obtener los estados:', error);
+        setEstados([]); // Set to empty array on network or other fetch errors
       }
     };
     fetchEstados();
   }, []);
 
+  // Filtrar los estados para mostrar solo ACTIVO (ID 1) e INACTIVO (ID 7)
+  const estadosFiltradosParaForm = useMemo(() => {
+    return estados.filter(
+      (estado) => estado.ID_ESTADO === 1 || estado.ID_ESTADO === 7
+    );
+  }, [estados]);
+
   const handleSubmit = (e) => {
     e.preventDefault();
+    // console.log('ModuloForm: Enviando datos:', { nombre, inicio, fin, orden, estadoId });
     onSubmit({
       nombre_modulo: nombre,
       inicio_modulo: inicio,
@@ -95,7 +110,7 @@ function ModuloForm({ initial, onSubmit, onCancel }) {
           <option value="" key="default">
             Seleccione un estado
           </option>
-          {estados.map((estado) => (
+          {estadosFiltradosParaForm.map((estado) => (
             <option key={`estado-${estado.ID_ESTADO}`} value={estado.ID_ESTADO}>
               {estado.NOMBRE_ESTADO}
             </option>

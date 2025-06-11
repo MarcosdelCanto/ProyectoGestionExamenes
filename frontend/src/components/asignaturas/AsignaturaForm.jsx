@@ -6,6 +6,17 @@ function AsignaturaForm({ initial, onSubmit, onCancel }) {
     initial?.CARRERA_ID_CARRERA?.toString() || ''
   );
   const [carrera, setCarrera] = useState([]);
+
+  useEffect(() => {
+    if (initial) {
+      setNombre(initial.NOMBRE_ASIGNATURA || '');
+      setCarreraId(initial.CARRERA_ID_CARRERA?.toString() || '');
+    } else {
+      setNombre('');
+      setCarreraId('');
+    }
+  }, [initial]);
+
   useEffect(() => {
     const fetchCarreras = async () => {
       try {

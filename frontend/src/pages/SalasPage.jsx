@@ -53,7 +53,6 @@ function Modal({ title, children, onClose, show }) {
       style={{ display: 'block', backgroundColor: 'rgba(0,0,0,0.5)' }}
     >
       <div className="modal-dialog modal-dialog-centered">
-        {' '}
         {/* modal-dialog-centered para centrarlo */}
         <div className="modal-content">
           <div className="modal-header">
@@ -94,7 +93,7 @@ export default function SalasPage() {
   }); // Añadido 'show'
   const [activeTab, setActiveTab] = useState('salas');
 
-  const [itemsPerPage] = useState(10);
+  const [itemsPerPage] = useState(6); // Cambiado a 6 filas por página
   const [currentPageSalas, setCurrentPageSalas] = useState(1);
   const [currentPageEdificios, setCurrentPageEdificios] = useState(1);
   const [currentPageSedes, setCurrentPageSedes] = useState(1);
@@ -139,7 +138,7 @@ export default function SalasPage() {
       setCurrentPageEdificios(1);
       setCurrentPageSedes(1);
     } catch (err) {
-      console.error('Error al cargar datos:', err);
+      // console.error('Error al cargar datos:', err);
       setError('Error al cargar datos. ' + (err.message || ''));
       setSalas([]);
       setEdificios([]);
@@ -213,7 +212,7 @@ export default function SalasPage() {
         `Error al guardar ${entity}: ` +
           (err.response?.data?.error || err.message)
       );
-      console.error(`Error guardando ${entity}:`, err);
+      // console.error(`Error guardando ${entity}:`, err);
     } finally {
       setIsProcessing(false);
     }
@@ -246,7 +245,7 @@ export default function SalasPage() {
         `Error al eliminar ${entityName}: ` +
           (err.response?.data?.error || err.message)
       );
-      console.error(`Error eliminando ${entityName}:`, err);
+      // console.error(`Error eliminando ${entityName}:`, err);
     } finally {
       setIsProcessing(false);
     }
@@ -407,12 +406,14 @@ export default function SalasPage() {
     <Layout>
       {/* <style>{keyframes}</style> // Puedes definir keyframes en un archivo CSS separado */}
       <div className="container-fluid pt-4">
-        <div>
-          <h2 className="display-6 mb-3">
+        <div className="d-flex justify-content-between align-items-center mb-3">
+          <h2 className="display-6">
             <i className="bi bi-door-open-fill me-3"></i>
             Gestión de Espacios
           </h2>
         </div>
+        <hr />
+
         {error && (
           <Alert variant="danger" onClose={() => setError('')} dismissible>
             {error}
@@ -606,7 +607,7 @@ export default function SalasPage() {
             </div>
           ) : modal.entity === 'sala' ? (
             <SalaForm
-              initialData={modal.data}
+              initial={modal.data} // Cambiado de initialData a initial
               onSubmit={(form) => handleSave('sala', form)}
               onCancel={closeModalHandler}
               isProcessing={isProcessing}
@@ -614,7 +615,7 @@ export default function SalasPage() {
             />
           ) : modal.entity === 'edificio' ? (
             <EdificioForm
-              initialData={modal.data}
+              initial={modal.data} // Cambiado de initialData a initial
               onSubmit={(form) => handleSave('edificio', form)}
               onCancel={closeModalHandler}
               isProcessing={isProcessing}
@@ -622,7 +623,7 @@ export default function SalasPage() {
             />
           ) : modal.entity === 'sede' ? (
             <SedeForm
-              initialData={modal.data}
+              initial={modal.data} // Cambiado de initialData a initial
               onSubmit={(form) => handleSave('sede', form)}
               onCancel={closeModalHandler}
               isProcessing={isProcessing}

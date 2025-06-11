@@ -1,11 +1,21 @@
 export default function ModuloTable({
   modulos,
-  selectedModulo,
+  selectedModuloId, // Cambiado de selectedModulo a selectedModuloId
   onSelectModulo,
   loading,
 }) {
   if (loading) {
     return <div>Cargando módulos…</div>;
+  }
+
+  // Si no está cargando y no hay módulos, mostrar el mensaje.
+  // Esta verificación se hace ANTES de renderizar la estructura de la tabla.
+  if (!Array.isArray(modulos) || modulos.length === 0) {
+    return (
+      <div className="alert alert-info text-center">
+        No hay módulos para mostrar.
+      </div>
+    );
   }
 
   return (
@@ -33,7 +43,7 @@ export default function ModuloTable({
               key={`modulo-${modulo.ID_MODULO}`}
               onClick={() => onSelectModulo(modulo.ID_MODULO)}
               className={
-                modulo.ID_MODULO === selectedModulo ? 'table-primary' : ''
+                modulo.ID_MODULO === selectedModuloId ? 'table-primary' : '' // Usar selectedModuloId
               }
               style={{ cursor: 'pointer' }}
             >

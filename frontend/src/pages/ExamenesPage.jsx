@@ -20,7 +20,7 @@ import { fetchAllCarreras } from '../services/carreraService';
 import { fetchAllAsignaturas } from '../services/asignaturaService';
 import { fetchAllSecciones } from '../services/seccionService';
 
-const ITEMS_PER_PAGE = 10;
+const ITEMS_PER_PAGE = 6; // Cambiado a 6 filas por página
 
 export default function ExamenesPage() {
   const [examenes, setExamenes] = useState([]);
@@ -70,11 +70,11 @@ export default function ExamenesPage() {
       setExamenes(Array.isArray(response.data) ? response.data : []); // Asegura que sea un array
     } catch (err) {
       console.error('Error al cargar los exámenes:', err);
-      setError(
-        err.response?.data?.error ||
-          err.message ||
-          'Error al cargar los exámenes. Intente más tarde.'
-      );
+      // setError(
+      //   err.response?.data?.error ||
+      //     err.message ||
+      //     'Error al cargar los exámenes. Intente más tarde.'
+      // );
       setExamenes([]); // Devuelve array vacío en caso de error
     } finally {
       setLoading(false);
@@ -100,7 +100,7 @@ export default function ExamenesPage() {
         setAllAsignaturas(asignaturasData || []);
         setAllSecciones(seccionesData || []);
       } catch (error) {
-        console.error('Error cargando datos para filtros:', error);
+        // console.error('Error cargando datos para filtros:', error);
       }
     };
     loadFilterData();
@@ -115,9 +115,9 @@ export default function ExamenesPage() {
       allCarreras.length > 0 &&
       allEscuelas.length > 0
     ) {
-      console.log('Iniciando enriquecimiento de exámenes...');
+      // console.log('Iniciando enriquecimiento de exámenes...');
       const examenesEnriquecidos = examenes.map((ex) => {
-        console.log(`--- Procesando examen original ID: ${ex.ID_EXAMEN}`, ex);
+        // console.log(`--- Procesando examen original ID: ${ex.ID_EXAMEN}`, ex);
 
         // Asumimos que el examen tiene SECCION_ID_SECCION o SECCION_ID
         // Y que SECCION_ID_SECCION es el más probable según ExamenList.jsx
@@ -133,27 +133,27 @@ export default function ExamenesPage() {
           ); // Comparamos con NOMBRE_SECCION o CODIGO_SECCION
           if (seccionPorNombre) {
             seccionIdDelExamen = seccionPorNombre.ID_SECCION;
-            console.log(
-              `  Fallback: ID de Sección encontrado por NOMBRE_SECCION '${ex.NOMBRE_SECCION}': ${seccionIdDelExamen}`
-            );
+            // console.log(
+            //   `  Fallback: ID de Sección encontrado por NOMBRE_SECCION '${ex.NOMBRE_SECCION}': ${seccionIdDelExamen}`
+            // );
           }
         }
-        console.log(`  ID de Sección obtenido de 'ex': ${seccionIdDelExamen}`);
+        // console.log(`  ID de Sección obtenido de 'ex': ${seccionIdDelExamen}`);
         const seccion = seccionIdDelExamen
           ? allSecciones.find(
               (s) => String(s.ID_SECCION) === String(seccionIdDelExamen)
             )
           : null;
-        console.log(`  Objeto 'seccion' encontrado:`, seccion);
+        // console.log(`  Objeto 'seccion' encontrado:`, seccion);
 
         // Asumimos que la sección tiene ASIGNATURA_ID_ASIGNATURA o similar
         // VERIFICA EL NOMBRE DE LA PROPIEDAD 'ASIGNATURA_ID_ASIGNATURA' EN TUS OBJETOS 'seccion'
         const asignaturaIdDesdeSeccion = seccion
           ? seccion.ASIGNATURA_ID_ASIGNATURA // <-- VERIFICA Y AJUSTA SI ES NECESARIO
           : null;
-        console.log(
-          `  ID de Asignatura obtenido de 'seccion': ${asignaturaIdDesdeSeccion}`
-        );
+        // console.log(
+        //   `  ID de Asignatura obtenido de 'seccion': ${asignaturaIdDesdeSeccion}`
+        // );
 
         // O si el examen tiene un ID de asignatura directo:
         let asignaturaIdDelExamen =
@@ -166,45 +166,45 @@ export default function ExamenesPage() {
           );
           if (asignaturaPorNombre) {
             asignaturaIdDelExamen = asignaturaPorNombre.ID_ASIGNATURA;
-            console.log(
-              `  Fallback: ID de Asignatura encontrado por NOMBRE_ASIGNATURA '${ex.NOMBRE_ASIGNATURA}': ${asignaturaIdDelExamen}`
-            );
+            // console.log(
+            //   `  Fallback: ID de Asignatura encontrado por NOMBRE_ASIGNATURA '${ex.NOMBRE_ASIGNATURA}': ${asignaturaIdDelExamen}`
+            // );
           }
         }
-        console.log(
-          `  ID de Asignatura final para búsqueda: ${asignaturaIdDelExamen} (de ex.ASIGNATURA_ID: ${ex.ASIGNATURA_ID})`
-        );
+        // console.log(
+        //   `  ID de Asignatura final para búsqueda: ${asignaturaIdDelExamen} (de ex.ASIGNATURA_ID: ${ex.ASIGNATURA_ID})`
+        // );
         const asignatura = asignaturaIdDelExamen
           ? allAsignaturas.find(
               (a) => String(a.ID_ASIGNATURA) === String(asignaturaIdDelExamen)
             )
           : null;
-        console.log(`  Objeto 'asignatura' encontrado:`, asignatura);
+        // console.log(`  Objeto 'asignatura' encontrado:`, asignatura);
 
         // Asumimos que la asignatura tiene CARRERA_ID_CARRERA o similar
         // VERIFICA EL NOMBRE DE LA PROPIEDAD 'CARRERA_ID_CARRERA' EN TUS OBJETOS 'asignatura'
         const carreraIdDesdeAsignatura = asignatura
           ? asignatura.CARRERA_ID_CARRERA // <-- VERIFICA Y AJUSTA SI ES NECESARIO
           : null;
-        console.log(
-          `  ID de Carrera obtenido de 'asignatura': ${carreraIdDesdeAsignatura}`
-        );
+        // console.log(
+        //   `  ID de Carrera obtenido de 'asignatura': ${carreraIdDesdeAsignatura}`
+        // );
 
         const carrera = carreraIdDesdeAsignatura
           ? allCarreras.find(
               (c) => String(c.ID_CARRERA) === String(carreraIdDesdeAsignatura)
             )
           : null;
-        console.log(`  Objeto 'carrera' encontrado:`, carrera);
+        // console.log(`  Objeto 'carrera' encontrado:`, carrera);
 
         // Asumimos que la carrera tiene ESCUELA_ID_ESCUELA o similar
         // VERIFICA EL NOMBRE DE LA PROPIEDAD 'ESCUELA_ID_ESCUELA' EN TUS OBJETOS 'carrera'
         const escuelaIdDesdeCarrera = carrera
           ? carrera.ESCUELA_ID_ESCUELA // <-- VERIFICA Y AJUSTA SI ES NECESARIO
           : null;
-        console.log(
-          `  ID de Escuela obtenido de 'carrera': ${escuelaIdDesdeCarrera}`
-        );
+        // console.log(
+        //   `  ID de Escuela obtenido de 'carrera': ${escuelaIdDesdeCarrera}`
+        // );
 
         // const escuela = escuelaIdDesdeCarrera ? allEscuelas.find(e => String(e.ID_ESCUELA) === String(escuelaIdDesdeCarrera)) : null; // No necesitamos el objeto escuela, solo el ID
 
@@ -226,10 +226,10 @@ export default function ExamenesPage() {
             : null,
         };
       });
-      console.log(
-        'Exámenes enriquecidos:',
-        examenesEnriquecidos.length > 0 ? examenesEnriquecidos[0] : 'Ninguno'
-      );
+      // console.log(
+      //   'Exámenes enriquecidos:',
+      //   examenesEnriquecidos.length > 0 ? examenesEnriquecidos[0] : 'Ninguno'
+      // );
       setProcessedExamenes(examenesEnriquecidos);
     } else {
       // Si alguna de las listas base no está cargada, o no hay exámenes,
@@ -432,9 +432,9 @@ export default function ExamenesPage() {
         calculatedMatchesEstado = estadoEnExamen === filters.estado;
       }
       const matchesEstado = calculatedMatchesEstado;
-      console.log(
-        `Comparando ESTADO: Examen='${estadoEnExamen}' vs Filtro='${filters.estado}'. Coincide: ${matchesEstado}`
-      );
+      // console.log(
+      //   `Comparando ESTADO: Examen='${estadoEnExamen}' vs Filtro='${filters.estado}'. Coincide: ${matchesEstado}`
+      // );
 
       const finalMatch =
         matchesText &&
@@ -492,31 +492,6 @@ export default function ExamenesPage() {
           </Alert>
         )}
 
-        <ExamenActions
-          onAdd={() => openModalHandler('add')}
-          onEdit={() => {
-            // El botón debe estar deshabilitado por ExamenActions si no hay selectedExamenId
-            if (selectedExamenId) {
-              openModalHandler('edit', selectedExamenId);
-            } else {
-              console.warn(
-                'Intento de editar sin examen seleccionado. El botón debería estar deshabilitado.'
-              );
-            }
-          }}
-          onDelete={() => {
-            // El botón debe estar deshabilitado por ExamenActions si no hay selectedExamenId
-            if (selectedExamenId) {
-              openModalHandler('delete', selectedExamenId);
-            } else {
-              console.warn(
-                'Intento de eliminar sin examen seleccionado. El botón debería estar deshabilitado.'
-              );
-            }
-          }}
-          isExamenSelected={!!selectedExamenId} // Para habilitar/deshabilitar botones
-        />
-
         {/* Filtro de Exámenes */}
         <ExamenFilter
           escuelas={allEscuelas} // El dropdown de escuelas siempre muestra todas
@@ -526,6 +501,30 @@ export default function ExamenesPage() {
           estados={estadosExamen}
           onFilterChange={handleFilterChange}
           currentFilters={filters}
+        />
+        <ExamenActions
+          onAdd={() => openModalHandler('add')}
+          onEdit={() => {
+            // El botón debe estar deshabilitado por ExamenActions si no hay selectedExamenId
+            if (selectedExamenId) {
+              openModalHandler('edit', selectedExamenId);
+            } else {
+              // console.warn(
+              //   'Intento de editar sin examen seleccionado. El botón debería estar deshabilitado.'
+              // );
+            }
+          }}
+          onDelete={() => {
+            // El botón debe estar deshabilitado por ExamenActions si no hay selectedExamenId
+            if (selectedExamenId) {
+              openModalHandler('delete', selectedExamenId);
+            } else {
+              // console.warn(
+              //   'Intento de eliminar sin examen seleccionado. El botón debería estar deshabilitado.'
+              // );
+            }
+          }}
+          isExamenSelected={!!selectedExamenId} // Para habilitar/deshabilitar botones
         />
 
         {loading && filteredExamenes.length === 0 ? (

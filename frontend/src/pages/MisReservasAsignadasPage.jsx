@@ -369,8 +369,11 @@ const MisReservasAsignadasPage = () => {
   return (
     <Layout>
       <div className="container-fluid pt-4">
-        <div className="d-flex justify-content-between align-items-center">
-          <h2 className="display-6 mb-3">Programación de Exámenes</h2>
+        <div className="d-flex justify-content-between align-items-center mb-3">
+          <h2 className="display-6">
+            <i className="bi bi-calendar-check-fill me-3"></i>
+            Exámenes Programados
+          </h2>
           <div>
             {esAdminOComite && (
               <Button
@@ -493,7 +496,7 @@ const MisReservasAsignadasPage = () => {
               eventKey="revision"
               title={
                 <>
-                  Requieren Revisión{' '}
+                  Requieren Revisión
                   <Badge bg="danger" pill>
                     {reservasParaRevision.length}
                   </Badge>
@@ -598,7 +601,7 @@ const MisReservasAsignadasPage = () => {
               eventKey="pendientes"
               title={
                 <>
-                  Pendientes de Confirmación{' '}
+                  Pendientes de Confirmación
                   <Badge bg="warning" text="dark" pill>
                     {reservasPendientesDocente.length}
                   </Badge>
@@ -728,11 +731,11 @@ const MisReservasAsignadasPage = () => {
                 <strong>Asignatura:</strong> {selectedReserva.NOMBRE_ASIGNATURA}
               </p>
               <p>
-                <strong>Fecha:</strong>{' '}
+                <strong>Fecha:</strong>
                 {new Date(selectedReserva.FECHA_RESERVA).toLocaleDateString(
                   'es-CL'
-                )}{' '}
-                | <strong>Horario:</strong> {selectedReserva.HORA_INICIO} -{' '}
+                )}
+                | <strong>Horario:</strong> {selectedReserva.HORA_INICIO} -
                 {selectedReserva.HORA_FIN}
               </p>
               <p>
@@ -865,8 +868,8 @@ const MisReservasAsignadasPage = () => {
             </Alert>
           )}
           <p>
-            ¿Estás seguro de que quieres descartar la reserva para el examen{' '}
-            <strong>{reservaParaDescartar?.NOMBRE_EXAMEN}</strong> del{' '}
+            ¿Estás seguro de que quieres descartar la reserva para el examen
+            <strong>{reservaParaDescartar?.NOMBRE_EXAMEN}</strong> del
             {reservaParaDescartar &&
               new Date(reservaParaDescartar.FECHA_RESERVA).toLocaleDateString(
                 'es-CL'

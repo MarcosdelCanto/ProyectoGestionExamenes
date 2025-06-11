@@ -54,15 +54,6 @@ const alertStyle = {
   opacity: 1,
 };
 
-const keyframes = `
-  @keyframes fadeInOut {
-    0% { opacity: 0; transform: translateY(-20px); }
-    10% { opacity: 1; transform: translateY(0); }
-    90% { opacity: 1; transform: translateY(0); }
-    100% { opacity: 0; transform: translateY(-20px); }
-  }
-`;
-
 function Modal({ title, children, onClose }) {
   return (
     <div
@@ -198,6 +189,10 @@ export default function AsignaturasPage() {
             return;
           }
           data = selectedSecciones[0];
+          // console.log(
+          //   'Datos de la SECCIÓN seleccionada para editar (en AsignaturasPage):',
+          //   data
+          // );
           break;
         case 'carrera':
           if (selectedCarreras.length !== 1) {
@@ -540,6 +535,75 @@ export default function AsignaturasPage() {
     }
   };
 
+  // --- Funciones CRUD para Asignatura ---
+  const handleAddAsignatura = async (form) => {
+    try {
+      await AddAsignatura(form); // AddAsignatura es createAsignatura del servicio
+      loadData();
+      closeModal();
+      displayMessage(setSuccess, 'Asignatura agregada con éxito');
+    } catch (error) {
+      setError(
+        'Error al agregar asignatura: ' +
+          (error.response?.data?.error || error.message)
+      );
+      console.error('Error:', error);
+      closeModal();
+    }
+  };
+
+  const handleEditAsignatura = async (form) => {
+    try {
+      if (selectedAsignaturas.length !== 1) {
+        setError(
+          'Error: Debe haber exactamente una asignatura seleccionada para editar.'
+        );
+        setTimeout(() => setError(''), 5000);
+        return;
+      }
+      await EditAsignatura(selectedAsignaturas[0].ID_ASIGNATURA, form); // EditAsignatura es updateAsignatura del servicio
+      loadData();
+      closeModal();
+      displayMessage(setSuccess, 'Asignatura actualizada con éxito');
+      setSelectedAsignaturas([]); // Limpiar selección
+    } catch (error) {
+      setError(
+        'Error al actualizar asignatura: ' +
+          (error.response?.data?.error || error.message)
+      );
+      console.error('Error:', error);
+      closeModal();
+    }
+  };
+
+  const handleDeleteAsignatura = async () => {
+    if (selectedAsignaturas.length === 0) {
+      setError('No hay asignaturas seleccionadas para eliminar.');
+      setTimeout(() => setError(''), 5000);
+      closeModal();
+      return;
+    }
+    try {
+      for (const asignatura of selectedAsignaturas) {
+        await DeleteAsignatura(asignatura.ID_ASIGNATURA); // DeleteAsignatura es deleteAsignatura del servicio
+      }
+      loadData();
+      closeModal();
+      displayMessage(
+        setSuccess,
+        `${selectedAsignaturas.length} asignatura(s) eliminada(s) con éxito`
+      );
+      setSelectedAsignaturas([]); // Limpiar selección
+    } catch (error) {
+      setError(
+        'Error al eliminar asignatura(s): ' +
+          (error.response?.data?.error || error.message)
+      );
+      console.error('Error:', error);
+      closeModal();
+    }
+  };
+
   // --- Funciones CRUD y de selección para Seccion (ya implementadas) ---
   const handleToggleSeccionSelection = (seccionToToggle) => {
     setSelectedSecciones((prevSelected) => {
@@ -803,20 +867,15 @@ export default function AsignaturasPage() {
 
   return (
     <Layout>
-      <style>{keyframes}</style>
       <div className="container-fluid pt-4">
-        {' '}
-        {/* Contenedor principal de la página */}
-        <div>
-          {' '}
-          {/* Div para el título y el hr */}
-          <p className="display-5 page-title-custom mb-2">
-            <i className="bi bi-briefcase-fill me-3"></i>
+        <div className="d-flex justify-content-between align-items-center mb-3">
+          <h2 className="display-6">
+            <i className="bi bi-book-fill me-3"></i>
             Gestión Administrativa
-          </p>
+          </h2>
         </div>
-        {/* El <hr /> y el resto del contenido deben estar DENTRO del container-fluid */}
         <hr />
+
         {error && (
           <Alert variant="danger" onClose={() => setError('')} dismissible>
             {error}
@@ -892,7 +951,6 @@ export default function AsignaturasPage() {
             )}
             {!loading && filteredSecciones.length > itemsPerPage && (
               <div className="mt-3">
-                {' '}
                 {/* Añadido margen superior */}
                 <PaginationComponent
                   itemsPerPage={itemsPerPage}
@@ -989,7 +1047,6 @@ export default function AsignaturasPage() {
             )}
             {!loading && filteredAsignaturas.length > itemsPerPage && (
               <div className="mt-3">
-                {' '}
                 {/* Añadido margen superior */}
                 <PaginationComponent
                   itemsPerPage={itemsPerPage}
@@ -1085,7 +1142,6 @@ export default function AsignaturasPage() {
             )}
             {!loading && filteredCarreras.length > itemsPerPage && (
               <div className="mt-3">
-                {' '}
                 {/* Añadido margen superior */}
                 <PaginationComponent
                   itemsPerPage={itemsPerPage}
@@ -1178,7 +1234,6 @@ export default function AsignaturasPage() {
             )}
             {!loading && filteredEscuelas.length > itemsPerPage && (
               <div className="mt-3">
-                {' '}
                 {/* Añadido margen superior */}
                 <PaginationComponent
                   itemsPerPage={itemsPerPage}
@@ -1243,7 +1298,7 @@ export default function AsignaturasPage() {
             )}
           </Modal>
         )}
-      </div>{' '}
+      </div>
       {/* Cierre del <div className="container-fluid pt-4"> */}
     </Layout>
   );

@@ -9,10 +9,10 @@ export const fetchAllSecciones = async () => {
     const response = await api.get('/seccion');
     return response.data;
   } catch (error) {
-    console.error(
-      'Error fetching secciones:',
-      error.response?.data || error.message
-    );
+    // console.error(
+    //   'Error fetching secciones:',
+    //   error.response?.data || error.message
+    // );
     throw error;
   }
 };
@@ -27,10 +27,10 @@ export const fetchSeccionById = async (id) => {
     const response = await api.get(`/seccion/${id}`);
     return response.data;
   } catch (error) {
-    console.error(
-      `Error fetching seccion with id ${id}:`,
-      error.response?.data || error.message
-    );
+    // console.error(
+    //   `Error fetching seccion with id ${id}:`,
+    //   error.response?.data || error.message
+    // );
     throw error;
   }
 };
@@ -45,10 +45,10 @@ export const createSeccion = async (data) => {
     const response = await api.post('/seccion', data);
     return response.data;
   } catch (error) {
-    console.error(
-      'Error creating seccion:',
-      error.response?.data || error.message
-    );
+    // console.error(
+    //   'Error creating seccion:',
+    //   error.response?.data || error.message
+    // );
     throw error;
   }
 };
@@ -64,10 +64,10 @@ export const updateSeccion = async (id, data) => {
     const response = await api.put(`/seccion/${id}`, data);
     return response.data;
   } catch (error) {
-    console.error(
-      `Error updating seccion ${id}:`,
-      error.response?.data || error.message
-    );
+    // console.error(
+    //   `Error updating seccion ${id}:`,
+    //   error.response?.data || error.message
+    // );
     throw error;
   }
 };
@@ -82,10 +82,10 @@ export const deleteSeccion = async (id) => {
     const response = await api.delete(`/seccion/${id}`);
     return response.data; // O un mensaje/objeto de éxito si el backend lo proporciona
   } catch (error) {
-    console.error(
-      `Error deleting seccion ${id}:`,
-      error.response?.data || error.message
-    );
+    // console.error(
+    //   `Error deleting seccion ${id}:`,
+    //   error.response?.data || error.message
+    // );
     throw error;
   }
 };
@@ -96,10 +96,10 @@ export const fetchSeccionesByAsignatura = async (asignaturaId) => {
     const response = await api.get(`/seccion/asignatura/${asignaturaId}`);
     return response.data;
   } catch (error) {
-    console.error(
-      `Error fetching secciones for asignatura ${asignaturaId}:`,
-      error.response?.data || error.message
-    );
+    // console.error(
+    //   `Error fetching secciones for asignatura ${asignaturaId}:`,
+    //   error.response?.data || error.message
+    // );
     throw error;
   }
 };

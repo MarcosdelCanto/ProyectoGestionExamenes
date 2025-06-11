@@ -8,13 +8,24 @@ function CarreraForm({ initial, onSubmit, onCancel }) {
   const [escuelas, setEscuelas] = useState([]);
 
   useEffect(() => {
+    if (initial) {
+      setNombre(initial.NOMBRE_CARRERA || '');
+      setEscuelaId(initial.ESCUELA_ID_ESCUELA?.toString() || '');
+    } else {
+      // Resetear para el modo "agregar"
+      setNombre('');
+      setEscuelaId('');
+    }
+  }, [initial]);
+
+  useEffect(() => {
     const fetchEscuelas = async () => {
       try {
         const response = await fetch('http://localhost:3000/api/escuela');
         const data = await response.json();
         setEscuelas(data);
       } catch (error) {
-        console.error('Error al obtener las escuelas:', error);
+        // console.error('Error al obtener las escuelas:', error);
       }
     };
     fetchEscuelas();

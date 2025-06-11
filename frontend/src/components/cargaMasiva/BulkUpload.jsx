@@ -248,7 +248,7 @@ function BulkUpload({ onUploadComplete }) {
 
           <Form.Group controlId="bulk-upload-file-input" className="mb-3">
             <Form.Label>
-              2. Selecciona un archivo (.xlsx, .xls){' '}
+              2. Selecciona un archivo (.xlsx, .xls)
               <span className="text-danger">*</span>
             </Form.Label>
             <Form.Control
@@ -283,7 +283,7 @@ function BulkUpload({ onUploadComplete }) {
                     role="status"
                     aria-hidden="true"
                   />
-                  <span className="ms-1">Procesando...</span>{' '}
+                  <span className="ms-1">Procesando...</span>
                   {/* Texto dentro de un span */}
                 </>
               ) : (
@@ -306,7 +306,7 @@ function BulkUpload({ onUploadComplete }) {
                       role="status"
                       aria-hidden="true"
                     />
-                    <span className="ms-1">Cargando...</span>{' '}
+                    <span className="ms-1">Cargando...</span>
                     {/* Texto dentro de un span */}
                   </>
                 ) : (

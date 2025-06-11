@@ -269,7 +269,7 @@ const MisReservasAsignadasPage = () => {
               eventKey="revision"
               title={
                 <>
-                  Requieren Revisión{' '}
+                  Requieren Revisión
                   <Badge bg="danger" pill>
                     {
                       asignaciones.filter(
@@ -301,7 +301,7 @@ const MisReservasAsignadasPage = () => {
               eventKey="pendientes"
               title={
                 <>
-                  Pendientes de Confirmación{' '}
+                  Pendientes de Confirmación
                   <Badge bg="warning" pill>
                     {
                       asignaciones.filter(
@@ -436,11 +436,11 @@ const MisReservasAsignadasPage = () => {
               <strong>Asignatura:</strong> {selectedReserva.NOMBRE_ASIGNATURA}
             </p>
             <p>
-              <strong>Fecha:</strong>{' '}
+              <strong>Fecha:</strong>
               {new Date(selectedReserva.FECHA_RESERVA).toLocaleDateString(
                 'es-CL'
-              )}{' '}
-              | <strong>Horario:</strong> {selectedReserva.HORA_INICIO} -{' '}
+              )}
+              | <strong>Horario:</strong> {selectedReserva.HORA_INICIO} -
               {selectedReserva.HORA_FIN}
             </p>
             <p>

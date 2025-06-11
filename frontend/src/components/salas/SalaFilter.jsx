@@ -71,7 +71,6 @@ function SalaFilter({
               </Form.Group>
             </Col>
             <Col md={12} lg={3} className="d-flex align-items-end">
-              {' '}
               {/* Ajuste para el botón */}
               <Button
                 variant="outline-secondary"

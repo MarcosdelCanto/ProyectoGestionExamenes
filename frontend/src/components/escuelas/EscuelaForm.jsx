@@ -1,9 +1,20 @@
 import { useState, useEffect } from 'react';
 
 function EscuelaForm({ initial, onSubmit, onCancel }) {
-  const [nombre, setNombre] = useState(initial?.NOMBRE_ESCUELA);
-  const [sedeId, setSedeId] = useState(initial?.ID_SEDE?.toString());
+  const [nombre, setNombre] = useState(initial?.NOMBRE_ESCUELA || '');
+  const [sedeId, setSedeId] = useState(initial?.SEDE_ID_SEDE?.toString() || ''); // Asumiendo que la escuela tiene SEDE_ID_SEDE
   const [sedes, setSedes] = useState([]);
+
+  useEffect(() => {
+    if (initial) {
+      setNombre(initial.NOMBRE_ESCUELA || '');
+      setSedeId(initial.SEDE_ID_SEDE?.toString() || ''); // Usar SEDE_ID_SEDE
+    } else {
+      // Resetear para el modo "agregar"
+      setNombre('');
+      setSedeId('');
+    }
+  }, [initial]);
 
   useEffect(() => {
     const fetchSedes = async () => {
@@ -12,7 +23,7 @@ function EscuelaForm({ initial, onSubmit, onCancel }) {
         const data = await response.json();
         setSedes(data);
       } catch (error) {
-        console.error('Error al obtener las sedes:', error);
+        // console.error('Error al obtener las sedes:', error);
       }
     };
     fetchSedes();

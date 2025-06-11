@@ -121,7 +121,6 @@ function ExamenFilter({
               </Form.Group>
             </Col>
             <Col md={12} lg="auto" className="mt-md-3 mt-lg-0">
-              {' '}
               {/* Ajuste para que el botón se alinee bien en desktop y ocupe full width en mobile */}
               <Button
                 variant="outline-secondary"

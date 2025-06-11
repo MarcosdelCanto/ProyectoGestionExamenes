@@ -1,9 +1,10 @@
 // src/pages/ModulosPage.jsx
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react'; // Añadido useMemo
 import Layout from '../components/Layout'; // Ajusta la ruta
 import ModuloTable from '../components/modulos/ModuloTable';
 import ModuloForm from '../components/modulos/ModuloForm';
 import ModuloActions from '../components/modulos/ModuloActions';
+import ModuloFilter from '../components/modulos/ModuloFilter'; // <-- IMPORTAR ModuloFilter
 import PaginationComponent from '../components/PaginationComponent';
 import {
   fetchAllModulos, // Asume que existe en tu moduloService y usa tu 'api' de Axios
@@ -59,8 +60,25 @@ export default function ModulosPage() {
   const [modal, setModal] = useState({ type: null, data: null, show: false }); // show para controlar visibilidad
   // const [activeTab, setActiveTab] = useState('modulos'); // Si solo tienes módulos, no necesitas tabs
 
-  const [itemsPerPage] = useState(10);
+  const [itemsPerPage] = useState(6); // Ajustado a 6 para consistencia con otras páginas
   const [currentPageModulos, setCurrentPageModulos] = useState(1);
+
+  // Estado para los filtros de Módulo
+  const [moduloFilters, setModuloFilters] = useState({
+    nombre: '',
+    horaInicio: '',
+    horaFin: '',
+    estado: '',
+  });
+
+  const estadosModuloOptions = useMemo(
+    () => [
+      // Usar los valores string directamente si así se almacenan en la BD para el módulo
+      { ID_ESTADO: 1, NOMBRE_ESTADO: 'ACTIVO' },
+      { ID_ESTADO: 7, NOMBRE_ESTADO: 'INACTIVO' },
+    ],
+    []
+  );
 
   const displayMessage = (setter, message, duration = 4000) => {
     setter(message);
@@ -82,7 +100,7 @@ export default function ModulosPage() {
 
       setCurrentPageModulos(1);
     } catch (err) {
-      console.error('Error al cargar datos para Módulos:', err);
+      // console.error('Error al cargar datos para Módulos:', err);
       setError(
         'Error al cargar datos: ' + (err.message || 'Intente más tarde')
       );
@@ -97,13 +115,24 @@ export default function ModulosPage() {
     loadData();
   }, [loadData]);
 
-  const openModalHandler = (type, moduloId = null) => {
+  const openModalHandler = (type, entityName, entityId = null) => {
+    // Cambiada la firma
+    // Cambiada la firma
     let moduloData = null;
-    if ((type === 'edit' || type === 'delete') && moduloId) {
-      moduloData = modulos.find((m) => m.ID_MODULO === moduloId);
+    if ((type === 'edit' || type === 'delete') && entityId) {
+      // Usar entityId
+      // Usar entityId
+      // Log para depuración
+      // console.log(
+      //  `Abriendo modal para: tipo='${type}', entity='${entityName}', entityId='${entityId}' (tipo: ${typeof entityId})`
+      // );
+      moduloData = modulos.find(
+        (m) => String(m.ID_MODULO) === String(entityId) // Usar entityId para la búsqueda
+      );
+      // console.log('Datos del módulo encontrado para el modal:', moduloData);
     }
-    setSelectedModuloId(moduloId); // Guardar el ID del módulo seleccionado
-    setModal({ type, entity: 'modulo', data: moduloData, show: true });
+    // setSelectedModuloId(moduloId); // selectedModuloId ya se establece al hacer clic en la tabla
+    setModal({ type, entity: entityName, data: moduloData, show: true }); // Usar entityName
   };
 
   const closeModalHandler = () =>
@@ -132,6 +161,7 @@ export default function ModulosPage() {
       );
       console.error('Error guardando módulo:', err);
     } finally {
+      // console.error('Error guardando módulo:', err);
       setIsProcessing(false);
     }
   };
@@ -153,20 +183,83 @@ export default function ModulosPage() {
         'Error al eliminar módulo: ' +
           (err.response?.data?.error || err.message)
       );
-      console.error('Error eliminando módulo:', err);
+      // console.error('Error eliminando módulo:', err);
     } finally {
       setIsProcessing(false);
     }
   };
 
+  // Handler para el cambio de filtro de módulos
+  const handleModuloFilterChange = useCallback((changedFilters) => {
+    setModuloFilters((prevFilters) => ({
+      ...prevFilters,
+      ...changedFilters,
+    }));
+    setCurrentPageModulos(1); // Resetear a la primera página al cambiar filtros
+  }, []);
+
+  // Aplicar el filtro a la lista de módulos
+  const filteredModulos = useMemo(() => {
+    return modulos.filter((modulo) => {
+      // --- INICIO CONSOLE LOGS PARA DEBUG HORARIO ---
+      // console.log(
+      //   `--- Filtrando Módulo ID: ${modulo.ID_MODULO} --- INICIO_MODULO: '${modulo.INICIO_MODULO}', FIN_MODULO: '${modulo.FIN_MODULO}'`
+      // );
+      // console.log(
+      //   `Filtros aplicados: HoraInicio='${moduloFilters.horaInicio}', HoraFin='${moduloFilters.horaFin}'`
+      // );
+      const matchesNombre =
+        !moduloFilters.nombre ||
+        (modulo.NOMBRE_MODULO &&
+          modulo.NOMBRE_MODULO.toLowerCase().includes(
+            moduloFilters.nombre.toLowerCase()
+          ));
+
+      let calculatedMatchesHoraInicio;
+      if (!moduloFilters.horaInicio) {
+        calculatedMatchesHoraInicio = true;
+      } else {
+        calculatedMatchesHoraInicio = modulo.INICIO_MODULO // <-- CAMBIO AQUÍ
+          ? modulo.INICIO_MODULO >= moduloFilters.horaInicio
+          : false;
+      }
+      const matchesHoraInicio = calculatedMatchesHoraInicio;
+      // console.log(
+      //   `Comparando HORA_INICIO: Modulo='${modulo.INICIO_MODULO}' >= Filtro='${moduloFilters.horaInicio}'. Coincide: ${matchesHoraInicio}`
+      // );
+
+      let calculatedMatchesHoraFin;
+      if (!moduloFilters.horaFin) {
+        calculatedMatchesHoraFin = true;
+      } else {
+        calculatedMatchesHoraFin = modulo.FIN_MODULO // <-- CAMBIO AQUÍ
+          ? modulo.FIN_MODULO <= moduloFilters.horaFin
+          : false;
+      }
+      const matchesHoraFin = calculatedMatchesHoraFin;
+      // console.log(
+      //   `Comparando HORA_FIN: Modulo='${modulo.FIN_MODULO}' <= Filtro='${moduloFilters.horaFin}'. Coincide: ${matchesHoraFin}`
+      // );
+
+      const matchesEstado =
+        !moduloFilters.estado ||
+        String(modulo.ESTADO_ID_ESTADO) === String(moduloFilters.estado);
+
+      // console.log('--- Fin Filtro Módulo ---');
+
+      return (
+        matchesNombre && matchesHoraInicio && matchesHoraFin && matchesEstado
+      );
+    });
+  }, [modulos, moduloFilters]);
+
   const paginateModulos = (pageNumber) => setCurrentPageModulos(pageNumber);
 
-  const indexOfLastModulo = currentPageModulos * itemsPerPage;
-  const indexOfFirstModulo = indexOfLastModulo - itemsPerPage;
-  // Asegurarse que modulos es un array antes de slice
-  const currentModulos = Array.isArray(modulos)
-    ? modulos.slice(indexOfFirstModulo, indexOfLastModulo)
-    : [];
+  const currentModulos = useMemo(() => {
+    const indexOfLastItem = currentPageModulos * itemsPerPage;
+    const indexOfFirstItem = indexOfLastItem - itemsPerPage;
+    return filteredModulos.slice(indexOfFirstItem, indexOfLastItem);
+  }, [filteredModulos, currentPageModulos, itemsPerPage]);
 
   if (loading && modulos.length === 0) {
     return (
@@ -183,13 +276,13 @@ export default function ModulosPage() {
     <Layout>
       {/* <style>{keyframes}</style>  Puedes mover esto a tu archivo CSS global o de la página */}
       <div className="container-fluid pt-4">
-        <div>
-          <h2 className="display-6 mb-3">
-            <i className="bi bi-stack me-3"></i>
+        <div className="d-flex justify-content-between align-items-center mb-3">
+          <h2 className="display-6">
+            <i className="bi bi-grid-1x2-fill me-3"></i>
             Gestión de Módulos
           </h2>
         </div>
-        {/* <hr /> */}
+        <hr />
         {error && (
           <Alert variant="danger" onClose={() => setError('')} dismissible>
             {error}
@@ -201,8 +294,13 @@ export default function ModulosPage() {
           </Alert>
         )}
 
+        <ModuloFilter
+          estados={estadosModuloOptions} // Pasar las opciones fijas
+          onFilterChange={handleModuloFilterChange}
+          currentFilters={moduloFilters}
+        />
+
         <div className="mb-3">
-          {' '}
           {/* Contenedor para acciones */}
           <ModuloActions
             onAdd={() => openModalHandler('add', 'modulo')}
@@ -222,15 +320,13 @@ export default function ModulosPage() {
         <ModuloTable
           modulos={currentModulos}
           selectedModuloId={selectedModuloId} // Pasa el ID
-          onSelectModulo={(modulo) =>
-            setSelectedModuloId(modulo ? modulo.ID_MODULO : null)
-          } // Guarda el ID
+          onSelectModulo={setSelectedModuloId} // Pasar directamente la función para setear el ID
           loading={loading}
         />
-        {!loading && modulos.length > itemsPerPage && (
+        {!loading && filteredModulos.length > itemsPerPage && (
           <PaginationComponent
             itemsPerPage={itemsPerPage}
-            totalItems={modulos.length}
+            totalItems={filteredModulos.length}
             paginate={paginateModulos}
             currentPage={currentPageModulos}
           />
@@ -279,11 +375,11 @@ export default function ModulosPage() {
         ) : (
           // Para 'add' o 'edit'
           <ModuloForm
-            initialData={modal.data} // Para editar, o null para añadir
+            initial={modal.data} // Prop se llama 'initial' en ModuloForm
             onSubmit={handleFormSubmit}
             onCancel={closeModalHandler}
             isProcessing={isProcessing}
-            estados={estados} // Pasa la lista de estados al formulario
+            // estados={estados} // ModuloForm obtiene sus propios estados
           />
         )}
       </Modal>

@@ -13,15 +13,17 @@ function EscuelaList({
   }
 
   if (!escuelas || escuelas.length === 0) {
-    return <div>No hay escuelas para mostrar.</div>;
+    return (
+      <div className="alert alert-info text-center">
+        No hay escuelas para mostrar.
+      </div>
+    );
   }
 
   return (
     <div className="table-responsive border mb-3">
-      {' '}
       {/* Eliminado maxHeight y overflowY de un estilo inline si existiera, añadido mb-3 */}
       <Table bordered hover responsive="sm" className="mb-0">
-        {' '}
         {/* mb-0 en la tabla si el div wrapper maneja el margen inferior */}
         <thead className="table-light">
           <tr>

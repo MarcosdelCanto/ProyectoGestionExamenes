@@ -19,12 +19,7 @@ function ExamenList({ examenes, selectedExamenId, onSelectExamen, loading }) {
 
   return (
     <div
-      className="table-responsive border"
-      style={{
-        maxHeight: '60vh', // O la altura que prefieras
-        overflowY: 'auto',
-        marginBottom: '1rem',
-      }}
+      className="table-responsive border mb-3" // Eliminados maxHeight y overflowY. mb-3 para espaciado.
     >
       <table className="table table-hover table-bordered mb-0">
         <thead className="table-light sticky-top">
@@ -61,7 +56,7 @@ function ExamenList({ examenes, selectedExamenId, onSelectExamen, loading }) {
                 {examen.NOMBRE_SECCION || examen.SECCION_ID_SECCION || 'N/A'}
               </td>
               <td>
-                {examen.NOMBRE_ESTADO || 'N/A'}{' '}
+                {examen.NOMBRE_ESTADO || 'N/A'}
                 {/* <-- CAMBIO AQUÍ: Usar NOMBRE_ESTADO */}
               </td>
             </tr>

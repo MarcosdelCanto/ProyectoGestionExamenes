@@ -14,17 +14,15 @@ function SalaList({ salas, selectedSala, onSelectSala, loading }) {
   }
 
   return (
-    <div
-      className="table-responsive border"
-      style={{ maxHeight: '60vh', overflowY: 'auto', marginBottom: '1rem' }}
-    >
+    <div className="table-responsive border mb-3">
+      {/* Eliminado maxHeight y overflowY, usado mb-3 para margen */}
       <table className="table table-hover table-bordered mb-0">
         <thead className="table-light sticky-top">
           <tr>
             <th>ID</th>
             <th>Nombre</th>
             <th>Capacidad</th>
-            <th>Edificio</th>{' '}
+            <th>Edificio</th>
             {/* Asumiendo que NOMBRE_EDIFICIO viene con el objeto sala */}
           </tr>
         </thead>
@@ -32,7 +30,7 @@ function SalaList({ salas, selectedSala, onSelectSala, loading }) {
           {salas.map((sala) => (
             <tr
               key={`sala-${sala.ID_SALA}`}
-              onClick={() => onSelectSala(sala.ID_SALA)} // Asumiendo que onSelectSala espera el ID
+              onClick={() => onSelectSala(sala)} // Pasar el objeto sala completo
               className={
                 selectedSala && sala.ID_SALA === selectedSala.ID_SALA
                   ? 'table-primary'
@@ -45,7 +43,7 @@ function SalaList({ salas, selectedSala, onSelectSala, loading }) {
               <td>{sala.CAPACIDAD_SALA || 'N/A'}</td>
               <td>
                 {sala.NOMBRE_EDIFICIO || sala.EDIFICIO_ID_EDIFICIO || 'N/A'}
-              </td>{' '}
+              </td>
               {/* Mostrar NOMBRE_EDIFICIO o el ID si el nombre no está */}
             </tr>
           ))}

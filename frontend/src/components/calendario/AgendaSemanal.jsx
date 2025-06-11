@@ -504,7 +504,7 @@ export default function AgendaSemanal({
                     onClick={handleConfirmReserva}
                     className="btn btn-primary btn-confirmar-reserva"
                   >
-                    Confirmar Reserva para{' '}
+                    Confirmar Reserva para
                     {selectedExamInternal?.NOMBRE_ASIGNATURA}
                   </button>
                 )}
@@ -552,7 +552,7 @@ export default function AgendaSemanal({
                 <strong>Sala:</strong> {reservaModalData.salaNombre}
               </p>
               <p className="mb-1">
-                <strong>Fecha:</strong>{' '}
+                <strong>Fecha:</strong>
                 {new Date(reservaModalData.fechaReserva).toLocaleDateString(
                   'es-CL'
                 )}
@@ -617,10 +617,10 @@ export default function AgendaSemanal({
           <p>¿Estás seguro de que deseas eliminar esta reserva?</p>
           {reservaToDelete && (
             <div className="alert alert-warning">
-              <strong>Examen:</strong>{' '}
+              <strong>Examen:</strong>
               {reservaToDelete.Examen?.NOMBRE_ASIGNATURA || 'Sin nombre'}
               <br />
-              <strong>Fecha:</strong>{' '}
+              <strong>Fecha:</strong>
               {new Date(reservaToDelete.FECHA_RESERVA).toLocaleDateString(
                 'es-CL'
               )}

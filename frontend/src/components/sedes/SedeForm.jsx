@@ -1,7 +1,18 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 
 function SedeForm({ initial, onSubmit, onCancel }) {
   const [nombre, setNombre] = useState(initial?.NOMBRE_SEDE || '');
+  // const [direccion, setDireccion] = useState(initial?.DIRECCION_SEDE || ''); // Si tienes dirección
+
+  useEffect(() => {
+    if (initial) {
+      setNombre(initial.NOMBRE_SEDE || '');
+      // setDireccion(initial.DIRECCION_SEDE || ''); // Si tienes dirección
+    } else {
+      setNombre('');
+      // setDireccion(''); // Si tienes dirección
+    }
+  }, [initial]);
 
   const handleSubmit = (e) => {
     e.preventDefault();

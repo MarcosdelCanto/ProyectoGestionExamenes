@@ -91,7 +91,7 @@ function UsuarioTable({
                   }}
                   title="Ver Carreras Asociadas"
                 >
-                  <i className="bi bi-diagram-3"></i>{' '}
+                  <i className="bi bi-diagram-3"></i>
                   {/* Icono para carreras */}
                 </Button>
               )}
@@ -105,7 +105,7 @@ function UsuarioTable({
                   }}
                   title="Ver Secciones Asociadas"
                 >
-                  <i className="bi bi-list-task"></i>{' '}
+                  <i className="bi bi-list-task"></i>
                   {/* Icono para secciones */}
                 </Button>
               )}
