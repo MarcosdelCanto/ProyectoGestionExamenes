@@ -1,10 +1,10 @@
 // src/pages/SalasPage.jsx
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import Layout from '../components/Layout'; // Ajusta la ruta si es necesario
 
 // Importa tus servicios (asumiendo que usan tu instancia de 'api' de Axios)
 import {
-  fetchAllSalas,
+  fetchAllSalas as fetchAllSalasService, // Renombrado para evitar conflicto con estado
   createSala as AddSala, // Renombrado createSala a AddSala
   updateSala as EditSala, // Renombrado updateSala a EditSala
   deleteSalaById, // Renombrado deleteSala a deleteSalaById
@@ -13,6 +13,7 @@ import {
   fetchAllEdificios,
   createEdificio,
   updateEdificio,
+  fetchEdificiosBySede, // Importar para el filtro dependiente
   deleteEdificio as deleteEdificioById,
 } from '../services/edificioService'; // Renombrado deleteEdificio
 import {
@@ -29,10 +30,13 @@ import { Alert, Spinner } from 'react-bootstrap'; // Modal y Button se usarán i
 import SalaForm from '../components/salas/SalaForm';
 import SalaList from '../components/salas/SalaList';
 import SalaActions from '../components/salas/SalaActions';
+import SalaFilter from '../components/salas/SalaFilter'; // <-- IMPORTAR SalaFilter
 import EdificioForm from '../components/edificios/EdificioForm';
 import EdificioList from '../components/edificios/EdificioList';
+import EdificioFilter from '../components/edificios/EdificioFilter'; // <-- IMPORTAR EdificioFilter
 import EdificioActions from '../components/edificios/EdificioActions';
 import SedeForm from '../components/sedes/SedeForm';
+import SedeFilter from '../components/sedes/SedeFilter'; // <-- IMPORTAR SedeFilter
 import SedeList from '../components/sedes/SedeList';
 import SedeActions from '../components/sedes/SedeActions';
 import PaginationComponent from '../components/PaginationComponent'; // Asegúrate de que la ruta sea correcta
@@ -95,6 +99,24 @@ export default function SalasPage() {
   const [currentPageEdificios, setCurrentPageEdificios] = useState(1);
   const [currentPageSedes, setCurrentPageSedes] = useState(1);
 
+  // Estado para los filtros de Sala
+  const [salaFilters, setSalaFilters] = useState({
+    sede: '',
+    nombre: '', // Añadir estado para el filtro de nombre
+    edificio: '',
+  });
+
+  // Estado para los filtros de Edificio
+  const [edificioFilters, setEdificioFilters] = useState({
+    nombre: '',
+    sede: '',
+  });
+
+  // Estado para los filtros de Sede
+  const [sedeFilters, setSedeFilters] = useState({
+    nombre: '',
+  });
+
   const displayMessage = (setter, message, duration = 4000) => {
     setter(message);
     setTimeout(() => setter(''), duration);
@@ -105,7 +127,7 @@ export default function SalasPage() {
     setError('');
     try {
       const [salasData, edificiosData, sedesData] = await Promise.all([
-        fetchAllSalas(), // Usa tus funciones de servicio que llaman a tu 'api' de Axios
+        fetchAllSalasService(),
         fetchAllEdificios(),
         fetchAllSedes(),
       ]);
@@ -230,21 +252,132 @@ export default function SalasPage() {
     }
   };
 
+  // Handler para el cambio de filtro de salas
+  const handleSalaFilterChange = useCallback((changedFilters) => {
+    setSalaFilters((prevFilters) => {
+      const newFilters = { ...prevFilters, ...changedFilters };
+      // Si cambia la sede, resetear el filtro de edificio
+      if (changedFilters.sede !== undefined) {
+        newFilters.edificio = '';
+      }
+      return newFilters;
+    });
+    setCurrentPageSalas(1); // Resetear a la primera página al cambiar filtros
+  }, []);
+
+  // Handler para el cambio de filtro de edificios
+  const handleEdificioFilterChange = useCallback((changedFilters) => {
+    setEdificioFilters((prevFilters) => ({
+      ...prevFilters,
+      ...changedFilters,
+    }));
+    setCurrentPageEdificios(1); // Resetear a la primera página al cambiar filtros
+  }, []);
+
+  // Handler para el cambio de filtro de sedes
+  const handleSedeFilterChange = useCallback((changedFilters) => {
+    setSedeFilters((prevFilters) => ({
+      ...prevFilters,
+      ...changedFilters,
+    }));
+    setCurrentPageSedes(1); // Resetear a la primera página al cambiar filtros
+  }, []);
+
+  // Opciones de edificios para el filtro, dependientes de la sede seleccionada en el filtro
+  const edificiosOptionsForFilter = useMemo(() => {
+    if (!salaFilters.sede) {
+      // Si no hay sede seleccionada en el filtro, mostrar todos los edificios
+      // O podrías optar por no mostrar ninguno hasta que se seleccione una sede.
+      // Por ahora, mostramos todos si no hay sede, para permitir filtrar solo por edificio si se desea.
+      return edificios;
+    }
+    return edificios.filter(
+      (ed) => String(ed.SEDE_ID_SEDE) === String(salaFilters.sede)
+    );
+  }, [salaFilters.sede, edificios]); // edificiosOptionsForFilter no necesita cambiar si solo se añade filtro por nombre de sala
+
+  // Aplicar el filtro a la lista de salas
+  const filteredSalas = useMemo(() => {
+    return salas.filter((sala) => {
+      const matchesNombre =
+        !salaFilters.nombre ||
+        (sala.NOMBRE_SALA && // Asegurarse que NOMBRE_SALA exista
+          sala.NOMBRE_SALA.toLowerCase().includes(
+            salaFilters.nombre.toLowerCase()
+          ));
+
+      const matchesSede =
+        !salaFilters.sede ||
+        (sala.EDIFICIO_SEDE_ID // Asumimos que cada sala tiene esta propiedad después de un join o procesamiento
+          ? String(sala.EDIFICIO_SEDE_ID) === String(salaFilters.sede)
+          : // Fallback si no tenemos EDIFICIO_SEDE_ID directamente en la sala:
+            // Encontrar el edificio de la sala y luego la sede de ese edificio.
+            // Esto requiere que 'edificios' (la lista completa) esté disponible.
+            edificios.find(
+              (e) => String(e.ID_EDIFICIO) === String(sala.EDIFICIO_ID_EDIFICIO)
+            )?.SEDE_ID_SEDE === parseInt(salaFilters.sede));
+
+      const matchesEdificio =
+        !salaFilters.edificio ||
+        String(sala.EDIFICIO_ID_EDIFICIO) === String(salaFilters.edificio);
+
+      return matchesNombre && matchesSede && matchesEdificio;
+    });
+  }, [salas, salaFilters, edificios]);
+
+  // Aplicar el filtro a la lista de edificios
+  const filteredEdificios = useMemo(() => {
+    return edificios.filter((edificio) => {
+      const matchesNombre =
+        !edificioFilters.nombre ||
+        (edificio.NOMBRE_EDIFICIO &&
+          edificio.NOMBRE_EDIFICIO.toLowerCase().includes(
+            edificioFilters.nombre.toLowerCase()
+          )) ||
+        (edificio.SIGLA_EDIFICIO &&
+          edificio.SIGLA_EDIFICIO.toLowerCase().includes(
+            edificioFilters.nombre.toLowerCase()
+          ));
+
+      const matchesSede =
+        !edificioFilters.sede ||
+        String(edificio.SEDE_ID_SEDE) === String(edificioFilters.sede);
+
+      return matchesNombre && matchesSede;
+    });
+  }, [edificios, edificioFilters]);
+
+  // Aplicar el filtro a la lista de sedes
+  const filteredSedes = useMemo(() => {
+    return sedes.filter((sede) => {
+      const matchesNombre =
+        !sedeFilters.nombre ||
+        (sede.NOMBRE_SEDE &&
+          sede.NOMBRE_SEDE.toLowerCase().includes(
+            sedeFilters.nombre.toLowerCase()
+          ));
+      return matchesNombre;
+    });
+  }, [sedes, sedeFilters]);
+
   // Funciones de paginación
   const paginateSalas = (pageNumber) => setCurrentPageSalas(pageNumber);
   const paginateEdificios = (pageNumber) => setCurrentPageEdificios(pageNumber);
   const paginateSedes = (pageNumber) => setCurrentPageSedes(pageNumber);
 
   const getPaginatedData = (items, currentPage) => {
-    if (!Array.isArray(items)) return [];
+    if (!Array.isArray(items) || items === null) return []; // Asegurarse de que items sea un array
     const indexOfLastItem = currentPage * itemsPerPage;
     const indexOfFirstItem = indexOfLastItem - itemsPerPage;
     return items.slice(indexOfFirstItem, indexOfLastItem);
   };
 
-  const currentSalas = getPaginatedData(salas, currentPageSalas);
-  const currentEdificios = getPaginatedData(edificios, currentPageEdificios);
-  const currentSedes = getPaginatedData(sedes, currentPageSedes);
+  const currentSalas = getPaginatedData(filteredSalas, currentPageSalas); // Usar filteredSalas
+  const currentEdificios = getPaginatedData(
+    filteredEdificios,
+    currentPageEdificios
+  ); // Usar filteredEdificios
+  const currentSedes = getPaginatedData(filteredSedes, currentPageSedes); // Usar filteredSedes
 
   const handleSetTab = (tabName) => {
     setActiveTab(tabName);
@@ -320,6 +453,12 @@ export default function SalasPage() {
 
         {activeTab === 'salas' && (
           <>
+            <SalaFilter
+              sedes={sedes}
+              edificiosOptions={edificiosOptionsForFilter}
+              onFilterChange={handleSalaFilterChange}
+              currentFilters={salaFilters}
+            />
             <SalaActions
               onAdd={() => openModalHandler('add', 'sala')}
               onEdit={() =>
@@ -337,10 +476,10 @@ export default function SalasPage() {
               onSelectSala={setSelectedSala}
               loading={loading} // Para mostrar 'cargando' en la tabla si es necesario
             />
-            {!loading && salas.length > itemsPerPage && (
+            {!loading && filteredSalas.length > itemsPerPage && (
               <PaginationComponent
                 itemsPerPage={itemsPerPage}
-                totalItems={salas.length}
+                totalItems={filteredSalas.length}
                 paginate={paginateSalas}
                 currentPage={currentPageSalas}
               />
@@ -349,6 +488,11 @@ export default function SalasPage() {
         )}
         {activeTab === 'edificios' && (
           <>
+            <EdificioFilter
+              sedes={sedes}
+              onFilterChange={handleEdificioFilterChange}
+              currentFilters={edificioFilters}
+            />
             <EdificioActions
               onAdd={() => openModalHandler('add', 'edificio')}
               onEdit={() =>
@@ -368,10 +512,10 @@ export default function SalasPage() {
               onSelectEdificio={setSelectedEdificio}
               loading={loading}
             />
-            {!loading && edificios.length > itemsPerPage && (
+            {!loading && filteredEdificios.length > itemsPerPage && (
               <PaginationComponent
                 itemsPerPage={itemsPerPage}
-                totalItems={edificios.length}
+                totalItems={filteredEdificios.length}
                 paginate={paginateEdificios}
                 currentPage={currentPageEdificios}
               />
@@ -380,6 +524,10 @@ export default function SalasPage() {
         )}
         {activeTab === 'sedes' && (
           <>
+            <SedeFilter
+              onFilterChange={handleSedeFilterChange}
+              currentFilters={sedeFilters}
+            />
             <SedeActions
               onAdd={() => openModalHandler('add', 'sede')}
               onEdit={() =>
@@ -397,10 +545,10 @@ export default function SalasPage() {
               onSelectSede={setSelectedSede}
               loading={loading}
             />
-            {!loading && sedes.length > itemsPerPage && (
+            {!loading && filteredSedes.length > itemsPerPage && (
               <PaginationComponent
                 itemsPerPage={itemsPerPage}
-                totalItems={sedes.length}
+                totalItems={filteredSedes.length}
                 paginate={paginateSedes}
                 currentPage={currentPageSedes}
               />
