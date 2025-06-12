@@ -369,302 +369,297 @@ const MisReservasAsignadasPage = () => {
   return (
     <Layout>
       <div className="container-fluid pt-4">
-        <div className="d-flex justify-content-between align-items-center mb-3">
-          <h2 className="display-6">
-            <i className="bi bi-calendar-check-fill me-3"></i>
-            Exámenes Programados
-          </h2>
-          <div>
-            {esAdminOComite && (
-              <Button
-                variant="primary"
-                onClick={handleOpenCrearReservaModal}
-                className="me-2"
-              >
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  width="16"
-                  height="16"
-                  fill="currentColor"
-                  className="bi bi-plus-circle-fill me-2"
-                  viewBox="0 0 16 16"
+        <div className="mb-4">
+          <div className="d-flex justify-content-between align-items-center">
+            <h2 className="display-6 mb-0">
+              <i className="bi bi-calendar-check-fill me-3"></i>
+              Exámenes Programados
+            </h2>
+            <div className="d-flex gap-2">
+              {esAdminOComite && (
+                <Button
+                  variant="primary"
+                  size="sm"
+                  onClick={handleOpenCrearReservaModal}
                 >
-                  <path d="M16 8A8 8 0 1 1 0 8a8 8 0 0 1 16 0zM8.5 4.5a.5.5 0 0 0-1 0v3h-3a.5.5 0 0 0 0 1h3v3a.5.5 0 0 0 1 0v-3h3a.5.5 0 0 0 0-1h-3v-3z" />
-                </svg>
-                Crear Reserva
-              </Button>
-            )}
-            <Button
-              variant="outline-secondary"
-              size="sm"
-              onClick={cargarAsignaciones}
-              disabled={loading}
-            >
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                width="16"
-                height="16"
-                fill="currentColor"
-                className="bi bi-arrow-clockwise"
-                viewBox="0 0 16 16"
+                  <i className="bi bi-plus-lg me-2"></i>
+                  Crear Reserva
+                </Button>
+              )}
+              <Button
+                variant="outline-secondary"
+                size="sm"
+                onClick={cargarAsignaciones}
+                disabled={loading}
               >
-                <path
-                  fillRule="evenodd"
-                  d="M8 3a5 5 0 1 0 4.546 2.914.5.5 0 0 1 .908-.417A6 6 0 1 1 8 2v1z"
-                />
-                <path d="M8 4.466V.534a.25.25 0 0 1 .41-.192l2.36 1.966c.12.1.12.284 0 .384L8.41 4.658A.25.25 0 0 1 8 4.466z" />
-              </svg>
-              <span className="ms-2">Actualizar</span>
-            </Button>
+                <i className="bi bi-arrow-clockwise me-2"></i>
+                Actualizar
+              </Button>
+            </div>
           </div>
+          <hr className="mt-2 mb-4" />
         </div>
-        <hr />
-        {error && <Alert variant="danger">{error}</Alert>}
 
-        <Tabs
-          activeKey={activeTab}
-          onSelect={(k) => setActiveTab(k)}
-          id="reservas-tabs"
-          className="mb-3"
-          fill
-        >
-          <Tab eventKey="proximas" title="Mis Próximas Reservas">
-            <Card>
-              <Card.Body>
-                {asignaciones.length > 0 ? (
-                  <Table
-                    striped
-                    bordered
-                    hover
-                    responsive
-                    size="sm"
-                    className="mt-3"
-                  >
-                    <thead className="table-light">
-                      <tr>
-                        <th>Examen</th>
-                        <th>Asignatura</th>
-                        <th>Fecha</th>
-                        <th>Horario</th>
-                        <th>Sala</th>
-                        <th>Confirmación Docente</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {asignaciones.map((res) => (
-                        <tr key={res.ID_RESERVA}>
-                          <td>{res.NOMBRE_EXAMEN}</td>
-                          <td>{res.NOMBRE_ASIGNATURA}</td>
-                          <td>
-                            {new Date(res.FECHA_RESERVA).toLocaleDateString(
-                              'es-CL'
-                            )}
-                          </td>
-                          <td>
-                            {res.HORA_INICIO} - {res.HORA_FIN}
-                          </td>
-                          <td>{res.NOMBRE_SALA}</td>
-                          <td>
-                            <Badge
-                              bg={
-                                res.ESTADO_CONFIRMACION_DOCENTE === 'CONFIRMADO'
-                                  ? 'success'
-                                  : res.ESTADO_CONFIRMACION_DOCENTE ===
-                                      'PENDIENTE'
-                                    ? 'warning'
-                                    : 'danger'
-                              }
-                            >
-                              {res.ESTADO_CONFIRMACION_DOCENTE}
-                            </Badge>
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </Table>
-                ) : (
-                  <Alert variant="light" className="text-center mt-3">
-                    No tienes reservas asignadas.
-                  </Alert>
-                )}
-              </Card.Body>
-            </Card>
-          </Tab>
+        {/* Alert Messages */}
 
-          {esAdminOComite && (
-            <Tab
-              eventKey="revision"
-              title={
-                <>
-                  Requieren Revisión
-                  <Badge bg="danger" pill>
-                    {reservasParaRevision.length}
-                  </Badge>
-                </>
-              }
+        {error && (
+          <Alert variant="danger" className="mb-3">
+            {error}
+          </Alert>
+        )}
+
+        {/* Tabs Section */}
+        <Card className="border-0 shadow-sm">
+          <Card.Body className="p-0">
+            <Tabs
+              activeKey={activeTab}
+              onSelect={(k) => setActiveTab(k)}
+              id="reservas-tabs"
+              className="mb-3 nav-tabs-custom"
             >
-              <Card>
-                <Card.Body>
-                  {reservasParaRevision.length > 0 ? (
-                    <Table
-                      striped
-                      bordered
-                      hover
-                      responsive
-                      size="sm"
-                      className="mt-3"
-                    >
-                      <thead className="table-light">
-                        <tr>
-                          <th>Examen</th>
-                          <th>Asignatura</th>
-                          <th>Fecha</th>
-                          <th>Horario</th>
-                          <th>Sala</th>
-                          <th>Observaciones</th>
-                          <th>Acciones</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {reservasParaRevision.map((res) => (
-                          <tr key={res.ID_RESERVA}>
-                            <td>{res.NOMBRE_EXAMEN}</td>
-                            <td>{res.NOMBRE_ASIGNATURA}</td>
-                            <td>
-                              {new Date(res.FECHA_RESERVA).toLocaleDateString(
-                                'es-CL'
-                              )}
-                            </td>
-                            <td>
-                              {res.HORA_INICIO} - {res.HORA_FIN}
-                            </td>
-                            <td>{res.NOMBRE_SALA}</td>
-                            <td>
-                              {res.OBSERVACIONES_DOCENTE && (
-                                <Button
-                                  variant="link"
-                                  size="sm"
-                                  onClick={() =>
-                                    handleOpenObservacionesModal(res)
-                                  }
-                                  title="Ver Observaciones"
-                                >
-                                  <svg
-                                    xmlns="http://www.w3.org/2000/svg"
-                                    width="16"
-                                    height="16"
-                                    fill="currentColor"
-                                    className="bi bi-eye-fill"
-                                    viewBox="0 0 16 16"
-                                  >
-                                    <path d="M10.5 8a2.5 2.5 0 1 1-5 0 2.5 2.5 0 0 1 5 0z" />
-                                    <path d="M0 8s3-5.5 8-5.5S16 8 16 8s-3 5.5-8 5.5S0 8 0 8zm8 3.5a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7z" />
-                                  </svg>
-                                </Button>
-                              )}
-                            </td>
-                            <td>
-                              <Button
-                                variant="outline-primary"
-                                size="sm"
-                                onClick={() => handleOpenEditModal(res)}
-                                className="me-1"
-                              >
-                                Editar
-                              </Button>
-                              <Button
-                                variant="outline-danger"
-                                size="sm"
-                                onClick={() =>
-                                  handleOpenConfirmDescartarModal(res)
-                                }
-                              >
-                                Descartar
-                              </Button>
-                            </td>
+              <Tab
+                eventKey="proximas"
+                title="Mis Próximas Reservas"
+                className="bg-transparent"
+              >
+                <div className="p-3">
+                  {asignaciones.length > 0 ? (
+                    <div className="table-responsive">
+                      <Table hover bordered className="align-middle mb-0">
+                        <thead className="table-light">
+                          <tr>
+                            <th>Examen</th>
+                            <th>Asignatura</th>
+                            <th>Fecha</th>
+                            <th>Horario</th>
+                            <th>Sala</th>
+                            <th>Confirmación Docente</th>
                           </tr>
-                        ))}
-                      </tbody>
-                    </Table>
+                        </thead>
+                        <tbody>
+                          {asignaciones.map((res) => (
+                            <tr key={res.ID_RESERVA}>
+                              <td>{res.NOMBRE_EXAMEN}</td>
+                              <td>{res.NOMBRE_ASIGNATURA}</td>
+                              <td>
+                                {new Date(res.FECHA_RESERVA).toLocaleDateString(
+                                  'es-CL'
+                                )}
+                              </td>
+                              <td>
+                                {res.HORA_INICIO} - {res.HORA_FIN}
+                              </td>
+                              <td>{res.NOMBRE_SALA}</td>
+                              <td>
+                                <Badge
+                                  bg={
+                                    res.ESTADO_CONFIRMACION_DOCENTE ===
+                                    'CONFIRMADO'
+                                      ? 'success'
+                                      : res.ESTADO_CONFIRMACION_DOCENTE ===
+                                          'PENDIENTE'
+                                        ? 'warning'
+                                        : 'danger'
+                                  }
+                                  className="d-inline-block"
+                                >
+                                  {res.ESTADO_CONFIRMACION_DOCENTE}
+                                </Badge>
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </Table>
+                    </div>
                   ) : (
-                    <Alert variant="light" className="text-center mt-3">
-                      No hay reservas que requieran revisión.
+                    <Alert variant="light" className="text-center mt-0">
+                      No tienes reservas asignadas.
                     </Alert>
                   )}
-                </Card.Body>
-              </Card>
-            </Tab>
-          )}
+                </div>
+              </Tab>
 
-          {esDocente && (
-            <Tab
-              eventKey="pendientes"
-              title={
-                <>
-                  Pendientes de Confirmación
-                  <Badge bg="warning" text="dark" pill>
-                    {reservasPendientesDocente.length}
-                  </Badge>
-                </>
-              }
-            >
-              <Card>
-                <Card.Body>
-                  <Table
-                    striped
-                    bordered
-                    hover
-                    responsive
-                    size="sm"
-                    className="mt-3"
-                  >
-                    <thead className="table-light">
-                      <tr>
-                        <th>Examen</th>
-                        <th>Asignatura</th>
-                        <th>Fecha</th>
-                        <th>Horario</th>
-                        <th>Sala</th>
-                        <th>Acciones</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {reservasPendientesDocente.map((res) => (
-                        <tr key={res.ID_RESERVA}>
-                          <td>{res.NOMBRE_EXAMEN}</td>
-                          <td>{res.NOMBRE_ASIGNATURA}</td>
-                          <td>
-                            {new Date(res.FECHA_RESERVA).toLocaleDateString(
-                              'es-CL'
-                            )}
-                          </td>
-                          <td>
-                            {res.HORA_INICIO} - {res.HORA_FIN}
-                          </td>
-                          <td>{res.NOMBRE_SALA}</td>
-                          <td>
-                            <Button
-                              variant="success"
-                              size="sm"
-                              onClick={() => handleOpenRevisarModal(res)}
-                            >
-                              Revisar y Confirmar
-                            </Button>
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </Table>
-                  {reservasPendientesDocente.length === 0 && (
-                    <Alert variant="light" className="text-center">
-                      No tienes reservas pendientes de confirmación.
-                    </Alert>
-                  )}
-                </Card.Body>
-              </Card>
-            </Tab>
-          )}
-        </Tabs>
+              {esAdminOComite && (
+                <Tab
+                  eventKey="revision"
+                  title={
+                    <span className="d-flex align-items-center">
+                      Requieren Revisión
+                      <Badge bg="danger" className="ms-2" pill>
+                        {reservasParaRevision.length}
+                      </Badge>
+                    </span>
+                  }
+                  className="bg-transparent"
+                >
+                  <Card>
+                    <Card.Body>
+                      {reservasParaRevision.length > 0 ? (
+                        <Table
+                          striped
+                          bordered
+                          hover
+                          responsive
+                          size="sm"
+                          className="mt-3"
+                        >
+                          <thead className="table-light">
+                            <tr>
+                              <th>Examen</th>
+                              <th>Asignatura</th>
+                              <th>Fecha</th>
+                              <th>Horario</th>
+                              <th>Sala</th>
+                              <th>Observaciones</th>
+                              <th>Acciones</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {reservasParaRevision.map((res) => (
+                              <tr key={res.ID_RESERVA}>
+                                <td>{res.NOMBRE_EXAMEN}</td>
+                                <td>{res.NOMBRE_ASIGNATURA}</td>
+                                <td>
+                                  {new Date(
+                                    res.FECHA_RESERVA
+                                  ).toLocaleDateString('es-CL')}
+                                </td>
+                                <td>
+                                  {res.HORA_INICIO} - {res.HORA_FIN}
+                                </td>
+                                <td>{res.NOMBRE_SALA}</td>
+                                <td>
+                                  {res.OBSERVACIONES_DOCENTE && (
+                                    <Button
+                                      variant="link"
+                                      size="sm"
+                                      onClick={() =>
+                                        handleOpenObservacionesModal(res)
+                                      }
+                                      title="Ver Observaciones"
+                                    >
+                                      <svg
+                                        xmlns="http://www.w3.org/2000/svg"
+                                        width="16"
+                                        height="16"
+                                        fill="currentColor"
+                                        className="bi bi-eye-fill"
+                                        viewBox="0 0 16 16"
+                                      >
+                                        <path d="M10.5 8a2.5 2.5 0 1 1-5 0 2.5 2.5 0 0 1 5 0z" />
+                                        <path d="M0 8s3-5.5 8-5.5S16 8 16 8s-3 5.5-8 5.5S0 8 0 8zm8 3.5a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7z" />
+                                      </svg>
+                                    </Button>
+                                  )}
+                                </td>
+                                <td>
+                                  <div className="d-flex gap-2">
+                                    <Button
+                                      variant="outline-primary"
+                                      size="sm"
+                                      onClick={() => handleOpenEditModal(res)}
+                                    >
+                                      <i className="bi bi-pencil-square"></i>
+                                      Editar
+                                    </Button>
+                                    <Button
+                                      variant="outline-danger"
+                                      size="sm"
+                                      onClick={() =>
+                                        handleOpenConfirmDescartarModal(res)
+                                      }
+                                    >
+                                      <i className="bi bi-trash"></i>
+                                      Descartar
+                                    </Button>
+                                  </div>
+                                </td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </Table>
+                      ) : (
+                        <Alert variant="light" className="text-center mt-0">
+                          No hay reservas que requieran revisión.
+                        </Alert>
+                      )}
+                    </Card.Body>
+                  </Card>
+                </Tab>
+              )}
+
+              {esDocente && (
+                <Tab
+                  eventKey="pendientes"
+                  title={
+                    <span className="d-flex align-items-center">
+                      Pendientes de Confirmación
+                      <Badge bg="warning" text="dark" className="ms-2" pill>
+                        {reservasPendientesDocente.length}
+                      </Badge>
+                    </span>
+                  }
+                  className="px-3 py-2"
+                >
+                  <Card>
+                    <Card.Body>
+                      <Table
+                        striped
+                        bordered
+                        hover
+                        responsive
+                        size="sm"
+                        className="mt-3"
+                      >
+                        <thead className="table-light">
+                          <tr>
+                            <th>Examen</th>
+                            <th>Asignatura</th>
+                            <th>Fecha</th>
+                            <th>Horario</th>
+                            <th>Sala</th>
+                            <th>Acciones</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {reservasPendientesDocente.map((res) => (
+                            <tr key={res.ID_RESERVA}>
+                              <td>{res.NOMBRE_EXAMEN}</td>
+                              <td>{res.NOMBRE_ASIGNATURA}</td>
+                              <td>
+                                {new Date(res.FECHA_RESERVA).toLocaleDateString(
+                                  'es-CL'
+                                )}
+                              </td>
+                              <td>
+                                {res.HORA_INICIO} - {res.HORA_FIN}
+                              </td>
+                              <td>{res.NOMBRE_SALA}</td>
+                              <td>
+                                <Button
+                                  variant="success"
+                                  size="sm"
+                                  onClick={() => handleOpenRevisarModal(res)}
+                                >
+                                  Revisar y Confirmar
+                                </Button>
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </Table>
+                      {reservasPendientesDocente.length === 0 && (
+                        <Alert variant="light" className="text-center">
+                          No tienes reservas pendientes de confirmación.
+                        </Alert>
+                      )}
+                    </Card.Body>
+                  </Card>
+                </Tab>
+              )}
+            </Tabs>
+          </Card.Body>
+        </Card>
       </div>
 
       <Modal
