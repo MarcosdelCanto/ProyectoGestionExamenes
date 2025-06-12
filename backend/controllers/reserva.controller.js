@@ -1023,3 +1023,413 @@ export const descartarReserva = async (req, res) => {
     }
   }
 };
+
+/**
+ * Crea una reserva completa (Reserva + ReservaModulos + ReservaDocentes) para un examen existente
+ * con estado inicial 'PROGRAMADO' y ESTADO_CONFIRMACION_DOCENTE = 'EN_CURSO'.
+ * Este flujo está centrado en el estado de confirmación docente como indicador principal.
+ * @param {Object} req - Request object con { examen_id_examen, fecha_reserva, sala_id_sala, modulos_ids, docente_ids }
+ * @param {Object} res - Response object
+ */
+export const crearReservaEnCurso = async (req, res) => {
+  let connection;
+  try {
+    const {
+      examen_id_examen,
+      fecha_reserva,
+      sala_id_sala,
+      modulos_ids,
+      docente_ids,
+    } = req.body;
+
+    console.log(`[crearReservaEnCurso] Creando reserva con flujo EN_CURSO`);
+
+    // 1. Validación de campos obligatorios
+    if (
+      !examen_id_examen ||
+      !fecha_reserva ||
+      !sala_id_sala ||
+      !modulos_ids ||
+      modulos_ids.length === 0 ||
+      !docente_ids ||
+      docente_ids.length === 0
+    ) {
+      return handleError(
+        res,
+        null,
+        'Faltan campos obligatorios: examen, fecha, sala, al menos un módulo y al menos un docente.',
+        400
+      );
+    }
+
+    connection = await getConnection();
+
+    // 2. Obtener el ID del estado 'PROGRAMADO' para la reserva y el examen
+    const estadoResult = await connection.execute(
+      `SELECT ID_ESTADO FROM ESTADO WHERE NOMBRE_ESTADO = 'PROGRAMADO'`,
+      {},
+      { outFormat: oracledb.OUT_FORMAT_OBJECT }
+    );
+
+    const idEstadoProgramado = estadoResult.rows[0]?.ID_ESTADO;
+    if (!idEstadoProgramado) {
+      return handleError(
+        res,
+        null,
+        'El estado PROGRAMADO no se encuentra configurado en la base de datos.',
+        500
+      );
+    }
+
+    console.log(
+      `[crearReservaEnCurso] ID del estado PROGRAMADO: ${idEstadoProgramado}`
+    );
+
+    // 3. Verificar que el examen no tenga ya una reserva activa
+    const reservaExistenteResult = await connection.execute(
+      `SELECT COUNT(*) AS COUNT
+       FROM RESERVA R
+       JOIN ESTADO E ON R.ESTADO_ID_ESTADO = E.ID_ESTADO
+       WHERE R.EXAMEN_ID_EXAMEN = :examen_id
+       AND E.NOMBRE_ESTADO NOT IN ('DESCARTADO', 'CANCELADO')`,
+      { examen_id: parseInt(examen_id_examen) },
+      { outFormat: oracledb.OUT_FORMAT_OBJECT }
+    );
+
+    if (reservaExistenteResult.rows[0].COUNT > 0) {
+      return handleError(
+        res,
+        null,
+        'Este examen ya tiene una reserva activa. No se puede crear otra reserva.',
+        400
+      );
+    }
+
+    // --- Inicia la transacción ---
+
+    // 4. Insertar en RESERVA con estado PROGRAMADO y confirmación EN_CURSO
+    const fechaReservaCompleta = `${fecha_reserva} 00:00:00`;
+    const reservaSql = `
+      INSERT INTO RESERVA (
+        ID_RESERVA,
+        FECHA_RESERVA,
+        SALA_ID_SALA,
+        EXAMEN_ID_EXAMEN,
+        ESTADO_ID_ESTADO,
+        ESTADO_CONFIRMACION_DOCENTE
+      )
+      VALUES (
+        RESERVA_SEQ.NEXTVAL,
+        TO_TIMESTAMP(:fecha_reserva, 'YYYY-MM-DD HH24:MI:SS'),
+        :sala_id,
+        :examen_id,
+        :estado_id,
+        'EN_CURSO'
+      )
+      RETURNING ID_RESERVA INTO :new_reserva_id
+    `;
+
+    const resultReserva = await connection.execute(reservaSql, {
+      fecha_reserva: fechaReservaCompleta,
+      sala_id: parseInt(sala_id_sala),
+      examen_id: parseInt(examen_id_examen),
+      estado_id: idEstadoProgramado,
+      new_reserva_id: { type: oracledb.NUMBER, dir: oracledb.BIND_OUT },
+    });
+
+    const generatedReservaId = resultReserva.outBinds.new_reserva_id[0];
+    if (!generatedReservaId) {
+      throw new Error('No se pudo generar el ID de la reserva.');
+    }
+
+    console.log(
+      `[crearReservaEnCurso] Reserva creada con ID: ${generatedReservaId}`
+    );
+    console.log(
+      `[crearReservaEnCurso] Estado reserva: PROGRAMADO, Confirmación docente: EN_CURSO`
+    );
+
+    // 5. Insertar módulos en RESERVAMODULO
+    const reservamoduloSql = `
+      INSERT INTO RESERVAMODULO (MODULO_ID_MODULO, RESERVA_ID_RESERVA)
+      VALUES (:modulo_id, :reserva_id)
+    `;
+    await connection.executeMany(
+      reservamoduloSql,
+      modulos_ids.map((moduloId) => ({
+        modulo_id: parseInt(moduloId),
+        reserva_id: generatedReservaId,
+      }))
+    );
+
+    console.log(
+      `[crearReservaEnCurso] ${modulos_ids.length} módulos insertados`
+    );
+
+    // 6. Insertar docentes en RESERVA_DOCENTES
+    const reservaDocentesSql = `
+      INSERT INTO RESERVA_DOCENTES (RESERVA_ID_RESERVA, USUARIO_ID_USUARIO)
+      VALUES (:reserva_id, :docente_id)
+    `;
+    await connection.executeMany(
+      reservaDocentesSql,
+      docente_ids.map((docenteId) => ({
+        reserva_id: generatedReservaId,
+        docente_id: parseInt(docenteId),
+      }))
+    );
+
+    console.log(
+      `[crearReservaEnCurso] ${docente_ids.length} docentes asignados`
+    );
+
+    // 7. Actualizar estado del examen a PROGRAMADO
+    const updateExamenSql = `
+      UPDATE EXAMEN
+      SET ESTADO_ID_ESTADO = :estadoId
+      WHERE ID_EXAMEN = :examenId
+    `;
+    await connection.execute(updateExamenSql, {
+      estadoId: idEstadoProgramado,
+      examenId: parseInt(examen_id_examen),
+    });
+
+    console.log(
+      `[crearReservaEnCurso] Estado del examen actualizado a PROGRAMADO`
+    );
+
+    // 8. Confirmar transacción
+    await connection.commit();
+
+    console.log(`[crearReservaEnCurso] Transacción completada exitosamente`);
+
+    res.status(201).json({
+      message: 'Reserva creada exitosamente con flujo EN_CURSO.',
+      id_reserva: generatedReservaId,
+      estado_reserva: 'PROGRAMADO',
+      estado_confirmacion_docente: 'EN_CURSO',
+      estado_examen: 'PROGRAMADO',
+      detalles: {
+        examen_id: parseInt(examen_id_examen),
+        fecha_reserva: fecha_reserva,
+        sala_id: parseInt(sala_id_sala),
+        modulos_count: modulos_ids.length,
+        docentes_count: docente_ids.length,
+      },
+      flujo_info: {
+        descripcion: 'Reserva en flujo centrado en confirmación docente',
+        estado_inicial: 'EN_CURSO',
+        siguientes_estados: ['PENDIENTE', 'DESCARTADO'],
+      },
+    });
+  } catch (error) {
+    if (connection) {
+      console.error(`[crearReservaEnCurso] Error, haciendo rollback:`, error);
+      await connection.rollback();
+    }
+    handleError(res, error, 'Error al crear la reserva en curso');
+  } finally {
+    if (connection) {
+      try {
+        await connection.close();
+      } catch (err) {
+        console.error('Error cerrando la conexión:', err);
+      }
+    }
+  }
+};
+
+/**
+ * Cambia el estado de confirmación docente de EN_CURSO a PENDIENTE
+ * Esto envía la reserva a la bandeja del docente para confirmación
+ * @param {Object} req - Request object
+ * @param {Object} res - Response object
+ */
+export const enviarReservaADocente = async (req, res) => {
+  let connection;
+  try {
+    const { idReserva } = req.params;
+    const reservaIdNum = parseInt(idReserva, 10);
+
+    if (isNaN(reservaIdNum)) {
+      return handleError(res, null, 'ID de reserva inválido.', 400);
+    }
+
+    console.log(
+      `[enviarReservaADocente] Enviando reserva ${reservaIdNum} a docente`
+    );
+
+    connection = await getConnection();
+
+    // Verificar que la reserva existe y está en estado EN_CURSO
+    const verificarReservaResult = await connection.execute(
+      `SELECT ESTADO_CONFIRMACION_DOCENTE, EXAMEN_ID_EXAMEN
+       FROM RESERVA
+       WHERE ID_RESERVA = :reserva_id`,
+      { reserva_id: reservaIdNum },
+      { outFormat: oracledb.OUT_FORMAT_OBJECT }
+    );
+
+    if (verificarReservaResult.rows.length === 0) {
+      return handleError(res, null, 'Reserva no encontrada', 404);
+    }
+
+    const estadoActual =
+      verificarReservaResult.rows[0].ESTADO_CONFIRMACION_DOCENTE;
+    if (estadoActual !== 'EN_CURSO') {
+      return handleError(
+        res,
+        null,
+        `No se puede enviar a docente. Estado actual: ${estadoActual}`,
+        400
+      );
+    }
+
+    // Actualizar estado a PENDIENTE
+    const updateSql = `
+      UPDATE RESERVA
+      SET ESTADO_CONFIRMACION_DOCENTE = 'PENDIENTE'
+      WHERE ID_RESERVA = :reserva_id
+    `;
+
+    const result = await connection.execute(updateSql, {
+      reserva_id: reservaIdNum,
+    });
+
+    if (result.rowsAffected === 0) {
+      return handleError(res, null, 'No se pudo actualizar la reserva', 404);
+    }
+
+    await connection.commit();
+
+    console.log(
+      `[enviarReservaADocente] Reserva ${reservaIdNum} enviada a docente exitosamente`
+    );
+
+    res.status(200).json({
+      message: 'Reserva enviada a docente para confirmación',
+      id_reserva: reservaIdNum,
+      nuevo_estado: 'PENDIENTE',
+    });
+  } catch (error) {
+    if (connection) {
+      console.error(`[enviarReservaADocente] Error, haciendo rollback:`, error);
+      await connection.rollback();
+    }
+    handleError(res, error, 'Error al enviar reserva a docente');
+  } finally {
+    if (connection) {
+      try {
+        await connection.close();
+      } catch (err) {
+        console.error('Error cerrando la conexión:', err);
+      }
+    }
+  }
+};
+
+/**
+ * Cancela una reserva completa y vuelve el examen a estado ACTIVO
+ * Esto permite que el examen vuelva al selector
+ * @param {Object} req - Request object
+ * @param {Object} res - Response object
+ */
+export const cancelarReservaCompleta = async (req, res) => {
+  let connection;
+  try {
+    const { idReserva } = req.params;
+    const reservaIdNum = parseInt(idReserva, 10);
+
+    if (isNaN(reservaIdNum)) {
+      return handleError(res, null, 'ID de reserva inválido.', 400);
+    }
+
+    console.log(`[cancelarReservaCompleta] Cancelando reserva ${reservaIdNum}`);
+
+    connection = await getConnection();
+
+    // Obtener el examen asociado antes de eliminar
+    const examenResult = await connection.execute(
+      `SELECT EXAMEN_ID_EXAMEN FROM RESERVA WHERE ID_RESERVA = :reserva_id`,
+      { reserva_id: reservaIdNum },
+      { outFormat: oracledb.OUT_FORMAT_OBJECT }
+    );
+
+    if (examenResult.rows.length === 0) {
+      return handleError(res, null, 'Reserva no encontrada', 404);
+    }
+
+    const examenId = examenResult.rows[0].EXAMEN_ID_EXAMEN;
+
+    // Obtener ID del estado ACTIVO
+    const estadoActivoResult = await connection.execute(
+      `SELECT ID_ESTADO FROM ESTADO WHERE NOMBRE_ESTADO = 'ACTIVO'`,
+      {},
+      { outFormat: oracledb.OUT_FORMAT_OBJECT }
+    );
+
+    const idEstadoActivo = estadoActivoResult.rows[0]?.ID_ESTADO;
+    if (!idEstadoActivo) {
+      return handleError(res, null, "Estado 'ACTIVO' no configurado.", 500);
+    }
+
+    // --- Inicia la transacción ---
+
+    // 1. Eliminar módulos asociados
+    await connection.execute(
+      `DELETE FROM RESERVAMODULO WHERE RESERVA_ID_RESERVA = :reserva_id`,
+      { reserva_id: reservaIdNum }
+    );
+
+    // 2. Eliminar docentes asociados
+    await connection.execute(
+      `DELETE FROM RESERVA_DOCENTES WHERE RESERVA_ID_RESERVA = :reserva_id`,
+      { reserva_id: reservaIdNum }
+    );
+
+    // 3. Eliminar la reserva
+    await connection.execute(
+      `DELETE FROM RESERVA WHERE ID_RESERVA = :reserva_id`,
+      { reserva_id: reservaIdNum }
+    );
+
+    // 4. Volver el examen a estado ACTIVO
+    await connection.execute(
+      `UPDATE EXAMEN SET ESTADO_ID_ESTADO = :estado_activo WHERE ID_EXAMEN = :examen_id`,
+      {
+        estado_activo: idEstadoActivo,
+        examen_id: examenId,
+      }
+    );
+
+    await connection.commit();
+
+    console.log(
+      `[cancelarReservaCompleta] Reserva ${reservaIdNum} cancelada y examen ${examenId} reactivado`
+    );
+
+    res.status(200).json({
+      message: 'Reserva cancelada y examen reactivado exitosamente',
+      id_reserva: reservaIdNum,
+      examen_id: examenId,
+      estado_examen: 'ACTIVO',
+    });
+  } catch (error) {
+    if (connection) {
+      console.error(
+        `[cancelarReservaCompleta] Error, haciendo rollback:`,
+        error
+      );
+      await connection.rollback();
+    }
+    handleError(res, error, 'Error al cancelar reserva');
+  } finally {
+    if (connection) {
+      try {
+        await connection.close();
+      } catch (err) {
+        console.error('Error cerrando la conexión:', err);
+      }
+    }
+  }
+};

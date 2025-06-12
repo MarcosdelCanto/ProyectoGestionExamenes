@@ -197,3 +197,98 @@ export const descartarReserva = async (idReserva) => {
     );
   }
 };
+
+/**
+ * Crea una reserva completa para un examen existente con estado inicial EN_CURSO.
+ * Esta función se usa principalmente para drag & drop en el calendario.
+ * @param {object} payload - Datos de la reserva: { examen_id_examen, fecha_reserva, sala_id_sala, modulos_ids, docente_ids }
+ * @returns {Promise<object>} - Respuesta del servidor.
+ */
+export const crearReservaEnCursoService = async (payload) => {
+  try {
+    console.log('[crearReservaEnCursoService] Enviando datos:', payload);
+
+    const response = await api.post('/reserva/crear-en-curso', payload);
+
+    console.log(
+      '[crearReservaEnCursoService] Respuesta exitosa:',
+      response.data
+    );
+
+    return response.data;
+  } catch (error) {
+    console.error(
+      '[crearReservaEnCursoService] Error al crear la reserva en curso:',
+      error.response?.data || error.message
+    );
+
+    const customError = new Error(
+      error.response?.data?.message || error.response?.data || error.message
+    );
+    customError.details = error.response?.data?.details;
+    customError.status = error.response?.status;
+    throw customError;
+  }
+};
+
+/**
+ * Cambia el estado de confirmación docente de EN_CURSO a PENDIENTE
+ * @param {number} reservaId - ID de la reserva
+ * @returns {Promise<object>} - Respuesta del servidor
+ */
+export const enviarReservaADocente = async (reservaId) => {
+  try {
+    console.log(
+      `[enviarReservaADocente] Enviando reserva ${reservaId} a docente`
+    );
+
+    const response = await api.put(`/reserva/${reservaId}/enviar-a-docente`);
+
+    console.log('[enviarReservaADocente] Respuesta exitosa:', response.data);
+
+    return response.data;
+  } catch (error) {
+    console.error(
+      '[enviarReservaADocente] Error al enviar reserva a docente:',
+      error.response?.data || error.message
+    );
+
+    const customError = new Error(
+      error.response?.data?.message || error.response?.data || error.message
+    );
+    customError.details = error.response?.data?.details;
+    customError.status = error.response?.status;
+    throw customError;
+  }
+};
+
+/**
+ * Cancela una reserva y vuelve el examen a estado ACTIVO
+ * @param {number} reservaId - ID de la reserva
+ * @returns {Promise<object>} - Respuesta del servidor
+ */
+export const cancelarReservaCompleta = async (reservaId) => {
+  try {
+    console.log(`[cancelarReservaCompleta] Cancelando reserva ${reservaId}`);
+
+    const response = await api.delete(
+      `/reserva/${reservaId}/cancelar-completa`
+    );
+
+    console.log('[cancelarReservaCompleta] Respuesta exitosa:', response.data);
+
+    return response.data;
+  } catch (error) {
+    console.error(
+      '[cancelarReservaCompleta] Error al cancelar reserva:',
+      error.response?.data || error.message
+    );
+
+    const customError = new Error(
+      error.response?.data?.message || error.response?.data || error.message
+    );
+    customError.details = error.response?.data?.details;
+    customError.status = error.response?.status;
+    throw customError;
+  }
+};
