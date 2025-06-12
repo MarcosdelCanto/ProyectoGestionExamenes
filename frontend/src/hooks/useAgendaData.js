@@ -55,7 +55,7 @@ export function useAgendaData() {
               })
             );
 
-            // Enriquecer reservas con datos de exámenes
+            // Procesar reservas...
             const reservasConExamenes = reservasCompletas.map((reserva) => {
               if (!reserva.Examen && reserva.ID_EXAMEN) {
                 const examenCompleto = todosLosExamenes.find(
@@ -66,10 +66,9 @@ export function useAgendaData() {
               return reserva;
             });
 
-            // Cuando se cargan las reservas, incluir la cantidad de módulos de la reserva:
             const reservasConModulos = reservasConExamenes.map((reserva) => ({
               ...reserva,
-              MODULOS_RESERVA_COUNT: reserva.MODULOS?.length || 0, // ← Contar módulos de la reserva
+              MODULOS_RESERVA_COUNT: reserva.MODULOS?.length || 0,
               Examen: {
                 ...reserva.Examen,
                 MODULOS_RESERVA:
@@ -81,25 +80,60 @@ export function useAgendaData() {
 
             setReservas(reservasConModulos);
 
-            // Filtrar exámenes que ya tienen reserva
-            const examenesConReserva = reservasConModulos.map(
-              (r) => r.ID_EXAMEN
-            );
-            const examenesSinReserva = todosLosExamenes.filter(
-              (examen) => !examenesConReserva.includes(examen.ID_EXAMEN)
+            // *** CAMBIO IMPORTANTE: APLICAR DOBLE FILTRO ***
+            // 1. Filtrar por estado ACTIVO
+            const examenesActivos = todosLosExamenes.filter(
+              (examen) =>
+                examen.ESTADO_ID_ESTADO === 1 ||
+                examen.ID_ESTADO === 1 ||
+                examen.nombre_estado === 'ACTIVO' ||
+                examen.NOMBRE_ESTADO === 'ACTIVO'
             );
 
-            setExamenes(examenesSinReserva);
+            console.log(
+              '[useAgendaData] Exámenes activos:',
+              examenesActivos.length
+            );
+
+            // 2. Filtrar exámenes que ya tienen reserva activa
+            const examenesConReservasActivas = reservasConModulos
+              .filter((r) => r.ESTADO_CONFIRMACION_DOCENTE !== 'DESCARTADO')
+              .map((r) => r.ID_EXAMEN || r.EXAMEN_ID_EXAMEN);
+
+            const examenesActivosSinReserva = examenesActivos.filter(
+              (examen) => !examenesConReservasActivas.includes(examen.ID_EXAMEN)
+            );
+
+            console.log('[useAgendaData] Carga inicial - Exámenes filtrados:', {
+              total: todosLosExamenes.length,
+              activos: examenesActivos.length,
+              sinReserva: examenesActivosSinReserva.length,
+            });
+
+            setExamenes(examenesActivosSinReserva);
           } catch (error) {
             console.error('Error al cargar reservas:', error);
+
+            // Si falla la carga de reservas, al menos filtrar por estado ACTIVO
+            const examenesActivos = todosLosExamenes.filter(
+              (examen) =>
+                examen.ESTADO_ID_ESTADO === 1 ||
+                examen.ID_ESTADO === 1 ||
+                examen.nombre_estado === 'ACTIVO' ||
+                examen.NOMBRE_ESTADO === 'ACTIVO'
+            );
+
+            console.log(
+              '[useAgendaData] Fallback - Solo exámenes activos:',
+              examenesActivos.length
+            );
             setReservas([]);
-            setExamenes(todosLosExamenes);
+            setExamenes(examenesActivos);
           }
         }
       } catch (error) {
         console.error('Error al cargar datos iniciales:', error);
       } finally {
-        // Marcar todo como cargado
         setIsLoadingSalas(false);
         setIsLoadingExamenes(false);
         setIsLoadingModulos(false);
@@ -108,7 +142,78 @@ export function useAgendaData() {
     }
 
     loadInitialData();
-  }, []); // Solo se ejecuta una vez al montar el componente
+  }, []);
+
+  // Filtrar exámenes con estado ACTIVO
+  const loadExamenes = async () => {
+    try {
+      setIsLoadingExamenes(true);
+
+      // Cargar exámenes y reservas en paralelo para tener datos frescos
+      const [examenesRes, reservasData] = await Promise.all([
+        fetch('/api/examenes'),
+        fetchAllReservas(),
+      ]);
+
+      if (examenesRes.ok) {
+        const todosLosExamenes = await examenesRes.json();
+        setTodosLosExamenesOriginal(todosLosExamenes);
+
+        // PRIMER FILTRO: Por estado ACTIVO
+        const examenesActivos = todosLosExamenes.filter(
+          (examen) =>
+            examen.ESTADO_ID_ESTADO === 1 ||
+            examen.ID_ESTADO === 1 ||
+            examen.nombre_estado === 'ACTIVO' ||
+            examen.NOMBRE_ESTADO === 'ACTIVO'
+        );
+
+        // SEGUNDO FILTRO: Exámenes sin reservas activas
+        const examenesConReservasActivas = reservasData
+          .filter((r) => r.ESTADO_CONFIRMACION_DOCENTE !== 'DESCARTADO')
+          .map((r) => r.ID_EXAMEN || r.EXAMEN_ID_EXAMEN);
+
+        const examenesActivosSinReserva = examenesActivos.filter(
+          (examen) => !examenesConReservasActivas.includes(examen.ID_EXAMEN)
+        );
+
+        console.log('[useAgendaData] Recarga - Exámenes filtrados:', {
+          total: todosLosExamenes.length,
+          activos: examenesActivos.length,
+          sinReserva: examenesActivosSinReserva.length,
+        });
+
+        // Actualizar también las reservas para mantener todo sincronizado
+        setReservas(reservasData);
+        setExamenes(examenesActivosSinReserva);
+      }
+    } catch (error) {
+      console.error('[useAgendaData] Error al recargar exámenes:', error);
+    } finally {
+      setIsLoadingExamenes(false);
+    }
+  };
+
+  // Escuchar el evento cuando se descarte una reserva
+  useEffect(() => {
+    const handleExamenesActualizados = (event) => {
+      if (event.detail.accion === 'reserva_descartada') {
+        console.log(
+          '[useAgendaData] Recargando exámenes después de descartar reserva'
+        );
+        loadExamenes();
+      }
+    };
+
+    window.addEventListener('examenesActualizados', handleExamenesActualizados);
+
+    return () => {
+      window.removeEventListener(
+        'examenesActualizados',
+        handleExamenesActualizados
+      );
+    };
+  }, []);
 
   // Retornar todo lo que necesita el componente
   return {
@@ -129,5 +234,8 @@ export function useAgendaData() {
     isLoadingExamenes,
     isLoadingModulos,
     isLoadingReservas,
+
+    // Funciones
+    loadExamenes,
   };
 }

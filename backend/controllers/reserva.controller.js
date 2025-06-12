@@ -114,8 +114,10 @@ export const crearReservaParaExamenExistente = async (req, res) => {
       !fecha_reserva ||
       !sala_id_sala ||
       !modulos_ids ||
+      !Array.isArray(modulos_ids) || // CORREGIDO: Agregado operador lógico || que faltaba
       modulos_ids.length === 0 ||
       !docente_ids ||
+      !Array.isArray(docente_ids) || // CORREGIDO: Agregado operador lógico || que faltaba
       docente_ids.length === 0
     ) {
       return handleError(
@@ -826,10 +828,10 @@ export const updateReserva = async (req, res) => {
     !fecha_reserva ||
     !sala_id_sala ||
     !modulos_ids ||
-    !Array.isArray(modulos_ids) || // Ensure it's an array
+    !Array.isArray(modulos_ids) || // CORREGIDO: Agregado operador lógico || que faltaba
     modulos_ids.length === 0 ||
     !docente_ids || // Check if docente_ids is provided
-    !Array.isArray(docente_ids) || // Ensure it's an array
+    !Array.isArray(docente_ids) || // CORREGIDO: Agregado operador lógico || que faltaba
     docente_ids.length === 0
   ) {
     return handleError(
@@ -932,15 +934,39 @@ export const descartarReserva = async (req, res) => {
   try {
     connection = await getConnection();
 
+    // 1. Obtener información de la reserva y su examen asociado
+    const reservaInfo = await connection.execute(
+      `SELECT
+        R.ID_RESERVA,
+        R.EXAMEN_ID_EXAMEN,
+        R.ESTADO_CONFIRMACION_DOCENTE,
+        E.ESTADO_ID_ESTADO AS EXAMEN_ESTADO
+       FROM
+        RESERVA R
+       JOIN
+        EXAMEN E ON R.EXAMEN_ID_EXAMEN = E.ID_EXAMEN
+       WHERE
+        R.ID_RESERVA = :reservaId`,
+      { reservaId: reservaIdNum },
+      { outFormat: oracledb.OUT_FORMAT_OBJECT }
+    );
+
+    if (reservaInfo.rows.length === 0) {
+      return handleError(res, null, 'Reserva no encontrada.', 404);
+    }
+
+    const examenId = reservaInfo.rows[0].EXAMEN_ID_EXAMEN;
+    console.log(
+      `[descartarReserva] Examen asociado: ${examenId}, Estado actual: ${reservaInfo.rows[0].ESTADO_CONFIRMACION_DOCENTE}`
+    );
+
+    // 2. Obtener IDs de estados necesarios
     const estadoDescartadoResult = await connection.execute(
       `SELECT ID_ESTADO FROM ESTADO WHERE NOMBRE_ESTADO = 'DESCARTADO'`,
       {},
       { outFormat: oracledb.OUT_FORMAT_OBJECT }
     );
     const idEstadoDescartado = estadoDescartadoResult.rows[0]?.ID_ESTADO;
-    if (!idEstadoDescartado) {
-      return handleError(res, null, "Estado 'DESCARTADO' no configurado.", 500);
-    }
 
     const estadoActivoResult = await connection.execute(
       `SELECT ID_ESTADO FROM ESTADO WHERE NOMBRE_ESTADO = 'ACTIVO'`,
@@ -948,77 +974,81 @@ export const descartarReserva = async (req, res) => {
       { outFormat: oracledb.OUT_FORMAT_OBJECT }
     );
     const idEstadoActivo = estadoActivoResult.rows[0]?.ID_ESTADO;
-    if (!idEstadoActivo) {
-      return handleError(res, null, "Estado 'ACTIVO' no configurado.", 500);
-    }
 
-    const examenIdResult = await connection.execute(
-      `SELECT EXAMEN_ID_EXAMEN FROM RESERVA WHERE ID_RESERVA = :reservaId`,
-      { reservaId: reservaIdNum },
-      { outFormat: oracledb.OUT_FORMAT_OBJECT }
-    );
-    const examenId = examenIdResult.rows[0]?.EXAMEN_ID_EXAMEN;
-    if (!examenId) {
+    if (!idEstadoDescartado || !idEstadoActivo) {
       return handleError(
         res,
         null,
-        'Reserva no encontrada o no tiene examen asociado.',
-        404
+        'Estados no configurados correctamente.',
+        500
       );
     }
 
-    // --- Inicia la transacción ---
+    // 3. Iniciar transacción
     console.log(
-      `[descartarReserva] Actualizando RESERVA ${reservaIdNum} a estado DESCARTADO (${idEstadoDescartado})`
-    );
-    await connection.execute(
-      `UPDATE RESERVA SET ESTADO_ID_ESTADO = :idEstadoDescartado WHERE ID_RESERVA = :reservaId`,
-      { idEstadoDescartado, reservaId: reservaIdNum }
+      `[descartarReserva] Eliminando módulos asociados a la reserva ${reservaIdNum}`
     );
 
-    console.log(
-      `[descartarReserva] Actualizando EXAMEN ${examenId} a estado ACTIVO (${idEstadoActivo})`
-    );
-    await connection.execute(
-      `UPDATE EXAMEN SET ESTADO_ID_ESTADO = :idEstadoActivo WHERE ID_EXAMEN = :examenId`,
-      { idEstadoActivo, examenId }
-    );
-
-    console.log(
-      `[descartarReserva] Eliminando módulos de RESERVAMODULO para reserva ${reservaIdNum}`
-    );
+    // 3.1. Eliminar registros en RESERVAMODULO
     await connection.execute(
       `DELETE FROM RESERVAMODULO WHERE RESERVA_ID_RESERVA = :reservaId`,
       { reservaId: reservaIdNum }
     );
 
-    // Opcional: Limpiar campos de confirmación docente
-    /*
+    // 3.2. Actualizar la reserva a DESCARTADO (AMBOS campos)
+    console.log(
+      `[descartarReserva] Actualizando RESERVA ${reservaIdNum} a estado DESCARTADO`
+    );
     await connection.execute(
       `UPDATE RESERVA SET
-         ESTADO_CONFIRMACION_DOCENTE = NULL,
-         OBSERVACIONES_DOCENTE = NULL,
-         FECHA_CONFIRMACION_DOCENTE = NULL
+       ESTADO_ID_ESTADO = :idEstadoDescartado,
+       ESTADO_CONFIRMACION_DOCENTE = 'DESCARTADO'
        WHERE ID_RESERVA = :reservaId`,
-      { reservaId: reservaIdNum }
+      { idEstadoDescartado, reservaId: reservaIdNum }
     );
-    */
-    await connection.commit();
+
+    // 3.3. IMPORTANTE: Actualizar el examen a ACTIVO
     console.log(
-      `[descartarReserva] Reserva ${reservaIdNum} descartada exitosamente.`
+      `[descartarReserva] Actualizando EXAMEN ${examenId} a estado ACTIVO (${idEstadoActivo})`
     );
+    await connection.execute(
+      `UPDATE EXAMEN
+       SET ESTADO_ID_ESTADO = :idEstadoActivo
+       WHERE ID_EXAMEN = :examenId`,
+      { idEstadoActivo, examenId }
+    );
+
+    // 4. Confirmar transacción
+    await connection.commit();
+
+    console.log(
+      `[descartarReserva] Reserva ${reservaIdNum} descartada y examen ${examenId} reactivado exitosamente`
+    );
+
+    // 5. Responder con éxito y datos útiles
     res.json({
       message: 'Reserva descartada y examen reactivado exitosamente.',
+      reserva_id: reservaIdNum,
+      examen_id: examenId,
+      estado_reserva: 'DESCARTADO',
+      estado_examen: 'ACTIVO',
     });
   } catch (error) {
-    if (connection) await connection.rollback();
-    handleError(res, error, 'Error al descartar la reserva');
+    if (connection) {
+      try {
+        await connection.rollback();
+      } catch (rollbackError) {
+        console.error('Error en rollback:', rollbackError);
+      }
+    }
+    console.error('Error descartando reserva:', error);
+    return handleError(res, error, 'Error al descartar la reserva.');
   } finally {
     if (connection) {
       try {
         await connection.close();
-      } catch (err) {
-        console.error('Error cerrando conexión en descartarReserva:', err);
+      } catch (closeError) {
+        console.error('Error cerrando conexión:', closeError);
       }
     }
   }

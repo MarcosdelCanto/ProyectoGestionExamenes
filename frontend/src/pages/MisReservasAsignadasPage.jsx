@@ -20,7 +20,7 @@ import {
   fetchMisAsignacionesDeReservas,
   updateReserva,
   actualizarConfirmacionReservaDocente,
-  descartarReserva as descartarReservaService, // Renombrar para evitar colisión
+  descartarReservaService, // Renombrar para evitar colisión
   crearReservaParaExamenExistenteService as crearReservaParaExamenExistente, // Corregir importación
 } from '../services/reservaService';
 

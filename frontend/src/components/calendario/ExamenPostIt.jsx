@@ -3,7 +3,7 @@ import { FaArrowsAltV } from 'react-icons/fa';
 import { Badge } from 'react-bootstrap';
 import {
   enviarReservaADocente,
-  cancelarReservaCompleta,
+  cancelarReservaCompleta, // Usar esta en lugar de descartarReservaService
 } from '../../services/reservaService';
 import './styles/PostIt.css';
 
@@ -205,9 +205,10 @@ export default function ExamenPostIt({
    * Handler para cancelar reserva completa (cualquier estado → ELIMINADO)
    */
   const handleCancelarReserva = async (e) => {
-    // IMPORTANTE: Evitar que se propague el evento y active useModals
-    e.stopPropagation();
-    e.preventDefault();
+    if (e) {
+      e.stopPropagation();
+      e.preventDefault();
+    }
 
     if (isProcessingAction) return;
 
@@ -237,11 +238,10 @@ export default function ExamenPostIt({
 
       console.log(`[ExamenPostIt] Cancelando reserva ${reservaId}`);
 
-      const response = await cancelarReservaCompleta(reservaId);
+      const response = await cancelarReservaCompleta(reservaId); // USAR ESTA FUNCIÓN
 
       console.log('[ExamenPostIt] Reserva cancelada exitosamente:', response);
 
-      // Notificar al componente padre sobre la eliminación
       if (onReservaStateChange) {
         onReservaStateChange(reservaId, 'ELIMINADO', {
           message: 'Reserva cancelada y examen reactivado',
@@ -249,14 +249,9 @@ export default function ExamenPostIt({
           examen_id: response.examen_id,
         });
       }
-
-      // NO llamar onDeleteReserva ya que onReservaStateChange se encarga de todo
-      // if (onDeleteReserva) {
-      //   onDeleteReserva(reservaId);
-      // }
     } catch (error) {
       console.error('[ExamenPostIt] Error al cancelar reserva:', error);
-      alert(`❌ Error: ${error.message}`);
+      alert(`❌ Error: ${error.message || 'Error desconocido'}`);
     } finally {
       setIsProcessingAction(false);
     }
