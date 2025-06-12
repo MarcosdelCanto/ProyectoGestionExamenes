@@ -147,6 +147,20 @@ function UsuarioCarreraTab({ allUsers, allRoles }) {
       setLoading(false);
     }
   }, [fetchData, allUsers, allRoles]);
+  // Usuarios que tienen un rol elegible (Coordinador, etc.) Y NO tienen asociaciones de carrera existentes.
+  // Esta lista se usará para el modal cuando se crea una NUEVA asociación.
+  const usersAvailableForNewCarreraAssociation = useMemo(() => {
+    if (!eligibleUsers || eligibleUsers.length === 0) return [];
+    // Si no hay asociaciones aún, todos los usuarios elegibles están disponibles.
+    if (!associations || associations.length === 0) return eligibleUsers;
+
+    const associatedUserIds = new Set(
+      associations.map((assoc) => assoc.USUARIO_ID_USUARIO)
+    );
+    return eligibleUsers.filter(
+      (user) => !associatedUserIds.has(user.ID_USUARIO)
+    );
+  }, [eligibleUsers, associations]);
 
   // Filtrar los usuarios que se mostrarán en la tabla de asociaciones
   const displayableGroupedAssociations = useMemo(() => {
@@ -491,7 +505,11 @@ function UsuarioCarreraTab({ allUsers, allRoles }) {
           onSubmit={handleModalSubmit}
           editingUser={editingUser}
           allRoles={allRoles}
-          eligibleUsers={eligibleUsers} // Pasa la lista completa de usuarios elegibles (Coordinadores/Directores)
+          // Si estamos editando, pasamos todos los elegibles (el modal maneja la UI)
+          // Si estamos creando una nueva asociación, pasamos solo los que no tienen asociaciones previas
+          eligibleUsers={
+            editingUser ? eligibleUsers : usersAvailableForNewCarreraAssociation
+          }
           allCarreras={carreras} // Renombrado de 'carreras' a 'allCarreras' para claridad
           allEscuelas={escuelas} // Renombrado de 'escuelas' a 'allEscuelas' para claridad
           selectedUsuarioId={selectedUsuarioIdModal}

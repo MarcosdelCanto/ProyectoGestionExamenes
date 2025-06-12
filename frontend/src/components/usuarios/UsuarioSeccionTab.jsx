@@ -230,6 +230,21 @@ function UsuarioSeccionTab({ allUsers, allRoles }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [allUsers, allRoles]);
 
+  // Usuarios que tienen un rol elegible Y NO tienen asociaciones existentes.
+  // Esta lista se usará para el modal cuando se crea una NUEVA asociación.
+  const usersAvailableForNewSeccionAssociation = useMemo(() => {
+    // Si eligibleUsers o associations no están listos, o no hay associations, devolver eligibleUsers o un array vacío.
+    if (!eligibleUsers || eligibleUsers.length === 0) return [];
+    if (!associations || associations.length === 0) return eligibleUsers; // Todos los elegibles están disponibles si no hay asociaciones
+
+    const associatedUserIds = new Set(
+      associations.map((assoc) => assoc.USUARIO_ID_USUARIO)
+    );
+    return eligibleUsers.filter(
+      (user) => !associatedUserIds.has(user.ID_USUARIO)
+    );
+  }, [eligibleUsers, associations]); // Dependencias correctas
+
   const resetModalState = () => {
     setSelectedUsuarioId('');
     setSelectedSeccionIds([]);
@@ -237,11 +252,29 @@ function UsuarioSeccionTab({ allUsers, allRoles }) {
     setFilterRoleUser('');
     setFilterAsignaturaSeccion('');
     setEditingUser(null);
+    setProcessing(false); // Asegurar que processing esté desactivado
     setShowModal(false);
   };
 
+  const handleOpenNewAssociationModal = () => {
+    setEditingUser(null);
+    setSelectedUsuarioId('');
+    setSelectedSeccionIds([]);
+    setSearchTermUser('');
+    setFilterRoleUser('');
+    setFilterAsignaturaSeccion('');
+    setProcessing(false); // Asegurar que processing esté desactivado al abrir para nuevo
+    setError(null); // Limpiar errores previos del modal
+    setShowModal(true);
+  };
+
   const handleAddAssociation = async () => {
-    if (!selectedUsuarioId || selectedSeccionIds.length === 0) {
+    // Determinar el ID de usuario final basado en si estamos editando o creando
+    const finalUserId = editingUser
+      ? editingUser.ID_USUARIO.toString()
+      : selectedUsuarioId;
+
+    if (!finalUserId || selectedSeccionIds.length === 0) {
       setError('Debe seleccionar un usuario y al menos una sección.');
       return;
     }
@@ -251,25 +284,23 @@ function UsuarioSeccionTab({ allUsers, allRoles }) {
       if (editingUser) {
         // Lógica de edición
         const currentSeccionesForUser = associations
-          .filter(
-            (assoc) => assoc.USUARIO_ID_USUARIO === parseInt(selectedUsuarioId)
-          )
+          .filter((assoc) => assoc.USUARIO_ID_USUARIO === parseInt(finalUserId))
           .map((assoc) => assoc.SECCION_ID_SECCION);
 
         const seccionesToDelete = currentSeccionesForUser.filter(
           (sId) => !selectedSeccionIds.includes(sId.toString())
         );
         const seccionesToAdd = selectedSeccionIds.filter(
-          (sId) => !currentSeccionesForUser.includes(parseInt(sId))
+          (sIdStr) => !currentSeccionesForUser.includes(parseInt(sIdStr))
         );
 
         await Promise.all([
           ...seccionesToDelete.map((seccionId) =>
-            deleteUsuarioSeccion(parseInt(selectedUsuarioId), seccionId)
+            deleteUsuarioSeccion(parseInt(finalUserId), seccionId)
           ),
           ...seccionesToAdd.map((seccionId) =>
             createUsuarioSeccion({
-              USUARIO_ID_USUARIO: parseInt(selectedUsuarioId),
+              USUARIO_ID_USUARIO: parseInt(finalUserId),
               SECCION_ID_SECCION: parseInt(seccionId),
             })
           ),
@@ -279,7 +310,7 @@ function UsuarioSeccionTab({ allUsers, allRoles }) {
         await Promise.all(
           selectedSeccionIds.map((seccionId) =>
             createUsuarioSeccion({
-              USUARIO_ID_USUARIO: parseInt(selectedUsuarioId),
+              USUARIO_ID_USUARIO: parseInt(finalUserId),
               SECCION_ID_SECCION: parseInt(seccionId),
             })
           )
@@ -514,10 +545,7 @@ function UsuarioSeccionTab({ allUsers, allRoles }) {
       />
 
       <UsuarioSeccionActions
-        onNewAssociation={() => {
-          setEditingUser(null);
-          setShowModal(true);
-        }}
+        onNewAssociation={handleOpenNewAssociationModal}
         onEditSelected={() => {
           if (selectedUsersInTab.length === 1)
             handleEditUserAssociations(selectedUsersInTab[0].ID_USUARIO);
@@ -546,7 +574,11 @@ function UsuarioSeccionTab({ allUsers, allRoles }) {
           onHide={resetModalState}
           editingUser={editingUser}
           allRoles={allRoles}
-          eligibleUsers={eligibleUsers} // Pasar la lista completa de usuarios elegibles
+          // Si estamos editando, pasamos todos los elegibles (el modal maneja la UI)
+          // Si estamos creando una nueva asociación, pasamos solo los que no tienen asociaciones previas
+          eligibleUsers={
+            editingUser ? eligibleUsers : usersAvailableForNewSeccionAssociation
+          }
           secciones={secciones}
           asignaturas={asignaturas}
           selectedUsuarioId={selectedUsuarioId}
