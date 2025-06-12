@@ -1,9 +1,11 @@
 export default function ModuloTable({
   modulos,
-  selectedModuloId, // Cambiado de selectedModulo a selectedModuloId
-  onSelectModulo,
+  selectedModulos,
+  onToggleModuloSelection,
+  onToggleSelectAllModulos,
   loading,
 }) {
+  // modulos aquí son los currentModulos (paginados)
   if (loading) {
     return <div>Cargando módulos…</div>;
   }
@@ -21,8 +23,23 @@ export default function ModuloTable({
   return (
     <div className="table-responsive border mb-3">
       <table className="table table-hover table-bordered mb-0">
-        <thead className="table-light sticky-top">
+        <thead className="table-light">
           <tr>
+            <th style={{ width: '5%' }} className="text-center align-middle">
+              <input
+                type="checkbox"
+                className="form-check-input"
+                checked={
+                  modulos.length > 0 &&
+                  modulos.every((m) =>
+                    selectedModulos.some((sm) => sm.ID_MODULO === m.ID_MODULO)
+                  )
+                }
+                onChange={onToggleSelectAllModulos}
+                disabled={modulos.length === 0}
+                aria-label="Seleccionar todos los módulos en esta página"
+              />
+            </th>
             <th>Orden</th>
             <th>Nombre</th>
             <th>Inicio</th>
@@ -34,12 +51,30 @@ export default function ModuloTable({
           {modulos.map((modulo) => (
             <tr
               key={`modulo-${modulo.ID_MODULO}`}
-              onClick={() => onSelectModulo(modulo.ID_MODULO)}
+              onClick={() => onToggleModuloSelection(modulo)}
               className={
-                modulo.ID_MODULO === selectedModuloId ? 'table-primary' : '' // Usar selectedModuloId
+                selectedModulos.find((m) => m.ID_MODULO === modulo.ID_MODULO)
+                  ? 'table-primary'
+                  : ''
               }
               style={{ cursor: 'pointer' }}
             >
+              <td className="text-center align-middle">
+                <input
+                  type="checkbox"
+                  className="form-check-input"
+                  checked={
+                    !!selectedModulos.find(
+                      (m) => m.ID_MODULO === modulo.ID_MODULO
+                    )
+                  }
+                  onChange={(e) => {
+                    e.stopPropagation(); // Evita que el onClick de la fila se dispare también
+                    onToggleModuloSelection(modulo);
+                  }}
+                  aria-label={`Seleccionar módulo ${modulo.NOMBRE_MODULO || modulo.ID_MODULO}`}
+                />
+              </td>
               <td>{modulo.ORDEN}</td>
               <td>{modulo.NOMBRE_MODULO}</td>
               <td>{modulo.INICIO_MODULO}</td>

@@ -35,9 +35,12 @@ const ReportTable = ({
   }
 
   return (
-    <div className="table-responsive">
-      <table className="table table-striped table-hover table-bordered">
-        <thead>
+    <div
+      className="table-responsive"
+      style={{ maxHeight: '450px', overflowY: 'auto' }}
+    >
+      <table className="table table-hover table-bordered">
+        <thead className="table-light text-center align-middle sticky-top">
           <tr>
             {/* Renderizamos solo las cabeceras que están en la prop 'headers' (las visibles) */}
             {headers.map((header) => (

@@ -1,5 +1,6 @@
 // src/components/salas/SalaFilter.jsx
 import React from 'react';
+import Select from 'react-select'; // Importar react-select
 import { Card, Form, Row, Col, Button } from 'react-bootstrap';
 
 function SalaFilter({
@@ -16,6 +17,18 @@ function SalaFilter({
     });
   };
 
+  // Helper para convertir arrays de datos a formato de opciones para react-select
+  const toSelectOptions = (
+    items,
+    valueKey,
+    labelKey,
+    defaultLabel = 'Todas'
+  ) => [
+    { value: '', label: defaultLabel },
+    ...(items
+      ? items.map((item) => ({ value: item[valueKey], label: item[labelKey] }))
+      : []),
+  ];
   return (
     <Card className="mb-3 shadow-sm">
       <Card.Body>
@@ -35,43 +48,72 @@ function SalaFilter({
             <Col md={6} lg={3}>
               <Form.Group controlId="filterSedeSala">
                 <Form.Label>Sede</Form.Label>
-                <Form.Select
-                  value={currentFilters.sede || ''}
-                  onChange={(e) => onFilterChange({ sede: e.target.value })}
-                >
-                  <option value="">Todas las sedes</option>
-                  {sedes.map((sede) => (
-                    <option key={sede.ID_SEDE} value={sede.ID_SEDE}>
-                      {sede.NOMBRE_SEDE}
-                    </option>
-                  ))}
-                </Form.Select>
+                <Select
+                  inputId="filterSedeSala"
+                  options={toSelectOptions(
+                    sedes,
+                    'ID_SEDE',
+                    'NOMBRE_SEDE',
+                    'Todas las sedes'
+                  )}
+                  value={
+                    toSelectOptions(sedes, 'ID_SEDE', 'NOMBRE_SEDE').find(
+                      (option) => option.value === (currentFilters.sede || '')
+                    ) || null
+                  }
+                  onChange={(selectedOption) =>
+                    onFilterChange({
+                      sede: selectedOption ? selectedOption.value : '',
+                      edificio: '', // Resetear edificio al cambiar de sede
+                    })
+                  }
+                  placeholder="Todas las sedes"
+                  isClearable
+                />
               </Form.Group>
             </Col>
             <Col md={6} lg={3}>
               <Form.Group controlId="filterEdificioSala">
                 <Form.Label>Edificio</Form.Label>
-                <Form.Select
-                  value={currentFilters.edificio || ''}
-                  onChange={(e) => onFilterChange({ edificio: e.target.value })}
+                <Select
+                  inputId="filterEdificioSala"
+                  options={toSelectOptions(
+                    edificiosOptions, // Usar edificiosOptions que ya están filtradas
+                    'ID_EDIFICIO',
+                    'NOMBRE_EDIFICIO', // O podrías concatenar SIGLA y NOMBRE si prefieres
+                    'Todos los edificios'
+                  )}
+                  getOptionLabel={(
+                    option // Personalizar cómo se muestra la etiqueta
+                  ) =>
+                    option.value === ''
+                      ? option.label // Para la opción "Todos los edificios"
+                      : `${option.label}`
+                  }
+                  value={
+                    toSelectOptions(
+                      edificiosOptions,
+                      'ID_EDIFICIO',
+                      'NOMBRE_EDIFICIO'
+                    ).find(
+                      (option) =>
+                        option.value === (currentFilters.edificio || '')
+                    ) || null
+                  }
+                  onChange={(selectedOption) =>
+                    onFilterChange({
+                      edificio: selectedOption ? selectedOption.value : '',
+                    })
+                  }
                   disabled={
-                    !currentFilters.sede && edificiosOptions.length === 0
+                    !currentFilters.sede // Deshabilitar si no hay sede seleccionada
                   } // Deshabilitar si no hay sede o no hay opciones
-                >
-                  <option value="">Todos los edificios</option>
-                  {edificiosOptions.map((edificio) => (
-                    <option
-                      key={edificio.ID_EDIFICIO}
-                      value={edificio.ID_EDIFICIO}
-                    >
-                      {edificio.SIGLA_EDIFICIO} - {edificio.NOMBRE_EDIFICIO}
-                    </option>
-                  ))}
-                </Form.Select>
+                  placeholder="Todos los edificios"
+                  isClearable
+                />
               </Form.Group>
             </Col>
             <Col md={12} lg={3} className="d-flex align-items-end">
-              {/* Ajuste para el botón */}
               <Button
                 variant="outline-secondary"
                 onClick={handleClearFilters}

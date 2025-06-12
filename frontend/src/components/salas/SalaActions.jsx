@@ -6,13 +6,13 @@ function SalaActions({
   onAdd,
   onEdit,
   onDelete,
-  selectedSala,
+  selectedSalas, // Cambiado de selectedSala a selectedSalas (array)
   isLoadingList,
   isProcessingAction,
   onBulkUploadComplete,
   onUploadResult,
 }) {
-  const isDisabled = isLoadingList || isProcessingAction;
+  const baseDisabled = isLoadingList || isProcessingAction;
 
   return (
     <div className="mb-2 d-flex flex-wrap align-items-center">
@@ -20,7 +20,7 @@ function SalaActions({
         <Button
           variant="success"
           onClick={onAdd}
-          disabled={isDisabled}
+          disabled={baseDisabled}
           className="btn-icon-only-candidate me-2 mb-2"
           title="Agregar Sala"
         >
@@ -31,7 +31,9 @@ function SalaActions({
         <Button
           variant="warning"
           onClick={onEdit}
-          disabled={isDisabled || !selectedSala}
+          disabled={
+            baseDisabled || !selectedSalas || selectedSalas.length !== 1
+          }
           className="btn-icon-only-candidate me-2 mb-2"
           title="Modificar Sala"
         >
@@ -42,7 +44,9 @@ function SalaActions({
         <Button
           variant="danger"
           onClick={onDelete}
-          disabled={isDisabled || !selectedSala}
+          disabled={
+            baseDisabled || !selectedSalas || selectedSalas.length === 0
+          }
           className="btn-icon-only-candidate me-2 mb-2"
           title="Eliminar Sala"
         >
@@ -53,7 +57,7 @@ function SalaActions({
         <div className="me-2 mb-2">
           <SalaBulkUploadModal
             onSuccess={onBulkUploadComplete}
-            externalDisabled={isDisabled}
+            externalDisabled={baseDisabled}
             onUploadResult={onUploadResult}
           />
         </div>

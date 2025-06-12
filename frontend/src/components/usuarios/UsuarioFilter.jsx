@@ -1,9 +1,23 @@
 // src/components/usuarios/UsuarioFilter.jsx
 import React from 'react';
+import Select from 'react-select'; // Importar react-select
 import { Card, Form, Row, Col, Button } from 'react-bootstrap';
 
 function UsuarioFilter({ roles, onFilterChange, currentFilters }) {
-  console.log('Roles recibidos en UsuarioFilter:', roles); // <--- AÑADE ESTO
+  // console.log('Roles recibidos en UsuarioFilter:', roles);
+
+  // Helper para convertir arrays de datos a formato de opciones para react-select
+  const toSelectOptions = (
+    items,
+    valueKey,
+    labelKey,
+    defaultLabel = 'Todos'
+  ) => [
+    { value: '', label: defaultLabel }, // Opción para "Todos"
+    ...(items
+      ? items.map((item) => ({ value: item[valueKey], label: item[labelKey] }))
+      : []),
+  ];
 
   return (
     <Card className="mb-3 shadow-sm">
@@ -24,17 +38,27 @@ function UsuarioFilter({ roles, onFilterChange, currentFilters }) {
             <Col md>
               <Form.Group controlId="filterRole">
                 <Form.Label>Filtrar por Rol</Form.Label>
-                <Form.Select
-                  value={currentFilters.role || ''}
-                  onChange={(e) => onFilterChange({ role: e.target.value })}
-                >
-                  <option value="">Todos los roles</option>
-                  {roles.map((rol) => (
-                    <option key={rol.ID_ROL} value={rol.ID_ROL}>
-                      {rol.NOMBRE_ROL}
-                    </option>
-                  ))}
-                </Form.Select>
+                <Select
+                  inputId="filterRole"
+                  options={toSelectOptions(
+                    roles,
+                    'ID_ROL',
+                    'NOMBRE_ROL',
+                    'Todos los roles'
+                  )}
+                  value={
+                    toSelectOptions(roles, 'ID_ROL', 'NOMBRE_ROL').find(
+                      (option) => option.value === (currentFilters.role || '')
+                    ) || null
+                  }
+                  onChange={(selectedOption) =>
+                    onFilterChange({
+                      role: selectedOption ? selectedOption.value : '',
+                    })
+                  }
+                  placeholder="Todos los roles"
+                  isClearable
+                />
               </Form.Group>
             </Col>
             <Col md="auto">

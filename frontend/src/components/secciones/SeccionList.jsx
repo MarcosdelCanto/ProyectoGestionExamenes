@@ -22,7 +22,7 @@ function SeccionList({
   return (
     <div className="table-responsive border mb-3">
       <table className="table table-hover table-bordered mb-0">
-        <thead className="table-light sticky-top">
+        <thead className="table-light">
           <tr>
             <th style={{ width: '5%' }} className="text-center align-middle">
               <input

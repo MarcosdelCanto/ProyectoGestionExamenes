@@ -867,7 +867,6 @@ const ReservaForm = ({
         {initialData.modulosOriginalesNombres &&
           initialData.modulosOriginalesNombres.length > 0 && (
             <p className="mb-1 small">
-              {/* Adjusted margin for consistency */}
               <strong>Módulos Originales:</strong>
               {initialData.modulosOriginalesNombres.join(', ')}
             </p>
@@ -900,7 +899,6 @@ const ReservaForm = ({
         <Form.Group as={Col} md="12" className="mb-3">
           <Form.Label>Examen</Form.Label>
           <InputGroup className="d-flex flex-nowrap">
-            {/* flex-nowrap para evitar que el botón salte abajo */}
             <Select
               styles={customSelectStyles}
               className="flex-grow-1"

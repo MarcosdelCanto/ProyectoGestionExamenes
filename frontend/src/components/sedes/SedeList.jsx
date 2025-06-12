@@ -1,4 +1,11 @@
-function SedeList({ sedes, selectedSede, onSelectSede, loading }) {
+function SedeList({
+  sedes, // Estos son los items paginados/filtrados
+  selectedSedes = [], // Default to an empty array
+  onToggleSedeSelection,
+  onToggleSelectAllSedes,
+  loading,
+}) {
+  // sedes aquí son los currentSedes (paginados y filtrados)
   if (loading) {
     return <div>Cargando...</div>;
   }
@@ -15,10 +22,24 @@ function SedeList({ sedes, selectedSede, onSelectSede, loading }) {
 
   return (
     <div className="table-responsive border mb-3">
-      {/* Eliminado maxHeight y overflowY, usado mb-3 para margen */}
       <table className="table table-hover table-bordered mb-0">
-        <thead className="table-light sticky-top">
+        <thead className="table-light">
           <tr>
+            <th style={{ width: '5%' }} className="text-center align-middle">
+              <input
+                type="checkbox"
+                className="form-check-input"
+                checked={
+                  sedes.length > 0 &&
+                  sedes.every((s) =>
+                    selectedSedes.some((ss) => ss.ID_SEDE === s.ID_SEDE)
+                  )
+                }
+                onChange={onToggleSelectAllSedes}
+                disabled={sedes.length === 0}
+                aria-label="Seleccionar todas las sedes en esta página"
+              />
+            </th>
             <th>ID</th>
             <th>Nombre</th>
             {/* Puedes añadir más columnas si las tienes, como Dirección */}
@@ -29,14 +50,28 @@ function SedeList({ sedes, selectedSede, onSelectSede, loading }) {
           {sedes.map((sede) => (
             <tr
               key={`sede-${sede.ID_SEDE}`}
-              onClick={() => onSelectSede(sede)} // Pasar el objeto completo si es necesario para la lógica de selección en la página padre
+              onClick={() => onToggleSedeSelection(sede)}
               className={
-                selectedSede && sede.ID_SEDE === selectedSede.ID_SEDE
+                selectedSedes.find((s) => s.ID_SEDE === sede.ID_SEDE)
                   ? 'table-primary'
                   : ''
-              } // Asume que selectedSede es un objeto
+              }
               style={{ cursor: 'pointer' }}
             >
+              <td className="text-center align-middle">
+                <input
+                  type="checkbox"
+                  className="form-check-input"
+                  checked={
+                    !!selectedSedes.find((s) => s.ID_SEDE === sede.ID_SEDE)
+                  }
+                  onChange={(e) => {
+                    e.stopPropagation();
+                    onToggleSedeSelection(sede);
+                  }}
+                  aria-label={`Seleccionar sede ${sede.NOMBRE_SEDE || sede.ID_SEDE}`}
+                />
+              </td>
               <td>{sede.ID_SEDE || 'N/A'}</td>
               <td>{sede.NOMBRE_SEDE || 'N/A'}</td>
               {/* <td>{sede.DIRECCION_SEDE || 'N/A'}</td> */}

@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { Table, Button, Modal, Form, Alert, Spinner } from 'react-bootstrap';
 import {
   listUsuarioSecciones,
@@ -11,9 +11,12 @@ import { fetchAllAsignaturas } from '../../services/asignaturaService'; // Servi
 import UsuarioSeccionActions from './usuarioSeccion/UsuarioSeccionActions.jsx';
 import UsuarioSeccionModal from './usuarioSeccion/UsuarioSeccionModal.jsx';
 import UsuarioSeccionTable from './usuarioSeccion/UsuarioSeccionTable.jsx';
+import UsuarioFilter from '../usuarios/UsuarioFilter'; // Importar el filtro de usuario
+import PaginationComponent from '../PaginationComponent'; // Importar el componente de paginación
 
 const ALUMNO_ROLE_NAME = 'ALUMNO';
 const DOCENTE_ROLE_NAME = 'DOCENTE';
+const ITEMS_PER_PAGE = 4; // Definir ítems por página
 
 function UsuarioSeccionTab({ allUsers, allRoles }) {
   const [associations, setAssociations] = useState([]);
@@ -42,6 +45,13 @@ function UsuarioSeccionTab({ allUsers, allRoles }) {
   const [viewingUserSecciones, setViewingUserSecciones] = useState([]);
   const [viewingUserName, setViewingUserName] = useState('');
 
+  // Estado para los filtros de la tabla principal de UsuarioSeccionTab
+  const [usuarioTableFilters, setUsuarioTableFilters] = useState({
+    text: '',
+    role: '',
+  });
+  const [currentPageTable, setCurrentPageTable] = useState(1); // Estado para la paginación de la tabla
+
   const eligibleRoleIds = useMemo(() => {
     if (!allRoles || allRoles.length === 0) return [];
     return allRoles
@@ -63,16 +73,80 @@ function UsuarioSeccionTab({ allUsers, allRoles }) {
     }
   }, [allUsers, eligibleRoleIds]);
 
+  const handleUsuarioTableFilterChange = useCallback((changedFilters) => {
+    setUsuarioTableFilters((prev) => ({ ...prev, ...changedFilters }));
+    setSelectedUsersInTab([]); // Limpiar selección de la tabla al cambiar filtros
+    setCurrentPageTable(1); // Resetear paginación al cambiar filtros
+  }, []);
+
+  // Filtrar los usuarios que se mostrarán en la tabla de asociaciones
+  const displayableGroupedAssociations = useMemo(() => {
+    if (!usuarioTableFilters.text && !usuarioTableFilters.role) {
+      return groupedAssociations;
+    }
+    const filteredResult = {};
+    for (const userIdStr in groupedAssociations) {
+      const userId = parseInt(userIdStr, 10);
+      const user = eligibleUsers.find((u) => u.ID_USUARIO === userId);
+      if (user) {
+        const matchesText =
+          !usuarioTableFilters.text ||
+          (user.NOMBRE_USUARIO &&
+            user.NOMBRE_USUARIO.toLowerCase().includes(
+              usuarioTableFilters.text.toLowerCase()
+            )) ||
+          (user.EMAIL_USUARIO &&
+            user.EMAIL_USUARIO.toLowerCase().includes(
+              usuarioTableFilters.text.toLowerCase()
+            ));
+
+        const matchesRole =
+          !usuarioTableFilters.role ||
+          String(user.ROL_ID_ROL) === String(usuarioTableFilters.role);
+
+        if (matchesText && matchesRole) {
+          filteredResult[userIdStr] = groupedAssociations[userIdStr];
+        }
+      }
+    }
+    return filteredResult;
+  }, [groupedAssociations, eligibleUsers, usuarioTableFilters]);
+
+  // IDs de usuarios que coinciden con los filtros actuales
+  const displayableUserIds = useMemo(() => {
+    return Object.keys(displayableGroupedAssociations).map((id) =>
+      parseInt(id, 10)
+    );
+  }, [displayableGroupedAssociations]);
+
+  // Paginación de los IDs de usuario
+  const indexOfLastUserId = currentPageTable * ITEMS_PER_PAGE;
+  const indexOfFirstUserId = indexOfLastUserId - ITEMS_PER_PAGE;
+  const currentUserIdsOnPage = displayableUserIds.slice(
+    indexOfFirstUserId,
+    indexOfLastUserId
+  );
+
+  // Objeto de asociaciones agrupadas solo para la página actual
+  const paginatedGroupedAssociations = useMemo(() => {
+    const newPaginated = {};
+    currentUserIdsOnPage.forEach((userId) => {
+      if (displayableGroupedAssociations[userId]) {
+        newPaginated[userId] = displayableGroupedAssociations[userId];
+      }
+    });
+    return newPaginated;
+  }, [currentUserIdsOnPage, displayableGroupedAssociations]);
+
   useEffect(() => {
     // Agrupar asociaciones por usuario
     if (!allUsers || allUsers.length === 0) return;
-    const grouped = associations.reduce((acc, assoc) => {
+    const newGrouped = associations.reduce((acc, assoc) => {
       acc[assoc.USUARIO_ID_USUARIO] = acc[assoc.USUARIO_ID_USUARIO] || {
         NOMBRE_USUARIO: assoc.NOMBRE_USUARIO,
         ROL_USUARIO:
           allUsers.find((u) => u.ID_USUARIO === assoc.USUARIO_ID_USUARIO)
             ?.NOMBRE_ROL || 'N/A',
-
         EMAIL_USUARIO:
           allUsers.find((u) => u.ID_USUARIO === assoc.USUARIO_ID_USUARIO)
             ?.EMAIL_USUARIO || '',
@@ -84,7 +158,7 @@ function UsuarioSeccionTab({ allUsers, allRoles }) {
       });
       return acc;
     }, {});
-    setGroupedAssociations(grouped);
+    setGroupedAssociations(newGrouped);
   }, [associations, allUsers]);
 
   const fetchData = async () => {
@@ -312,16 +386,31 @@ function UsuarioSeccionTab({ allUsers, allRoles }) {
   };
 
   const handleToggleSelectAllUsers = () => {
-    const usersInCurrentView = Object.keys(groupedAssociations)
+    // Usuarios completos en la página actual
+    const usersOnCurrentPage = currentUserIdsOnPage
       .map((userId) =>
         eligibleUsers.find((u) => u.ID_USUARIO === parseInt(userId))
       )
       .filter(Boolean);
 
-    if (selectedUsersInTab.length === usersInCurrentView.length) {
-      setSelectedUsersInTab([]);
+    const allSelectedOnPage =
+      usersOnCurrentPage.length > 0 &&
+      usersOnCurrentPage.every((u) =>
+        selectedUsersInTab.some((selU) => selU.ID_USUARIO === u.ID_USUARIO)
+      );
+
+    if (allSelectedOnPage) {
+      setSelectedUsersInTab((prev) =>
+        prev.filter((selU) => !currentUserIdsOnPage.includes(selU.ID_USUARIO))
+      );
     } else {
-      setSelectedUsersInTab(usersInCurrentView);
+      const newSelections = usersOnCurrentPage.filter(
+        (u) =>
+          !selectedUsersInTab.some((selU) => selU.ID_USUARIO === u.ID_USUARIO)
+      );
+      setSelectedUsersInTab((prev) => [
+        ...new Set([...prev, ...newSelections]),
+      ]);
     }
   };
 
@@ -371,11 +460,13 @@ function UsuarioSeccionTab({ allUsers, allRoles }) {
     }
   };
 
-  if (loading) {
+  const paginateTable = (pageNumber) => setCurrentPageTable(pageNumber);
+
+  if (loading && !associations.length) {
     return (
       <div className="text-center p-3">
-        <Spinner animation="border" />
-        <p>Cargando asociaciones Usuario-Sección...</p>
+        <Spinner animation="border" variant="primary" />
+        <p>Cargando datos...</p>
       </div>
     );
   }
@@ -416,6 +507,12 @@ function UsuarioSeccionTab({ allUsers, allRoles }) {
           {error}
         </Alert>
       )}
+      <UsuarioFilter
+        roles={allRoles.filter((role) => eligibleRoleIds.includes(role.ID_ROL))} // Solo roles elegibles para esta pestaña
+        onFilterChange={handleUsuarioTableFilterChange}
+        currentFilters={usuarioTableFilters}
+      />
+
       <UsuarioSeccionActions
         onNewAssociation={() => {
           setEditingUser(null);
@@ -468,7 +565,7 @@ function UsuarioSeccionTab({ allUsers, allRoles }) {
       )}
 
       <UsuarioSeccionTable
-        groupedAssociations={groupedAssociations}
+        groupedAssociations={paginatedGroupedAssociations} // Usar las asociaciones paginadas
         eligibleUsers={eligibleUsers}
         selectedUsersInTab={selectedUsersInTab}
         processing={processing}
@@ -479,6 +576,15 @@ function UsuarioSeccionTab({ allUsers, allRoles }) {
         onEditUserAssociations={handleEditUserAssociations}
         onDeleteAllUserAssociations={handleDeleteAllUserAssociations}
       />
+      {/* Componente de Paginación para la tabla */}
+      {displayableUserIds.length > ITEMS_PER_PAGE && (
+        <PaginationComponent
+          itemsPerPage={ITEMS_PER_PAGE}
+          totalItems={displayableUserIds.length}
+          paginate={paginateTable}
+          currentPage={currentPageTable}
+        />
+      )}
 
       {/* Modal para visualizar secciones de un usuario */}
       <Modal

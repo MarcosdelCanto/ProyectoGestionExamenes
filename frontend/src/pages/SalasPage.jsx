@@ -24,7 +24,7 @@ import {
 } from '../services/sedeService'; // Renombrado deleteSede
 
 // Importa componentes de UI de React Bootstrap
-import { Alert, Spinner } from 'react-bootstrap'; // Modal y Button se usarán implícitamente por los Forms
+import { Alert, Spinner, Button as BsButton } from 'react-bootstrap'; // Añadido Button as BsButton
 
 // Importa tus componentes de UI específicos
 import SalaForm from '../components/salas/SalaForm';
@@ -76,9 +76,13 @@ export default function SalasPage() {
   const [edificios, setEdificios] = useState([]);
   const [sedes, setSedes] = useState([]);
 
-  const [selectedSala, setSelectedSala] = useState(null);
-  const [selectedEdificio, setSelectedEdificio] = useState(null);
-  const [selectedSede, setSelectedSede] = useState(null);
+  // Cambiar a estados de selección múltiple
+  const [selectedSalas, setSelectedSalas] = useState([]);
+  const [selectedEdificios, setSelectedEdificios] = useState([]);
+  const [selectedSedes, setSelectedSedes] = useState([]);
+  // const [selectedSala, setSelectedSala] = useState(null); // Conservar si alguna lógica aún lo usa, pero priorizar el array
+  // const [selectedEdificio, setSelectedEdificio] = useState(null);
+  // const [selectedSede, setSelectedSede] = useState(null);
 
   const [loading, setLoading] = useState(true); // Para la carga inicial de todas las listas
   const [isProcessing, setIsProcessing] = useState(false); // Para acciones CRUD
@@ -143,6 +147,9 @@ export default function SalasPage() {
       setSalas([]);
       setEdificios([]);
       setSedes([]); // En caso de error, inicializar como arrays vacíos
+      setSelectedSalas([]);
+      setSelectedEdificios([]);
+      setSelectedSedes([]); // Limpiar selección
     } finally {
       setLoading(false);
     }
@@ -152,33 +159,134 @@ export default function SalasPage() {
     loadData();
   }, [loadData]);
 
-  const openModalHandler = (type, entity, selectedEntityData = null) => {
+  // --- Funciones de Selección Múltiple ---
+  const handleToggleSalaSelection = (salaToToggle) => {
+    setSelectedSalas((prevSelected) =>
+      prevSelected.find((s) => s.ID_SALA === salaToToggle.ID_SALA)
+        ? prevSelected.filter((s) => s.ID_SALA !== salaToToggle.ID_SALA)
+        : [...prevSelected, salaToToggle]
+    );
+  };
+
+  const handleToggleSelectAllSalas = () => {
+    const currentSalaIdsOnPage = currentSalas.map((s) => s.ID_SALA);
+    const allOnPageSelected =
+      currentSalas.length > 0 &&
+      currentSalas.every((s) =>
+        selectedSalas.some((ss) => ss.ID_SALA === s.ID_SALA)
+      );
+    if (allOnPageSelected) {
+      setSelectedSalas((prev) =>
+        prev.filter((ss) => !currentSalaIdsOnPage.includes(ss.ID_SALA))
+      );
+    } else {
+      const newSelections = currentSalas.filter(
+        (s) => !selectedSalas.some((ss) => ss.ID_SALA === s.ID_SALA)
+      );
+      setSelectedSalas((prev) => [...prev, ...newSelections]);
+    }
+  };
+
+  const handleToggleEdificioSelection = (edificioToToggle) => {
+    setSelectedEdificios((prevSelected) =>
+      prevSelected.find((e) => e.ID_EDIFICIO === edificioToToggle.ID_EDIFICIO)
+        ? prevSelected.filter(
+            (e) => e.ID_EDIFICIO !== edificioToToggle.ID_EDIFICIO
+          )
+        : [...prevSelected, edificioToToggle]
+    );
+  };
+
+  const handleToggleSelectAllEdificios = () => {
+    const currentEdificioIdsOnPage = currentEdificios.map((e) => e.ID_EDIFICIO);
+    const allOnPageSelected =
+      currentEdificios.length > 0 &&
+      currentEdificios.every((e) =>
+        selectedEdificios.some((se) => se.ID_EDIFICIO === e.ID_EDIFICIO)
+      );
+    if (allOnPageSelected) {
+      setSelectedEdificios((prev) =>
+        prev.filter((se) => !currentEdificioIdsOnPage.includes(se.ID_EDIFICIO))
+      );
+    } else {
+      const newSelections = currentEdificios.filter(
+        (e) => !selectedEdificios.some((se) => se.ID_EDIFICIO === e.ID_EDIFICIO)
+      );
+      setSelectedEdificios((prev) => [...prev, ...newSelections]);
+    }
+  };
+
+  const handleToggleSedeSelection = (sedeToToggle) => {
+    setSelectedSedes((prevSelected) =>
+      prevSelected.find((s) => s.ID_SEDE === sedeToToggle.ID_SEDE)
+        ? prevSelected.filter((s) => s.ID_SEDE !== sedeToToggle.ID_SEDE)
+        : [...prevSelected, sedeToToggle]
+    );
+  };
+
+  const handleToggleSelectAllSedes = () => {
+    const currentSedeIdsOnPage = currentSedes.map((s) => s.ID_SEDE);
+    const allOnPageSelected =
+      currentSedes.length > 0 &&
+      currentSedes.every((s) =>
+        selectedSedes.some((ss) => ss.ID_SEDE === s.ID_SEDE)
+      );
+    if (allOnPageSelected) {
+      setSelectedSedes((prev) =>
+        prev.filter((ss) => !currentSedeIdsOnPage.includes(ss.ID_SEDE))
+      );
+    } else {
+      const newSelections = currentSedes.filter(
+        (s) => !selectedSedes.some((ss) => ss.ID_SEDE === s.ID_SEDE)
+      );
+      setSelectedSedes((prev) => [...prev, ...newSelections]);
+    }
+  };
+
+  const openModalHandler = (type, entity, entityPayload = null) => {
     let dataToModal = null;
-    if (type === 'edit' || type === 'delete') {
+    if (type === 'add') {
+      if (entity === 'sala') setSelectedSalas([]);
+      else if (entity === 'edificio') setSelectedEdificios([]);
+      else if (entity === 'sede') setSelectedSedes([]);
+      setModal({ type, entity, data: null, show: true });
+    } else if (type === 'edit' && entityPayload) {
+      // entityPayload es el ID de la entidad
       switch (entity) {
         case 'sala':
-          dataToModal = selectedSala
-            ? salas.find((s) => s.ID_SALA === selectedSala.ID_SALA)
-            : null; // Usa selectedSala.ID_SALA
+          dataToModal = salas.find(
+            (s) => String(s.ID_SALA) === String(entityPayload)
+          );
           break;
         case 'edificio':
-          dataToModal = selectedEdificio
-            ? edificios.find(
-                (e) => e.ID_EDIFICIO === selectedEdificio.ID_EDIFICIO
-              )
-            : null;
+          dataToModal = edificios.find(
+            (e) => String(e.ID_EDIFICIO) === String(entityPayload)
+          );
           break;
         case 'sede':
-          dataToModal = selectedSede
-            ? sedes.find((s) => s.ID_SEDE === selectedSede.ID_SEDE)
-            : null;
+          dataToModal = sedes.find(
+            (s) => String(s.ID_SEDE) === String(entityPayload)
+          );
           break;
         default:
           break;
       }
-      if (!dataToModal && selectedEntityData) dataToModal = selectedEntityData; // Fallback si la selección de tabla no estaba actualizada
+      if (!dataToModal) {
+        displayMessage(
+          setError,
+          `${entity.charAt(0).toUpperCase() + entity.slice(1)} no encontrada para editar.`
+        );
+        return;
+      }
+      setModal({ type, entity, data: dataToModal, show: true });
+    } else if (
+      type === 'delete' &&
+      Array.isArray(entityPayload) &&
+      entityPayload.length > 0
+    ) {
+      // entityPayload es el array de entidades seleccionadas
+      setModal({ type, entity, data: [...entityPayload], show: true });
     }
-    setModal({ type, entity, data: dataToModal, show: true });
   };
 
   const closeModalHandler = () =>
@@ -219,34 +327,79 @@ export default function SalasPage() {
   };
 
   const handleDelete = async () => {
-    if (!modal.data || !modal.entity) return;
+    if (
+      !modal.data ||
+      !modal.entity ||
+      !Array.isArray(modal.data) ||
+      modal.data.length === 0
+    ) {
+      closeModalHandler();
+      return;
+    }
+
     setIsProcessing(true);
     setError('');
     setSuccess('');
     const entityName =
       modal.entity.charAt(0).toUpperCase() + modal.entity.slice(1);
-    try {
-      if (modal.entity === 'sala') await deleteSalaById(modal.data.ID_SALA);
-      else if (modal.entity === 'edificio')
-        await deleteEdificioById(modal.data.ID_EDIFICIO);
-      else if (modal.entity === 'sede')
-        await deleteSedeById(modal.data.ID_SEDE);
 
-      displayMessage(setSuccess, `${entityName} eliminada con éxito.`);
-      loadData();
-      // Deseleccionar la entidad eliminada
-      if (modal.entity === 'sala') setSelectedSala(null);
-      if (modal.entity === 'edificio') setSelectedEdificio(null);
-      if (modal.entity === 'sede') setSelectedSede(null);
-      closeModalHandler();
+    try {
+      // Start of the main try block
+      let successCount = 0;
+      let errorCount = 0;
+      const errorMessages = [];
+
+      for (const itemToDelete of modal.data) {
+        try {
+          // Inner try for each item deletion
+          if (modal.entity === 'sala')
+            await deleteSalaById(itemToDelete.ID_SALA);
+          else if (modal.entity === 'edificio')
+            await deleteEdificioById(itemToDelete.ID_EDIFICIO);
+          else if (modal.entity === 'sede')
+            await deleteSedeById(itemToDelete.ID_SEDE);
+          successCount++;
+        } catch (err) {
+          // Inner catch for individual item deletion error
+          errorCount++;
+          const specificError =
+            err.response?.data?.error ||
+            err.message ||
+            `Error eliminando ${itemToDelete.NOMBRE_SALA || itemToDelete.NOMBRE_EDIFICIO || itemToDelete.NOMBRE_SEDE || 'item'}`;
+          errorMessages.push(specificError);
+        }
+      }
+
+      if (successCount > 0) {
+        displayMessage(
+          setSuccess,
+          `${successCount} ${entityName}(s) eliminada(s) con éxito.`
+        );
+      }
+      if (errorCount > 0) {
+        displayMessage(
+          setError,
+          `Error al eliminar ${errorCount} ${entityName}(s): ${errorMessages.join('; ')}`
+        );
+      }
+
+      if (successCount > 0) {
+        await loadData(); // This already clears selections as per its implementation
+      } else {
+        // If no successes, but maybe errors, still clear current page selections
+        if (modal.entity === 'sala') setSelectedSalas([]);
+        if (modal.entity === 'edificio') setSelectedEdificios([]);
+        if (modal.entity === 'sede') setSelectedSedes([]);
+      }
     } catch (err) {
+      // Catch for errors in the main try block (e.g., from loadData)
       displayMessage(
         setError,
-        `Error al eliminar ${entityName}: ` +
+        `Error general durante la eliminación de ${entityName}: ` +
           (err.response?.data?.error || err.message)
       );
-      // console.error(`Error eliminando ${entityName}:`, err);
     } finally {
+      closeModalHandler(); // Ensure modal is closed
       setIsProcessing(false);
     }
   };
@@ -262,6 +415,7 @@ export default function SalasPage() {
       return newFilters;
     });
     setCurrentPageSalas(1); // Resetear a la primera página al cambiar filtros
+    setSelectedSalas([]); // Limpiar selección
   }, []);
 
   // Handler para el cambio de filtro de edificios
@@ -271,6 +425,7 @@ export default function SalasPage() {
       ...changedFilters,
     }));
     setCurrentPageEdificios(1); // Resetear a la primera página al cambiar filtros
+    setSelectedEdificios([]); // Limpiar selección
   }, []);
 
   // Handler para el cambio de filtro de sedes
@@ -280,6 +435,7 @@ export default function SalasPage() {
       ...changedFilters,
     }));
     setCurrentPageSedes(1); // Resetear a la primera página al cambiar filtros
+    setSelectedSedes([]); // Limpiar selección
   }, []);
 
   // Opciones de edificios para el filtro, dependientes de la sede seleccionada en el filtro
@@ -380,9 +536,64 @@ export default function SalasPage() {
 
   const handleSetTab = (tabName) => {
     setActiveTab(tabName);
-    setSelectedSala(null);
-    setSelectedEdificio(null);
-    setSelectedSede(null); // Limpiar selecciones al cambiar de tab
+    // Limpiar selecciones al cambiar de tab
+    setSelectedSalas([]);
+    setSelectedEdificios([]);
+    setSelectedSedes([]);
+  };
+
+  // --- Handlers para Acciones (pasados a los componentes Actions) ---
+  const handleAddAction = (entity) => {
+    openModalHandler('add', entity);
+  };
+
+  const handleEditAction = (entity) => {
+    let selectedItems;
+    let idField;
+    if (entity === 'sala') {
+      selectedItems = selectedSalas;
+      idField = 'ID_SALA';
+    } else if (entity === 'edificio') {
+      selectedItems = selectedEdificios;
+      idField = 'ID_EDIFICIO';
+    } else if (entity === 'sede') {
+      selectedItems = selectedSedes;
+      idField = 'ID_SEDE';
+    } else return;
+
+    if (selectedItems.length === 1) {
+      openModalHandler('edit', entity, selectedItems[0][idField]);
+    } else {
+      displayMessage(
+        setError,
+        `Por favor, seleccione un único ${entity} para editar.`
+      );
+    }
+  };
+
+  const handleDeleteAction = (entity) => {
+    let selectedItems;
+    if (entity === 'sala') selectedItems = selectedSalas;
+    else if (entity === 'edificio') selectedItems = selectedEdificios;
+    else if (entity === 'sede') selectedItems = selectedSedes;
+    else return;
+
+    if (selectedItems.length > 0) {
+      openModalHandler('delete', entity, selectedItems);
+    } else {
+      displayMessage(
+        setError,
+        `Por favor, seleccione al menos un ${entity} para eliminar.`
+      );
+    }
+  };
+
+  const handleBulkUploadComplete = (entity) => {
+    displayMessage(
+      setSuccess,
+      `Carga masiva de ${entity} completada. Recargando datos...`
+    );
+    loadData();
   };
 
   // Renderizado
@@ -404,7 +615,6 @@ export default function SalasPage() {
 
   return (
     <Layout>
-      {/* <style>{keyframes}</style> // Puedes definir keyframes en un archivo CSS separado */}
       <div className="container-fluid pt-4">
         <div className="d-flex justify-content-between align-items-center mb-3">
           <h2 className="display-6">
@@ -461,20 +671,23 @@ export default function SalasPage() {
               currentFilters={salaFilters}
             />
             <SalaActions
-              onAdd={() => openModalHandler('add', 'sala')}
-              onEdit={() =>
-                selectedSala && openModalHandler('edit', 'sala', selectedSala)
-              }
-              onDelete={() =>
-                selectedSala && openModalHandler('delete', 'sala', selectedSala)
-              }
-              selectedSala={selectedSala}
-              disabled={isProcessing}
+              onAdd={() => handleAddAction('sala')}
+              onEdit={() => handleEditAction('sala')}
+              onDelete={() => handleDeleteAction('sala')}
+              selectedSalas={selectedSalas}
+              isLoadingList={loading}
+              isProcessingAction={isProcessing}
+              onBulkUploadComplete={() => handleBulkUploadComplete('salas')}
+              onUploadResult={({ success, error }) => {
+                if (success) displayMessage(setSuccess, success);
+                if (error) displayMessage(setError, error);
+              }}
             />
             <SalaList
               salas={currentSalas}
-              selectedSala={selectedSala}
-              onSelectSala={setSelectedSala}
+              selectedSalas={selectedSalas}
+              onToggleSalaSelection={handleToggleSalaSelection}
+              onToggleSelectAllSalas={handleToggleSelectAllSalas}
               loading={loading} // Para mostrar 'cargando' en la tabla si es necesario
             />
             {!loading && filteredSalas.length > itemsPerPage && (
@@ -495,22 +708,17 @@ export default function SalasPage() {
               currentFilters={edificioFilters}
             />
             <EdificioActions
-              onAdd={() => openModalHandler('add', 'edificio')}
-              onEdit={() =>
-                selectedEdificio &&
-                openModalHandler('edit', 'edificio', selectedEdificio)
-              }
-              onDelete={() =>
-                selectedEdificio &&
-                openModalHandler('delete', 'edificio', selectedEdificio)
-              }
-              selectedEdificio={selectedEdificio}
+              onAdd={() => handleAddAction('edificio')}
+              onEdit={() => handleEditAction('edificio')}
+              onDelete={() => handleDeleteAction('edificio')}
+              selectedEdificios={selectedEdificios}
               disabled={isProcessing}
             />
             <EdificioList
               edificios={currentEdificios}
-              selectedEdificio={selectedEdificio}
-              onSelectEdificio={setSelectedEdificio}
+              selectedEdificios={selectedEdificios}
+              onToggleEdificioSelection={handleToggleEdificioSelection}
+              onToggleSelectAllEdificios={handleToggleSelectAllEdificios}
               loading={loading}
             />
             {!loading && filteredEdificios.length > itemsPerPage && (
@@ -530,20 +738,17 @@ export default function SalasPage() {
               currentFilters={sedeFilters}
             />
             <SedeActions
-              onAdd={() => openModalHandler('add', 'sede')}
-              onEdit={() =>
-                selectedSede && openModalHandler('edit', 'sede', selectedSede)
-              }
-              onDelete={() =>
-                selectedSede && openModalHandler('delete', 'sede', selectedSede)
-              }
-              selectedSede={selectedSede}
+              onAdd={() => handleAddAction('sede')}
+              onEdit={() => handleEditAction('sede')}
+              onDelete={() => handleDeleteAction('sede')}
+              selectedSedes={selectedSedes}
               disabled={isProcessing}
             />
             <SedeList
               sedes={currentSedes}
-              selectedSede={selectedSede}
-              onSelectSede={setSelectedSede}
+              selectedSedes={selectedSedes}
+              onToggleSedeSelection={handleToggleSedeSelection}
+              onToggleSelectAllSedes={handleToggleSelectAllSedes}
               loading={loading}
             />
             {!loading && filteredSedes.length > itemsPerPage && (
@@ -571,17 +776,28 @@ export default function SalasPage() {
         >
           {modal.type === 'delete' ? (
             <div>
-              <p>
-                ¿Está seguro de que desea eliminar est
-                {modal.entity === 'sede' ? 'a' : 'e'} {modal.entity}?
-              </p>
-              {modal.data && (
+              {modal.data && modal.data.length === 1 ? (
                 <p>
+                  ¿Está seguro de que desea eliminar{' '}
+                  {modal.entity === 'sede' ? 'la' : 'el'} {modal.entity} "
                   <strong>
-                    {modal.data.NOMBRE_SALA ||
-                      modal.data.NOMBRE_EDIFICIO ||
-                      modal.data.NOMBRE_SEDE}
+                    {modal.data[0]?.NOMBRE_SALA ||
+                      modal.data[0]?.NOMBRE_EDIFICIO ||
+                      modal.data[0]?.NOMBRE_SEDE ||
+                      'seleccionado'}
                   </strong>
+                  "?
+                </p>
+              ) : (
+                <p>
+                  ¿Está seguro de que desea eliminar los{' '}
+                  <strong>{modal.data?.length}</strong>{' '}
+                  {modal.entity === 'sala'
+                    ? 'salas seleccionadas'
+                    : modal.entity === 'edificio'
+                      ? 'edificios seleccionados'
+                      : 'sedes seleccionadas'}
+                  ?
                 </p>
               )}
               <div className="modal-footer">
