@@ -17,7 +17,10 @@ export default function CalendarGrid({
   onCheckConflict,
   draggedExamen = null,
   dropTargetCell = null,
-  hoverTargetCell = null, // ← AGREGAR ESTA PROP
+  hoverTargetCell = null,
+  // ← AGREGAR ESTAS NUEVAS PROPS
+  setReservas,
+  refreshExamenesDisponibles,
 }) {
   // USAR EL HOOK: Centralizar toda la lógica de datos
   const { getCellData, shouldRenderExamen, checkConflict } = useCalendarData({
@@ -27,6 +30,43 @@ export default function CalendarGrid({
     modulosSeleccionados,
     modulos,
   });
+
+  // Handler para cambios de estado de reservas
+  const handleReservaStateChange = (reservaId, nuevoEstado, info) => {
+    console.log(`[CalendarGrid] Cambio de estado de reserva ${reservaId}:`, {
+      nuevoEstado,
+      info,
+    });
+
+    if (nuevoEstado === 'ELIMINADO') {
+      // Remover la reserva del estado local
+      if (setReservas) {
+        setReservas((prev) => prev.filter((r) => r.ID_RESERVA !== reservaId));
+      }
+
+      // Si hay info del examen, volver a agregarlo al selector
+      if (info.examen_id && refreshExamenesDisponibles) {
+        refreshExamenesDisponibles();
+      }
+
+      // Mostrar mensaje de éxito
+      alert(`✅ ${info.message}`);
+    } else if (nuevoEstado === 'PENDIENTE') {
+      // Actualizar el estado local de la reserva
+      if (setReservas) {
+        setReservas((prev) =>
+          prev.map((r) =>
+            r.ID_RESERVA === reservaId
+              ? { ...r, ESTADO_CONFIRMACION_DOCENTE: 'PENDIENTE' }
+              : r
+          )
+        );
+      }
+
+      // Mostrar mensaje informativo
+      alert(`📋 ${info.message}`);
+    }
+  };
 
   if (!modulos || modulos.length === 0) {
     return <p className="aviso-seleccion">No hay módulos para mostrar.</p>;
@@ -70,9 +110,11 @@ export default function CalendarGrid({
                     onRemoveExamen={onRemoveExamen}
                     onDeleteReserva={onDeleteReserva}
                     onCheckConflict={checkConflict}
-                    esDropTarget={esDropTarget} // ← Solo para procesamiento final
-                    esHoverTarget={esHoverTarget} // ← NUEVA: Para preview en tiempo real
-                    draggedExamen={draggedExamen} // ← Para mostrar preview del examen
+                    esDropTarget={esDropTarget}
+                    esHoverTarget={esHoverTarget}
+                    draggedExamen={draggedExamen}
+                    // ← PASAR EL HANDLER A CalendarCell
+                    onReservaStateChange={handleReservaStateChange}
                   />
                 );
               })}

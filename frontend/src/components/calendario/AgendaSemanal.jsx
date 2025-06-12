@@ -17,7 +17,10 @@ import { useFilters } from '../../hooks/useFilters';
 import { useModals } from '../../hooks/useModals';
 
 // Servicios
-import { crearReservaParaExamenExistenteService } from '../../services/reservaService';
+import {
+  crearReservaParaExamenExistenteService,
+  crearReservaEnCursoService, // ← AGREGAR ESTA IMPORTACIÓN
+} from '../../services/reservaService';
 
 // Estilos
 import './styles/AgendaSemanal.css';
@@ -202,9 +205,14 @@ export default function AgendaSemanal({
           modulosTexto: `Módulos ${modulo.ORDEN} - ${
             modulo.ORDEN + modulosNecesarios - 1
           }`,
-          examenCompleto: draggedExamen,
+          examenCompleto: draggedExamen, // ← Incluir examen completo con docentes
           moduloInicialOrden: modulo.ORDEN,
           cantidadModulosOriginal: modulosNecesarios,
+          // ← AGREGAR información de docentes si está disponible
+          docenteIds:
+            draggedExamen.DOCENTES_ASIGNADOS?.map((d) => d.ID_USUARIO) ||
+            draggedExamen.DOCENTE_IDS ||
+            [], // Array vacío si no hay docentes
         };
 
         handleShowReservaModal(modalData);
@@ -231,23 +239,37 @@ export default function AgendaSemanal({
     handleShowReservaModal,
   ]);
 
-  // FUNCIÓN PARA CREAR RESERVA
+  // FUNCIÓN PARA CREAR RESERVA - MODIFICADA para usar crearReservaEnCursoService
   const handleCreateReserva = async (formDataPayload) => {
     setLoadingReservaModal(true);
     setModalError(null);
     setModalSuccess(null);
 
-    const payloadFinal = {
-      ...formDataPayload,
-      modulos:
+    // Preparar payload específico para crearReservaEnCursoService
+    const payloadEnCurso = {
+      examen_id_examen: reservaModalData.examenId,
+      fecha_reserva: reservaModalData.fechaReserva,
+      sala_id_sala: reservaModalData.salaId,
+      modulos_ids:
         reservaModalData.modulosIds && reservaModalData.modulosIds.length > 0
           ? reservaModalData.modulosIds
           : formDataPayload.modulos,
+      docente_ids: formDataPayload.docente_ids || [], // Obtener docentes del formulario
     };
 
+    console.log(
+      '[handleCreateReserva] Payload para crearReservaEnCursoService:',
+      payloadEnCurso
+    );
+
     try {
-      const response =
-        await crearReservaParaExamenExistenteService(payloadFinal);
+      // CAMBIO PRINCIPAL: Usar crearReservaEnCursoService en lugar del anterior
+      const response = await crearReservaEnCursoService(payloadEnCurso);
+
+      console.log(
+        '[handleCreateReserva] Respuesta de crearReservaEnCursoService:',
+        response
+      );
 
       if (reservaModalData) {
         // Remover de exámenes pendientes
@@ -257,13 +279,14 @@ export default function AgendaSemanal({
           )
         );
 
-        // Crear nueva reserva
+        // Crear nueva reserva local con estado EN_CURSO
         const nuevaReserva = {
-          ID_RESERVA: response.data?.ID_RESERVA || Date.now(),
+          ID_RESERVA: response.id_reserva || Date.now(),
           ID_SALA: reservaModalData.salaId,
           FECHA_RESERVA: reservaModalData.fechaReserva,
           ID_EXAMEN: reservaModalData.examenId,
-          MODULOS: payloadFinal.modulos.map((moduloId) => {
+          ESTADO_CONFIRMACION_DOCENTE: 'EN_CURSO', // ← Estado inicial del nuevo flujo
+          MODULOS: payloadEnCurso.modulos_ids.map((moduloId) => {
             const moduloInfo = modulos.find((m) => m.ID_MODULO === moduloId);
             return {
               ID_MODULO: moduloId,
@@ -275,19 +298,25 @@ export default function AgendaSemanal({
           Examen: {
             ID_EXAMEN: reservaModalData.examenId,
             NOMBRE_ASIGNATURA: reservaModalData.examenNombre,
-            CANTIDAD_MODULOS_EXAMEN: payloadFinal.modulos.length,
+            CANTIDAD_MODULOS_EXAMEN: payloadEnCurso.modulos_ids.length,
           },
         };
+
+        console.log(
+          '[handleCreateReserva] Nueva reserva local creada:',
+          nuevaReserva
+        );
 
         setReservas((prev) => [...prev, nuevaReserva]);
       }
 
       setModalSuccess(
-        response.message || 'Reserva creada exitosamente y programada.'
+        response.message || 'Reserva creada exitosamente en estado EN_CURSO.'
       );
       setTimeout(() => handleCloseReservaModal(), 2000);
     } catch (err) {
-      setModalError(err.details || err.error || 'Error al crear la reserva.');
+      console.error('[handleCreateReserva] Error:', err);
+      setModalError(err.details || err.message || 'Error al crear la reserva.');
     } finally {
       setLoadingReservaModal(false);
     }
@@ -421,7 +450,7 @@ export default function AgendaSemanal({
   }
 
   return (
-    <div className="agenda-semanal-container">
+    <div className="agenda-semanal">
       {/* CONTROLES SUPERIORES */}
       <div className="selectors-row mt-3">
         <div className="selector-container">
@@ -491,13 +520,19 @@ export default function AgendaSemanal({
                   reservas={reservas}
                   modulosSeleccionados={modulosSeleccionados}
                   onSelectModulo={handleSelectModulo}
-                  onModulosChange={handleModulosChange} // ← IMPLEMENTADO
+                  onModulosChange={handleModulosChange}
                   onRemoveExamen={eliminarExamen}
                   onDeleteReserva={handleShowDeleteModal}
                   onCheckConflict={() => {}} // ← Ya no se usa aquí, se maneja en el hook
                   draggedExamen={draggedExamen}
                   dropTargetCell={dropTargetCell}
-                  hoverTargetCell={hoverTargetCell} // ← AGREGAR ESTA LÍNEA
+                  hoverTargetCell={hoverTargetCell}
+                  // ← AGREGAR ESTAS NUEVAS PROPS
+                  setReservas={setReservas}
+                  refreshExamenesDisponibles={() => {
+                    // Función para recargar exámenes disponibles
+                    loadExamenes();
+                  }}
                 />
                 {puedeConfirmar && (
                   <button
@@ -583,6 +618,11 @@ export default function AgendaSemanal({
                 CANTIDAD_MODULOS_EXAMEN:
                   reservaModalData.cantidadModulosOriginal,
                 MODULO_INICIAL_ORDEN: reservaModalData.moduloInicialOrden,
+                // ← AGREGAR DOCENTES si están disponibles en el examen
+                DOCENTE_IDS:
+                  reservaModalData.examenCompleto?.DOCENTES_ASIGNADOS?.map(
+                    (d) => d.ID_USUARIO
+                  ) || [],
               }}
               onModulosChange={(nuevaCantidad, nuevosModulosIds) => {
                 setReservaModalData((prev) => ({
@@ -596,7 +636,7 @@ export default function AgendaSemanal({
               onSubmit={handleCreateReserva}
               onCancel={handleCloseReservaModal}
               isLoadingExternamente={loadingReservaModal}
-              submitButtonText="Crear Reserva"
+              submitButtonText="Crear Reserva (EN_CURSO)" // ← Actualizar texto del botón
               isEditMode={true}
             />
           </Modal.Body>

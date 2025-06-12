@@ -1,5 +1,10 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { FaArrowsAltV } from 'react-icons/fa';
+import { Badge } from 'react-bootstrap';
+import {
+  enviarReservaADocente,
+  cancelarReservaCompleta,
+} from '../../services/reservaService';
 import './styles/PostIt.css';
 
 export default function ExamenPostIt({
@@ -15,12 +20,13 @@ export default function ExamenPostIt({
   minModulos = 1,
   maxModulos = 12,
   isPreview = false,
-  isDragOverlay = false, // Nueva prop
-  dragHandleListeners, // Props de @dnd-kit
+  isDragOverlay = false,
+  dragHandleListeners,
   isBeingDragged,
   fecha,
   moduloInicial,
   examenAsignadoCompleto,
+  onReservaStateChange,
   ...props
 }) {
   const [moduloscountState, setModuloscountState] = useState(
@@ -31,8 +37,35 @@ export default function ExamenPostIt({
   );
   const [isResizing, setIsResizing] = useState(false);
   const [resizeError, setResizeError] = useState(null);
+  const [isProcessingAction, setIsProcessingAction] = useState(false);
   const startResizeRef = useRef(null);
   const startHeightRef = useRef(null);
+
+  /**
+   * Obtiene el estado de confirmación docente de la reserva
+   */
+  const getEstadoConfirmacion = () => {
+    const estado =
+      examenAsignadoCompleto?.reservaCompleta?.ESTADO_CONFIRMACION_DOCENTE ||
+      examenAsignadoCompleto?.ESTADO_CONFIRMACION_DOCENTE ||
+      examen?.ESTADO_CONFIRMACION_DOCENTE ||
+      'EN_CURSO';
+
+    return estado;
+  };
+
+  // Debug useEffect - MOVER DESPUÉS de la definición de getEstadoConfirmacion
+  useEffect(() => {
+    console.log('[ExamenPostIt] Props recibidas:', {
+      examen: examen?.NOMBRE_ASIGNATURA,
+      examenAsignadoCompleto,
+      estado: getEstadoConfirmacion(),
+      hasReservaData: !!examenAsignadoCompleto?.reservaCompleta,
+      reservaId:
+        examenAsignadoCompleto?.reservaCompleta?.ID_RESERVA ||
+        examenAsignadoCompleto?.ID_RESERVA,
+    });
+  }, [examenAsignadoCompleto]);
 
   // Sincronizar con prop externa
   useEffect(() => {
@@ -56,7 +89,6 @@ export default function ExamenPostIt({
     );
 
     if (newModulosCount !== moduloscountState) {
-      // Verificar conflictos
       if (
         onCheckConflict &&
         typeof onCheckConflict === 'function' &&
@@ -91,21 +123,19 @@ export default function ExamenPostIt({
     }
   };
 
-  const handleResizeStart = (e) => {
+  const handleMouseDown = (e) => {
     if (!canResize) return;
 
-    // IMPORTANTE: Parar completamente la propagación
     e.stopPropagation();
     e.preventDefault();
-    e.stopImmediatePropagation(); // ← AGREGAR ESTO
+    e.stopImmediatePropagation();
 
-    console.log('🎯 Resize start event captured'); // Debug
+    console.log('🎯 Resize start event captured');
 
     setIsResizing(true);
     startResizeRef.current = e.clientY;
     startHeightRef.current = e.currentTarget.parentElement.offsetHeight;
 
-    // Deshabilitar drag temporalmente
     document.body.style.pointerEvents = 'none';
     e.currentTarget.style.pointerEvents = 'auto';
 
@@ -116,24 +146,206 @@ export default function ExamenPostIt({
   };
 
   const handleResizeEnd = () => {
-    console.log('🏁 Resize end'); // Debug
+    console.log('🏁 Resize end');
     setIsResizing(false);
     setResizeError(null);
 
-    // Restaurar pointer events
     document.body.style.pointerEvents = '';
 
     document.removeEventListener('mousemove', handleResizeMove);
     document.removeEventListener('mouseup', handleResizeEnd);
   };
 
-  const handleDelete = (e) => {
-    e.stopPropagation();
+  /**
+   * Handler para enviar reserva a docente (EN_CURSO → PENDIENTE)
+   */
+  const handleEnviarADocente = async () => {
+    if (isProcessingAction) return;
 
-    if (esReservaConfirmada && onDeleteReserva && examenAsignadoCompleto) {
-      onDeleteReserva(examenAsignadoCompleto);
-    } else if (!esReservaConfirmada && onRemove) {
-      onRemove(examen.ID_EXAMEN);
+    try {
+      setIsProcessingAction(true);
+
+      const reservaId =
+        examenAsignadoCompleto?.reservaCompleta?.ID_RESERVA ||
+        examenAsignadoCompleto?.ID_RESERVA;
+
+      if (!reservaId) {
+        console.error('No se encontró ID de reserva');
+        alert('Error: No se puede procesar la reserva');
+        return;
+      }
+
+      console.log(`[ExamenPostIt] Enviando reserva ${reservaId} a docente`);
+
+      const response = await enviarReservaADocente(reservaId);
+
+      console.log('[ExamenPostIt] Reserva enviada exitosamente:', response);
+
+      if (onReservaStateChange) {
+        onReservaStateChange(reservaId, 'PENDIENTE', {
+          message: 'Reserva enviada a docente para confirmación',
+          previousState: 'EN_CURSO',
+        });
+      }
+
+      alert('✅ Reserva enviada a docente para confirmación');
+    } catch (error) {
+      console.error('[ExamenPostIt] Error al enviar reserva a docente:', error);
+      alert(`❌ Error: ${error.message}`);
+    } finally {
+      setIsProcessingAction(false);
+    }
+  };
+
+  /**
+   * Handler para cancelar reserva completa (cualquier estado → ELIMINADO)
+   */
+  const handleCancelarReserva = async () => {
+    if (isProcessingAction) return;
+
+    const confirmacion = window.confirm(
+      '¿Estás seguro de que quieres cancelar esta reserva?\n\n' +
+        'Esta acción:\n' +
+        '• Eliminará la reserva completamente\n' +
+        '• Liberará los módulos ocupados\n' +
+        '• Volverá el examen al selector\n' +
+        '• No se puede deshacer'
+    );
+
+    if (!confirmacion) return;
+
+    try {
+      setIsProcessingAction(true);
+
+      const reservaId =
+        examenAsignadoCompleto?.reservaCompleta?.ID_RESERVA ||
+        examenAsignadoCompleto?.ID_RESERVA;
+
+      if (!reservaId) {
+        console.error('No se encontró ID de reserva');
+        alert('Error: No se puede procesar la reserva');
+        return;
+      }
+
+      console.log(`[ExamenPostIt] Cancelando reserva ${reservaId}`);
+
+      const response = await cancelarReservaCompleta(reservaId);
+
+      console.log('[ExamenPostIt] Reserva cancelada exitosamente:', response);
+
+      if (onReservaStateChange) {
+        onReservaStateChange(reservaId, 'ELIMINADO', {
+          message: 'Reserva cancelada y examen reactivado',
+          previousState: getEstadoConfirmacion(),
+          examen_id: response.examen_id,
+        });
+      }
+
+      if (onDeleteReserva) {
+        onDeleteReserva(reservaId);
+      }
+    } catch (error) {
+      console.error('[ExamenPostIt] Error al cancelar reserva:', error);
+      alert(`❌ Error: ${error.message}`);
+    } finally {
+      setIsProcessingAction(false);
+    }
+  };
+
+  /**
+   * Genera los botones de acción según el estado de confirmación docente
+   */
+  const getActionButtons = () => {
+    if (isPreview || isDragOverlay) return null;
+
+    const estadoConfirmacion = getEstadoConfirmacion();
+
+    switch (estadoConfirmacion) {
+      case 'EN_CURSO':
+        return (
+          <div className="action-buttons d-flex gap-1">
+            <button
+              className="btn btn-success btn-sm action-btn"
+              onClick={handleEnviarADocente}
+              disabled={isProcessingAction}
+              title="Enviar a docente para confirmación"
+            >
+              {isProcessingAction ? '⏳' : '✓'}
+            </button>
+            <button
+              className="btn btn-danger btn-sm action-btn"
+              onClick={handleCancelarReserva}
+              disabled={isProcessingAction}
+              title="Cancelar reserva"
+            >
+              {isProcessingAction ? '⏳' : '✕'}
+            </button>
+          </div>
+        );
+
+      case 'PENDIENTE':
+        return (
+          <div className="status-info d-flex align-items-center gap-2">
+            <Badge bg="warning" text="dark" className="status-badge">
+              📋 Pendiente
+            </Badge>
+            <button
+              className="btn btn-outline-danger btn-sm action-btn"
+              onClick={handleCancelarReserva}
+              disabled={isProcessingAction}
+              title="Cancelar reserva"
+            >
+              {isProcessingAction ? '⏳' : '✕'}
+            </button>
+          </div>
+        );
+
+      case 'REQUIERE_REVISION':
+        return (
+          <div className="status-info d-flex align-items-center gap-2">
+            <Badge bg="info" className="status-badge">
+              📝 Revisión
+            </Badge>
+            <button
+              className="btn btn-outline-danger btn-sm action-btn"
+              onClick={handleCancelarReserva}
+              disabled={isProcessingAction}
+              title="Cancelar reserva"
+            >
+              {isProcessingAction ? '⏳' : '✕'}
+            </button>
+          </div>
+        );
+
+      case 'CONFIRMADO':
+        return (
+          <div className="status-info">
+            <Badge bg="success" className="status-badge">
+              ✅ Confirmado
+            </Badge>
+          </div>
+        );
+
+      case 'DESCARTADO':
+        return (
+          <div className="status-info">
+            <Badge bg="danger" className="status-badge">
+              🗑️ Descartado
+            </Badge>
+          </div>
+        );
+
+      default:
+        return (
+          <button
+            className="btn btn-outline-danger btn-sm action-btn"
+            onClick={handleCancelarReserva}
+            disabled={isProcessingAction}
+            title="Eliminar"
+          >
+            {isProcessingAction ? '⏳' : '✕'}
+          </button>
+        );
     }
   };
 
@@ -145,7 +357,7 @@ export default function ExamenPostIt({
     };
   }, []);
 
-  // Color
+  // Color y estilos
   const getPostItColor = () => {
     if (!examen) return '#fffacd';
     const hash = examen.NOMBRE_ASIGNATURA?.split('').reduce(
@@ -164,7 +376,6 @@ export default function ExamenPostIt({
     return colors[hash % colors.length] || '#fffacd';
   };
 
-  // Estilos
   const getStyles = () => ({
     backgroundColor: getPostItColor(),
     height: isPreview
@@ -175,106 +386,65 @@ export default function ExamenPostIt({
     ...style,
   });
 
-  // Clases
-  const getMainClass = () => {
-    const classes = [
-      'examen-post-it',
-      isPreview ? 'is-preview' : 'is-placed',
-      isBeingDragged ? 'is-dragging' : '',
-      isResizing ? 'is-resizing' : '',
-      resizeError ? 'has-error' : '',
-      esReservaConfirmada ? 'is-confirmed' : 'is-pending',
-      isDragOverlay ? 'is-drag-overlay' : '',
-    ];
-
-    return classes.filter(Boolean).join(' ');
-  };
-
   if (!examen) return null;
 
   return (
     <div
       ref={setNodeRef}
       style={getStyles()}
-      className={getMainClass()}
-      data-modulos={moduloscountState}
-      data-fecha={fecha}
-      data-modulo-inicial={moduloInicial}
-      // IMPORTANTE: Solo pasar dragHandleListeners si NO es DragOverlay
-      {...(!isDragOverlay ? dragHandleListeners : {})}
+      className={`examen-post-it ${isBeingDragged ? 'being-dragged' : ''} ${
+        isDragOverlay ? 'drag-overlay' : ''
+      } ${isResizing ? 'resizing' : ''}`}
+      data-estado={getEstadoConfirmacion()}
       {...props}
     >
       <div className="examen-content">
-        <div className="examen-header">
-          <span className="examen-title">{examen.NOMBRE_ASIGNATURA}</span>
-          {!isPreview && !isDragOverlay && (
-            <button
-              className="btn-remove"
-              onClick={handleDelete}
-              aria-label="Eliminar examen"
-              title={esReservaConfirmada ? 'Eliminar reserva' : 'Quitar examen'}
-            >
-              ✕
-            </button>
-          )}
+        <div className="examen-header d-flex justify-content-between align-items-start">
+          <div className="examen-info flex-grow-1">
+            <div className="examen-title">
+              {examen.NOMBRE_ASIGNATURA || examen.NOMBRE_EXAMEN || 'Sin nombre'}
+            </div>
+            <div className="examen-details text-muted small">
+              {examen.NOMBRE_CARRERA && <div>{examen.NOMBRE_CARRERA}</div>}
+              {examen.NOMBRE_SECCION && (
+                <div>Sección: {examen.NOMBRE_SECCION}</div>
+              )}
+            </div>
+          </div>
+
+          {/* Botones de acción según el estado */}
+          <div className="action-container">{getActionButtons()}</div>
         </div>
 
-        <div className="content">
-          <div className="detail">
-            <span className="detail-label">Sección:</span>
-            <span title={examen.NOMBRE_SECCION}>
-              {examen.NOMBRE_SECCION || 'N/A'}
-            </span>
-          </div>
-          <div className="detail">
-            <span className="detail-label">Módulos:</span>
-            <span>{moduloscountState}</span>
-          </div>
+        {/* Información de módulos */}
+        <div className="modulos-info mt-2">
+          <small className="text-muted">
+            Módulos: {moduloscountState}
+            {fecha && moduloInicial && (
+              <span>
+                {' '}
+                | {fecha} - Módulo {moduloInicial}
+              </span>
+            )}
+          </small>
         </div>
 
+        {/* Mensaje de error si hay */}
         {resizeError && (
-          <div className="resize-error-message">{resizeError}</div>
+          <div className="alert alert-danger alert-sm mt-1">
+            <small>{resizeError}</small>
+          </div>
         )}
       </div>
 
-      {/* RESIZE HANDLE: FUERA del examen-content para evitar conflictos */}
-      {canResize && (
+      {/* Handle de redimensión */}
+      {!isPreview && !isDragOverlay && !esReservaConfirmada && (
         <div
-          style={{
-            cursor: 'ns-resize',
-            height: '12px', // ← Aumentar altura para mejor click
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            borderTop: '1px solid #ddd',
-            backgroundColor: isResizing ? '#007bff' : 'rgba(0,0,0,0.1)',
-            fontSize: '10px',
-            position: 'absolute',
-            bottom: '0',
-            left: '0',
-            right: '0',
-            zIndex: 999, // ← Z-index alto
-            pointerEvents: 'auto', // ← Forzar pointer events
-            userSelect: 'none',
-            transition: isResizing ? 'none' : 'background-color 0.2s ease',
-          }}
-          onMouseDown={handleResizeStart}
           className="resize-handle"
-          title="Arrastra para redimensionar"
-          // ← AGREGAR eventos adicionales para debugging
-          onMouseEnter={() => console.log('🎯 Mouse enter resize handle')}
-          onMouseLeave={() => console.log('🎯 Mouse leave resize handle')}
-          onClick={(e) => {
-            e.stopPropagation();
-            console.log('🎯 Resize handle clicked');
-          }}
+          onMouseDown={handleMouseDown}
+          title="Arrastrar para cambiar duración"
         >
-          <FaArrowsAltV style={{ pointerEvents: 'none' }} />
-          {isResizing && (
-            <span style={{ marginLeft: '5px', pointerEvents: 'none' }}>
-              REDIMENSIONANDO
-            </span>
-          )}
+          <FaArrowsAltV />
         </div>
       )}
     </div>

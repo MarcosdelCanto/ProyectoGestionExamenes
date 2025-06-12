@@ -74,7 +74,7 @@ router.put(
 router.delete(
   '/:idReserva/cancelar-completa',
   authMiddleware,
-  checkPermission(['DELETE_RESERVAS_EXAMEN']),
+  checkPermission(['DELETE_RESERVA']),
   cancelarReservaCompleta
 );
 

@@ -3,7 +3,7 @@ import { useDroppable } from '@dnd-kit/core';
 import './styles/Calendar.css';
 import ExamenPostIt from './ExamenPostIt';
 
-const CalendarCell = memo(function CalendarCell({
+export default function CalendarCell({
   fecha,
   modulo,
   cellData,
@@ -14,9 +14,10 @@ const CalendarCell = memo(function CalendarCell({
   onRemoveExamen,
   onDeleteReserva,
   onCheckConflict,
-  esDropTarget, // ← Solo para procesamiento final
-  esHoverTarget, // ← NUEVA: Para preview visual
-  draggedExamen, // ← NUEVA: Para mostrar preview
+  esDropTarget,
+  esHoverTarget,
+  draggedExamen,
+  onReservaStateChange, // ← NUEVA PROP
 }) {
   const droppableId = `droppable-${fecha}-${modulo.ORDEN}`;
 
@@ -109,6 +110,4 @@ const CalendarCell = memo(function CalendarCell({
       )}
     </td>
   );
-});
-
-export default CalendarCell;
+}
