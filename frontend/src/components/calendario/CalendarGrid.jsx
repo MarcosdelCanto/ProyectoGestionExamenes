@@ -31,7 +31,7 @@ export default function CalendarGrid({
     modulos,
   });
 
-  // Handler para cambios de estado de reservas
+  // Handler para cambios de estado de reservas - MEJORADO
   const handleReservaStateChange = (reservaId, nuevoEstado, info) => {
     console.log(`[CalendarGrid] Cambio de estado de reserva ${reservaId}:`, {
       nuevoEstado,
@@ -41,16 +41,28 @@ export default function CalendarGrid({
     if (nuevoEstado === 'ELIMINADO') {
       // Remover la reserva del estado local
       if (setReservas) {
-        setReservas((prev) => prev.filter((r) => r.ID_RESERVA !== reservaId));
+        setReservas((prev) => {
+          const reservaEliminada = prev.find((r) => r.ID_RESERVA === reservaId);
+          const nuevasReservas = prev.filter((r) => r.ID_RESERVA !== reservaId);
+
+          console.log(
+            `[CalendarGrid] Reserva ${reservaId} eliminada del estado local`
+          );
+
+          // Si hay callback para refrescar exámenes disponibles, usarlo
+          if (info.examen_id && refreshExamenesDisponibles) {
+            console.log(
+              `[CalendarGrid] Refrescando exámenes disponibles para examen ${info.examen_id}`
+            );
+            setTimeout(() => refreshExamenesDisponibles(), 100);
+          }
+
+          return nuevasReservas;
+        });
       }
 
-      // Si hay info del examen, volver a agregarlo al selector
-      if (info.examen_id && refreshExamenesDisponibles) {
-        refreshExamenesDisponibles();
-      }
-
-      // Mostrar mensaje de éxito
-      alert(`✅ ${info.message}`);
+      // Mostrar mensaje de éxito más discreto
+      console.log(`✅ ${info.message}`);
     } else if (nuevoEstado === 'PENDIENTE') {
       // Actualizar el estado local de la reserva
       if (setReservas) {
@@ -63,8 +75,8 @@ export default function CalendarGrid({
         );
       }
 
-      // Mostrar mensaje informativo
-      alert(`📋 ${info.message}`);
+      // Mostrar mensaje informativo más discreto
+      console.log(`📋 ${info.message}`);
     }
   };
 

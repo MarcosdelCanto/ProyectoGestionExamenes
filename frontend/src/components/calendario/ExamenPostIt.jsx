@@ -159,7 +159,11 @@ export default function ExamenPostIt({
   /**
    * Handler para enviar reserva a docente (EN_CURSO → PENDIENTE)
    */
-  const handleEnviarADocente = async () => {
+  const handleEnviarADocente = async (e) => {
+    // IMPORTANTE: Evitar que se propague el evento
+    e.stopPropagation();
+    e.preventDefault();
+
     if (isProcessingAction) return;
 
     try {
@@ -200,7 +204,11 @@ export default function ExamenPostIt({
   /**
    * Handler para cancelar reserva completa (cualquier estado → ELIMINADO)
    */
-  const handleCancelarReserva = async () => {
+  const handleCancelarReserva = async (e) => {
+    // IMPORTANTE: Evitar que se propague el evento y active useModals
+    e.stopPropagation();
+    e.preventDefault();
+
     if (isProcessingAction) return;
 
     const confirmacion = window.confirm(
@@ -233,6 +241,7 @@ export default function ExamenPostIt({
 
       console.log('[ExamenPostIt] Reserva cancelada exitosamente:', response);
 
+      // Notificar al componente padre sobre la eliminación
       if (onReservaStateChange) {
         onReservaStateChange(reservaId, 'ELIMINADO', {
           message: 'Reserva cancelada y examen reactivado',
@@ -241,9 +250,10 @@ export default function ExamenPostIt({
         });
       }
 
-      if (onDeleteReserva) {
-        onDeleteReserva(reservaId);
-      }
+      // NO llamar onDeleteReserva ya que onReservaStateChange se encarga de todo
+      // if (onDeleteReserva) {
+      //   onDeleteReserva(reservaId);
+      // }
     } catch (error) {
       console.error('[ExamenPostIt] Error al cancelar reserva:', error);
       alert(`❌ Error: ${error.message}`);
@@ -266,7 +276,7 @@ export default function ExamenPostIt({
           <div className="action-buttons d-flex gap-1">
             <button
               className="btn btn-success btn-sm action-btn"
-              onClick={handleEnviarADocente}
+              onClick={handleEnviarADocente} // Ya tiene e.stopPropagation
               disabled={isProcessingAction}
               title="Enviar a docente para confirmación"
             >
@@ -274,7 +284,7 @@ export default function ExamenPostIt({
             </button>
             <button
               className="btn btn-danger btn-sm action-btn"
-              onClick={handleCancelarReserva}
+              onClick={handleCancelarReserva} // Ya tiene e.stopPropagation
               disabled={isProcessingAction}
               title="Cancelar reserva"
             >
@@ -291,7 +301,7 @@ export default function ExamenPostIt({
             </Badge>
             <button
               className="btn btn-outline-danger btn-sm action-btn"
-              onClick={handleCancelarReserva}
+              onClick={handleCancelarReserva} // Ya tiene e.stopPropagation
               disabled={isProcessingAction}
               title="Cancelar reserva"
             >
@@ -308,7 +318,7 @@ export default function ExamenPostIt({
             </Badge>
             <button
               className="btn btn-outline-danger btn-sm action-btn"
-              onClick={handleCancelarReserva}
+              onClick={handleCancelarReserva} // Ya tiene e.stopPropagation
               disabled={isProcessingAction}
               title="Cancelar reserva"
             >
@@ -339,7 +349,7 @@ export default function ExamenPostIt({
         return (
           <button
             className="btn btn-outline-danger btn-sm action-btn"
-            onClick={handleCancelarReserva}
+            onClick={handleCancelarReserva} // Ya tiene e.stopPropagation
             disabled={isProcessingAction}
             title="Eliminar"
           >
