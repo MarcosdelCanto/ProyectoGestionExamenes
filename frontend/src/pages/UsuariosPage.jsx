@@ -38,7 +38,7 @@ export default function UsuariosPage() {
   const [filters, setFilters] = useState({ text: '', role: '' }); // Estado unificado para filtros
   const [roles, setRoles] = useState([]); // Estado para almacenar los roles
   const [currentPage, setCurrentPage] = useState(1);
-  const [itemsPerPage, setItemsPerPage] = useState(10); // Puedes hacerlo configurable
+  const [itemsPerPage, setItemsPerPage] = useState(5); // Puedes hacerlo configurable
   const [msgModal, setMsgModal] = useState(null);
   const [bulkUploadResult, setBulkUploadResult] = useState(null);
   const [activeTab, setActiveTab] = useState('gestionUsuarios'); // Estado para la pestaña activa

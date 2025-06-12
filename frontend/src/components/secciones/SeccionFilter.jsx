@@ -1,5 +1,6 @@
 // src/components/secciones/SeccionFilter.jsx
 import React from 'react';
+import Select from 'react-select'; // Importar react-select
 import { Card, Form, Row, Col, Button } from 'react-bootstrap';
 
 function SeccionFilter({
@@ -18,6 +19,18 @@ function SeccionFilter({
     });
   };
 
+  // Helper para convertir arrays de datos a formato de opciones para react-select
+  const toSelectOptions = (
+    items,
+    valueKey,
+    labelKey,
+    defaultLabel = 'Todas'
+  ) => [
+    { value: '', label: defaultLabel },
+    ...(items
+      ? items.map((item) => ({ value: item[valueKey], label: item[labelKey] }))
+      : []),
+  ];
   return (
     <Card className="mb-3 shadow-sm">
       <Card.Body>
@@ -37,68 +50,103 @@ function SeccionFilter({
             <Col md={6} lg={2}>
               <Form.Group controlId="filterEscuelaSeccion">
                 <Form.Label>Escuela</Form.Label>
-                <Form.Select
-                  value={currentFilters.escuela || ''}
-                  onChange={(e) =>
+                <Select
+                  inputId="filterEscuelaSeccion"
+                  options={toSelectOptions(
+                    escuelas,
+                    'ID_ESCUELA',
+                    'NOMBRE_ESCUELA',
+                    'Todas'
+                  )}
+                  value={
+                    toSelectOptions(
+                      escuelas,
+                      'ID_ESCUELA',
+                      'NOMBRE_ESCUELA'
+                    ).find(
+                      (option) =>
+                        option.value === (currentFilters.escuela || '')
+                    ) || null
+                  }
+                  onChange={(selectedOption) =>
                     onFilterChange({
-                      escuela: e.target.value,
+                      escuela: selectedOption ? selectedOption.value : '',
                       carrera: '', // Reset carrera
                       asignatura: '', // Reset asignatura
                     })
                   }
-                >
-                  <option value="">Todas</option>
-                  {escuelas.map((escuela) => (
-                    <option key={escuela.ID_ESCUELA} value={escuela.ID_ESCUELA}>
-                      {escuela.NOMBRE_ESCUELA}
-                    </option>
-                  ))}
-                </Form.Select>
+                  placeholder="Todas"
+                  isClearable
+                />
               </Form.Group>
             </Col>
             <Col md={6} lg={3}>
               <Form.Group controlId="filterCarreraSeccion">
                 <Form.Label>Carrera</Form.Label>
-                <Form.Select
-                  value={currentFilters.carrera || ''}
-                  onChange={(e) =>
+                <Select
+                  inputId="filterCarreraSeccion"
+                  options={toSelectOptions(
+                    carrerasOptions, // Usar carrerasOptions que ya están filtradas
+                    'ID_CARRERA',
+                    'NOMBRE_CARRERA',
+                    'Todas'
+                  )}
+                  value={
+                    toSelectOptions(
+                      carrerasOptions,
+                      'ID_CARRERA',
+                      'NOMBRE_CARRERA'
+                    ).find(
+                      (option) =>
+                        option.value === (currentFilters.carrera || '')
+                    ) || null
+                  }
+                  onChange={(selectedOption) =>
                     onFilterChange({
-                      carrera: e.target.value,
+                      carrera: selectedOption ? selectedOption.value : '',
                       asignatura: '', // Reset asignatura
                     })
                   }
                   disabled={
-                    !currentFilters.escuela && carrerasOptions.length === 0
+                    !currentFilters.escuela // Deshabilitar si no hay escuela seleccionada
                   }
-                >
-                  <option value="">Todas</option>
-                  {carrerasOptions.map((carrera) => (
-                    <option key={carrera.ID_CARRERA} value={carrera.ID_CARRERA}>
-                      {carrera.NOMBRE_CARRERA}
-                    </option>
-                  ))}
-                </Form.Select>
+                  placeholder="Todas"
+                  isClearable
+                />
               </Form.Group>
             </Col>
             <Col md={6} lg={2}>
               <Form.Group controlId="filterAsignaturaSeccion">
                 <Form.Label>Asignatura</Form.Label>
-                <Form.Select
-                  value={currentFilters.asignatura || ''}
-                  onChange={(e) =>
-                    onFilterChange({ asignatura: e.target.value })
+                <Select
+                  inputId="filterAsignaturaSeccion"
+                  options={toSelectOptions(
+                    asignaturasOptions, // Usar asignaturasOptions que ya están filtradas
+                    'ID_ASIGNATURA',
+                    'NOMBRE_ASIGNATURA',
+                    'Todas'
+                  )}
+                  value={
+                    toSelectOptions(
+                      asignaturasOptions,
+                      'ID_ASIGNATURA',
+                      'NOMBRE_ASIGNATURA'
+                    ).find(
+                      (option) =>
+                        option.value === (currentFilters.asignatura || '')
+                    ) || null
+                  }
+                  onChange={(selectedOption) =>
+                    onFilterChange({
+                      asignatura: selectedOption ? selectedOption.value : '',
+                    })
                   }
                   disabled={
-                    !currentFilters.carrera && asignaturasOptions.length === 0
+                    !currentFilters.carrera // Deshabilitar si no hay carrera seleccionada
                   }
-                >
-                  <option value="">Todas</option>
-                  {asignaturasOptions.map((asig) => (
-                    <option key={asig.ID_ASIGNATURA} value={asig.ID_ASIGNATURA}>
-                      {asig.NOMBRE_ASIGNATURA}
-                    </option>
-                  ))}
-                </Form.Select>
+                  placeholder="Todas"
+                  isClearable
+                />
               </Form.Group>
             </Col>
             <Col md={6} lg={2} className="d-flex align-items-end">

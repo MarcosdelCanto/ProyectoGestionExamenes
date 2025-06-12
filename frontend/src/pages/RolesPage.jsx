@@ -1,5 +1,5 @@
 // src/pages/RolesPage.jsx
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react'; // Añadido useMemo
 import Layout from '../components/Layout'; // Ajusta la ruta si es necesario
 import {
   fetchAllRoles,
@@ -19,6 +19,10 @@ import {
 import RoleActions from '../components/roles/RoleActions';
 import RoleTable from '../components/roles/RoleTable';
 import RoleForm from '../components/roles/RoleForm';
+import RoleFilter from '../components/roles/RoleFilter'; // <-- IMPORTAR RoleFilter
+import PaginationComponent from '../components/PaginationComponent'; // Importar PaginationComponent
+
+const ITEMS_PER_PAGE = 6; // Definir cuántos ítems mostrar por página
 
 function RolesPage() {
   const [roles, setRoles] = useState([]);
@@ -33,7 +37,13 @@ function RolesPage() {
     data: null, // El rol actual para editar/eliminar (con sus permisos si es para editar)
     show: false,
   });
-  const [selectedRole, setSelectedRole] = useState(null); // Rol seleccionado en la tabla
+  const [selectedRoles, setSelectedRoles] = useState([]); // Cambiado a array para selección múltiple
+
+  // Estado para los filtros de Rol
+  const [roleFilters, setRoleFilters] = useState({
+    nombre: '',
+  });
+  const [currentPage, setCurrentPage] = useState(1); // Estado para la página actual
 
   const { forceReloadUserData, currentUser } = usePermission();
 
@@ -43,12 +53,13 @@ function RolesPage() {
     try {
       const data = await fetchAllRoles();
       setRoles(Array.isArray(data) ? data : data.data || []);
+      setCurrentPage(1); // Resetear a la primera página al cargar roles
     } catch (err) {
       setError('Error al cargar los roles. Intente de nuevo más tarde.');
       console.error('Error en loadRoles:', err);
       setRoles([]);
     } finally {
-      setSelectedRole(null); // Limpiar selección de la tabla al recargar roles
+      setSelectedRoles([]); // Limpiar selección de la tabla al recargar roles
       setLoading(false);
     }
   }, []);
@@ -69,16 +80,22 @@ function RolesPage() {
     setIsProcessing(false); // Asegurar que no esté en estado de procesamiento
 
     if (type === 'add') {
-      setSelectedRole(null);
+      setSelectedRoles([]); // Limpiar selección para 'add'
       setModalState({ type: 'add', data: null, show: true });
-    } else if (type === 'edit' && roleDataFromTable) {
-      setSelectedRole(roleDataFromTable); // Mantener la selección de la tabla
+    } else if (type === 'edit') {
+      // Para editar, se espera que selectedRoles tenga un solo ítem
+      if (selectedRoles.length !== 1) {
+        setError('Por favor, seleccione un único rol para editar.');
+        setTimeout(() => setError(null), 4000);
+        return;
+      }
+      const roleToEdit = selectedRoles[0];
       setIsProcessing(true); // Mostrar indicador mientras se cargan los detalles completos del rol
       setModalState({ type: 'edit', data: null, show: true }); // Abrir modal, datos vendrán después
       try {
         // Fetch completo del rol, incluyendo sus permisos asignados
         const fullRoleDataWithPermissions = await fetchRoleByIdWithPermissions(
-          roleDataFromTable.ID_ROL
+          roleToEdit.ID_ROL
         );
         setModalState({
           type: 'edit',
@@ -95,9 +112,15 @@ function RolesPage() {
       } finally {
         setIsProcessing(false); // Quitar indicador de carga de detalles del rol
       }
-    } else if (type === 'delete' && roleDataFromTable) {
-      setSelectedRole(roleDataFromTable);
-      setModalState({ type: 'delete', data: roleDataFromTable, show: true });
+    } else if (type === 'delete') {
+      // Para eliminar, se pueden tener múltiples roles seleccionados
+      if (selectedRoles.length === 0) {
+        setError('Por favor, seleccione al menos un rol para eliminar.');
+        setTimeout(() => setError(null), 4000);
+        return;
+      }
+      // Para el modal de confirmación, podríamos mostrar los nombres o solo la cantidad
+      setModalState({ type: 'delete', data: [...selectedRoles], show: true }); // Pasar una copia del array
     }
   };
 
@@ -175,17 +198,6 @@ function RolesPage() {
     }
   };
 
-  const handleDeleteRequest = (roleId) => {
-    // Renombrado para evitar colisión con servicio deleteRole
-    const roleToDelete = roles.find((r) => r.ID_ROL === roleId);
-    if (roleToDelete) {
-      openModal('delete', roleToDelete); // openModal se encarga de setSelectedRole para 'delete'
-    } else {
-      console.error('Rol no encontrado para eliminar con ID:', roleId);
-      setError('No se pudo encontrar el rol especificado para eliminar.');
-    }
-  };
-
   const handleConfirmDelete = async () => {
     if (modalState.type !== 'delete' || !modalState.data) return;
     setIsProcessing(true);
@@ -193,10 +205,16 @@ function RolesPage() {
     setSuccessMessage('');
     try {
       await deleteRole(modalState.data.ID_ROL);
-      setSuccessMessage('Rol eliminado exitosamente.');
+      // Si modalState.data es un array (para borrado múltiple)
+      for (const roleToDelete of modalState.data) {
+        await deleteRole(roleToDelete.ID_ROL);
+      }
+      setSuccessMessage(
+        `${modalState.data.length} rol(es) eliminado(s) exitosamente.`
+      );
       await loadRoles(); // Recargar roles
       handleCloseModal();
-      setSelectedRole(null); // Limpiar selección
+      setSelectedRoles([]); // Limpiar selección
     } catch (err) {
       setError(
         err.response?.data?.message ||
@@ -208,29 +226,97 @@ function RolesPage() {
     }
   };
 
+  // Handler para el cambio de filtro de roles
+  const handleRoleFilterChange = useCallback((changedFilters) => {
+    setRoleFilters((prevFilters) => ({
+      ...prevFilters,
+      ...changedFilters,
+    }));
+    setCurrentPage(1); // Resetear a la primera página al cambiar filtros
+  }, []);
+
+  // Aplicar el filtro a la lista de roles
+  const filteredRoles = useMemo(() => {
+    return roles.filter((role) => {
+      const matchesNombre =
+        !roleFilters.nombre ||
+        (role.NOMBRE_ROL &&
+          role.NOMBRE_ROL.toLowerCase().includes(
+            roleFilters.nombre.toLowerCase()
+          ));
+      return matchesNombre;
+    });
+  }, [roles, roleFilters]);
+
+  // Lógica de Paginación
+  const indexOfLastRole = currentPage * ITEMS_PER_PAGE;
+  const indexOfFirstRole = indexOfLastRole - ITEMS_PER_PAGE;
+  const currentRolesOnPage = useMemo(() => {
+    return filteredRoles.slice(indexOfFirstRole, indexOfLastRole);
+  }, [filteredRoles, indexOfFirstRole, indexOfLastRole]);
+
+  const paginate = (pageNumber) => setCurrentPage(pageNumber);
   const handleAddAction = () => {
     openModal('add');
   };
 
   const handleEditAction = () => {
-    if (selectedRole) {
-      openModal('edit', selectedRole); // openModal ('edit') ahora carga los datos completos
+    if (selectedRoles.length === 1) {
+      openModal('edit'); // openModal ('edit') ahora usa selectedRoles[0]
     } else {
       alert('Por favor, seleccione un rol de la tabla para editar.');
     }
   };
 
+  const handleDeleteAction = () => {
+    if (selectedRoles.length > 0) {
+      openModal('delete'); // openModal ('delete') ahora usa selectedRoles
+    } else {
+      alert('Por favor, seleccione al menos un rol de la tabla para eliminar.');
+    }
+  };
+
+  const handleToggleRoleSelection = (roleToToggle) => {
+    setSelectedRoles((prevSelected) =>
+      prevSelected.find((r) => r.ID_ROL === roleToToggle.ID_ROL)
+        ? prevSelected.filter((r) => r.ID_ROL !== roleToToggle.ID_ROL)
+        : [...prevSelected, roleToToggle]
+    );
+  };
+
+  const handleToggleSelectAllRoles = () => {
+    // Funciona sobre los roles de la página actual
+    const allCurrentPageRoleIds = currentRolesOnPage.map((r) => r.ID_ROL);
+    const allOnPageSelected =
+      currentRolesOnPage.length > 0 &&
+      currentRolesOnPage.every((role) =>
+        selectedRoles.some((sr) => sr.ID_ROL === role.ID_ROL)
+      );
+
+    if (allOnPageSelected) {
+      // Deseleccionar todos los de la página actual
+      setSelectedRoles((prev) =>
+        prev.filter((sr) => !allCurrentPageRoleIds.includes(sr.ID_ROL))
+      );
+    } else {
+      // Seleccionar todos los de la página actual que no estén ya seleccionados
+      const newSelectionsFromPage = currentRolesOnPage.filter(
+        (role) => !selectedRoles.some((sr) => sr.ID_ROL === role.ID_ROL)
+      );
+      setSelectedRoles((prev) => [...prev, ...newSelectionsFromPage]);
+    }
+  };
+
   return (
     <Layout>
-      <Container fluid className="pt-4">
-        {/* pt-4 para padding superior */}
-        <div>
-          <h2 className="display-6 mb-3">
-            {/* Título más pequeño, mb-3 para separación */}
+      <div className="container-fluid pt-4">
+        <div className="d-flex justify-content-between align-items-center mb-3">
+          <h2 className="display-6">
             <i className="bi bi-shield-lock-fill me-3"></i>
             Gestión de Roles y Accesos
           </h2>
         </div>
+        <hr />
         {error && (
           <Alert variant="danger" onClose={() => setError(null)} dismissible>
             {error}
@@ -245,15 +331,17 @@ function RolesPage() {
             {successMessage}
           </Alert>
         )}
+        <RoleFilter
+          onFilterChange={handleRoleFilterChange}
+          currentFilters={roleFilters}
+        />
         <div className="mb-3">
           {/* Espacio para RoleActions */}
           <RoleActions
             onAddRole={handleAddAction}
             onEditRole={handleEditAction}
-            onDeleteRole={() => {
-              if (selectedRole) handleDeleteRequest(selectedRole.ID_ROL);
-            }}
-            selectedRole={selectedRole}
+            onDeleteRole={handleDeleteAction}
+            selectedRoles={selectedRoles} // Pasar el array de roles seleccionados
             isLoading={loading || isProcessing} // Si la tabla está cargando o una acción está en proceso
           />
         </div>
@@ -264,15 +352,23 @@ function RolesPage() {
           </div>
         ) : (
           <RoleTable
-            roles={roles}
-            selectedRole={selectedRole}
-            onSelectRole={setSelectedRole}
-            onEditRole={(role) => openModal('edit', role)} // 'role' aquí es de la lista simplificada
-            onDeleteRole={handleDeleteRequest}
+            roles={currentRolesOnPage} // Usar roles de la página actual
+            selectedRoles={selectedRoles}
+            onToggleRoleSelection={handleToggleRoleSelection}
+            onToggleSelectAllRoles={handleToggleSelectAllRoles}
+            // Las acciones de editar/eliminar se manejan desde RoleActions ahora
             isLoading={loading} // Pasar loading para que la tabla pueda mostrar un indicador si lo necesita
           />
         )}
-      </Container>
+        {!loading && filteredRoles.length > ITEMS_PER_PAGE && (
+          <PaginationComponent
+            itemsPerPage={ITEMS_PER_PAGE}
+            totalItems={filteredRoles.length}
+            paginate={paginate}
+            currentPage={currentPage}
+          />
+        )}
+      </div>
 
       {/* Modal para Crear/Editar Rol */}
       {(modalState.type === 'add' || modalState.type === 'edit') &&
@@ -299,10 +395,17 @@ function RolesPage() {
             <Modal.Title>Confirmar Eliminación</Modal.Title>
           </Modal.Header>
           <Modal.Body>
-            <p>
-              ¿Está seguro de que desea eliminar el rol "
-              <strong>{modalState.data.NOMBRE_ROL}</strong>"?
-            </p>
+            {modalState.data.length === 1 ? (
+              <p>
+                ¿Está seguro de que desea eliminar el rol "
+                <strong>{modalState.data[0].NOMBRE_ROL}</strong>"?
+              </p>
+            ) : (
+              <p>
+                ¿Está seguro de que desea eliminar los{' '}
+                <strong>{modalState.data.length}</strong> roles seleccionados?
+              </p>
+            )}
             <p className="text-danger">
               Esta acción no se puede deshacer y podría afectar a usuarios
               asignados a este rol.

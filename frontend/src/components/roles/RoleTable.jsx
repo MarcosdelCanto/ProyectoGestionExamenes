@@ -5,9 +5,11 @@ import { Table, Button, Alert } from 'react-bootstrap';
 function RoleTable({
   roles,
   isLoading,
-  selectedRole, // Nueva prop
-  onSelectRole, // Nueva prop
+  selectedRoles, // Cambiado de selectedRole (objeto) a selectedRoles (array)
+  onToggleRoleSelection, // Para seleccionar/deseleccionar un rol individual
+  onToggleSelectAllRoles, // Para seleccionar/deseleccionar todos los roles
 }) {
+  // 'roles' aquí son los roles de la página actual
   // Mostrar "cargando" solo si no hay datos aún y isLoading es true
   if (isLoading && (!roles || roles.length === 0)) {
     return (
@@ -30,39 +32,61 @@ function RoleTable({
   }
 
   return (
-    <div
-      className="table-responsive border" // Estilo similar a ModuloTable
-      style={{
-        maxHeight: '70vh', // Altura máxima para el scroll, puedes ajustarla
-        overflowY: 'auto',
-        marginBottom: '1rem', // Margen inferior como en ModuloTable
-      }}
-    >
-      <Table striped bordered hover responsive="sm" className="mb-0">
-        <thead className="table-light position-sticky top-0">
+    <div className="table-responsive border mb-3">
+      <table className="table table-hover table-bordered mb-0">
+        <thead className="table-light">
           <tr>
+            <th style={{ width: '5%' }} className="text-center align-middle">
+              <input
+                type="checkbox"
+                className="form-check-input"
+                checked={
+                  roles.length > 0 &&
+                  roles.every((role) =>
+                    selectedRoles.some((sr) => sr.ID_ROL === role.ID_ROL)
+                  )
+                }
+                onChange={onToggleSelectAllRoles}
+                disabled={roles.length === 0}
+                aria-label="Seleccionar todos los roles"
+              />
+            </th>
             <th>ID</th>
             <th>Nombre del Rol</th>
-            {/* Columna de Acciones eliminada */}
           </tr>
         </thead>
         <tbody>
           {roles.map((role) => (
             <tr
               key={`role-${role.ID_ROL}`}
-              onClick={() => onSelectRole(role)} // Seleccionar rol al hacer clic
-              className={
-                selectedRole?.ID_ROL === role.ID_ROL ? 'table-primary' : ''
-              } // Resaltar fila seleccionada
+              onClick={() => onToggleRoleSelection(role)} // Cambiado para usar la nueva función de toggle
+              className={`align-middle ${
+                selectedRoles.find((r) => r.ID_ROL === role.ID_ROL)
+                  ? 'table-primary'
+                  : ''
+              }`} // Resaltar si está en el array de seleccionados
               style={{ cursor: 'pointer' }}
             >
+              <td className="text-center align-middle">
+                <input
+                  type="checkbox"
+                  className="form-check-input"
+                  checked={
+                    !!selectedRoles.find((r) => r.ID_ROL === role.ID_ROL)
+                  }
+                  onChange={(e) => {
+                    e.stopPropagation(); // Evita que el onClick de la fila se dispare también
+                    onToggleRoleSelection(role);
+                  }}
+                  aria-label={`Seleccionar rol ${role.NOMBRE_ROL || role.ID_ROL}`}
+                />
+              </td>
               <td>{role.ID_ROL}</td>
               <td>{role.NOMBRE_ROL}</td>
-              {/* Celda de Acciones eliminada */}
             </tr>
           ))}
         </tbody>
-      </Table>
+      </table>
     </div>
   );
 }

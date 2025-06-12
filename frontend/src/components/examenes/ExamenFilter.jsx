@@ -1,5 +1,6 @@
 // src/components/examenes/ExamenFilter.jsx
 import React from 'react';
+import Select from 'react-select'; // Importar react-select
 import { Card, Form, Row, Col, Button } from 'react-bootstrap';
 
 function ExamenFilter({
@@ -12,6 +13,7 @@ function ExamenFilter({
   currentFilters,
 }) {
   const handleClearFilters = () => {
+    // Al limpiar, onFilterChange debe recibir los valores que el estado espera (strings vacíos)
     onFilterChange({
       text: '',
       escuela: '',
@@ -21,6 +23,19 @@ function ExamenFilter({
       estado: '',
     });
   };
+
+  // Helper para convertir arrays de datos a formato de opciones para react-select
+  const toSelectOptions = (
+    items,
+    valueKey,
+    labelKey,
+    defaultLabel = 'Todas'
+  ) => [
+    { value: '', label: defaultLabel },
+    ...(items
+      ? items.map((item) => ({ value: item[valueKey], label: item[labelKey] }))
+      : []),
+  ];
 
   return (
     <Card className="mb-3 shadow-sm">
@@ -41,83 +56,154 @@ function ExamenFilter({
             <Col md={6} lg={3}>
               <Form.Group controlId="filterEscuela">
                 <Form.Label>Escuela</Form.Label>
-                <Form.Select
-                  value={currentFilters.escuela || ''}
-                  onChange={(e) => onFilterChange({ escuela: e.target.value })}
-                >
-                  <option value="">Todas las escuelas</option>
-                  {escuelas.map((escuela) => (
-                    <option key={escuela.ID_ESCUELA} value={escuela.ID_ESCUELA}>
-                      {escuela.NOMBRE_ESCUELA}
-                    </option>
-                  ))}
-                </Form.Select>
+                <Select
+                  inputId="filterEscuela"
+                  options={toSelectOptions(
+                    escuelas,
+                    'ID_ESCUELA',
+                    'NOMBRE_ESCUELA',
+                    'Todas las escuelas'
+                  )}
+                  value={
+                    toSelectOptions(
+                      escuelas,
+                      'ID_ESCUELA',
+                      'NOMBRE_ESCUELA'
+                    ).find(
+                      (option) =>
+                        option.value === (currentFilters.escuela || '')
+                    ) || null
+                  }
+                  onChange={(selectedOption) =>
+                    onFilterChange({
+                      escuela: selectedOption ? selectedOption.value : '',
+                    })
+                  }
+                  placeholder="Todas las escuelas"
+                  isClearable
+                />
               </Form.Group>
             </Col>
             <Col md={6} lg={3}>
               <Form.Group controlId="filterCarrera">
                 <Form.Label>Carrera</Form.Label>
-                <Form.Select
-                  value={currentFilters.carrera || ''}
-                  onChange={(e) => onFilterChange({ carrera: e.target.value })}
-                >
-                  <option value="">Todas las carreras</option>
-                  {carreras.map((carrera) => (
-                    <option key={carrera.ID_CARRERA} value={carrera.ID_CARRERA}>
-                      {carrera.NOMBRE_CARRERA}
-                    </option>
-                  ))}
-                </Form.Select>
+                <Select
+                  inputId="filterCarrera"
+                  options={toSelectOptions(
+                    carreras,
+                    'ID_CARRERA',
+                    'NOMBRE_CARRERA',
+                    'Todas las carreras'
+                  )}
+                  value={
+                    toSelectOptions(
+                      carreras,
+                      'ID_CARRERA',
+                      'NOMBRE_CARRERA'
+                    ).find(
+                      (option) =>
+                        option.value === (currentFilters.carrera || '')
+                    ) || null
+                  }
+                  onChange={(selectedOption) =>
+                    onFilterChange({
+                      carrera: selectedOption ? selectedOption.value : '',
+                    })
+                  }
+                  placeholder="Todas las carreras"
+                  isClearable
+                />
               </Form.Group>
             </Col>
             <Col md={6} lg={3}>
               <Form.Group controlId="filterAsignatura">
                 <Form.Label>Asignatura</Form.Label>
-                <Form.Select
-                  value={currentFilters.asignatura || ''}
-                  onChange={(e) =>
-                    onFilterChange({ asignatura: e.target.value })
+                <Select
+                  inputId="filterAsignatura"
+                  options={toSelectOptions(
+                    asignaturas,
+                    'ID_ASIGNATURA',
+                    'NOMBRE_ASIGNATURA',
+                    'Todas las asignaturas'
+                  )}
+                  value={
+                    toSelectOptions(
+                      asignaturas,
+                      'ID_ASIGNATURA',
+                      'NOMBRE_ASIGNATURA'
+                    ).find(
+                      (option) =>
+                        option.value === (currentFilters.asignatura || '')
+                    ) || null
                   }
-                >
-                  <option value="">Todas las asignaturas</option>
-                  {asignaturas.map((asig) => (
-                    <option key={asig.ID_ASIGNATURA} value={asig.ID_ASIGNATURA}>
-                      {asig.NOMBRE_ASIGNATURA}
-                    </option>
-                  ))}
-                </Form.Select>
+                  onChange={(selectedOption) =>
+                    onFilterChange({
+                      asignatura: selectedOption ? selectedOption.value : '',
+                    })
+                  }
+                  placeholder="Todas las asignaturas"
+                  isClearable
+                />
               </Form.Group>
             </Col>
             <Col md={6} lg={3}>
               <Form.Group controlId="filterSeccion">
                 <Form.Label>Sección</Form.Label>
-                <Form.Select
-                  value={currentFilters.seccion || ''}
-                  onChange={(e) => onFilterChange({ seccion: e.target.value })}
-                >
-                  <option value="">Todas las secciones</option>
-                  {secciones.map((sec) => (
-                    <option key={sec.ID_SECCION} value={sec.ID_SECCION}>
-                      {sec.CODIGO_SECCION} - {sec.NOMBRE_SECCION}
-                    </option>
-                  ))}
-                </Form.Select>
+                <Select
+                  inputId="filterSeccion"
+                  options={[
+                    { value: '', label: 'Todas las secciones' },
+                    ...(secciones
+                      ? secciones.map((sec) => ({
+                          value: sec.ID_SECCION,
+                          label: `${sec.NOMBRE_SECCION}`,
+                        }))
+                      : []),
+                  ]}
+                  value={
+                    [
+                      { value: '', label: 'Todas las secciones' },
+                      ...(secciones
+                        ? secciones.map((sec) => ({
+                            value: sec.ID_SECCION,
+                            label: `${sec.NOMBRE_SECCION}`,
+                          }))
+                        : []),
+                    ].find(
+                      (option) =>
+                        option.value === (currentFilters.seccion || '')
+                    ) || null
+                  }
+                  onChange={(selectedOption) =>
+                    onFilterChange({
+                      seccion: selectedOption ? selectedOption.value : '',
+                    })
+                  }
+                  placeholder="Todas las secciones"
+                  isClearable
+                />
               </Form.Group>
             </Col>
             <Col md={6} lg={3}>
               <Form.Group controlId="filterEstadoExamen">
                 <Form.Label>Estado</Form.Label>
-                <Form.Select
-                  value={currentFilters.estado || ''}
-                  onChange={(e) => onFilterChange({ estado: e.target.value })}
-                >
-                  {/* <option value="">Todos los estados</option> // Esta es manejada por el array de estados */}
-                  {estados.map((estado) => (
-                    <option key={estado.value} value={estado.value}>
-                      {estado.label}
-                    </option>
-                  ))}
-                </Form.Select>
+                <Select
+                  inputId="filterEstadoExamen"
+                  options={estados} // Usar directamente el array 'estados' que ya incluye "Todos los estados"
+                  value={
+                    estados.find(
+                      // Buscar en el array 'estados'
+                      (option) => option.value === (currentFilters.estado || '')
+                    ) || null
+                  }
+                  onChange={(selectedOption) =>
+                    onFilterChange({
+                      estado: selectedOption ? selectedOption.value : '',
+                    })
+                  }
+                  placeholder="Todos los estados"
+                  isClearable
+                />
               </Form.Group>
             </Col>
             <Col md={12} lg="auto" className="mt-md-3 mt-lg-0">

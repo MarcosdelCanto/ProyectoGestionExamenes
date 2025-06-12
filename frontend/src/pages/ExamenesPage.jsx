@@ -25,13 +25,18 @@ const ITEMS_PER_PAGE = 6; // Cambiado a 6 filas por página
 export default function ExamenesPage() {
   const [examenes, setExamenes] = useState([]);
   const [processedExamenes, setProcessedExamenes] = useState([]); // Estado para exámenes enriquecidos
-  const [selectedExamenId, setSelectedExamenId] = useState(null); // Cambiado a selectedExamenId para manejar solo el ID
+  const [selectedExamenes, setSelectedExamenes] = useState([]); // Para la selección múltiple
   const [loading, setLoading] = useState(true); // Inicia en true para la carga inicial
+  const [isProcessing, setIsProcessing] = useState(false); // Para acciones CRUD en el modal
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
-  const [showModal, setShowModal] = useState(false);
-  const [modalType, setModalType] = useState(null); // 'add', 'edit', 'delete'
-  const [currentExamenData, setCurrentExamenData] = useState(null); // Para editar o eliminar
+  // const [showModal, setShowModal] = useState(false); // Se manejará con modal.show
+  const [modal, setModal] = useState({
+    type: null,
+    entity: null,
+    data: null,
+    show: false,
+  });
   const [currentPage, setCurrentPage] = useState(1);
 
   // State para filtros
@@ -59,15 +64,19 @@ export default function ExamenesPage() {
     []
   );
 
+  const displayMessage = (setter, message, duration = 4000) => {
+    setter(message);
+    setTimeout(() => setter(''), duration);
+  };
+
   const loadExamenes = useCallback(async () => {
     setLoading(true);
     setError('');
     try {
-      // Asumimos que tu endpoint en examen.routes.js para GET / es getAllExamenes
-      // y que está montado en /api/examen en server.js
       const response = await api.get('/examen'); // Usa tu instancia de Axios
       setCurrentPage(1); // Resetear página en nueva carga
       setExamenes(Array.isArray(response.data) ? response.data : []); // Asegura que sea un array
+      setSelectedExamenes([]); // Limpiar selección al recargar
     } catch (err) {
       console.error('Error al cargar los exámenes:', err);
       // setError(
@@ -252,61 +261,148 @@ export default function ExamenesPage() {
     return () => clearTimeout(timer);
   }, [success, error]);
 
-  const openModalHandler = (type, examenId = null) => {
-    setModalType(type);
-    if ((type === 'edit' || type === 'delete') && examenId) {
-      const examenToProcess = examenes.find((e) => e.ID_EXAMEN === examenId);
-      setCurrentExamenData(examenToProcess || null);
+  const handleToggleExamenSelection = (examenToToggle) => {
+    setSelectedExamenes((prevSelected) =>
+      prevSelected.find((ex) => ex.ID_EXAMEN === examenToToggle.ID_EXAMEN)
+        ? prevSelected.filter((ex) => ex.ID_EXAMEN !== examenToToggle.ID_EXAMEN)
+        : [...prevSelected, examenToToggle]
+    );
+  };
+
+  const handleToggleSelectAllExamenes = () => {
+    const currentExamenIdsOnPage = currentExamenesPaginados.map(
+      (ex) => ex.ID_EXAMEN
+    );
+    const allOnPageSelected =
+      currentExamenesPaginados.length > 0 &&
+      currentExamenesPaginados.every((ex) =>
+        selectedExamenes.some((se) => se.ID_EXAMEN === ex.ID_EXAMEN)
+      );
+
+    if (allOnPageSelected) {
+      setSelectedExamenes((prev) =>
+        prev.filter((se) => !currentExamenIdsOnPage.includes(se.ID_EXAMEN))
+      );
     } else {
-      setCurrentExamenData(null); // Para 'add'
+      const newSelectionsFromPage = currentExamenesPaginados.filter(
+        (ex) => !selectedExamenes.some((se) => se.ID_EXAMEN === ex.ID_EXAMEN)
+      );
+      setSelectedExamenes((prev) => [...prev, ...newSelectionsFromPage]);
     }
-    setShowModal(true);
+  };
+
+  const openModalHandler = (type, entityName, entityPayload = null) => {
+    let modalData = null;
+    if (type === 'add') {
+      setSelectedExamenes([]);
+      setModal({ type, entity: entityName, data: null, show: true });
+    } else if (type === 'edit' && entityPayload) {
+      // entityPayload es el ID_EXAMEN
+      modalData = examenes.find(
+        (ex) => String(ex.ID_EXAMEN) === String(entityPayload)
+      );
+      if (!modalData) {
+        displayMessage(setError, 'Examen no encontrado para editar.');
+        return;
+      }
+      setModal({ type, entity: entityName, data: modalData, show: true });
+    } else if (
+      type === 'delete' &&
+      Array.isArray(entityPayload) &&
+      entityPayload.length > 0
+    ) {
+      setModal({
+        type,
+        entity: entityName,
+        data: [...entityPayload],
+        show: true,
+      });
+    }
   };
 
   const closeModalHandler = () => {
-    setShowModal(false);
-    setModalType(null);
-    setCurrentExamenData(null);
+    setModal({ type: null, entity: null, data: null, show: false });
   };
 
   const handleFormSubmit = async (formData) => {
-    setLoading(true); // Para indicar procesamiento
+    setIsProcessing(true);
+    setError('');
+    setSuccess('');
     try {
-      if (modalType === 'add') {
+      if (modal.type === 'add') {
         await api.post('/examen', formData); // Asume que formData tiene el formato correcto
-        setSuccess('Examen creado con éxito');
-      } else if (modalType === 'edit' && currentExamenData) {
-        await api.put(`/examen/${currentExamenData.ID_EXAMEN}`, formData);
-        setSuccess('Examen actualizado con éxito');
+        displayMessage(setSuccess, 'Examen creado con éxito');
+      } else if (modal.type === 'edit' && modal.data) {
+        await api.put(`/examen/${modal.data.ID_EXAMEN}`, formData);
+        displayMessage(setSuccess, 'Examen actualizado con éxito');
       }
       await loadExamenes();
       closeModalHandler();
     } catch (err) {
-      setError(
-        err.response?.data?.error || err.message || 'Error al guardar el examen'
+      displayMessage(
+        setError,
+        'Error al guardar el examen: ' +
+          (err.response?.data?.error || err.message)
       );
     } finally {
-      setLoading(false);
+      setIsProcessing(false);
     }
   };
 
   const handleDeleteExamen = async () => {
-    if (!currentExamenData) return;
-    setLoading(true);
+    if (!modal.data || !Array.isArray(modal.data) || modal.data.length === 0) {
+      closeModalHandler();
+      return;
+    }
+    setIsProcessing(true);
+    setError('');
+    setSuccess('');
+    let successCount = 0;
+    let errorCount = 0;
+    const errorMessages = [];
+
     try {
-      await api.delete(`/examen/${currentExamenData.ID_EXAMEN}`);
-      setSuccess('Examen eliminado con éxito');
-      await loadExamenes();
-      setSelectedExamenId(null); // Deseleccionar
+      for (const examenToDelete of modal.data) {
+        try {
+          await api.delete(`/examen/${examenToDelete.ID_EXAMEN}`);
+          successCount++;
+        } catch (err) {
+          errorCount++;
+          const specificError =
+            err.response?.data?.error ||
+            err.message ||
+            `Error eliminando ${examenToDelete.NOMBRE_EXAMEN || examenToDelete.ID_EXAMEN}`;
+          errorMessages.push(specificError);
+        }
+      }
+
+      if (successCount > 0) {
+        displayMessage(
+          setSuccess,
+          `${successCount} examen(es) eliminado(s) con éxito.`
+        );
+      }
+      if (errorCount > 0) {
+        displayMessage(
+          setError,
+          `Error al eliminar ${errorCount} examen(es): ${errorMessages.join('; ')}`
+        );
+      }
+
+      if (successCount > 0) {
+        await loadExamenes(); // Esto ya limpia selectedExamenes
+      } else {
+        setSelectedExamenes([]); // Limpiar selección si no hubo éxito
+      }
       closeModalHandler();
     } catch (err) {
-      setError(
-        err.response?.data?.error ||
-          err.message ||
-          'Error al eliminar el examen'
+      displayMessage(
+        setError,
+        'Error general durante la eliminación: ' +
+          (err.response?.data?.error || err.message)
       );
     } finally {
-      setLoading(false);
+      setIsProcessing(false);
     }
   };
 
@@ -333,6 +429,7 @@ export default function ExamenesPage() {
       return newFilters;
     });
     setCurrentPage(1); // Resetear a la primera página al cambiar filtros
+    setSelectedExamenes([]); // Limpiar selección al cambiar filtros
   }, []);
 
   // Opciones filtradas para los dropdowns
@@ -471,6 +568,32 @@ export default function ExamenesPage() {
   // Cambiar de página
   const paginate = (pageNumber) => setCurrentPage(pageNumber);
 
+  const handleAddAction = () => {
+    openModalHandler('add', 'examen');
+  };
+
+  const handleEditAction = () => {
+    if (selectedExamenes.length === 1) {
+      openModalHandler('edit', 'examen', selectedExamenes[0].ID_EXAMEN);
+    } else {
+      displayMessage(
+        setError,
+        'Por favor, seleccione un único examen para editar.'
+      );
+    }
+  };
+
+  const handleDeleteAction = () => {
+    if (selectedExamenes.length > 0) {
+      openModalHandler('delete', 'examen', selectedExamenes);
+    } else {
+      displayMessage(
+        setError,
+        'Por favor, seleccione al menos un examen para eliminar.'
+      );
+    }
+  };
+
   return (
     <Layout>
       <div className="container-fluid pt-4">
@@ -503,28 +626,11 @@ export default function ExamenesPage() {
           currentFilters={filters}
         />
         <ExamenActions
-          onAdd={() => openModalHandler('add')}
-          onEdit={() => {
-            // El botón debe estar deshabilitado por ExamenActions si no hay selectedExamenId
-            if (selectedExamenId) {
-              openModalHandler('edit', selectedExamenId);
-            } else {
-              // console.warn(
-              //   'Intento de editar sin examen seleccionado. El botón debería estar deshabilitado.'
-              // );
-            }
-          }}
-          onDelete={() => {
-            // El botón debe estar deshabilitado por ExamenActions si no hay selectedExamenId
-            if (selectedExamenId) {
-              openModalHandler('delete', selectedExamenId);
-            } else {
-              // console.warn(
-              //   'Intento de eliminar sin examen seleccionado. El botón debería estar deshabilitado.'
-              // );
-            }
-          }}
-          isExamenSelected={!!selectedExamenId} // Para habilitar/deshabilitar botones
+          onAdd={handleAddAction}
+          onEdit={handleEditAction}
+          onDelete={handleDeleteAction}
+          selectedExamenes={selectedExamenes}
+          disabled={loading || isProcessing}
         />
 
         {loading && filteredExamenes.length === 0 ? (
@@ -536,8 +642,9 @@ export default function ExamenesPage() {
           <>
             <ExamenList
               examenes={currentExamenesPaginados} // Usar la lista paginada y filtrada
-              selectedExamenId={selectedExamenId}
-              onSelectExamen={setSelectedExamenId}
+              selectedExamenes={selectedExamenes}
+              onToggleExamenSelection={handleToggleExamenSelection}
+              onToggleSelectAllExamenes={handleToggleSelectAllExamenes}
               loading={loading && examenes.length > 0} // Mostrar loading en tabla si se está recargando pero ya hay datos
             />
             {filteredExamenes.length > ITEMS_PER_PAGE && (
@@ -553,54 +660,64 @@ export default function ExamenesPage() {
       </div>
 
       {/* Modal para Crear/Editar Examen */}
-      {showModal && (modalType === 'add' || modalType === 'edit') && (
+      {modal.show && (modal.type === 'add' || modal.type === 'edit') && (
         <BootstrapModal
-          show={showModal}
+          show={modal.show}
           onHide={closeModalHandler}
           centered
           size="lg"
         >
           <BootstrapModal.Header closeButton>
             <BootstrapModal.Title>
-              {modalType === 'add' ? 'Agregar Nuevo Examen' : 'Editar Examen'}
+              {modal.type === 'add' ? 'Agregar Nuevo Examen' : 'Editar Examen'}
             </BootstrapModal.Title>
           </BootstrapModal.Header>
           <BootstrapModal.Body>
             <ExamenForm
               onSubmit={handleFormSubmit} // ExamenForm espera 'onSubmit'
-              initial={modalType === 'edit' ? currentExamenData : null} // ExamenForm espera 'initial'
+              initial={modal.type === 'edit' ? modal.data : null} // ExamenForm espera 'initial'
               onCancel={closeModalHandler} // ExamenForm espera 'onCancel'
-              // isProcessing={loading} // ExamenForm no usa esta prop actualmente, pero podría añadirse para deshabilitar el form
+              isProcessing={isProcessing}
             />
           </BootstrapModal.Body>
         </BootstrapModal>
       )}
       {/* Modal de Confirmación para Eliminar Examen */}
-      {showModal && modalType === 'delete' && currentExamenData && (
-        <BootstrapModal show={showModal} onHide={closeModalHandler} centered>
+      {modal.show && modal.type === 'delete' && modal.data && (
+        <BootstrapModal show={modal.show} onHide={closeModalHandler} centered>
           <BootstrapModal.Header closeButton>
             <BootstrapModal.Title>Confirmar Eliminación</BootstrapModal.Title>
           </BootstrapModal.Header>
           <BootstrapModal.Body>
-            <p>
-              ¿Está seguro de que desea eliminar el examen "
-              <strong>{currentExamenData.NOMBRE_EXAMEN}</strong>"?
-            </p>
+            {modal.data && modal.data.length === 1 ? (
+              <p>
+                ¿Está seguro de que desea eliminar el examen "
+                <strong>
+                  {modal.data[0]?.NOMBRE_EXAMEN || 'seleccionado'}
+                </strong>
+                "?
+              </p>
+            ) : (
+              <p>
+                ¿Está seguro de que desea eliminar los{' '}
+                <strong>{modal.data?.length}</strong> exámenes seleccionados?
+              </p>
+            )}
           </BootstrapModal.Body>
           <BootstrapModal.Footer>
             <BsButton
               variant="secondary"
               onClick={closeModalHandler}
-              disabled={loading}
+              disabled={isProcessing}
             >
               Cancelar
             </BsButton>
             <BsButton
               variant="danger"
               onClick={handleDeleteExamen}
-              disabled={loading}
+              disabled={isProcessing}
             >
-              {loading ? (
+              {isProcessing ? (
                 <Spinner as="span" size="sm" animation="border" />
               ) : (
                 'Eliminar'

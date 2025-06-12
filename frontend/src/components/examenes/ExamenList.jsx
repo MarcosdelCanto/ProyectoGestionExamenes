@@ -1,7 +1,13 @@
 // src/components/examenes/ExamenList.jsx
 import React from 'react';
 
-function ExamenList({ examenes, selectedExamenId, onSelectExamen, loading }) {
+function ExamenList({
+  examenes, // These are the paginated/filtered items
+  selectedExamenes = [], // Default to an empty array
+  onToggleExamenSelection,
+  onToggleSelectAllExamenes,
+  loading,
+}) {
   // Si está cargando y no hay exámenes aún (primera carga), muestra 'Cargando...'
   // Si no está cargando pero no hay exámenes, muestra otro mensaje.
   if (loading && (!examenes || examenes.length === 0)) {
@@ -19,8 +25,23 @@ function ExamenList({ examenes, selectedExamenId, onSelectExamen, loading }) {
   return (
     <div className="table-responsive border mb-3">
       <table className="table table-hover table-bordered mb-0">
-        <thead className="table-light sticky-top">
+        <thead className="table-light">
           <tr>
+            <th style={{ width: '5%' }} className="text-center align-middle">
+              <input
+                type="checkbox"
+                className="form-check-input"
+                checked={
+                  examenes.length > 0 &&
+                  examenes.every((ex) =>
+                    selectedExamenes.some((se) => se.ID_EXAMEN === ex.ID_EXAMEN)
+                  )
+                }
+                onChange={onToggleSelectAllExamenes}
+                disabled={examenes.length === 0}
+                aria-label="Seleccionar todos los exámenes en esta página"
+              />
+            </th>
             <th>ID</th>
             <th>Nombre</th>
             <th>Inscritos</th>
@@ -36,12 +57,30 @@ function ExamenList({ examenes, selectedExamenId, onSelectExamen, loading }) {
           {examenes.map((examen) => (
             <tr
               key={examen.ID_EXAMEN} // Usar ID_EXAMEN directamente
-              onClick={() => onSelectExamen(examen.ID_EXAMEN)}
+              onClick={() => onToggleExamenSelection(examen)}
               className={
-                examen.ID_EXAMEN === selectedExamenId ? 'table-primary' : ''
+                selectedExamenes.find((ex) => ex.ID_EXAMEN === examen.ID_EXAMEN)
+                  ? 'table-primary'
+                  : ''
               }
               style={{ cursor: 'pointer' }}
             >
+              <td className="text-center align-middle">
+                <input
+                  type="checkbox"
+                  className="form-check-input"
+                  checked={
+                    !!selectedExamenes.find(
+                      (ex) => ex.ID_EXAMEN === examen.ID_EXAMEN
+                    )
+                  }
+                  onChange={(e) => {
+                    e.stopPropagation(); // Prevent row click from firing
+                    onToggleExamenSelection(examen);
+                  }}
+                  aria-label={`Seleccionar examen ${examen.NOMBRE_EXAMEN || examen.ID_EXAMEN}`}
+                />
+              </td>
               <td>{examen.ID_EXAMEN || 'N/A'}</td>
               <td>{examen.NOMBRE_EXAMEN || 'N/A'}</td>
               <td>{examen.INSCRITOS_EXAMEN || 'N/A'}</td>

@@ -248,3 +248,46 @@ button:focus-visible {
 .offcanvas.offcanvas-start {
   z-index: 1045 !important; /* Mayor que el overlay */
 }
+
+/*ESTILOS PAGINACIÓN*/
+
+/* Estilo base para los ítems de paginación */
+.custom-pagination .page-item .page-link {
+  color: #555; /* Un gris oscuro para el texto */
+  background-color: transparent; /* Sin fondo por defecto */
+  border: none; /* Sin bordes por defecto */
+  border-radius: 50%; /* Hacer los botones circulares */
+  margin: 0 3px; /* Espacio entre botones */
+  padding: 0.5em 0.9em; /* Ajustar padding para forma circular */
+  transition: all 0.2s ease-in-out; /* Transición suave para hover y active */
+}
+
+/* Estilo para el ítem activo */
+.custom-pagination .page-item.active .page-link {
+  background-color: #007bff; /* Azul primario para el activo */
+  color: white; /* Texto blanco en el ítem activo */
+  font-weight: bold;
+}
+
+/* Estilo para ítems deshabilitados (Prev, Next, First, Last) */
+.custom-pagination .page-item.disabled .page-link {
+  color: #aaa; /* Gris más claro para deshabilitados */
+  background-color: transparent;
+}
+
+/* Estilo al pasar el mouse sobre un ítem (que no esté activo ni deshabilitado) */
+.custom-pagination .page-item .page-link:hover {
+  background-color: #f0f0f0; /* Un fondo gris muy claro al pasar el mouse */
+  color: #333;
+}
+
+/* Estilo al pasar el mouse sobre un ítem activo (opcional, podría no cambiar) */
+.custom-pagination .page-item.active .page-link:hover {
+  background-color: #0056b3; /* Un azul un poco más oscuro */
+}
+
+/* Estilos para los iconos dentro de los links de paginación */
+.custom-pagination .page-item .page-link i {
+  vertical-align: middle;
+  font-size: 0.9em; /* Iconos ligeramente más pequeños si es necesario */
+}

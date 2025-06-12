@@ -24,7 +24,7 @@ const ReportToolbar = ({
         {/* --- NUEVO BOTÓN --- */}
         <button
           onClick={onConfigureColumnsClick} // Llamamos a la nueva función
-          className="btn btn-sm btn-outline-info me-2" // Un color diferente
+          className="btn btn-sm btn-outline-dark me-2" // Un color diferente
           title="Configurar Columnas Visibles"
         >
           <FaCog /> Columnas

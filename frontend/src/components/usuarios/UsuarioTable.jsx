@@ -23,9 +23,12 @@ function UsuarioTable({
   }
 
   return (
-    <div className="table-responsive border mb-3">
+    <div
+      className="table-responsive border mb-3"
+      style={{ overflowY: 'hidden' }} // Esto ocultará el scroll vertical en ESTE div
+    >
       <table className="table table-hover table-bordered mb-0">
-        <thead className="table-light sticky-top">
+        <thead className="table-light">
           <tr>
             <th className="text-center align-middle">
               <input

@@ -227,18 +227,6 @@ export default function Layout({ children }) {
                 <span className="sidebar-link-text">Gestión de Exámenes</span>
               </Link>
             )}
-
-            {hasPermission('VIEW_SALAS') && (
-              <Link
-                to="/salas"
-                className="nav-link text-dark d-flex align-items-center"
-              >
-                <div className="sidebar-icon-container">
-                  <i className="bi bi-door-open-fill"></i>
-                </div>
-                <span className="sidebar-link-text">Gestión de Salas</span>
-              </Link>
-            )}
             {hasPermission('VIEW_ASIGNATURAS') && (
               <Link
                 to="/asignaturas"
@@ -252,6 +240,19 @@ export default function Layout({ children }) {
                 </span>
               </Link>
             )}
+
+            {hasPermission('VIEW_SALAS') && (
+              <Link
+                to="/salas"
+                className="nav-link text-dark d-flex align-items-center"
+              >
+                <div className="sidebar-icon-container">
+                  <i className="bi bi-door-open-fill"></i>
+                </div>
+                <span className="sidebar-link-text">Gestión de Salas</span>
+              </Link>
+            )}
+
             {hasPermission('VIEW_MODULOS') && (
               <Link
                 to="/modulos"
@@ -275,17 +276,6 @@ export default function Layout({ children }) {
                 <span className="sidebar-link-text">Gestión de Usuarios</span>
               </Link>
             )}
-            {hasPermission('VIEW_CARGA_DATOS') && (
-              <Link
-                to="/carga-datos"
-                className="nav-link text-dark d-flex align-items-center"
-              >
-                <div className="sidebar-icon-container">
-                  <i className="bi bi-cloud-upload-fill"></i>
-                </div>
-                <span className="sidebar-link-text">Carga de Datos Masiva</span>
-              </Link>
-            )}
             {hasPermission('VIEW_ROLES') && (
               <Link
                 to="/roles"
@@ -296,6 +286,17 @@ export default function Layout({ children }) {
                 </div>
 
                 <span className="sidebar-link-text">Gestión de Permisos</span>
+              </Link>
+            )}
+            {hasPermission('VIEW_CARGA_DATOS') && (
+              <Link
+                to="/carga-datos"
+                className="nav-link text-dark d-flex align-items-center"
+              >
+                <div className="sidebar-icon-container">
+                  <i className="bi bi-cloud-upload-fill"></i>
+                </div>
+                <span className="sidebar-link-text">Carga de Datos Masiva</span>
               </Link>
             )}
             {hasPermission('VIEW_REPORTES') && (

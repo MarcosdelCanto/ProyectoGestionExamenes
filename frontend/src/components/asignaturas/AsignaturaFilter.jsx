@@ -1,5 +1,6 @@
 // src/components/asignaturas/AsignaturaFilter.jsx
 import React from 'react';
+import Select from 'react-select'; // Importar react-select
 import { Card, Form, Row, Col, Button } from 'react-bootstrap';
 
 function AsignaturaFilter({
@@ -15,6 +16,19 @@ function AsignaturaFilter({
       carrera: '',
     });
   };
+
+  // Helper para convertir arrays de datos a formato de opciones para react-select
+  const toSelectOptions = (
+    items,
+    valueKey,
+    labelKey,
+    defaultLabel = 'Todas'
+  ) => [
+    { value: '', label: defaultLabel },
+    ...(items
+      ? items.map((item) => ({ value: item[valueKey], label: item[labelKey] }))
+      : []),
+  ];
 
   return (
     <Card className="mb-3 shadow-sm">
@@ -35,39 +49,67 @@ function AsignaturaFilter({
             <Col md={6} lg={3}>
               <Form.Group controlId="filterEscuelaAsignatura">
                 <Form.Label>Escuela</Form.Label>
-                <Form.Select
-                  value={currentFilters.escuela || ''}
-                  onChange={
-                    (e) =>
-                      onFilterChange({ escuela: e.target.value, carrera: '' }) // Reset carrera
+                <Select
+                  inputId="filterEscuelaAsignatura"
+                  options={toSelectOptions(
+                    escuelas,
+                    'ID_ESCUELA',
+                    'NOMBRE_ESCUELA',
+                    'Todas las escuelas'
+                  )}
+                  value={
+                    toSelectOptions(
+                      escuelas,
+                      'ID_ESCUELA',
+                      'NOMBRE_ESCUELA'
+                    ).find(
+                      (option) =>
+                        option.value === (currentFilters.escuela || '')
+                    ) || null
                   }
-                >
-                  <option value="">Todas las escuelas</option>
-                  {escuelas.map((escuela) => (
-                    <option key={escuela.ID_ESCUELA} value={escuela.ID_ESCUELA}>
-                      {escuela.NOMBRE_ESCUELA}
-                    </option>
-                  ))}
-                </Form.Select>
+                  onChange={(selectedOption) =>
+                    onFilterChange({
+                      escuela: selectedOption ? selectedOption.value : '',
+                      carrera: '', // Reset carrera
+                    })
+                  }
+                  placeholder="Todas las escuelas"
+                  isClearable
+                />
               </Form.Group>
             </Col>
             <Col md={6} lg={3}>
               <Form.Group controlId="filterCarreraAsignatura">
                 <Form.Label>Carrera</Form.Label>
-                <Form.Select
-                  value={currentFilters.carrera || ''}
-                  onChange={(e) => onFilterChange({ carrera: e.target.value })}
-                  disabled={
-                    !currentFilters.escuela && carrerasOptions.length === 0
+                <Select
+                  inputId="filterCarreraAsignatura"
+                  options={toSelectOptions(
+                    carrerasOptions, // Usar carrerasOptions que ya están filtradas
+                    'ID_CARRERA',
+                    'NOMBRE_CARRERA',
+                    'Todas las carreras'
+                  )}
+                  value={
+                    toSelectOptions(
+                      carrerasOptions,
+                      'ID_CARRERA',
+                      'NOMBRE_CARRERA'
+                    ).find(
+                      (option) =>
+                        option.value === (currentFilters.carrera || '')
+                    ) || null
                   }
-                >
-                  <option value="">Todas las carreras</option>
-                  {carrerasOptions.map((carrera) => (
-                    <option key={carrera.ID_CARRERA} value={carrera.ID_CARRERA}>
-                      {carrera.NOMBRE_CARRERA}
-                    </option>
-                  ))}
-                </Form.Select>
+                  onChange={(selectedOption) =>
+                    onFilterChange({
+                      carrera: selectedOption ? selectedOption.value : '',
+                    })
+                  }
+                  disabled={
+                    !currentFilters.escuela // Deshabilitar si no hay escuela seleccionada
+                  }
+                  placeholder="Todas las carreras"
+                  isClearable
+                />
               </Form.Group>
             </Col>
             <Col md={12} lg={2} className="d-flex align-items-end">

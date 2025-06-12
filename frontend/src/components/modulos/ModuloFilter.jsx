@@ -1,5 +1,6 @@
 // src/components/modulos/ModuloFilter.jsx
 import React from 'react';
+import Select from 'react-select'; // Importar react-select
 import { Card, Form, Row, Col, Button } from 'react-bootstrap';
 
 function ModuloFilter({ estados = [], onFilterChange, currentFilters }) {
@@ -11,6 +12,19 @@ function ModuloFilter({ estados = [], onFilterChange, currentFilters }) {
       estado: '',
     });
   };
+
+  // Helper para convertir arrays de datos a formato de opciones para react-select
+  const toSelectOptions = (
+    items,
+    valueKey,
+    labelKey,
+    defaultLabel = 'Todos'
+  ) => [
+    { value: '', label: defaultLabel },
+    ...(items
+      ? items.map((item) => ({ value: item[valueKey], label: item[labelKey] }))
+      : []),
+  ];
 
   return (
     <Card className="mb-3 shadow-sm">
@@ -53,17 +67,27 @@ function ModuloFilter({ estados = [], onFilterChange, currentFilters }) {
             <Col md={6} lg={3}>
               <Form.Group controlId="filterEstadoModulo">
                 <Form.Label>Estado</Form.Label>
-                <Form.Select
-                  value={currentFilters.estado || ''}
-                  onChange={(e) => onFilterChange({ estado: e.target.value })}
-                >
-                  <option value="">Todos los estados</option>
-                  {estados.map((estado) => (
-                    <option key={estado.ID_ESTADO} value={estado.ID_ESTADO}>
-                      {estado.NOMBRE_ESTADO}
-                    </option>
-                  ))}
-                </Form.Select>
+                <Select
+                  inputId="filterEstadoModulo"
+                  options={toSelectOptions(
+                    estados,
+                    'ID_ESTADO', // Asumiendo que el valor es ID_ESTADO
+                    'NOMBRE_ESTADO',
+                    'Todos los estados'
+                  )}
+                  value={
+                    toSelectOptions(estados, 'ID_ESTADO', 'NOMBRE_ESTADO').find(
+                      (option) => option.value === (currentFilters.estado || '')
+                    ) || null
+                  }
+                  onChange={(selectedOption) =>
+                    onFilterChange({
+                      estado: selectedOption ? selectedOption.value : '',
+                    })
+                  }
+                  placeholder="Todos los estados"
+                  isClearable
+                />
               </Form.Group>
             </Col>
             <Col md={12} lg={2} className="d-flex align-items-end">

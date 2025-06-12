@@ -8,7 +8,7 @@ function RoleActions({
   isLoading,
   onEditRole,
   onDeleteRole,
-  selectedRole,
+  selectedRoles, // Cambiado de selectedRole a selectedRoles (array)
 }) {
   // Usamos el hook para obtener los permisos desde la BBDD
   const { hasPermission } = usePermission();
@@ -35,7 +35,7 @@ function RoleActions({
           <Button
             variant="warning"
             onClick={onEditRole}
-            disabled={!selectedRole || isLoading}
+            disabled={isLoading || selectedRoles.length !== 1} // Habilitar solo si hay exactamente un rol seleccionado
             className="me-2 mb-2 btn-icon-only-candidate"
             title="Modificar Rol"
           >
@@ -49,7 +49,7 @@ function RoleActions({
           <Button
             variant="danger"
             onClick={onDeleteRole}
-            disabled={!selectedRole || isLoading}
+            disabled={isLoading || selectedRoles.length === 0} // Habilitar si hay al menos un rol seleccionado
             className="mb-2 btn-icon-only-candidate"
             title="Eliminar Rol"
           >

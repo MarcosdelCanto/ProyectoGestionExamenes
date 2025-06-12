@@ -11,10 +11,13 @@ import { fetchAllEscuelas } from '../../services/escuelaService';
 import UsuarioCarreraActions from './usuarioCarrera/UsuarioCarreraActions';
 import UsuarioCarreraModal from './usuarioCarrera/UsuarioCarreraModal';
 import UsuarioCarreraTable from './usuarioCarrera/UsuarioCarreraTable';
+import UsuarioFilter from '../usuarios/UsuarioFilter'; // Importar el filtro de usuario
+import PaginationComponent from '../PaginationComponent'; // Importar el componente de paginación
 
 const COORDINADOR_ROLE_NAME = 'COORDINADOR CARRERA';
 const DIRECTOR_ROLE_NAME = 'JEFE CARRERA';
 const COORDINADOR_DOCENTE_ROLE_NAME = 'COORDINADOR DOCENTE'; // Añadido
+const ITEMS_PER_PAGE = 4; // Definir ítems por página
 
 function UsuarioCarreraTab({ allUsers, allRoles }) {
   const [associations, setAssociations] = useState([]);
@@ -46,6 +49,13 @@ function UsuarioCarreraTab({ allUsers, allRoles }) {
   const [showViewCarrerasModal, setShowViewCarrerasModal] = useState(false);
   const [viewingUserCarreras, setViewingUserCarreras] = useState([]);
   const [viewingUserName, setViewingUserName] = useState('');
+
+  // Estado para los filtros de la tabla principal de UsuarioCarreraTab
+  const [usuarioTableFilters, setUsuarioTableFilters] = useState({
+    text: '',
+    role: '',
+  });
+  const [currentPageTable, setCurrentPageTable] = useState(1); // Estado para la paginación de la tabla
 
   const eligibleRoleIds = useMemo(() => {
     if (!Array.isArray(allRoles) || allRoles.length === 0) return [];
@@ -138,21 +148,55 @@ function UsuarioCarreraTab({ allUsers, allRoles }) {
     }
   }, [fetchData, allUsers, allRoles]);
 
+  // Filtrar los usuarios que se mostrarán en la tabla de asociaciones
+  const displayableGroupedAssociations = useMemo(() => {
+    if (!usuarioTableFilters.text && !usuarioTableFilters.role) {
+      return groupedAssociations;
+    }
+    const filteredResult = {};
+    for (const userIdStr in groupedAssociations) {
+      const userId = parseInt(userIdStr, 10);
+      // Encontrar el objeto usuario completo desde eligibleUsers para poder filtrar por nombre, email, rol
+      const user = eligibleUsers.find((u) => u.ID_USUARIO === userId);
+      if (user) {
+        const matchesText =
+          !usuarioTableFilters.text ||
+          (user.NOMBRE_USUARIO &&
+            user.NOMBRE_USUARIO.toLowerCase().includes(
+              usuarioTableFilters.text.toLowerCase()
+            )) ||
+          (user.EMAIL_USUARIO &&
+            user.EMAIL_USUARIO.toLowerCase().includes(
+              usuarioTableFilters.text.toLowerCase()
+            ));
+
+        const matchesRole =
+          !usuarioTableFilters.role ||
+          String(user.ROL_ID_ROL) === String(usuarioTableFilters.role);
+
+        if (matchesText && matchesRole) {
+          filteredResult[userIdStr] = groupedAssociations[userIdStr];
+        }
+      }
+    }
+    return filteredResult;
+  }, [groupedAssociations, eligibleUsers, usuarioTableFilters]);
+
   useEffect(() => {
     if (!Array.isArray(associations) || !Array.isArray(allUsers)) {
       setGroupedAssociations({});
       return;
     }
-    const grouped = associations.reduce((acc, assoc) => {
+    const newGrouped = associations.reduce((acc, assoc) => {
       const user = allUsers.find(
         (u) => u.ID_USUARIO === assoc.USUARIO_ID_USUARIO
       );
       const key = assoc.USUARIO_ID_USUARIO;
       acc[key] = acc[key] || {
         ID_USUARIO: assoc.USUARIO_ID_USUARIO,
-        NOMBRE_USUARIO: user ? user.NOMBRE_USUARIO : `Usuario ID: ${key}`,
-        EMAIL_USUARIO: user ? user.EMAIL_USUARIO : '',
-        ROL_USUARIO: user && user.NOMBRE_ROL ? user.NOMBRE_ROL : 'N/A',
+        NOMBRE_USUARIO: user?.NOMBRE_USUARIO || `Usuario ID: ${key}`,
+        EMAIL_USUARIO: user?.EMAIL_USUARIO || '',
+        ROL_USUARIO: user?.NOMBRE_ROL || 'N/A',
         carreras: [],
       };
       acc[key].carreras.push({
@@ -161,7 +205,7 @@ function UsuarioCarreraTab({ allUsers, allRoles }) {
       });
       return acc;
     }, {});
-    setGroupedAssociations(grouped);
+    setGroupedAssociations(newGrouped);
   }, [associations, allUsers]);
 
   useEffect(() => {
@@ -170,6 +214,12 @@ function UsuarioCarreraTab({ allUsers, allRoles }) {
       return () => clearTimeout(timer);
     }
   }, [successMessage]);
+
+  const handleUsuarioTableFilterChange = useCallback((changedFilters) => {
+    setUsuarioTableFilters((prev) => ({ ...prev, ...changedFilters }));
+    setSelectedUserIdsInTable([]); // Limpiar selección de la tabla al cambiar filtros
+    setCurrentPageTable(1); // Resetear paginación al cambiar filtros
+  }, []);
 
   const resetModalStateAndFilters = () => {
     setSelectedUsuarioIdModal('');
@@ -311,23 +361,63 @@ function UsuarioCarreraTab({ allUsers, allRoles }) {
     );
   };
 
-  const handleToggleSelectAllInTable = () => {
-    const allUserIdsInView = Object.keys(groupedAssociations).map((id) =>
-      parseInt(id)
+  // IDs de usuarios que coinciden con los filtros actuales
+  const displayableUserIds = useMemo(() => {
+    return Object.keys(displayableGroupedAssociations).map((id) =>
+      parseInt(id, 10)
     );
-    if (
-      selectedUserIdsInTable.length === allUserIdsInView.length &&
-      allUserIdsInView.length > 0
-    ) {
-      setSelectedUserIdsInTable([]);
+  }, [displayableGroupedAssociations]);
+
+  // Paginación de los IDs de usuario
+  const indexOfLastUserId = currentPageTable * ITEMS_PER_PAGE;
+  const indexOfFirstUserId = indexOfLastUserId - ITEMS_PER_PAGE;
+  const currentUserIdsOnPage = displayableUserIds.slice(
+    indexOfFirstUserId,
+    indexOfLastUserId
+  );
+
+  // Objeto de asociaciones agrupadas solo para la página actual
+  const paginatedGroupedAssociations = useMemo(() => {
+    const newPaginated = {};
+    currentUserIdsOnPage.forEach((userId) => {
+      if (displayableGroupedAssociations[userId]) {
+        newPaginated[userId] = displayableGroupedAssociations[userId];
+      }
+    });
+    return newPaginated;
+  }, [currentUserIdsOnPage, displayableGroupedAssociations]);
+
+  const handleToggleSelectAllInTable = () => {
+    // Usuarios completos en la página actual
+    const usersOnCurrentPage = currentUserIdsOnPage
+      .map((userId) => eligibleUsers.find((u) => u.ID_USUARIO === userId))
+      .filter(Boolean);
+
+    const allSelectedOnPage =
+      usersOnCurrentPage.length > 0 &&
+      usersOnCurrentPage.every((u) =>
+        selectedUserIdsInTable.includes(u.ID_USUARIO)
+      );
+
+    if (allSelectedOnPage) {
+      setSelectedUserIdsInTable((prev) =>
+        prev.filter((id) => !currentUserIdsOnPage.includes(id))
+      );
     } else {
-      setSelectedUserIdsInTable(allUserIdsInView);
+      const newSelections = usersOnCurrentPage
+        .filter((u) => !selectedUserIdsInTable.includes(u.ID_USUARIO))
+        .map((u) => u.ID_USUARIO);
+      setSelectedUserIdsInTable((prev) => [
+        ...new Set([...prev, ...newSelections]),
+      ]);
     }
   };
 
   const handleBulkDeleteFromTable = async () => {
     /* ... tu lógica ... */
   };
+
+  const paginateTable = (pageNumber) => setCurrentPageTable(pageNumber);
 
   if (loading && !associations.length) {
     return (
@@ -361,6 +451,12 @@ function UsuarioCarreraTab({ allUsers, allRoles }) {
           {successMessage}
         </Alert>
       )}
+
+      <UsuarioFilter
+        roles={allRoles.filter((role) => eligibleRoleIds.includes(role.ID_ROL))} // Solo roles elegibles para esta pestaña
+        onFilterChange={handleUsuarioTableFilterChange}
+        currentFilters={usuarioTableFilters}
+      />
 
       <div className="mb-3">
         <UsuarioCarreraActions
@@ -417,7 +513,7 @@ function UsuarioCarreraTab({ allUsers, allRoles }) {
       )}
 
       <UsuarioCarreraTable
-        groupedAssociations={groupedAssociations}
+        groupedAssociations={paginatedGroupedAssociations} // Usar las asociaciones paginadas
         eligibleUsers={eligibleUsers}
         selectedUsersInTab={
           Array.isArray(allUsers)
@@ -437,6 +533,15 @@ function UsuarioCarreraTab({ allUsers, allRoles }) {
         onEditUserAssociations={handleOpenEditAssociationModal}
         onDeleteAllUserAssociations={handleBulkDeleteFromTable} // Añadido por consistencia si la tabla tiene este botón
       />
+      {/* Componente de Paginación para la tabla */}
+      {displayableUserIds.length > ITEMS_PER_PAGE && (
+        <PaginationComponent
+          itemsPerPage={ITEMS_PER_PAGE}
+          totalItems={displayableUserIds.length}
+          paginate={paginateTable}
+          currentPage={currentPageTable}
+        />
+      )}
 
       <Modal
         show={showViewCarrerasModal}

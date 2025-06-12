@@ -1,5 +1,6 @@
 // src/components/edificios/EdificioFilter.jsx
 import React from 'react';
+import Select from 'react-select'; // Importar react-select
 import { Card, Form, Row, Col, Button } from 'react-bootstrap';
 
 function EdificioFilter({ sedes = [], onFilterChange, currentFilters }) {
@@ -9,6 +10,19 @@ function EdificioFilter({ sedes = [], onFilterChange, currentFilters }) {
       sede: '',
     });
   };
+
+  // Helper para convertir arrays de datos a formato de opciones para react-select
+  const toSelectOptions = (
+    items,
+    valueKey,
+    labelKey,
+    defaultLabel = 'Todas'
+  ) => [
+    { value: '', label: defaultLabel },
+    ...(items
+      ? items.map((item) => ({ value: item[valueKey], label: item[labelKey] }))
+      : []),
+  ];
 
   return (
     <Card className="mb-3 shadow-sm">
@@ -29,17 +43,27 @@ function EdificioFilter({ sedes = [], onFilterChange, currentFilters }) {
             <Col md={6} lg={4}>
               <Form.Group controlId="filterSedeEdificio">
                 <Form.Label>Sede</Form.Label>
-                <Form.Select
-                  value={currentFilters.sede || ''}
-                  onChange={(e) => onFilterChange({ sede: e.target.value })}
-                >
-                  <option value="">Todas las sedes</option>
-                  {sedes.map((sede) => (
-                    <option key={sede.ID_SEDE} value={sede.ID_SEDE}>
-                      {sede.NOMBRE_SEDE}
-                    </option>
-                  ))}
-                </Form.Select>
+                <Select
+                  inputId="filterSedeEdificio"
+                  options={toSelectOptions(
+                    sedes,
+                    'ID_SEDE',
+                    'NOMBRE_SEDE',
+                    'Todas las sedes'
+                  )}
+                  value={
+                    toSelectOptions(sedes, 'ID_SEDE', 'NOMBRE_SEDE').find(
+                      (option) => option.value === (currentFilters.sede || '')
+                    ) || null
+                  }
+                  onChange={(selectedOption) =>
+                    onFilterChange({
+                      sede: selectedOption ? selectedOption.value : '',
+                    })
+                  }
+                  placeholder="Todas las sedes"
+                  isClearable
+                />
               </Form.Group>
             </Col>
             <Col md={12} lg={3} className="d-flex align-items-end">

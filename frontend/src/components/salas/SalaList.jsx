@@ -1,4 +1,11 @@
-function SalaList({ salas, selectedSala, onSelectSala, loading }) {
+function SalaList({
+  salas, // Estos son los items paginados/filtrados
+  selectedSalas = [], // Default to an empty array
+  onToggleSalaSelection,
+  onToggleSelectAllSalas,
+  loading,
+}) {
+  // salas aquí son los currentSalas (paginados y filtrados)
   if (loading) {
     return <div>Cargando...</div>;
   }
@@ -16,8 +23,23 @@ function SalaList({ salas, selectedSala, onSelectSala, loading }) {
   return (
     <div className="table-responsive border mb-3">
       <table className="table table-hover table-bordered mb-0">
-        <thead className="table-light sticky-top">
+        <thead className="table-light">
           <tr>
+            <th style={{ width: '5%' }} className="text-center align-middle">
+              <input
+                type="checkbox"
+                className="form-check-input"
+                checked={
+                  salas.length > 0 &&
+                  salas.every((s) =>
+                    selectedSalas.some((ss) => ss.ID_SALA === s.ID_SALA)
+                  )
+                }
+                onChange={onToggleSelectAllSalas}
+                disabled={salas.length === 0}
+                aria-label="Seleccionar todas las salas en esta página"
+              />
+            </th>
             <th>ID</th>
             <th>Nombre</th>
             <th>Capacidad</th>
@@ -28,14 +50,28 @@ function SalaList({ salas, selectedSala, onSelectSala, loading }) {
           {salas.map((sala) => (
             <tr
               key={`sala-${sala.ID_SALA}`}
-              onClick={() => onSelectSala(sala)} // Pasar el objeto sala completo
+              onClick={() => onToggleSalaSelection(sala)}
               className={
-                selectedSala && sala.ID_SALA === selectedSala.ID_SALA
+                selectedSalas.find((s) => s.ID_SALA === sala.ID_SALA)
                   ? 'table-primary'
                   : ''
-              } // Comparar con selectedSala.ID_SALA si selectedSala es un objeto
+              }
               style={{ cursor: 'pointer' }}
             >
+              <td className="text-center align-middle">
+                <input
+                  type="checkbox"
+                  className="form-check-input"
+                  checked={
+                    !!selectedSalas.find((s) => s.ID_SALA === sala.ID_SALA)
+                  }
+                  onChange={(e) => {
+                    e.stopPropagation();
+                    onToggleSalaSelection(sala);
+                  }}
+                  aria-label={`Seleccionar sala ${sala.NOMBRE_SALA || sala.ID_SALA}`}
+                />
+              </td>
               <td>{sala.ID_SALA || 'N/A'}</td>
               <td>{sala.NOMBRE_SALA || 'N/A'}</td>
               <td>{sala.CAPACIDAD_SALA || 'N/A'}</td>

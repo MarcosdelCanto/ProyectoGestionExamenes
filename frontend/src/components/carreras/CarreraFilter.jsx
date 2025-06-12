@@ -1,5 +1,6 @@
 // src/components/carreras/CarreraFilter.jsx
 import React from 'react';
+import Select from 'react-select'; // Importar react-select
 import { Card, Form, Row, Col, Button } from 'react-bootstrap';
 
 function CarreraFilter({ escuelas = [], onFilterChange, currentFilters }) {
@@ -9,6 +10,19 @@ function CarreraFilter({ escuelas = [], onFilterChange, currentFilters }) {
       escuela: '',
     });
   };
+
+  // Helper para convertir arrays de datos a formato de opciones para react-select
+  const toSelectOptions = (
+    items,
+    valueKey,
+    labelKey,
+    defaultLabel = 'Todas'
+  ) => [
+    { value: '', label: defaultLabel },
+    ...(items
+      ? items.map((item) => ({ value: item[valueKey], label: item[labelKey] }))
+      : []),
+  ];
 
   return (
     <Card className="mb-3 shadow-sm">
@@ -29,17 +43,32 @@ function CarreraFilter({ escuelas = [], onFilterChange, currentFilters }) {
             <Col md={6} lg={4}>
               <Form.Group controlId="filterEscuelaCarrera">
                 <Form.Label>Escuela</Form.Label>
-                <Form.Select
-                  value={currentFilters.escuela || ''}
-                  onChange={(e) => onFilterChange({ escuela: e.target.value })}
-                >
-                  <option value="">Todas las escuelas</option>
-                  {escuelas.map((escuela) => (
-                    <option key={escuela.ID_ESCUELA} value={escuela.ID_ESCUELA}>
-                      {escuela.NOMBRE_ESCUELA}
-                    </option>
-                  ))}
-                </Form.Select>
+                <Select
+                  inputId="filterEscuelaCarrera"
+                  options={toSelectOptions(
+                    escuelas,
+                    'ID_ESCUELA',
+                    'NOMBRE_ESCUELA',
+                    'Todas las escuelas'
+                  )}
+                  value={
+                    toSelectOptions(
+                      escuelas,
+                      'ID_ESCUELA',
+                      'NOMBRE_ESCUELA'
+                    ).find(
+                      (option) =>
+                        option.value === (currentFilters.escuela || '')
+                    ) || null
+                  }
+                  onChange={(selectedOption) =>
+                    onFilterChange({
+                      escuela: selectedOption ? selectedOption.value : '',
+                    })
+                  }
+                  placeholder="Todas las escuelas"
+                  isClearable
+                />
               </Form.Group>
             </Col>
             <Col md={12} lg={3} className="d-flex align-items-end">
