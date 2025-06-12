@@ -15,7 +15,7 @@ function SalaActions({
   const isDisabled = isLoadingList || isProcessingAction;
 
   return (
-    <div className="mb-3 d-flex flex-wrap align-items-center">
+    <div className="mb-2 d-flex flex-wrap align-items-center">
       <div className="sala-action-buttons d-flex flex-wrap">
         <Button
           variant="success"

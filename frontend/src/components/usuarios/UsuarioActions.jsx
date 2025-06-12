@@ -34,7 +34,7 @@ function UsuarioActions({
   return (
     <>
       {/* Usamos un Fragment (<>) para poder retornar el div y el Modal juntos */}
-      <div className="mb-3 d-flex flex-wrap align-items-center">
+      <div className="mb-2 d-flex flex-wrap align-items-center">
         <div className="usuario-action-buttons d-flex flex-wrap">
           <Button
             variant="success"

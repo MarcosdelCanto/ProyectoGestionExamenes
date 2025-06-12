@@ -15,7 +15,6 @@ function SalaList({ salas, selectedSala, onSelectSala, loading }) {
 
   return (
     <div className="table-responsive border mb-3">
-      {/* Eliminado maxHeight y overflowY, usado mb-3 para margen */}
       <table className="table table-hover table-bordered mb-0">
         <thead className="table-light sticky-top">
           <tr>
@@ -23,7 +22,6 @@ function SalaList({ salas, selectedSala, onSelectSala, loading }) {
             <th>Nombre</th>
             <th>Capacidad</th>
             <th>Edificio</th>
-            {/* Asumiendo que NOMBRE_EDIFICIO viene con el objeto sala */}
           </tr>
         </thead>
         <tbody>
@@ -44,7 +42,6 @@ function SalaList({ salas, selectedSala, onSelectSala, loading }) {
               <td>
                 {sala.NOMBRE_EDIFICIO || sala.EDIFICIO_ID_EDIFICIO || 'N/A'}
               </td>
-              {/* Mostrar NOMBRE_EDIFICIO o el ID si el nombre no está */}
             </tr>
           ))}
         </tbody>

@@ -21,11 +21,8 @@ function SeccionList({
 
   return (
     <div className="table-responsive border mb-3">
-      {/* Eliminado maxHeight y overflowY de un estilo inline si existiera, añadido mb-3 */}
       <table className="table table-hover table-bordered mb-0">
-        {/* mb-0 en la tabla si el div wrapper maneja el margen inferior */}
-        {/* table-hover para consistencia */}
-        <thead className="table-light">
+        <thead className="table-light sticky-top">
           <tr>
             <th style={{ width: '5%' }} className="text-center align-middle">
               <input

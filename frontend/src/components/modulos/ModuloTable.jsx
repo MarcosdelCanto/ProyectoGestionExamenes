@@ -19,16 +19,9 @@ export default function ModuloTable({
   }
 
   return (
-    <div
-      className="table-responsive"
-      style={{
-        maxHeight: '60vh',
-        overflowY: 'auto',
-        marginBottom: '1rem',
-      }}
-    >
-      <table className="table table-hover table-bordered">
-        <thead className="table-light position-sticky top-0">
+    <div className="table-responsive border mb-3">
+      <table className="table table-hover table-bordered mb-0">
+        <thead className="table-light sticky-top">
           <tr>
             <th>Orden</th>
             <th>Nombre</th>

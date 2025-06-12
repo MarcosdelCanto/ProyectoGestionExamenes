@@ -328,15 +328,15 @@ export default function UsuariosPage() {
 
   return (
     <Layout>
-      <div className="container-fluid usuarios-page-container">
-        {/* Combinando Bootstrap con una clase personalizada */}
-        <p className="display-5 page-title-custom mb-2">
-          <i className="bi bi-person-lines-fill me-3"></i>
-          Gestión de Usuarios
-        </p>
+      <div className="container-fluid pt-4">
+        <div className="d-flex justify-content-between align-items-center mb-3">
+          <h2 className="display-6">
+            <i className="bi bi-people-fill me-3"></i>
+            Gestión de Usuarios
+          </h2>
+        </div>
         <hr></hr>
 
-        {/* Aquí se mostrarían las alertas de carga masiva */}
         {bulkUploadResult && (
           <Alert
             variant={
@@ -422,28 +422,23 @@ export default function UsuariosPage() {
 
         {activeTab === 'gestionUsuarios' && (
           <>
-            {/* Acciones en su propia sección */}
-            <div className="usuario-actions-wrapper mb-3">
-              <UsuarioActions
-                onAdd={handleAddUsuario}
-                onEdit={handleEditUsuario}
-                onDelete={handleDeleteSelectedUsuarios}
-                selectedUsuarios={selectedUsuarios}
-                isLoadingList={loading && activeTab === 'gestionUsuarios'} // Solo loading de usuarios si esta pestaña está activa
-                isProcessingAction={isProcessingAction}
-                onBulkUploadComplete={handleUploadProcessComplete} // Para refrescar la lista
-                onUploadResult={handleBulkUploadDataResult} // Para obtener los datos del resumen y mostrar la alerta
-              />
-            </div>
-
             {/* Filtro en su propia sección, ocupando todo el ancho */}
-            <div className="usuario-filter-wrapper">
-              <UsuarioFilter
-                roles={roles} // Así se pasan los roles
-                onFilterChange={handleFilterChange}
-                currentFilters={filters}
-              />
-            </div>
+            <UsuarioFilter
+              roles={roles} // Así se pasan los roles
+              onFilterChange={handleFilterChange}
+              currentFilters={filters}
+            />
+
+            <UsuarioActions
+              onAdd={handleAddUsuario}
+              onEdit={handleEditUsuario}
+              onDelete={handleDeleteSelectedUsuarios}
+              selectedUsuarios={selectedUsuarios}
+              isLoadingList={loading && activeTab === 'gestionUsuarios'} // Solo loading de usuarios si esta pestaña está activa
+              isProcessingAction={isProcessingAction}
+              onBulkUploadComplete={handleUploadProcessComplete} // Para refrescar la lista
+              onUploadResult={handleBulkUploadDataResult} // Para obtener los datos del resumen y mostrar la alerta
+            />
 
             {loading && activeTab === 'gestionUsuarios' ? ( // Solo loading de usuarios si esta pestaña está activa
               <p>Cargando usuarios…</p>
@@ -497,7 +492,6 @@ export default function UsuariosPage() {
           <UsuarioSeccionTab allUsers={usuarios} allRoles={roles} />
         )}
 
-        {/* Modal para mostrar asociaciones de un usuario */}
         <Modal
           show={showAssociationsModal}
           onHide={handleCloseAssociationsModal}

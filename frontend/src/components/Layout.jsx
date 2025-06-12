@@ -281,9 +281,8 @@ export default function Layout({ children }) {
                 className="nav-link text-dark d-flex align-items-center"
               >
                 <div className="sidebar-icon-container">
-                  <i className="bi bi-upload"></i>
+                  <i className="bi bi-cloud-upload-fill"></i>
                 </div>
-
                 <span className="sidebar-link-text">Carga de Datos Masiva</span>
               </Link>
             )}

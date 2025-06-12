@@ -22,12 +22,10 @@ function EscuelaList({
 
   return (
     <div className="table-responsive border mb-3">
-      {/* Eliminado maxHeight y overflowY de un estilo inline si existiera, añadido mb-3 */}
-      <Table bordered hover responsive="sm" className="mb-0">
-        {/* mb-0 en la tabla si el div wrapper maneja el margen inferior */}
-        <thead className="table-light">
+      <table className="table table-hover table-bordered mb-0">
+        <thead className="table-light sticky-top">
           <tr>
-            <th style={{ width: '5%' }} className="text-center align-middle">
+            <th className="text-center align-middle">
               <input
                 type="checkbox"
                 className="form-check-input"
@@ -78,7 +76,7 @@ function EscuelaList({
             </tr>
           ))}
         </tbody>
-      </Table>
+      </table>
     </div>
   );
 }

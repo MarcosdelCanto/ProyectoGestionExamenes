@@ -8,7 +8,6 @@ function ExamenList({ examenes, selectedExamenId, onSelectExamen, loading }) {
     return <div className="text-center p-3">Cargando exámenes...</div>;
   }
 
-  // Asegurarse de que examenes sea un array antes de mapear
   if (!Array.isArray(examenes) || examenes.length === 0) {
     return (
       <div className="alert alert-info text-center">
@@ -18,9 +17,7 @@ function ExamenList({ examenes, selectedExamenId, onSelectExamen, loading }) {
   }
 
   return (
-    <div
-      className="table-responsive border mb-3" // Eliminados maxHeight y overflowY. mb-3 para espaciado.
-    >
+    <div className="table-responsive border mb-3">
       <table className="table table-hover table-bordered mb-0">
         <thead className="table-light sticky-top">
           <tr>

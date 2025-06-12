@@ -22,12 +22,10 @@ function CarreraList({
 
   return (
     <div className="table-responsive border mb-3">
-      {/* Eliminado maxHeight y overflowY de un estilo inline si existiera, añadido mb-3 */}
-      <Table bordered hover responsive="sm" className="mb-0">
-        {/* mb-0 en la tabla si el div wrapper maneja el margen inferior */}
-        <thead className="table-light">
+      <table className="table table-hover table-bordered mb-0">
+        <thead className="table-light sticky-top">
           <tr>
-            <th style={{ width: '5%' }} className="text-center align-middle">
+            <th className="text-center align-middle">
               <input
                 type="checkbox"
                 className="form-check-input"
@@ -44,7 +42,6 @@ function CarreraList({
             <th className="align-middle">Código</th>
             <th className="align-middle">Nombre</th>
             <th className="align-middle">Escuela</th>
-            {/* Agrega más encabezados si es necesario */}
           </tr>
         </thead>
         <tbody>
@@ -79,11 +76,10 @@ function CarreraList({
               <td>{c.CODIGO_CARRERA}</td>
               <td>{c.NOMBRE_CARRERA}</td>
               <td>{c.NOMBRE_ESCUELA || c.ESCUELA_ID_ESCUELA}</td>
-              {/* Muestra nombre de escuela si está disponible */}
             </tr>
           ))}
         </tbody>
-      </Table>
+      </table>
     </div>
   );
 }

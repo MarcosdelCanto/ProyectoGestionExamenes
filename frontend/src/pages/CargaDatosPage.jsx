@@ -60,65 +60,65 @@ function CargaDatosPage() {
   return (
     <Layout>
       <style>{keyframes}</style>
-      <Container fluid>
-        <Row>
-          <Col>
-            <div>
-              <p className="display-5 page-title-custom mb-2">
-                {/* Clase de UsuariosPage */}
-                <i className="bi bi-cloud-upload-fill me-3"></i>
-                {/* Ícono cambiado */}
-                Carga Masiva de Datos {/* Título cambiado */}
+      <div className="container-fluid pt-4">
+        <Container fluid>
+          <Row>
+            <Col>
+              <div className="d-flex justify-content-between align-items-center mb-3">
+                <h2 className="display-6">
+                  <i className="bi bi-cloud-upload-fill me-3"></i>
+                  Carga Masiva de Datos
+                </h2>
+              </div>
+              <hr />
+              {pageError && (
+                <Alert
+                  variant="danger"
+                  style={alertStyle}
+                  onClose={() => setPageError('')}
+                  dismissible
+                >
+                  {pageError}
+                </Alert>
+              )}
+              {pageSuccess && (
+                <Alert
+                  variant="success"
+                  style={alertStyle}
+                  onClose={() => setPageSuccess('')}
+                  dismissible
+                >
+                  {pageSuccess}
+                </Alert>
+              )}
+
+              <p className="mb-3">
+                Utiliza el siguiente formulario para cargar datos desde un
+                archivo Excel (.xlsx o .xls).
               </p>
-            </div>
-            <hr />
-            {pageError && (
-              <Alert
-                variant="danger"
-                style={alertStyle}
-                onClose={() => setPageError('')}
-                dismissible
-              >
-                {pageError}
-              </Alert>
-            )}
-            {pageSuccess && (
-              <Alert
-                variant="success"
-                style={alertStyle}
-                onClose={() => setPageSuccess('')}
-                dismissible
-              >
-                {pageSuccess}
-              </Alert>
-            )}
 
-            <p className="mb-3">
-              Utiliza el siguiente formulario para cargar datos desde un archivo
-              Excel (.xlsx o .xls).
-            </p>
-
-            {/*
+              {/*
               Asegúrate de que en BulkUpload.jsx, la prop que llama después de la carga
               (aquí renombrada a onUploadComplete para claridad) envíe un objeto como:
               { success: boolean, message: string, details?: any, errorDetails?: any }
             */}
-            <BulkUpload
-              onUploadComplete={handleUploadResult}
-              // Opcional: si quieres que CargaDatosPage sepa cuándo BulkUpload empieza a procesar/subir
-              // onProcessingStart={() => {
-              //   setPageLoading(true);
-              //   setPageError('');
-              //   setPageSuccess('');
-              // }}
-            />
+              <BulkUpload
+                onUploadComplete={handleUploadResult}
+                // Opcional: si quieres que CargaDatosPage sepa cuándo BulkUpload empieza a procesar/subir
+                // onProcessingStart={() => {
+                //   setPageLoading(true);
+                //   setPageError('');
+                //   setPageSuccess('');
+                // }}
+              />
 
-            {pageLoading && (
-              <p className="mt-3">Procesando y cargando datos...</p>
-            )}
-          </Col>
-        </Row>
-      </Container>
+              {pageLoading && (
+                <p className="mt-3">Procesando y cargando datos...</p>
+              )}
+            </Col>
+          </Row>
+        </Container>
+      </div>
     </Layout>
   );
 }
