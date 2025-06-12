@@ -6,6 +6,7 @@ import ExamenPostIt from './ExamenPostIt';
 export default function CalendarCell({
   fecha,
   modulo,
+  salaId, // Asegurarse de que esta prop se pasa desde el componente padre
   cellData,
   shouldRenderExamen,
   esDiaSeleccionado,
@@ -22,9 +23,16 @@ export default function CalendarCell({
   const droppableId = `droppable-${fecha}-${modulo.ORDEN}`;
 
   const { setNodeRef } = useDroppable({
-    // ← QUITAR isOver
     id: droppableId,
-    data: { type: 'celda-calendario', fecha, modulo },
+    // Incluir todos los datos necesarios para la creación de la reserva
+    data: {
+      type: 'celda-calendario',
+      fecha,
+      modulo: modulo, // Pasar el objeto completo del módulo
+      moduloId: modulo.ID_MODULO,
+      salaId, // Incluir el ID de la sala
+      orden: modulo.ORDEN, // Incluir el orden para facilitar la selección de módulos consecutivos
+    },
   });
 
   // CORREGIR: Estados de celda - usar esHoverTarget en lugar de isOver
@@ -67,6 +75,8 @@ export default function CalendarCell({
       className={getCellClassName()}
       onClick={handleClick}
       data-celda-id={droppableId}
+      data-modulo-id={modulo.ID_MODULO}
+      data-fecha={fecha}
     >
       {/* Contenido existente de la celda */}
       {shouldRenderExamen && cellData && (

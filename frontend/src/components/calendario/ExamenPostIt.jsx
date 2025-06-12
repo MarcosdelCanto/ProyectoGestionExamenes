@@ -5,6 +5,7 @@ import {
   enviarReservaADocente,
   cancelarReservaCompleta, // Usar esta en lugar de descartarReservaService
 } from '../../services/reservaService';
+import { fetchAllDocentes } from '../../services/usuarioService';
 import './styles/PostIt.css';
 
 export default function ExamenPostIt({
@@ -40,6 +41,10 @@ export default function ExamenPostIt({
   const [isProcessingAction, setIsProcessingAction] = useState(false);
   const startResizeRef = useRef(null);
   const startHeightRef = useRef(null);
+
+  // Agregar estado para selección de docente (para implementación futura)
+  const [selectedDocenteId, setSelectedDocenteId] = useState(null);
+  const [docentes, setDocentes] = useState([]);
 
   /**
    * Obtiene el estado de confirmación docente de la reserva
@@ -354,6 +359,28 @@ export default function ExamenPostIt({
     }
   };
 
+  // Cargar docentes disponibles al montar el componente
+  useEffect(() => {
+    const cargarDocentes = async () => {
+      try {
+        // Usar la función existente que ya está correctamente implementada
+        const docentesData = await fetchAllDocentes();
+        setDocentes(docentesData);
+
+        if (docentesData.length > 0) {
+          setSelectedDocenteId(docentesData[0].ID_USUARIO);
+        }
+      } catch (error) {
+        console.error('Error al cargar docentes:', error);
+      }
+    };
+
+    // Solo cargar docentes si este post-it es editable y no es una vista previa
+    if (!isPreview && !isDragOverlay && !esReservaConfirmada) {
+      cargarDocentes();
+    }
+  }, [isPreview, isDragOverlay, esReservaConfirmada]);
+
   // Cleanup
   useEffect(() => {
     return () => {
@@ -439,6 +466,22 @@ export default function ExamenPostIt({
           <div className="alert alert-danger alert-sm mt-1">
             <small>{resizeError}</small>
           </div>
+        )}
+
+        {/* Selector de docente (para implementación futura) */}
+        {docentes.length > 0 && (
+          <select
+            value={selectedDocenteId}
+            onChange={(e) => setSelectedDocenteId(e.target.value)}
+            className="form-select form-select-sm mt-2"
+          >
+            <option value="">Seleccionar docente</option>
+            {docentes.map((docente) => (
+              <option key={docente.ID_USUARIO} value={docente.ID_USUARIO}>
+                {docente.NOMBRE} {docente.APELLIDO}
+              </option>
+            ))}
+          </select>
         )}
       </div>
 

@@ -185,25 +185,15 @@ export const fetchMisAsignacionesDeReservas = async () => {
  */
 export const enviarReservaADocente = async (idReserva) => {
   try {
-    const response = await fetch(
-      `/api/reservas/${idReserva}/enviar-a-docente`,
-      {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-      }
-    );
-
-    if (!response.ok) {
-      const errorData = await response.json();
-      throw new Error(errorData.error || 'Error al enviar reserva a docente');
-    }
-
-    return await response.json();
+    // Reemplazar fetch por la instancia de api
+    const response = await api.put(`/reserva/${idReserva}/enviar-a-docente`);
+    return response.data;
   } catch (error) {
-    console.error('[reservaService] Error al enviar reserva a docente:', error);
-    throw error;
+    console.error(
+      '[reservaService] Error al enviar reserva a docente:',
+      error.response?.data || error.message
+    );
+    throw error.response?.data || error;
   }
 };
 
@@ -214,19 +204,11 @@ export const enviarReservaADocente = async (idReserva) => {
  */
 export const cancelarReservaCompleta = async (idReserva) => {
   try {
-    const response = await fetch(`/api/reservas/${idReserva}/cancelar`, {
-      method: 'DELETE',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-    });
-
-    if (!response.ok) {
-      const errorData = await response.json();
-      throw new Error(errorData.error || 'Error al cancelar la reserva');
-    }
-
-    const data = await response.json();
+    // Reemplazar fetch por la instancia de api
+    const response = await api.delete(
+      `/reserva/${idReserva}/cancelar-completa`
+    );
+    const data = response.data;
 
     // Disparar evento global para actualizar componentes
     window.dispatchEvent(
@@ -242,8 +224,11 @@ export const cancelarReservaCompleta = async (idReserva) => {
 
     return data;
   } catch (error) {
-    console.error('[reservaService] Error al cancelar reserva:', error);
-    throw error;
+    console.error(
+      '[reservaService] Error al cancelar reserva:',
+      error.response?.data || error.message
+    );
+    throw error.response?.data || error;
   }
 };
 
@@ -254,19 +239,9 @@ export const cancelarReservaCompleta = async (idReserva) => {
  */
 export const descartarReservaService = async (idReserva) => {
   try {
-    const response = await fetch(`/api/reservas/${idReserva}/descartar`, {
-      method: 'PUT',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-    });
-
-    if (!response.ok) {
-      const errorData = await response.json();
-      throw new Error(errorData.error || 'Error al descartar la reserva');
-    }
-
-    const data = await response.json();
+    // Reemplazar fetch por la instancia de api
+    const response = await api.put(`/reserva/${idReserva}/descartar`);
+    const data = response.data;
 
     // Disparar evento global para actualizar componentes
     window.dispatchEvent(
@@ -282,8 +257,11 @@ export const descartarReservaService = async (idReserva) => {
 
     return data;
   } catch (error) {
-    console.error('[reservaService] Error al descartar reserva:', error);
-    throw error;
+    console.error(
+      '[reservaService] Error al descartar reserva:',
+      error.response?.data || error.message
+    );
+    throw error.response?.data || error;
   }
 };
 
@@ -294,22 +272,14 @@ export const descartarReservaService = async (idReserva) => {
  */
 export const crearReservaEnCursoService = async (payload) => {
   try {
-    const response = await fetch('/api/reservas/en-curso', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(payload),
-    });
+    console.log('Enviando solicitud de reserva directa:', payload);
 
-    if (!response.ok) {
-      const errorData = await response.json();
-      throw new Error(errorData.error || 'Error al crear reserva en curso');
-    }
+    // Usar la instancia de API configurada con los headers de autenticación
+    const response = await api.post('/reserva/crear-en-curso', payload);
 
-    const data = await response.json();
+    const data = response.data;
 
-    // Disparar evento para actualizar componentes
+    // Disparar evento para actualizar componentes (importante mantener esto)
     window.dispatchEvent(
       new CustomEvent('reservaCreada', {
         detail: {
@@ -321,9 +291,13 @@ export const crearReservaEnCursoService = async (payload) => {
       })
     );
 
+    console.log('Reserva creada exitosamente:', data);
     return data;
   } catch (error) {
-    console.error('[reservaService] Error al crear reserva en curso:', error);
-    throw error;
+    console.error(
+      '[reservaService] Error al crear reserva en curso:',
+      error.response?.data || error.message
+    );
+    throw error.response?.data || error;
   }
 };

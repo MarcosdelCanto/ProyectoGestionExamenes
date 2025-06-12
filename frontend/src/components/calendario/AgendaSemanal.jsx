@@ -2,6 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { format, startOfWeek } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { Modal } from 'react-bootstrap';
+import { toast } from 'react-toastify';
 
 // Componentes
 import SalaSelector from './SalaSelector';
@@ -239,87 +240,112 @@ export default function AgendaSemanal({
     handleShowReservaModal,
   ]);
 
-  // FUNCIÓN PARA CREAR RESERVA - MODIFICADA para usar crearReservaEnCursoService
-  const handleCreateReserva = async (formDataPayload) => {
-    setLoadingReservaModal(true);
-    setModalError(null);
-    setModalSuccess(null);
+  // Efecto para procesar el drop directamente sin mostrar modal
+  useEffect(() => {
+    if (!draggedExamen || !dropTargetCell || isProcessingDrop) return;
 
-    // Preparar payload específico para crearReservaEnCursoService
-    const payloadEnCurso = {
-      examen_id_examen: reservaModalData.examenId,
-      fecha_reserva: reservaModalData.fechaReserva,
-      sala_id_sala: reservaModalData.salaId,
-      modulos_ids:
-        reservaModalData.modulosIds && reservaModalData.modulosIds.length > 0
-          ? reservaModalData.modulosIds
-          : formDataPayload.modulos,
-      docente_ids: formDataPayload.docente_ids || [], // Obtener docentes del formulario
-    };
+    const procesarDropDirecto = async () => {
+      try {
+        setIsProcessingDrop(true);
 
-    console.log(
-      '[handleCreateReserva] Payload para crearReservaEnCursoService:',
-      payloadEnCurso
-    );
+        // Validar que tenemos un objeto módulo completo
+        if (!dropTargetCell.modulo || !dropTargetCell.modulo.ORDEN) {
+          console.error(
+            'Error: Datos incompletos en el módulo seleccionado',
+            dropTargetCell
+          );
+          toast.error('No se pudo determinar el módulo seleccionado');
+          onDropProcessed();
+          return;
+        }
 
-    try {
-      // CAMBIO PRINCIPAL: Usar crearReservaEnCursoService en lugar del anterior
-      const response = await crearReservaEnCursoService(payloadEnCurso);
+        // Extraer información de la celda donde se hizo drop
+        const { fecha, moduloId, salaId, modulo } = dropTargetCell;
 
-      console.log(
-        '[handleCreateReserva] Respuesta de crearReservaEnCursoService:',
-        response
-      );
-
-      if (reservaModalData) {
-        // Remover de exámenes pendientes
-        setExamenes((prev) =>
-          prev.filter(
-            (examen) => examen.ID_EXAMEN !== reservaModalData.examenId
-          )
+        // Determinar los módulos a utilizar (el módulo de drop y siguientes según requisitos del examen)
+        const modulosNecesarios = determinarModulosParaExamen(
+          draggedExamen,
+          modulo, // Usar el objeto módulo completo
+          modulos
         );
 
-        // Crear nueva reserva local con estado EN_CURSO
-        const nuevaReserva = {
-          ID_RESERVA: response.id_reserva || Date.now(),
-          ID_SALA: reservaModalData.salaId,
-          FECHA_RESERVA: reservaModalData.fechaReserva,
-          ID_EXAMEN: reservaModalData.examenId,
-          ESTADO_CONFIRMACION_DOCENTE: 'EN_CURSO', // ← Estado inicial del nuevo flujo
-          MODULOS: payloadEnCurso.modulos_ids.map((moduloId) => {
-            const moduloInfo = modulos.find((m) => m.ID_MODULO === moduloId);
-            return {
-              ID_MODULO: moduloId,
-              NOMBRE_MODULO:
-                moduloInfo?.NOMBRE_MODULO ||
-                `Modulo ${moduloInfo?.ORDEN || ''}`,
-            };
-          }),
-          Examen: {
-            ID_EXAMEN: reservaModalData.examenId,
-            NOMBRE_ASIGNATURA: reservaModalData.examenNombre,
-            CANTIDAD_MODULOS_EXAMEN: payloadEnCurso.modulos_ids.length,
-          },
+        if (modulosNecesarios.length === 0) {
+          toast.error('No se pueden determinar los módulos para este examen');
+          onDropProcessed();
+          return;
+        }
+
+        // Preparar payload para la creación de la reserva
+        const payload = {
+          examen_id_examen: draggedExamen.ID_EXAMEN,
+          fecha_reserva: fecha,
+          sala_id_sala: salaId || selectedSala.ID_SALA,
+          modulos_ids: modulosNecesarios,
+          // Por ahora usamos un docente por defecto, luego lo haremos seleccionable
+          docente_ids: [1], // ID de docente por defecto, luego lo cambiaremos
         };
 
-        console.log(
-          '[handleCreateReserva] Nueva reserva local creada:',
-          nuevaReserva
-        );
+        console.log('Creando reserva directamente con payload:', payload);
 
-        setReservas((prev) => [...prev, nuevaReserva]);
+        // Llamar al servicio para crear la reserva
+        const response = await crearReservaEnCursoService(payload);
+
+        toast.success('Examen programado exitosamente');
+
+        // Notificar que el drop se ha procesado (para limpiar estados)
+        onDropProcessed();
+      } catch (error) {
+        console.error('Error al crear reserva directa:', error);
+        toast.error(`Error al programar examen: ${error.message}`);
+        onDropProcessed();
+      } finally {
+        setIsProcessingDrop(false);
       }
+    };
 
-      setModalSuccess(
-        response.message || 'Reserva creada exitosamente en estado EN_CURSO.'
+    procesarDropDirecto();
+  }, [draggedExamen, dropTargetCell]);
+
+  // Función auxiliar para determinar los módulos contiguos necesarios
+  const determinarModulosParaExamen = (examen, modulo, todosLosModulos) => {
+    // Si no tenemos un módulo válido, retornar un array vacío
+    if (!modulo || !modulo.ORDEN) {
+      console.error(
+        'Error en determinarModulosParaExamen: módulo inválido',
+        modulo
       );
-      setTimeout(() => handleCloseReservaModal(), 2000);
-    } catch (err) {
-      console.error('[handleCreateReserva] Error:', err);
-      setModalError(err.details || err.message || 'Error al crear la reserva.');
-    } finally {
-      setLoadingReservaModal(false);
+      return [];
     }
+
+    // Cantidad de módulos requerida por el examen
+    const cantidadModulos = examen.CANTIDAD_MODULOS_EXAMEN || 1;
+
+    // Encontrar todos los módulos del mismo día ordenados por ORDEN
+    const modulosDelDia = todosLosModulos.sort((a, b) => a.ORDEN - b.ORDEN);
+
+    // Encontrar el índice del módulo inicial
+    const indiceModuloInicial = modulosDelDia.findIndex(
+      (m) => m.ID_MODULO === modulo.ID_MODULO
+    );
+
+    if (indiceModuloInicial === -1) {
+      console.error(
+        'Error: No se encontró el módulo inicial en la lista de módulos'
+      );
+      return [];
+    }
+
+    // Obtener los módulos consecutivos necesarios
+    const modulosSeleccionados = [];
+    for (let i = 0; i < cantidadModulos; i++) {
+      const indiceActual = indiceModuloInicial + i;
+      if (indiceActual < modulosDelDia.length) {
+        modulosSeleccionados.push(modulosDelDia[indiceActual].ID_MODULO);
+      }
+    }
+
+    console.log('Módulos seleccionados:', modulosSeleccionados);
+    return modulosSeleccionados;
   };
 
   // FUNCIONES AUXILIARES
@@ -565,83 +591,6 @@ export default function AgendaSemanal({
         onSetSelectedEdificio={setSelectedEdificio}
         onAplicarFiltros={() => setShowSalaFilterModal(false)}
       />
-
-      {/* Modal de Reserva */}
-      {reservaModalData && (
-        <Modal
-          show={showReservaModal}
-          onHide={handleCloseReservaModal}
-          size="lg"
-          backdrop="static"
-        >
-          <Modal.Header closeButton>
-            <Modal.Title>Crear Reserva de Examen</Modal.Title>
-          </Modal.Header>
-          <Modal.Body>
-            <div className="mb-3 p-3 bg-light rounded">
-              <h6>Resumen del examen a programar:</h6>
-              <p className="mb-1">
-                <strong>Examen:</strong> {reservaModalData.examenNombre}
-              </p>
-              <p className="mb-1">
-                <strong>Sala:</strong> {reservaModalData.salaNombre}
-              </p>
-              <p className="mb-1">
-                <strong>Fecha:</strong>
-                {new Date(reservaModalData.fechaReserva).toLocaleDateString(
-                  'es-CL'
-                )}
-              </p>
-              <p className="mb-0">
-                <strong>Horario:</strong> {reservaModalData.modulosTexto}
-              </p>
-            </div>
-
-            {modalSuccess && (
-              <div className="alert alert-success" role="alert">
-                {modalSuccess}
-              </div>
-            )}
-            {modalError && (
-              <div className="alert alert-danger" role="alert">
-                {modalError}
-              </div>
-            )}
-
-            <ReservaForm
-              initialData={{
-                ID_EXAMEN: reservaModalData.examenId,
-                FECHA_RESERVA: reservaModalData.fechaReserva,
-                ID_SALA: reservaModalData.salaId,
-                MODULOS_IDS: reservaModalData.modulosIds,
-                EXAMEN_COMPLETO: reservaModalData.examenCompleto,
-                CANTIDAD_MODULOS_EXAMEN:
-                  reservaModalData.cantidadModulosOriginal,
-                MODULO_INICIAL_ORDEN: reservaModalData.moduloInicialOrden,
-                // ← AGREGAR DOCENTES si están disponibles en el examen
-                DOCENTE_IDS:
-                  reservaModalData.examenCompleto?.DOCENTES_ASIGNADOS?.map(
-                    (d) => d.ID_USUARIO
-                  ) || [],
-              }}
-              onModulosChange={(nuevaCantidad, nuevosModulosIds) => {
-                setReservaModalData((prev) => ({
-                  ...prev,
-                  modulosIds: nuevosModulosIds,
-                  cantidadModulosOriginal: nuevaCantidad,
-                  modulosTexto: `Módulos ${prev.moduloInicialOrden} - ${prev.moduloInicialOrden + nuevaCantidad - 1}`,
-                }));
-              }}
-              modulosDisponibles={modulos}
-              onSubmit={handleCreateReserva}
-              onCancel={handleCloseReservaModal}
-              isLoadingExternamente={loadingReservaModal}
-              submitButtonText="Crear Reserva (EN_CURSO)" // ← Actualizar texto del botón
-              isEditMode={true}
-            />
-          </Modal.Body>
-        </Modal>
-      )}
 
       {/* Modal de Eliminación */}
       <Modal

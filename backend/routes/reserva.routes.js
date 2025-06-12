@@ -121,12 +121,4 @@ router.put(
   descartarReserva
 );
 
-// --- RUTA PARA DESCARTAR RESERVA ---
-router.put(
-  '/:idReserva/descartar',
-  authMiddleware,
-  checkPermission(['UPDATE_RESERVA']), // Asumiendo que el mismo permiso de actualizar sirve para descartar
-  descartarReserva
-);
-
 export default router;
