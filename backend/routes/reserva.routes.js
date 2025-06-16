@@ -66,7 +66,7 @@ router.post(
 router.put(
   '/:idReserva/enviar-a-docente',
   authMiddleware,
-  checkPermission(['UPDATE_RESERVAS_EXAMEN']),
+  checkPermission(['UPDATE_RESERVA']),
   enviarReservaADocente
 );
 
