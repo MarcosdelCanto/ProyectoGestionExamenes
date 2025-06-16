@@ -7,11 +7,12 @@ import {
   Alert,
   Button,
   Modal,
-  Tabs,
-  Tab,
   Card,
   Badge,
   Form,
+  Nav,
+  OverlayTrigger,
+  Tooltip,
 } from 'react-bootstrap';
 import Layout from '../components/Layout';
 import ReservaForm from '../components/reservas/ReservaForm';
@@ -370,7 +371,7 @@ const MisReservasAsignadasPage = () => {
     <Layout>
       <div className="container-fluid pt-4">
         <div className="mb-4">
-          <div className="d-flex justify-content-between align-items-center">
+          <div className="d-flex justify-content-between align-items-center mb">
             <h2 className="display-6 mb-0">
               <i className="bi bi-calendar-check-fill me-3"></i>
               Exámenes Programados
@@ -408,260 +409,242 @@ const MisReservasAsignadasPage = () => {
           </Alert>
         )}
 
-        {/* Tabs Section */}
+        {/* Tabs de naveagción */}
+        <Nav
+          variant="tabs"
+          className="mb-3 nav-custom"
+          activeKey={activeTab}
+          onSelect={(k) => setActiveTab(k)}
+        >
+          <Nav.Item>
+            <Nav.Link eventKey="proximas">Mis Próximas Reservas</Nav.Link>
+          </Nav.Item>
+          {esAdminOComite && (
+            <Nav.Item>
+              <Nav.Link eventKey="revision">
+                Requieren Revisión
+                {reservasParaRevision.length > 0 && (
+                  <Badge bg="danger" className="ms-2" pill>
+                    {reservasParaRevision.length}
+                  </Badge>
+                )}
+              </Nav.Link>
+            </Nav.Item>
+          )}
+          {esDocente && (
+            <Nav.Item>
+              <Nav.Link eventKey="pendientes">
+                Pendientes de Confirmación
+                {reservasPendientesDocente.length > 0 && (
+                  <Badge bg="warning" text="dark" className="ms-2" pill>
+                    {reservasPendientesDocente.length}
+                  </Badge>
+                )}
+              </Nav.Link>
+            </Nav.Item>
+          )}
+        </Nav>
+
+        {/* tab content */}
         <Card className="border-0 shadow-sm">
           <Card.Body className="p-0">
-            <Tabs
-              activeKey={activeTab}
-              onSelect={(k) => setActiveTab(k)}
-              id="reservas-tabs"
-              className="mb-3 nav-tabs-custom"
-            >
-              <Tab
-                eventKey="proximas"
-                title="Mis Próximas Reservas"
-                className="bg-transparent"
-              >
-                <div className="p-3">
-                  {asignaciones.length > 0 ? (
-                    <div className="table-responsive">
-                      <Table hover bordered className="align-middle mb-0">
-                        <thead className="table-light">
-                          <tr>
-                            <th>Examen</th>
-                            <th>Asignatura</th>
-                            <th>Fecha</th>
-                            <th>Horario</th>
-                            <th>Sala</th>
-                            <th>Confirmación Docente</th>
+            {activeTab === 'proximas' && (
+              <div className="p-3">
+                {asignaciones.length > 0 ? (
+                  <div className="table-responsive">
+                    <Table hover bordered className="align-middle mb-0">
+                      <thead className="table-light">
+                        <tr>
+                          <th>Examen</th>
+                          <th>Asignatura</th>
+                          <th>Fecha</th>
+                          <th>Horario</th>
+                          <th>Sala</th>
+                          <th>Estado</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {asignaciones.map((res) => (
+                          <tr key={res.ID_RESERVA}>
+                            <td>{res.NOMBRE_EXAMEN}</td>
+                            <td>{res.NOMBRE_ASIGNATURA}</td>
+                            <td>
+                              {new Date(res.FECHA_RESERVA).toLocaleDateString(
+                                'es-CL'
+                              )}
+                            </td>
+                            <td>
+                              {res.HORA_INICIO} - {res.HORA_FIN}
+                            </td>
+                            <td>{res.NOMBRE_SALA}</td>
+                            <td className="text-center align-middle">
+                              <Badge
+                                bg={
+                                  res.ESTADO_CONFIRMACION_DOCENTE ===
+                                  'CONFIRMADO'
+                                    ? 'success'
+                                    : res.ESTADO_CONFIRMACION_DOCENTE ===
+                                        'PENDIENTE'
+                                      ? 'warning'
+                                      : 'danger'
+                                }
+                              >
+                                {res.ESTADO_CONFIRMACION_DOCENTE}
+                              </Badge>
+                            </td>
                           </tr>
-                        </thead>
-                        <tbody>
-                          {asignaciones.map((res) => (
-                            <tr key={res.ID_RESERVA}>
-                              <td>{res.NOMBRE_EXAMEN}</td>
-                              <td>{res.NOMBRE_ASIGNATURA}</td>
-                              <td>
-                                {new Date(res.FECHA_RESERVA).toLocaleDateString(
-                                  'es-CL'
-                                )}
-                              </td>
-                              <td>
-                                {res.HORA_INICIO} - {res.HORA_FIN}
-                              </td>
-                              <td>{res.NOMBRE_SALA}</td>
-                              <td>
-                                <Badge
-                                  bg={
-                                    res.ESTADO_CONFIRMACION_DOCENTE ===
-                                    'CONFIRMADO'
-                                      ? 'success'
-                                      : res.ESTADO_CONFIRMACION_DOCENTE ===
-                                          'PENDIENTE'
-                                        ? 'warning'
-                                        : 'danger'
+                        ))}
+                      </tbody>
+                    </Table>
+                  </div>
+                ) : (
+                  <Alert variant="light" className="text-center mt-0">
+                    No tienes reservas asignadas.
+                  </Alert>
+                )}
+              </div>
+            )}
+
+            {activeTab === 'revision' && esAdminOComite && (
+              <div className="p-3">
+                {reservasParaRevision.length > 0 ? (
+                  <div className="table-responsive">
+                    <Table hover bordered className="align-middle mt-0">
+                      <thead className="table-light">
+                        <tr>
+                          <th>Examen</th>
+                          <th>Asignatura</th>
+                          <th>Fecha</th>
+                          <th>Horario</th>
+                          <th>Sala</th>
+                          <th>Observaciones</th>
+                          <th>Acciones</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {reservasParaRevision.map((res) => (
+                          <tr key={res.ID_RESERVA}>
+                            <td>{res.NOMBRE_EXAMEN}</td>
+                            <td>{res.NOMBRE_ASIGNATURA}</td>
+                            <td>
+                              {new Date(res.FECHA_RESERVA).toLocaleDateString(
+                                'es-CL'
+                              )}
+                            </td>
+                            <td>
+                              {res.HORA_INICIO} - {res.HORA_FIN}
+                            </td>
+                            <td>{res.NOMBRE_SALA}</td>
+                            <td className="text-center">
+                              {res.OBSERVACIONES_DOCENTE && (
+                                <OverlayTrigger
+                                  placement="top"
+                                  overlay={
+                                    <Tooltip
+                                      id={`tooltip-observ-${res.ID_RESERVA}`}
+                                    >
+                                      Presiona para ver
+                                    </Tooltip>
                                   }
-                                  className="d-inline-block"
                                 >
-                                  {res.ESTADO_CONFIRMACION_DOCENTE}
-                                </Badge>
-                              </td>
-                            </tr>
-                          ))}
-                        </tbody>
-                      </Table>
-                    </div>
-                  ) : (
-                    <Alert variant="light" className="text-center mt-0">
-                      No tienes reservas asignadas.
-                    </Alert>
-                  )}
-                </div>
-              </Tab>
-
-              {esAdminOComite && (
-                <Tab
-                  eventKey="revision"
-                  title={
-                    <span className="d-flex align-items-center">
-                      Requieren Revisión
-                      <Badge bg="danger" className="ms-2" pill>
-                        {reservasParaRevision.length}
-                      </Badge>
-                    </span>
-                  }
-                  className="bg-transparent"
-                >
-                  <Card>
-                    <Card.Body>
-                      {reservasParaRevision.length > 0 ? (
-                        <Table
-                          striped
-                          bordered
-                          hover
-                          responsive
-                          size="sm"
-                          className="mt-3"
-                        >
-                          <thead className="table-light">
-                            <tr>
-                              <th>Examen</th>
-                              <th>Asignatura</th>
-                              <th>Fecha</th>
-                              <th>Horario</th>
-                              <th>Sala</th>
-                              <th>Observaciones</th>
-                              <th>Acciones</th>
-                            </tr>
-                          </thead>
-                          <tbody>
-                            {reservasParaRevision.map((res) => (
-                              <tr key={res.ID_RESERVA}>
-                                <td>{res.NOMBRE_EXAMEN}</td>
-                                <td>{res.NOMBRE_ASIGNATURA}</td>
-                                <td>
-                                  {new Date(
-                                    res.FECHA_RESERVA
-                                  ).toLocaleDateString('es-CL')}
-                                </td>
-                                <td>
-                                  {res.HORA_INICIO} - {res.HORA_FIN}
-                                </td>
-                                <td>{res.NOMBRE_SALA}</td>
-                                <td>
-                                  {res.OBSERVACIONES_DOCENTE && (
-                                    <Button
-                                      variant="link"
-                                      size="sm"
-                                      onClick={() =>
-                                        handleOpenObservacionesModal(res)
-                                      }
-                                      title="Ver Observaciones"
-                                    >
-                                      <svg
-                                        xmlns="http://www.w3.org/2000/svg"
-                                        width="16"
-                                        height="16"
-                                        fill="currentColor"
-                                        className="bi bi-eye-fill"
-                                        viewBox="0 0 16 16"
-                                      >
-                                        <path d="M10.5 8a2.5 2.5 0 1 1-5 0 2.5 2.5 0 0 1 5 0z" />
-                                        <path d="M0 8s3-5.5 8-5.5S16 8 16 8s-3 5.5-8 5.5S0 8 0 8zm8 3.5a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7z" />
-                                      </svg>
-                                    </Button>
-                                  )}
-                                </td>
-                                <td>
-                                  <div className="d-flex gap-2">
-                                    <Button
-                                      variant="outline-primary"
-                                      size="sm"
-                                      onClick={() => handleOpenEditModal(res)}
-                                    >
-                                      <i className="bi bi-pencil-square"></i>
-                                      Editar
-                                    </Button>
-                                    <Button
-                                      variant="outline-danger"
-                                      size="sm"
-                                      onClick={() =>
-                                        handleOpenConfirmDescartarModal(res)
-                                      }
-                                    >
-                                      <i className="bi bi-trash"></i>
-                                      Descartar
-                                    </Button>
-                                  </div>
-                                </td>
-                              </tr>
-                            ))}
-                          </tbody>
-                        </Table>
-                      ) : (
-                        <Alert variant="light" className="text-center mt-0">
-                          No hay reservas que requieran revisión.
-                        </Alert>
-                      )}
-                    </Card.Body>
-                  </Card>
-                </Tab>
-              )}
-
-              {esDocente && (
-                <Tab
-                  eventKey="pendientes"
-                  title={
-                    <span className="d-flex align-items-center">
-                      Pendientes de Confirmación
-                      <Badge bg="warning" text="dark" className="ms-2" pill>
-                        {reservasPendientesDocente.length}
-                      </Badge>
-                    </span>
-                  }
-                  className="px-3 py-2"
-                >
-                  <Card>
-                    <Card.Body>
-                      <Table
-                        striped
-                        bordered
-                        hover
-                        responsive
-                        size="sm"
-                        className="mt-3"
-                      >
-                        <thead className="table-light">
-                          <tr>
-                            <th>Examen</th>
-                            <th>Asignatura</th>
-                            <th>Fecha</th>
-                            <th>Horario</th>
-                            <th>Sala</th>
-                            <th>Acciones</th>
-                          </tr>
-                        </thead>
-                        <tbody>
-                          {reservasPendientesDocente.map((res) => (
-                            <tr key={res.ID_RESERVA}>
-                              <td>{res.NOMBRE_EXAMEN}</td>
-                              <td>{res.NOMBRE_ASIGNATURA}</td>
-                              <td>
-                                {new Date(res.FECHA_RESERVA).toLocaleDateString(
-                                  'es-CL'
-                                )}
-                              </td>
-                              <td>
-                                {res.HORA_INICIO} - {res.HORA_FIN}
-                              </td>
-                              <td>{res.NOMBRE_SALA}</td>
-                              <td>
+                                  <Button
+                                    variant="link"
+                                    onClick={() =>
+                                      handleOpenObservacionesModal(res)
+                                    }
+                                    className="p-1"
+                                  >
+                                    <i className="bi bi-chat-square-quote fs-4"></i>
+                                  </Button>
+                                </OverlayTrigger>
+                              )}
+                            </td>
+                            <td>
+                              <div className="d-flex gap-2">
                                 <Button
-                                  variant="success"
+                                  variant="warning"
                                   size="sm"
-                                  onClick={() => handleOpenRevisarModal(res)}
+                                  onClick={() => handleOpenEditModal(res)}
                                 >
-                                  Revisar y Confirmar
+                                  <i className="bi bi-pencil-square fs-6"></i>
                                 </Button>
-                              </td>
-                            </tr>
-                          ))}
-                        </tbody>
-                      </Table>
-                      {reservasPendientesDocente.length === 0 && (
-                        <Alert variant="light" className="text-center">
-                          No tienes reservas pendientes de confirmación.
-                        </Alert>
-                      )}
-                    </Card.Body>
-                  </Card>
-                </Tab>
-              )}
-            </Tabs>
+                                <Button
+                                  variant="danger"
+                                  size="sm"
+                                  onClick={() =>
+                                    handleOpenConfirmDescartarModal(res)
+                                  }
+                                >
+                                  <i className="bi bi-trash"></i>
+                                </Button>
+                              </div>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </Table>
+                  </div>
+                ) : (
+                  <Alert variant="light" className="text-center mt-0">
+                    No hay reservas que requieran revisión.
+                  </Alert>
+                )}
+              </div>
+            )}
+
+            {activeTab === 'pendientes' && esDocente && (
+              <div className="p-3">
+                {reservasPendientesDocente.length > 0 ? (
+                  <div className="table-responsive">
+                    <Table hover bordered className="align-middle mb-0">
+                      <thead className="table-light">
+                        <tr>
+                          <th>Examen</th>
+                          <th>Asignatura</th>
+                          <th>Fecha</th>
+                          <th>Horario</th>
+                          <th>Sala</th>
+                          <th>Acciones</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {reservasPendientesDocente.map((res) => (
+                          <tr key={res.ID_RESERVA}>
+                            <td>{res.NOMBRE_EXAMEN}</td>
+                            <td>{res.NOMBRE_ASIGNATURA}</td>
+                            <td>
+                              {new Date(res.FECHA_RESERVA).toLocaleDateString(
+                                'es-CL'
+                              )}
+                            </td>
+                            <td>
+                              {res.HORA_INICIO} - {res.HORA_FIN}
+                            </td>
+                            <td>{res.NOMBRE_SALA}</td>
+                            <td className="text-center align-middle">
+                              <Button
+                                variant="success"
+                                size="sm"
+                                onClick={() => handleOpenRevisarModal(res)}
+                              >
+                                Revisar y Confirmar
+                              </Button>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </Table>
+                  </div>
+                ) : (
+                  <Alert variant="light" className="text-center">
+                    No tienes reservas pendientes de confirmación.
+                  </Alert>
+                )}
+              </div>
+            )}
           </Card.Body>
         </Card>
       </div>
-
       <Modal
         show={showEditModal}
         onHide={handleCloseEditModal}
