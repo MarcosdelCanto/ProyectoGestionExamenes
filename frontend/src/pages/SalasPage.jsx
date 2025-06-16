@@ -71,6 +71,14 @@ function Modal({ title, children, onClose, show }) {
   );
 }
 
+const normalizeText = (text) => {
+  if (!text) return '';
+  return text
+    .normalize('NFD') // Descompone caracteres acentuados
+    .replace(/[\u0300-\u036f]/g, '') // Elimina los diacríticos
+    .toLowerCase(); // Convierte a minúsculas
+};
+
 export default function SalasPage() {
   const [salas, setSalas] = useState([]);
   const [edificios, setEdificios] = useState([]);
@@ -456,19 +464,16 @@ export default function SalasPage() {
     return salas.filter((sala) => {
       const matchesNombre =
         !salaFilters.nombre ||
-        (sala.NOMBRE_SALA && // Asegurarse que NOMBRE_SALA exista
-          sala.NOMBRE_SALA.toLowerCase().includes(
-            salaFilters.nombre.toLowerCase()
+        (sala.NOMBRE_SALA &&
+          normalizeText(sala.NOMBRE_SALA).includes(
+            normalizeText(salaFilters.nombre)
           ));
 
       const matchesSede =
         !salaFilters.sede ||
         (sala.EDIFICIO_SEDE_ID // Asumimos que cada sala tiene esta propiedad después de un join o procesamiento
           ? String(sala.EDIFICIO_SEDE_ID) === String(salaFilters.sede)
-          : // Fallback si no tenemos EDIFICIO_SEDE_ID directamente en la sala:
-            // Encontrar el edificio de la sala y luego la sede de ese edificio.
-            // Esto requiere que 'edificios' (la lista completa) esté disponible.
-            edificios.find(
+          : edificios.find(
               (e) => String(e.ID_EDIFICIO) === String(sala.EDIFICIO_ID_EDIFICIO)
             )?.SEDE_ID_SEDE === parseInt(salaFilters.sede));
 
@@ -486,12 +491,12 @@ export default function SalasPage() {
       const matchesNombre =
         !edificioFilters.nombre ||
         (edificio.NOMBRE_EDIFICIO &&
-          edificio.NOMBRE_EDIFICIO.toLowerCase().includes(
-            edificioFilters.nombre.toLowerCase()
+          normalizeText(edificio.NOMBRE_EDIFICIO).includes(
+            normalizeText(edificioFilters.nombre)
           )) ||
         (edificio.SIGLA_EDIFICIO &&
-          edificio.SIGLA_EDIFICIO.toLowerCase().includes(
-            edificioFilters.nombre.toLowerCase()
+          normalizeText(edificio.SIGLA_EDIFICIO).includes(
+            normalizeText(edificioFilters.nombre)
           ));
 
       const matchesSede =
@@ -508,8 +513,8 @@ export default function SalasPage() {
       const matchesNombre =
         !sedeFilters.nombre ||
         (sede.NOMBRE_SEDE &&
-          sede.NOMBRE_SEDE.toLowerCase().includes(
-            sedeFilters.nombre.toLowerCase()
+          normalizeText(sede.NOMBRE_SEDE).includes(
+            normalizeText(sedeFilters.nombre)
           ));
       return matchesNombre;
     });
