@@ -9,17 +9,28 @@ export function useFilters(salas, examenes) {
   const filteredSalas = useMemo(() => {
     let tempSalas = salas || [];
 
-    if (selectedSede) {
-      tempSalas = tempSalas.filter((s) => s.ID_SEDE === parseInt(selectedSede));
+    // Filtrar por Sede solo si selectedSede tiene un valor y no es la opción "Todos" (string vacío)
+    if (selectedSede && selectedSede !== '') {
+      const sedeIdNum = parseInt(selectedSede);
+      // Asegurarse de que la conversión a número fue exitosa antes de filtrar
+      if (!isNaN(sedeIdNum)) {
+        tempSalas = tempSalas.filter((s) => s.ID_SEDE === sedeIdNum);
+      }
     }
 
-    if (selectedEdificio) {
-      tempSalas = tempSalas.filter(
-        (s) => s.ID_EDIFICIO === parseInt(selectedEdificio)
-      );
+    // Filtrar por Edificio solo si selectedEdificio tiene un valor y no es la opción "Todos"
+    if (selectedEdificio && selectedEdificio !== '') {
+      const edificioIdNum = parseInt(selectedEdificio);
+      if (!isNaN(edificioIdNum)) {
+        tempSalas = tempSalas.filter((s) => {
+          const matches = s.EDIFICIO_ID_EDIFICIO === edificioIdNum; // <--- CORRECCIÓN AQUÍ
+          return matches;
+        });
+      }
     }
 
-    if (searchTermSala) {
+    // Filtrar por término de búsqueda de sala (SOLO si no está vacío)
+    if (searchTermSala && searchTermSala.trim() !== '') {
       const term = searchTermSala.toLowerCase();
       tempSalas = tempSalas.filter(
         (s) =>

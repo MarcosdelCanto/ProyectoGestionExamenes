@@ -1,5 +1,5 @@
 import React from 'react';
-import './styles/Modal.css';
+import { Modal, Button, Form } from 'react-bootstrap'; // Importar componentes de react-bootstrap
 
 export default function FilterModalSalas({
   isOpen,
@@ -14,26 +14,23 @@ export default function FilterModalSalas({
 }) {
   if (!isOpen) return null;
 
+  // La función onAplicarFiltros ahora también cerrará el modal.
+  // Si solo quieres aplicar y mantener el modal abierto, necesitarías separar la lógica.
+  const handleApplyAndClose = () => {
+    onAplicarFiltros(); // Llama a la función original de aplicar filtros
+    onClose(); // Cierra el modal
+  };
+
   return (
-    <>
-      <div className="modal-backdrop" onClick={onClose}></div>
-      <div className="modal-container">
-        <div className="modal-header">
-          <h5>Filtrar Salas</h5>
-          <button
-            type="button"
-            className="btn-close"
-            aria-label="Close"
-            onClick={onClose}
-          ></button>
-        </div>
-        <div className="modal-content">
-          <div className="form-group">
-            <label htmlFor="sedeSelect" className="form-label form-label-sm">
-              Sede:
-            </label>
-            <select
-              id="sedeSelect"
+    <Modal show={isOpen} onHide={onClose} centered>
+      <Modal.Header closeButton>
+        <Modal.Title as="h5">Filtrar Salas</Modal.Title>
+      </Modal.Header>
+      <Modal.Body>
+        <Form>
+          <Form.Group className="mb-3" controlId="sedeSelect">
+            <Form.Label className="form-label-sm">Sede:</Form.Label>
+            <Form.Select
               className="form-select form-select-sm"
               value={selectedSede}
               onChange={(e) => onSetSelectedSede(e.target.value)}
@@ -44,32 +41,30 @@ export default function FilterModalSalas({
                   {sede.NOMBRE_SEDE}
                 </option>
               ))}
-            </select>
-          </div>
-          <div className="form-group">
-            <label
-              htmlFor="edificioSelect"
-              className="form-label form-label-sm"
-            >
+            </Form.Select>
+          </Form.Group>
+
+          <Form.Group className="mb-3" controlId="edificioSelect">
+            <Form.Label className="form-label form-label-sm">
               Edificio:
-            </label>
-            <select
-              id="edificioSelect"
+            </Form.Label>
+            <Form.Select
               className="form-select form-select-sm"
               value={selectedEdificio}
               onChange={(e) => onSetSelectedEdificio(e.target.value)}
               disabled={
                 !selectedSede &&
                 edificiosDisponibles.some((e) => e.SEDE_ID_SEDE)
-              } // Deshabilitar si no hay sede y los edificios dependen de ella
+              }
             >
               <option value="">Todos los Edificios</option>
               {edificiosDisponibles
                 .filter(
                   (edificio) =>
                     !selectedSede ||
-                    edificio.SEDE_ID_SEDE === parseInt(selectedSede)
-                ) // Filtrar edificios por sede seleccionada
+                    (edificio.SEDE_ID_SEDE &&
+                      edificio.SEDE_ID_SEDE.toString() === selectedSede)
+                )
                 .map((edificio) => (
                   <option
                     key={edificio.ID_EDIFICIO}
@@ -78,15 +73,18 @@ export default function FilterModalSalas({
                     {edificio.NOMBRE_EDIFICIO}
                   </option>
                 ))}
-            </select>
-          </div>
-        </div>
-        <div className="modal-footer">
-          <button className="btn btn-primary btn-sm" onClick={onAplicarFiltros}>
-            Aplicar y Cerrar
-          </button>
-        </div>
-      </div>
-    </>
+            </Form.Select>
+          </Form.Group>
+        </Form>
+      </Modal.Body>
+      <Modal.Footer>
+        <Button variant="secondary" size="sm" onClick={onClose}>
+          Cancelar
+        </Button>
+        <Button variant="primary" size="sm" onClick={handleApplyAndClose}>
+          Aplicar Filtros
+        </Button>
+      </Modal.Footer>
+    </Modal>
   );
 }

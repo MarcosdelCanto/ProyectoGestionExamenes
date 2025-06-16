@@ -1,6 +1,8 @@
 import { useState, useEffect } from 'react';
 import { fetchAllSecciones } from '../../services/seccionService'; // Importar servicio
 import { fetchAllEstados } from '../../services/estadoService'; // Importar servicio
+import Select from 'react-select'; // Importar react-select
+import { Row, Col, Form } from 'react-bootstrap'; // Importar Row y Col
 
 function ExamenForm({ initial, onSubmit, onCancel }) {
   const [nombre, setNombre] = useState(initial?.NOMBRE_EXAMEN || '');
@@ -25,6 +27,40 @@ function ExamenForm({ initial, onSubmit, onCancel }) {
   );
   const [secciones, setSecciones] = useState([]);
   const [estados, setEstados] = useState([]);
+  const [loadingSecciones, setLoadingSecciones] = useState(false);
+  const [loadingEstados, setLoadingEstados] = useState(false);
+  const [formAttempted, setFormAttempted] = useState(false);
+
+  // Helpers para react-select
+  const toSelectOptions = (
+    items,
+    valueKey,
+    labelKey,
+    secondaryLabelKey = null
+  ) => {
+    if (!Array.isArray(items)) return [];
+    return items.map((item) => ({
+      value: item[valueKey],
+      label: secondaryLabelKey
+        ? `${item[labelKey]} - ${item[secondaryLabelKey]}`
+        : item[labelKey],
+    }));
+  };
+
+  const seccionOptions = toSelectOptions(
+    secciones,
+    'ID_SECCION',
+    'NOMBRE_SECCION',
+    'NOMBRE_ASIGNATURA'
+  );
+  const estadoOptions = toSelectOptions(estados, 'ID_ESTADO', 'NOMBRE_ESTADO');
+
+  const selectedSeccionOption =
+    seccionOptions.find((option) => option.value?.toString() === seccionId) ||
+    null;
+  const selectedEstadoOption =
+    estadoOptions.find((option) => option.value?.toString() === estadoId) ||
+    null;
 
   // Efecto para actualizar el estado del formulario cuando 'initial' cambia (para el modo edición)
   useEffect(() => {
@@ -91,38 +127,34 @@ function ExamenForm({ initial, onSubmit, onCancel }) {
 
   useEffect(() => {
     const fetchData = async () => {
+      setLoadingSecciones(true);
+      setLoadingEstados(true);
       try {
-        const [seccionesRes, estadosRes] = await Promise.all([
-          fetchAllSecciones(), // Usar servicio
-          fetchAllEstados(), // Usar servicio
-        ]);
-
+        const seccionesRes = await fetchAllSecciones();
         if (Array.isArray(seccionesRes)) {
           setSecciones(seccionesRes);
         } else {
-          // console.error(
-          //   'Error: La API de secciones no devolvió un array:',
-          //   seccionesRes
-          // );
           setSecciones([]);
         }
+      } catch (error) {
+        console.error('Error al cargar secciones:', error);
+        setSecciones([]);
+      } finally {
+        setLoadingSecciones(false);
+      }
 
+      try {
+        const estadosRes = await fetchAllEstados();
         if (Array.isArray(estadosRes)) {
           setEstados(estadosRes);
         } else {
-          // console.error(
-          //   'Error: La API de estados no devolvió un array:',
-          //   estadosRes
-          // );
           setEstados([]);
         }
       } catch (error) {
-        // console.error(
-        //   'Error al cargar datos (error de red o parseo JSON):',
-        //   error
-        // );
-        setSecciones([]); // Fallback a array vacío en caso de error crítico
-        setEstados([]); // Fallback a array vacío en caso de error crítico
+        console.error('Error al cargar estados:', error);
+        setEstados([]);
+      } finally {
+        setLoadingEstados(false);
       }
     };
     fetchData();
@@ -130,15 +162,25 @@ function ExamenForm({ initial, onSubmit, onCancel }) {
 
   const handleSubmit = (e) => {
     e.preventDefault();
+    setFormAttempted(true);
+
+    if (!seccionId || !estadoId) {
+      // Si alguno de los campos de react-select requeridos está vacío, no continuar.
+      // Los mensajes de error visuales se mostrarán debido a formAttempted.
+      return;
+    }
+
     onSubmit({
       nombre_examen: nombre,
-      inscritos_examen: parseInt(inscritos),
+      inscritos_examen: inscritos ? parseInt(inscritos) : null,
       tipo_procesamiento_examen: tipoProcesamiento,
       plataforma_prose_examen: plataforma,
       situacion_evaluativa_examen: situacionEvaluativa,
-      cantidad_modulos_examen: parseInt(cantidadModulos),
-      seccion_id_seccion: parseInt(seccionId),
-      estado_id_estado: parseInt(estadoId),
+      cantidad_modulos_examen: cantidadModulos
+        ? parseInt(cantidadModulos)
+        : null,
+      seccion_id_seccion: seccionId ? parseInt(seccionId) : null,
+      estado_id_estado: estadoId ? parseInt(estadoId) : null,
     });
   };
 
@@ -154,96 +196,123 @@ function ExamenForm({ initial, onSubmit, onCancel }) {
           required
         />
       </div>
-      <div className="mb-3">
-        <label className="form-label">Inscritos</label>
-        <input
-          type="number"
-          className="form-control"
-          value={inscritos}
-          onChange={(e) => setInscritos(e.target.value)}
-          required
-        />
-      </div>
-      <div className="mb-3">
-        <label className="form-label">Tipo de Procesamiento</label>
-        <input
-          type="text"
-          className="form-control"
-          value={tipoProcesamiento}
-          onChange={(e) => setTipoProcesamiento(e.target.value)}
-          required
-        />
-      </div>
-      <div className="mb-3">
-        <label className="form-label">Plataforma</label>
-        <input
-          type="text"
-          className="form-control"
-          value={plataforma}
-          onChange={(e) => setPlataforma(e.target.value)}
-          required
-        />
-      </div>
-      <div className="mb-3">
-        <label className="form-label">Situación Evaluativa</label>
-        <input
-          type="text"
-          className="form-control"
-          value={situacionEvaluativa}
-          onChange={(e) => setSituacionEvaluativa(e.target.value)}
-          required
-        />
-      </div>
-      <div className="mb-3">
-        <label className="form-label">Cantidad de Módulos</label>
-        <input
-          type="number"
-          className="form-control"
-          value={cantidadModulos}
-          onChange={(e) => setCantidadModulos(e.target.value)}
-          required
-        />
-      </div>
-      <div className="mb-3">
-        <label className="form-label">Sección</label>
-        <select
-          className="form-select"
-          value={seccionId}
-          onChange={(e) => setSeccionId(e.target.value)}
-          required
-        >
-          <option value="">Seleccione una sección</option>
-          {secciones.map((seccion) => (
-            <option
-              key={`seccion-${seccion.ID_SECCION}`}
-              value={seccion.ID_SECCION}
-            >
-              {seccion.NOMBRE_SECCION} - {seccion.NOMBRE_ASIGNATURA}
-            </option>
-          ))}
-        </select>
-      </div>
-      <div className="mb-3">
-        <label className="form-label">Estado</label>
-        <select
-          className="form-select"
-          value={estadoId}
-          onChange={(e) => setEstadoId(e.target.value)}
-          required
-        >
-          <option value="">Seleccione un estado</option>
-          {estados.map((estado) => (
-            <option key={`estado-${estado.ID_ESTADO}`} value={estado.ID_ESTADO}>
-              {estado.NOMBRE_ESTADO}
-            </option>
-          ))}
-        </select>
-      </div>
+      <Row>
+        <Col md={6}>
+          <Form.Group className="mb-3">
+            <Form.Label>Inscritos</Form.Label>
+            <Form.Control
+              type="number"
+              value={inscritos}
+              onChange={(e) => setInscritos(e.target.value)}
+              required
+            />
+          </Form.Group>
+        </Col>
+        <Col md={6}>
+          <Form.Group className="mb-3">
+            <Form.Label>Tipo de Procesamiento</Form.Label>
+            <Form.Control
+              type="text"
+              value={tipoProcesamiento}
+              onChange={(e) => setTipoProcesamiento(e.target.value)}
+              required
+            />
+          </Form.Group>
+        </Col>
+      </Row>
+      <Row>
+        <Col md={6}>
+          <Form.Group className="mb-3">
+            <Form.Label>Plataforma</Form.Label>
+            <Form.Control
+              type="text"
+              value={plataforma}
+              onChange={(e) => setPlataforma(e.target.value)}
+              required
+            />
+          </Form.Group>
+        </Col>
+        <Col md={6}>
+          <Form.Group className="mb-3">
+            <Form.Label>Situación Evaluativa</Form.Label>
+            <Form.Control
+              type="text"
+              value={situacionEvaluativa}
+              onChange={(e) => setSituacionEvaluativa(e.target.value)}
+              required
+            />
+          </Form.Group>
+        </Col>
+      </Row>
+      <Row>
+        <Col md={4}>
+          <Form.Group className="mb-3">
+            <Form.Label>Cantidad de Módulos</Form.Label>
+            <Form.Control
+              type="number"
+              value={cantidadModulos}
+              onChange={(e) => setCantidadModulos(e.target.value)}
+              required
+            />
+          </Form.Group>
+        </Col>
+        <Col md={4}>
+          <Form.Group className="mb-3">
+            <Form.Label>Sección</Form.Label>
+            <Select
+              inputId="seccion-select"
+              options={seccionOptions}
+              value={selectedSeccionOption}
+              onChange={(selected) =>
+                setSeccionId(selected ? selected.value.toString() : '')
+              }
+              placeholder="Seleccione una sección"
+              isLoading={loadingSecciones}
+              isDisabled={loadingSecciones}
+              isClearable
+              noOptionsMessage={() => 'No hay secciones disponibles'}
+            />
+            {formAttempted && !seccionId && (
+              <div className="invalid-feedback d-block">
+                Seleccione una sección.
+              </div>
+            )}
+          </Form.Group>
+        </Col>
+        <Col md={4}>
+          <Form.Group className="mb-3">
+            <Form.Label>Estado</Form.Label>
+            <Select
+              inputId="estado-select"
+              options={estadoOptions}
+              value={selectedEstadoOption}
+              onChange={(selected) =>
+                setEstadoId(selected ? selected.value.toString() : '')
+              }
+              placeholder="Seleccione un estado"
+              isLoading={loadingEstados}
+              isDisabled={loadingEstados}
+              isClearable
+              noOptionsMessage={() => 'No hay estados disponibles'}
+            />
+            {formAttempted && !estadoId && (
+              <div className="invalid-feedback d-block">
+                Seleccione un estado.
+              </div>
+            )}
+          </Form.Group>
+        </Col>
+      </Row>
+
       <div className="modal-footer">
         <button type="button" className="btn btn-secondary" onClick={onCancel}>
           Cancelar
         </button>
-        <button type="submit" className="btn btn-primary">
+        <button
+          type="submit"
+          className="btn btn-primary"
+          disabled={loadingSecciones || loadingEstados}
+        >
           Guardar
         </button>
       </div>

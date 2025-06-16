@@ -99,8 +99,12 @@ export default function UsuariosPage() {
         nombre_usuario: nombre,
         email_usuario: email,
         rol_id_rol: rolId,
-        password_usuario: password,
       };
+      // Solo incluir la contraseña en el payload si se proporcionó (no es undefined)
+      if (password) {
+        payload.password_usuario = password;
+      }
+
       try {
         setIsProcessingAction(true);
         let result;
@@ -116,7 +120,9 @@ export default function UsuariosPage() {
         setMsgModal({
           title: 'Usuario guardado',
           body: editing
-            ? `El usuario ha sido actualizado. Nueva contraseña: ${password}`
+            ? `El usuario ha sido actualizado.${
+                password ? ' Se ha establecido una nueva contraseña.' : ''
+              }`
             : `Usuario creado con contraseña: ${result.password}`,
         });
       } catch (err) {
@@ -404,7 +410,14 @@ export default function UsuariosPage() {
         <Nav
           variant="tabs"
           activeKey={activeTab}
-          onSelect={(k) => setActiveTab(k)}
+          onSelect={(k, e) => {
+            // Prevenir cambio de pestaña si el clic se originó dentro de un modal
+            // Se comprueba por la clase 'modal-content' que es común en los modales de Bootstrap.
+            if (e && e.target && e.target.closest('.modal-content')) {
+              return;
+            }
+            setActiveTab(k);
+          }}
           className="mb-3"
         >
           <Nav.Item>
@@ -473,14 +486,18 @@ export default function UsuariosPage() {
                 </div>
               )}
             {showForm && (
-              <UsuarioForm
-                initial={editing}
-                onClose={() => {
-                  setShowForm(false);
-                  setEditing(null);
-                }}
-                onSave={onSave}
-              />
+              <>
+                {/* Este es el backdrop oscuro */}
+                <div className="modal-backdrop fade show"></div>
+                <UsuarioForm
+                  initial={editing}
+                  onClose={() => {
+                    setShowForm(false);
+                    setEditing(null);
+                  }}
+                  onSave={onSave}
+                />
+              </>
             )}
           </>
         )}

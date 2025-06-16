@@ -8,7 +8,9 @@ import {
   InputGroup,
   Row,
   Col,
+  Card, // Importar Card
 } from 'react-bootstrap'; // Asegúrate de importar todo lo de react-bootstrap
+import Select from 'react-select'; // Importar react-select
 
 // Nombres de roles para el filtro interno del modal
 const COORDINADOR_ROLE_NAME = 'COORDINADOR CARRERA';
@@ -18,19 +20,17 @@ const DIRECTOR_ROLE_NAME = 'JEFE CARRERA';
 function UsuarioCarreraModal({
   show,
   onHide,
-  onSubmit, // Cambiado de handleAddAssociation para claridad y consistencia
+  onSubmit,
   editingUser,
   allRoles,
   eligibleUsers,
-  // renombré 'carreras' a 'allCarreras' y 'escuelas' a 'allEscuelas' para claridad al recibir como prop
   allCarreras,
   allEscuelas,
   selectedUsuarioId,
   setSelectedUsuarioId,
   selectedCarreraIds,
-  setSelectedCarreraIds, // Renombrado de handleCarreraSelection para pasar el setter directamente
+  setSelectedCarreraIds,
   processing,
-  // Props para los filtros (estados y setters del padre)
   searchTermUser,
   setSearchTermUser,
   filterRoleUser,
@@ -38,12 +38,25 @@ function UsuarioCarreraModal({
   filterEscuelaCarrera,
   setFilterEscuelaCarrera,
 }) {
-  // Filtra la lista de 'eligibleUsers' (que ya son Coordinadores/Directores/etc.)
-  // basado en el searchTermUser y filterRoleUser que vienen como props del padre.
+  // Helper para convertir arrays de datos a formato de opciones para react-select
+  const toSelectOptions = (
+    items,
+    valueKey,
+    labelKey,
+    defaultLabel = 'Todos'
+  ) => [
+    { value: '', label: defaultLabel },
+    ...(items
+      ? items.map((item) => ({ value: item[valueKey], label: item[labelKey] }))
+      : []),
+  ];
+
+  // Filtra la lista de 'eligibleUsers' (que ya viene pre-filtrada por el padre para "nuevas asociaciones")
   const filteredEligibleUsersInModal = Array.isArray(eligibleUsers)
     ? eligibleUsers.filter((user) => {
+        // Filtros existentes
         const searchTermMatch =
-          !searchTermUser || // si searchTermUser es vacío, no filtrar por texto
+          !searchTermUser ||
           (user.NOMBRE_USUARIO &&
             user.NOMBRE_USUARIO.toLowerCase().includes(
               searchTermUser.toLowerCase()
@@ -54,7 +67,7 @@ function UsuarioCarreraModal({
             ));
 
         const roleMatch =
-          !filterRoleUser || // si filterRoleUser es vacío, no filtrar por rol
+          !filterRoleUser ||
           (user.ROL_ID_ROL && user.ROL_ID_ROL.toString() === filterRoleUser);
 
         return searchTermMatch && roleMatch;
@@ -92,130 +105,226 @@ function UsuarioCarreraModal({
       </Modal.Header>
       {/* No se necesita <BootstrapForm> aquí si el Modal.Footer tiene el botón de submit y llamas a onSubmit directamente */}
       <Modal.Body>
-        <h5>
-          Seleccionar Usuario (Coordinador/Jefe de Carrera/Coordinador Docente)
-        </h5>
-        <Row className="mb-3">
-          <Col md={6}>
-            <BootstrapForm.Group>
-              <BootstrapForm.Label>Buscar Usuario:</BootstrapForm.Label>
-              <BootstrapForm.Control
-                type="text"
-                placeholder="Nombre o email..."
-                value={searchTermUser}
-                onChange={(e) => setSearchTermUser(e.target.value)}
-                disabled={processing || !!editingUser}
-              />
-            </BootstrapForm.Group>
-          </Col>
-          <Col md={6}>
-            <BootstrapForm.Group>
-              <BootstrapForm.Label>Filtrar por Rol:</BootstrapForm.Label>
-              <BootstrapForm.Select
-                value={filterRoleUser}
-                onChange={(e) => setFilterRoleUser(e.target.value)}
-                disabled={processing || !!editingUser}
+        <Row>
+          <Col md={editingUser ? 12 : 6}>
+            <Card className="mb-3">
+              <Card.Header
+                style={{ paddingTop: '0.5rem', paddingBottom: '0.5rem' }}
               >
-                <option value="">Todos los Roles Elegibles</option>
-                {/* Filtramos allRoles para mostrar solo los que definimos como elegibles */}
-                {Array.isArray(allRoles) &&
-                  allRoles
-                    .filter(
-                      (r) =>
-                        r.NOMBRE_ROL === COORDINADOR_ROLE_NAME ||
-                        r.NOMBRE_ROL === DIRECTOR_ROLE_NAME ||
-                        r.NOMBRE_ROL === COORDINADOR_DOCENTE_ROLE_NAME
-                    )
-                    .map((rol) => (
-                      <option key={rol.ID_ROL} value={rol.ID_ROL.toString()}>
-                        {rol.NOMBRE_ROL}
-                      </option>
-                    ))}
-              </BootstrapForm.Select>
-            </BootstrapForm.Group>
+                <Card.Title as="h5">
+                  {editingUser
+                    ? 'Información del Usuario'
+                    : '1. Seleccionar Usuario'}
+                </Card.Title>
+              </Card.Header>
+              <Card.Body
+                style={
+                  editingUser
+                    ? {
+                        fontSize: '0.9em',
+                        paddingTop: '0.5rem',
+                        paddingBottom: '0.5rem',
+                      }
+                    : {}
+                }
+              >
+                {editingUser ? (
+                  <div>
+                    <span>
+                      <strong>Nombre:</strong> {editingUser.NOMBRE_USUARIO}
+                    </span>
+                    <br />
+                    <span>
+                      <strong>Email:</strong>{' '}
+                      {editingUser.EMAIL_USUARIO || 'N/A'}
+                    </span>
+                    <br />
+                    <span>
+                      <strong>Rol:</strong>{' '}
+                      {allRoles.find((r) => r.ID_ROL === editingUser.ROL_ID_ROL)
+                        ?.NOMBRE_ROL || 'N/A'}
+                    </span>
+                  </div>
+                ) : (
+                  <>
+                    <Row className="mb-3">
+                      <Col md={6}>
+                        <BootstrapForm.Group>
+                          <BootstrapForm.Label>
+                            Buscar Usuario:
+                          </BootstrapForm.Label>
+                          <BootstrapForm.Control
+                            type="text"
+                            placeholder="Nombre o email..."
+                            value={searchTermUser}
+                            onChange={(e) => setSearchTermUser(e.target.value)}
+                            disabled={processing}
+                          />
+                        </BootstrapForm.Group>
+                      </Col>
+                      <Col md={6}>
+                        <BootstrapForm.Group>
+                          <BootstrapForm.Label>
+                            Filtrar por Rol:
+                          </BootstrapForm.Label>
+                          <Select
+                            inputId="filterRoleUser-carrera-select"
+                            options={toSelectOptions(
+                              Array.isArray(allRoles)
+                                ? allRoles.filter(
+                                    (r) =>
+                                      r.NOMBRE_ROL === COORDINADOR_ROLE_NAME ||
+                                      r.NOMBRE_ROL === DIRECTOR_ROLE_NAME ||
+                                      r.NOMBRE_ROL ===
+                                        COORDINADOR_DOCENTE_ROLE_NAME
+                                  )
+                                : [],
+                              'ID_ROL',
+                              'NOMBRE_ROL',
+                              'Todos los Roles Elegibles'
+                            )}
+                            value={
+                              toSelectOptions(
+                                allRoles,
+                                'ID_ROL',
+                                'NOMBRE_ROL'
+                              ).find(
+                                (option) =>
+                                  option.value.toString() === filterRoleUser
+                              ) || {
+                                value: '',
+                                label: 'Todos los Roles Elegibles',
+                              }
+                            }
+                            onChange={(selectedOption) =>
+                              setFilterRoleUser(
+                                selectedOption
+                                  ? selectedOption.value.toString()
+                                  : ''
+                              )
+                            }
+                            isDisabled={processing}
+                            placeholder="Todos los Roles Elegibles"
+                          />
+                        </BootstrapForm.Group>
+                      </Col>
+                    </Row>
+                    <BootstrapForm.Label>
+                      Usuario a Asociar:
+                    </BootstrapForm.Label>
+                    <div
+                      className="border p-2 rounded mb-3"
+                      style={{ maxHeight: '150px', overflowY: 'auto' }}
+                    >
+                      {filteredEligibleUsersInModal.length > 0 ? (
+                        filteredEligibleUsersInModal.map((user) => (
+                          <FormCheck // Usando FormCheck importado
+                            key={user.ID_USUARIO}
+                            type="radio"
+                            name="selectedUserRadio" // Para que solo uno pueda ser seleccionado
+                            id={`user-carrera-modal-${user.ID_USUARIO}`}
+                            label={`${user.NOMBRE_USUARIO} (${user.EMAIL_USUARIO || 'N/A'}) - ${user.NOMBRE_ROL || 'N/A'}`}
+                            value={user.ID_USUARIO.toString()}
+                            checked={
+                              selectedUsuarioId === user.ID_USUARIO.toString()
+                            }
+                            onChange={(e) =>
+                              setSelectedUsuarioId(e.target.value)
+                            }
+                            disabled={processing}
+                          />
+                        ))
+                      ) : (
+                        <p className="text-muted m-0">
+                          No hay usuarios que coincidan con los filtros o no hay
+                          usuarios elegibles cargados.
+                        </p>
+                      )}
+                    </div>
+                  </>
+                )}
+              </Card.Body>
+            </Card>
+          </Col>
+
+          <Col md={editingUser ? 12 : 6}>
+            <Card className="mb-3">
+              <Card.Header>
+                <Card.Title as="h5">
+                  {editingUser
+                    ? 'Modificar Carreras Asociadas'
+                    : '2. Seleccionar Carreras'}
+                </Card.Title>
+              </Card.Header>
+              <Card.Body>
+                <BootstrapForm.Group className="mb-3">
+                  <BootstrapForm.Label htmlFor="filterEscuelaCarrera-select">
+                    Filtrar Carreras por Escuela:
+                  </BootstrapForm.Label>
+                  <Select
+                    inputId="filterEscuelaCarrera-select"
+                    options={toSelectOptions(
+                      allEscuelas,
+                      'ID_ESCUELA',
+                      'NOMBRE_ESCUELA',
+                      'Todas las Escuelas'
+                    )}
+                    value={
+                      toSelectOptions(
+                        allEscuelas,
+                        'ID_ESCUELA',
+                        'NOMBRE_ESCUELA'
+                      ).find(
+                        (option) =>
+                          option.value.toString() === filterEscuelaCarrera
+                      ) || { value: '', label: 'Todas las Escuelas' }
+                    }
+                    onChange={(selectedOption) =>
+                      setFilterEscuelaCarrera(
+                        selectedOption ? selectedOption.value.toString() : ''
+                      )
+                    }
+                    isDisabled={processing}
+                    placeholder="Todas las Escuelas"
+                  />
+                </BootstrapForm.Group>
+
+                <div
+                  className="border p-2 rounded"
+                  style={{ maxHeight: '200px', overflowY: 'auto' }}
+                >
+                  {filteredCarrerasByEscuelaInModal.length > 0 ? (
+                    filteredCarrerasByEscuelaInModal.map((carrera) => (
+                      <FormCheck // Usando FormCheck importado
+                        key={carrera.ID_CARRERA}
+                        type="checkbox"
+                        id={`carrera-modal-${carrera.ID_CARRERA}`}
+                        label={carrera.NOMBRE_CARRERA}
+                        checked={selectedCarreraIds.includes(
+                          carrera.ID_CARRERA.toString()
+                        )}
+                        onChange={() =>
+                          handleCarreraCheckboxChange(
+                            carrera.ID_CARRERA.toString()
+                          )
+                        }
+                        disabled={processing}
+                      />
+                    ))
+                  ) : (
+                    <p className="text-muted m-0">
+                      No hay carreras para la escuela seleccionada o no hay
+                      carreras cargadas.
+                    </p>
+                  )}
+                </div>
+                <BootstrapForm.Text>
+                  {selectedCarreraIds.length} carrera(s) seleccionada(s).
+                </BootstrapForm.Text>
+              </Card.Body>
+            </Card>
           </Col>
         </Row>
-
-        <BootstrapForm.Label>Usuario a Asociar:</BootstrapForm.Label>
-        <div
-          className="border p-2 rounded mb-3"
-          style={{ maxHeight: '150px', overflowY: 'auto' }}
-        >
-          {filteredEligibleUsersInModal.length > 0 ? (
-            filteredEligibleUsersInModal.map((user) => (
-              <FormCheck // Usando FormCheck importado
-                key={user.ID_USUARIO}
-                type="radio"
-                name="selectedUserRadio" // Para que solo uno pueda ser seleccionado
-                id={`user-carrera-modal-${user.ID_USUARIO}`}
-                label={`${user.NOMBRE_USUARIO} (${user.EMAIL_USUARIO || 'N/A'}) - ${user.NOMBRE_ROL || 'N/A'}`}
-                value={user.ID_USUARIO.toString()}
-                checked={selectedUsuarioId === user.ID_USUARIO.toString()}
-                onChange={(e) => setSelectedUsuarioId(e.target.value)}
-                disabled={processing || !!editingUser}
-              />
-            ))
-          ) : (
-            <p className="text-muted m-0">
-              No hay usuarios que coincidan con los filtros o no hay usuarios
-              elegibles cargados.
-            </p>
-          )}
-        </div>
-        <hr />
-        <h5>Seleccionar Carreras a Asignar</h5>
-        <BootstrapForm.Group className="mb-3">
-          <BootstrapForm.Label>
-            Filtrar Carreras por Escuela:
-          </BootstrapForm.Label>
-          <BootstrapForm.Select
-            value={filterEscuelaCarrera}
-            onChange={(e) => setFilterEscuelaCarrera(e.target.value)}
-            disabled={processing}
-          >
-            <option value="">Todas las Escuelas</option>
-            {Array.isArray(allEscuelas) &&
-              allEscuelas.map((escuela) => (
-                <option
-                  key={escuela.ID_ESCUELA}
-                  value={escuela.ID_ESCUELA.toString()}
-                >
-                  {escuela.NOMBRE_ESCUELA}
-                </option>
-              ))}
-          </BootstrapForm.Select>
-        </BootstrapForm.Group>
-        <div
-          className="border p-2 rounded"
-          style={{ maxHeight: '200px', overflowY: 'auto' }}
-        >
-          {filteredCarrerasByEscuelaInModal.length > 0 ? (
-            filteredCarrerasByEscuelaInModal.map((carrera) => (
-              <FormCheck // Usando FormCheck importado
-                key={carrera.ID_CARRERA}
-                type="checkbox"
-                id={`carrera-modal-${carrera.ID_CARRERA}`}
-                label={carrera.NOMBRE_CARRERA}
-                // value no es necesario si onChange maneja el ID directamente
-                checked={selectedCarreraIds.includes(
-                  carrera.ID_CARRERA.toString()
-                )}
-                onChange={() =>
-                  handleCarreraCheckboxChange(carrera.ID_CARRERA.toString())
-                }
-                disabled={processing}
-              />
-            ))
-          ) : (
-            <p className="text-muted m-0">
-              No hay carreras para la escuela seleccionada o no hay carreras
-              cargadas.
-            </p>
-          )}
-        </div>
-        <BootstrapForm.Text>
-          {selectedCarreraIds.length} carrera(s) seleccionada(s).
-        </BootstrapForm.Text>
       </Modal.Body>
       <Modal.Footer>
         <Button variant="secondary" onClick={onHide} disabled={processing}>

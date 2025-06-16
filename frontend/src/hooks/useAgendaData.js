@@ -31,10 +31,29 @@ export function useAgendaData() {
             fetch('/api/edificio'),
           ]);
 
-        // Procesar respuestas básicas
-        if (salasRes.ok) setSalas(await salasRes.json());
+        // Procesar respuestas básicas y enriquecer salas
+        const edificiosData = edificiosRes.ok ? await edificiosRes.json() : [];
+        setEdificiosDisponibles(edificiosData);
+
+        if (salasRes.ok) {
+          const salasData = await salasRes.json();
+          // Enriquecer cada sala con su ID_SEDE a través del edificio
+          const salasEnriquecidas = salasData.map((sala) => {
+            const edificioDeSala = edificiosData.find(
+              (edificio) => edificio.ID_EDIFICIO === sala.EDIFICIO_ID_EDIFICIO
+            );
+            return {
+              ...sala,
+              ID_SEDE: edificioDeSala ? edificioDeSala.SEDE_ID_SEDE : null, // Añadir ID_SEDE
+              // Conservar NOMBRE_EDIFICIO si ya lo tenías o añadirlo aquí también
+              NOMBRE_EDIFICIO: edificioDeSala
+                ? edificioDeSala.NOMBRE_EDIFICIO
+                : sala.NOMBRE_EDIFICIO || 'N/A',
+            };
+          });
+          setSalas(salasEnriquecidas);
+        }
         if (sedesRes.ok) setSedesDisponibles(await sedesRes.json());
-        if (edificiosRes.ok) setEdificiosDisponibles(await edificiosRes.json());
         if (modulosRes.ok) setModulos(await modulosRes.json());
 
         // Procesar exámenes y reservas (más complejo)
