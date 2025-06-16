@@ -4,6 +4,7 @@ import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { getCurrentUser, logout as authLogout } from '../services/authService';
 import { usePermission } from '../hooks/usePermission';
 import { Offcanvas } from 'bootstrap';
+import { OverlayTrigger, Tooltip } from 'react-bootstrap';
 
 export default function Layout({ children }) {
   const navigate = useNavigate();
@@ -15,6 +16,18 @@ export default function Layout({ children }) {
   const [isSidebarMinimized, setIsSidebarMinimized] = useState(true);
   const [isLogoVisibleForRender, setIsLogoVisibleForRender] =
     useState(!isSidebarMinimized);
+  const [hoveredItem, setHoveredItem] = useState(null);
+
+  // Estilos inline para el hover
+  const navLinkStyle = {
+    transition: 'background-color 0.2s ease-in-out',
+    borderRadius: '5px',
+    margin: '2px 0',
+  };
+
+  const getNavLinkHoverStyle = (isHovered) => {
+    return isHovered ? { backgroundColor: '#e9ecef' } : {};
+  };
 
   const handleLogout = () => {
     authLogout();
@@ -23,6 +36,44 @@ export default function Layout({ children }) {
 
   const handleOverlayClick = () => {
     setIsSidebarMinimized(true);
+  };
+
+  // Componente de NavItem con hover y tooltip
+  const NavItem = ({ to, icon, text, isBold = false, id }) => {
+    const isHovered = hoveredItem === id;
+
+    return isSidebarMinimized ? (
+      <OverlayTrigger
+        placement="right"
+        overlay={<Tooltip id={`tooltip-${id}`}>{text}</Tooltip>}
+      >
+        <Link
+          to={to}
+          className={`nav-link ${isBold ? 'fw-bold' : ''} text-dark d-flex align-items-center`}
+          style={{ ...navLinkStyle, ...getNavLinkHoverStyle(isHovered) }}
+          onMouseEnter={() => setHoveredItem(id)}
+          onMouseLeave={() => setHoveredItem(null)}
+        >
+          <div className="sidebar-icon-container">
+            <i className={`bi ${icon}`}></i>
+          </div>
+          <span className="sidebar-link-text">{text}</span>
+        </Link>
+      </OverlayTrigger>
+    ) : (
+      <Link
+        to={to}
+        className={`nav-link ${isBold ? 'fw-bold' : ''} text-dark d-flex align-items-center`}
+        style={{ ...navLinkStyle, ...getNavLinkHoverStyle(isHovered) }}
+        onMouseEnter={() => setHoveredItem(id)}
+        onMouseLeave={() => setHoveredItem(null)}
+      >
+        <div className="sidebar-icon-container">
+          <i className={`bi ${icon}`}></i>
+        </div>
+        <span className="sidebar-link-text">{text}</span>
+      </Link>
+    );
   };
 
   useEffect(() => {
@@ -157,173 +208,145 @@ export default function Layout({ children }) {
             )}
           </button>
         </div>
+
         <div className="offcanvas-body p-3 d-flex flex-column">
           <nav className="nav flex-column mb-auto">
-            <Link
+            <NavItem
               to="/"
-              className="nav-link fw-bold text-dark d-flex align-items-center"
-            >
-              <div className="sidebar-icon-container">
-                <i className="bi bi-house-door-fill"></i>
-              </div>
+              icon="bi-house-door-fill"
+              text="Inicio"
+              isBold={true}
+              id="inicio"
+            />
 
-              <span className="sidebar-link-text">Inicio</span>
-            </Link>
             {hasPermission('VIEW_CALENDARIO') && (
-              <Link
+              <NavItem
                 to="/calendario"
-                className="nav-link text-dark d-flex align-items-center"
-              >
-                <div className="sidebar-icon-container">
-                  <i className="bi bi-calendar3"></i>
-                </div>
-
-                <span className="sidebar-link-text">Calendario</span>
-              </Link>
+                icon="bi-calendar3"
+                text="Calendario"
+                id="calendario"
+              />
             )}
-            <Link
+
+            <NavItem
               to="/mis-reservas"
-              className="nav-link text-dark d-flex align-items-center"
-            >
-              <div className="sidebar-icon-container">
-                <i className="bi bi-calendar-check-fill"></i>
-              </div>
+              icon="bi-calendar-check-fill"
+              text="Exámenes Programados"
+              id="examenes-programados"
+            />
 
-              <span className="sidebar-link-text">Exámenes Programados</span>
-            </Link>
-            {/*
-            {hasPermission('CREATE_RESERVAS_EXAMEN') && (
-              <Link
-                to="/reservas/crear"
-                className="nav-link text-dark d-flex align-items-center"
-              >
-                <div className="sidebar-icon-container">
-                  <i className="bi bi-calendar-plus-fill"></i>
-                </div>
-
-                <span className="sidebar-link-text">Crear Reserva</span>
-              </Link>
-            )}
-            {hasPermission('DOCENTE_VIEW_RESERVAS_PENDIENTES') && (
-              <Link
-                to="/reserva/docente/pendientes"
-                className="nav-link text-dark d-flex align-items-center"
-              >
-                <div className="sidebar-icon-container">
-                  <i className="bi bi-calendar-event-fill"></i>
-                </div>
-                <span className="sidebar-link-text">Reservas Pendientes</span>
-              </Link>
-            )}*/}
             {hasPermission('VIEW_EXAMENES') && (
-              <Link
+              <NavItem
                 to="/examen"
-                className="nav-link text-dark d-flex align-items-center"
-              >
-                <div className="sidebar-icon-container">
-                  <i className="bi bi-file-earmark-text-fill"></i>
-                </div>
-
-                <span className="sidebar-link-text">Gestión de Exámenes</span>
-              </Link>
+                icon="bi-file-earmark-text-fill"
+                text="Gestión de Exámenes"
+                id="examenes"
+              />
             )}
+
             {hasPermission('VIEW_ASIGNATURAS') && (
-              <Link
+              <NavItem
                 to="/asignaturas"
-                className="nav-link text-dark d-flex align-items-center"
-              >
-                <div className="sidebar-icon-container">
-                  <i className="bi bi-book-fill"></i>
-                </div>
-                <span className="sidebar-link-text">
-                  Gestión de Asignaturas
-                </span>
-              </Link>
+                icon="bi-book-fill"
+                text="Gestión de Asignaturas"
+                id="asignaturas"
+              />
             )}
 
             {hasPermission('VIEW_SALAS') && (
-              <Link
+              <NavItem
                 to="/salas"
-                className="nav-link text-dark d-flex align-items-center"
-              >
-                <div className="sidebar-icon-container">
-                  <i className="bi bi-door-open-fill"></i>
-                </div>
-                <span className="sidebar-link-text">Gestión de Salas</span>
-              </Link>
+                icon="bi-door-open-fill"
+                text="Gestión de Salas"
+                id="salas"
+              />
             )}
 
             {hasPermission('VIEW_MODULOS') && (
-              <Link
+              <NavItem
                 to="/modulos"
-                className="nav-link text-dark d-flex align-items-center"
-              >
-                <div className="sidebar-icon-container">
-                  <i className="bi bi-grid-1x2-fill"></i>
-                </div>
-
-                <span className="sidebar-link-text">Gestión de Módulos</span>
-              </Link>
+                icon="bi-grid-1x2-fill"
+                text="Gestión de Módulos"
+                id="modulos"
+              />
             )}
+
             {hasPermission('VIEW_USUARIOS') && (
-              <Link
+              <NavItem
                 to="/usuarios"
-                className="nav-link text-dark d-flex align-items-center"
-              >
-                <div className="sidebar-icon-container">
-                  <i className="bi bi-people-fill"></i>
-                </div>
-                <span className="sidebar-link-text">Gestión de Usuarios</span>
-              </Link>
+                icon="bi-people-fill"
+                text="Gestión de Usuarios"
+                id="usuarios"
+              />
             )}
+
             {hasPermission('VIEW_ROLES') && (
-              <Link
+              <NavItem
                 to="/roles"
-                className="nav-link text-dark d-flex align-items-center"
-              >
-                <div className="sidebar-icon-container">
-                  <i className="bi bi-shield-lock-fill"></i>
-                </div>
-
-                <span className="sidebar-link-text">Gestión de Permisos</span>
-              </Link>
+                icon="bi-shield-lock-fill"
+                text="Gestión de Permisos"
+                id="roles"
+              />
             )}
+
             {hasPermission('VIEW_CARGA_DATOS') && (
-              <Link
+              <NavItem
                 to="/carga-datos"
-                className="nav-link text-dark d-flex align-items-center"
-              >
-                <div className="sidebar-icon-container">
-                  <i className="bi bi-cloud-upload-fill"></i>
-                </div>
-                <span className="sidebar-link-text">Carga de Datos Masiva</span>
-              </Link>
+                icon="bi-cloud-upload-fill"
+                text="Carga de Datos Masiva"
+                id="carga-datos"
+              />
             )}
-            {hasPermission('VIEW_REPORTES') && (
-              <Link
-                to="/reportes"
-                className="nav-link text-dark d-flex align-items-center"
-              >
-                <div className="sidebar-icon-container">
-                  <i className="bi bi-file-bar-graph-fill"></i>
-                </div>
 
-                <span className="sidebar-link-text">Reportes</span>
-              </Link>
+            {hasPermission('VIEW_REPORTES') && (
+              <NavItem
+                to="/reportes"
+                icon="bi-file-bar-graph-fill"
+                text="Reportes"
+                id="reportes"
+              />
             )}
           </nav>
 
           <div className="mt-auto">
-            <button
-              className="btn btn-danger w-100 d-flex align-items-center justify-content-center"
-              onClick={handleLogout}
-            >
-              <div className="sidebar-icon-container">
-                <i className="bi bi-box-arrow-right me-2"></i>
-              </div>
-
-              <span className="sidebar-link-text"> Cerrar sesión</span>
-            </button>
+            {isSidebarMinimized ? (
+              <OverlayTrigger
+                placement="right"
+                overlay={<Tooltip id="tooltip-logout">Cerrar sesión</Tooltip>}
+              >
+                <button
+                  className="btn btn-danger w-100 d-flex align-items-center justify-content-center"
+                  onClick={handleLogout}
+                  style={{
+                    ...navLinkStyle,
+                    ...getNavLinkHoverStyle(hoveredItem === 'logout'),
+                  }}
+                  onMouseEnter={() => setHoveredItem('logout')}
+                  onMouseLeave={() => setHoveredItem(null)}
+                >
+                  <div className="sidebar-icon-container">
+                    <i className="bi bi-box-arrow-right"></i>
+                  </div>
+                  <span className="sidebar-link-text">Cerrar sesión</span>
+                </button>
+              </OverlayTrigger>
+            ) : (
+              <button
+                className="btn btn-danger w-100 d-flex align-items-center justify-content-center"
+                onClick={handleLogout}
+                style={{
+                  ...navLinkStyle,
+                  ...getNavLinkHoverStyle(hoveredItem === 'logout'),
+                }}
+                onMouseEnter={() => setHoveredItem('logout')}
+                onMouseLeave={() => setHoveredItem(null)}
+              >
+                <div className="sidebar-icon-container">
+                  <i className="bi bi-box-arrow-right me-2"></i>
+                </div>
+                <span className="sidebar-link-text">Cerrar sesión</span>
+              </button>
+            )}
           </div>
         </div>
       </div>
