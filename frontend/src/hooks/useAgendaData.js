@@ -304,14 +304,55 @@ export function useAgendaData() {
       }
     };
 
-    const handleExamenesActualizados = (event) => {
+    const handleExamenesActualizados = async (event) => {
+      // Hacerla async por si necesitamos await en el futuro
       const { accion, examenId, reservaId } = event.detail;
       // Si una reserva se descarta o cancela, el examen asociado vuelve a estar disponible.
       if (accion === 'reserva_descartada' || accion === 'reserva_cancelada') {
         console.log(
-          `[useAgendaData] Evento ${accion} para reserva ${reservaId}. Recargando exámenes y reservas.`
+          `[useAgendaData] Evento ${accion} para reserva ${reservaId}. Actualizando UI sin loader general.`
         );
-        loadExamenesYReservas(); // Llama a la función que recarga ambos y procesa correctamente
+        // No llamar a loadExamenesYReservas() para evitar el loader general.
+        // Actualizar estados directamente.
+
+        // 1. Quitar la reserva de la lista de reservas
+        setReservas((prevReservas) =>
+          prevReservas.filter((r) => r.ID_RESERVA !== reservaId)
+        );
+
+        // 2. Añadir el examen de vuelta a la lista de exámenes disponibles
+        //    Necesitamos el objeto completo del examen. Lo buscamos en todosLosExamenesOriginal.
+        if (examenId) {
+          const examenAReactivar = todosLosExamenesOriginal.find(
+            (ex) => ex.ID_EXAMEN === examenId
+          );
+          if (examenAReactivar) {
+            setExamenes((prevExamenes) => {
+              // Evitar duplicados si ya estuviera por alguna razón
+              if (
+                !prevExamenes.some(
+                  (ex) => ex.ID_EXAMEN === examenAReactivar.ID_EXAMEN
+                )
+              ) {
+                return [...prevExamenes, examenAReactivar];
+              }
+              return prevExamenes;
+            });
+            console.log(
+              `[useAgendaData] Examen ${examenId} reactivado y añadido a la lista.`
+            );
+          } else {
+            console.warn(
+              `[useAgendaData] No se encontró el examen original con ID ${examenId} para reactivar. Se recargarán todos los datos.`
+            );
+            loadExamenesYReservas(); // Fallback si no encontramos el examen
+          }
+        } else {
+          console.warn(
+            `[useAgendaData] Evento ${accion} no proveyó examenId. Se recargarán todos los datos.`
+          );
+          loadExamenesYReservas(); // Fallback si no hay examenId
+        }
       }
     };
 
