@@ -59,19 +59,6 @@ export default function ExamenPostIt({
     return estado;
   };
 
-  // Debug useEffect - MOVER DESPUÉS de la definición de getEstadoConfirmacion
-  useEffect(() => {
-    console.log('[ExamenPostIt] Props recibidas:', {
-      examen: examen?.NOMBRE_ASIGNATURA,
-      examenAsignadoCompleto,
-      estado: getEstadoConfirmacion(),
-      hasReservaData: !!examenAsignadoCompleto?.reservaCompleta,
-      reservaId:
-        examenAsignadoCompleto?.reservaCompleta?.ID_RESERVA ||
-        examenAsignadoCompleto?.ID_RESERVA,
-    });
-  }, [examenAsignadoCompleto]);
-
   // Sincronizar con prop externa
   useEffect(() => {
     if (moduloscount !== undefined && moduloscount !== moduloscountState) {
@@ -191,6 +178,12 @@ export default function ExamenPostIt({
       console.log('[ExamenPostIt] Reserva enviada exitosamente:', response);
 
       if (onReservaStateChange) {
+        // console.log(
+        //   '[ExamenPostIt] Calling onReservaStateChange with PENDIENTE for reservaId:',
+        //   reservaId,
+        //   '. Typeof onReservaStateChange:',
+        //   typeof onReservaStateChange
+        // );
         onReservaStateChange(reservaId, 'PENDIENTE', {
           message: 'Reserva enviada a docente para confirmación',
           previousState: 'EN_CURSO',

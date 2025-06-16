@@ -66,13 +66,14 @@ export default function CalendarGrid({
     } else if (nuevoEstado === 'PENDIENTE') {
       // Actualizar el estado local de la reserva
       if (setReservas) {
-        setReservas((prev) =>
-          prev.map((r) =>
+        setReservas((prevReservas) => {
+          const nuevasReservas = prevReservas.map((r) =>
             r.ID_RESERVA === reservaId
               ? { ...r, ESTADO_CONFIRMACION_DOCENTE: 'PENDIENTE' }
               : r
-          )
-        );
+          );
+          return nuevasReservas;
+        });
       }
 
       // Mostrar mensaje informativo más discreto
@@ -114,6 +115,7 @@ export default function CalendarGrid({
                     key={`${fecha}-${modulo.ID_MODULO}`}
                     fecha={fecha}
                     modulo={modulo}
+                    salaId={selectedSala?.ID_SALA}
                     cellData={cellData}
                     shouldRenderExamen={shouldRender}
                     esDiaSeleccionado={esSeleccionado}

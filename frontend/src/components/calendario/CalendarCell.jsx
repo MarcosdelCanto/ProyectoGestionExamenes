@@ -92,6 +92,7 @@ export default function CalendarCell({
           moduloInicial={cellData.moduloInicial}
           examenAsignadoCompleto={cellData}
           reservacompleta={cellData.reservaCompleta}
+          onReservaStateChange={onReservaStateChange}
           style={{
             position: 'absolute',
             height: `${cellData.modulosTotal * 40}px`,
