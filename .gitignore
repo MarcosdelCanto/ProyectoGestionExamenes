@@ -13,6 +13,7 @@ build/
 
 /backend/db.js
 
+# Ignorar archivos de configuración de IDE
 backend/wallet
 /backend/wallet/
 
