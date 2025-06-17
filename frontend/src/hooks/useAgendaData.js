@@ -1,5 +1,13 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { fetchAllReservas, fetchReservaById } from '../services/reservaService';
+import { useDispatch, useSelector } from 'react-redux'; // <-- IMPORTAR HOOKS DE REDUX
+import {
+  cargarReservasGlobal, // <-- THUNK PARA CARGAR RESERVAS
+  setearReservas, // <-- ACCIÓN PARA SETEAR RESERVAS (si no usamos thunk para todo)
+  actualizarEstadoConfirmacionReserva, // Para otros cambios locales si es necesario
+  agregarReserva,
+  eliminarReserva,
+} from '../store/reservasSlice'; // <-- IMPORTAR ACCIONES Y THUNK
 
 export function useAgendaData() {
   // Estados para datos
@@ -7,7 +15,7 @@ export function useAgendaData() {
   const [examenes, setExamenes] = useState([]);
   const [todosLosExamenesOriginal, setTodosLosExamenesOriginal] = useState([]);
   const [modulos, setModulos] = useState([]);
-  const [reservas, setReservas] = useState([]);
+  // const [reservas, setReservas] = useState([]); // <-- YA NO USAREMOS ESTADO LOCAL PARA RESERVAS
   const [sedesDisponibles, setSedesDisponibles] = useState([]);
   const [edificiosDisponibles, setEdificiosDisponibles] = useState([]);
 
@@ -17,40 +25,48 @@ export function useAgendaData() {
   const [isLoadingModulos, setIsLoadingModulos] = useState(true);
   const [isLoadingReservas, setIsLoadingReservas] = useState(true);
 
-  // Función helper para procesar una reserva plana y darle la estructura que espera el frontend
-  const procesarReservaParaFrontend = (
-    reservaPlana,
-    todosExamenesDisponibles
-  ) => {
-    let procesada = { ...reservaPlana };
-    // Anidar el objeto Examen si no existe y tenemos la info
-    if (!procesada.Examen && procesada.ID_EXAMEN) {
-      const examenOriginal = todosExamenesDisponibles.find(
-        (e) => e.ID_EXAMEN === procesada.ID_EXAMEN
-      );
-      if (examenOriginal) {
-        procesada.Examen = { ...examenOriginal };
+  const dispatch = useDispatch(); // <-- OBTENER DISPATCH
+  // Leer el estado de reservas desde Redux
+  const {
+    lista: reservas,
+    estadoCarga: estadoCargaReservas,
+    error: errorReservas,
+  } = useSelector((state) => state.reservas);
+
+  const procesarReservaParaFrontend = useCallback(
+    (reservaPlana, todosExamenesDisponibles) => {
+      let procesada = { ...reservaPlana };
+      // Anidar el objeto Examen si no existe y tenemos la info
+      if (!procesada.Examen && procesada.ID_EXAMEN) {
+        const examenOriginal = todosExamenesDisponibles.find(
+          (e) => e.ID_EXAMEN === procesada.ID_EXAMEN
+        );
+        if (examenOriginal) {
+          procesada.Examen = { ...examenOriginal };
+        }
       }
-    }
-    // Añadir/Asegurar campos calculados o esperados por el frontend
-    procesada = {
-      ...procesada,
-      MODULOS_RESERVA_COUNT: procesada.MODULOS?.length || 0,
-      Examen: {
-        // Asegurar que Examen exista antes de desestructurarlo
-        ...(procesada.Examen || {}), // Usar objeto vacío como fallback si Examen es undefined
-        // Podría ser más preciso usar CANTIDAD_MODULOS_EXAMEN del examen original
-        MODULOS_RESERVA:
-          procesada.MODULOS?.length ||
-          procesada.Examen?.CANTIDAD_MODULOS_EXAMEN ||
-          3,
-      },
-    };
-    return procesada;
-  };
+      procesada = {
+        ...procesada,
+        MODULOS_RESERVA_COUNT: procesada.MODULOS?.length || 0,
+        Examen: {
+          ...(procesada.Examen || {}),
+          MODULOS_RESERVA:
+            procesada.MODULOS?.length ||
+            procesada.Examen?.CANTIDAD_MODULOS_EXAMEN ||
+            3,
+        },
+      };
+      return procesada;
+    },
+    [] // Esta función no depende de nada del scope del hook que cambie, sus dependencias son argumentos.
+  );
 
   // Cargar datos iniciales cuando el componente se monta
   useEffect(() => {
+    // Despachar el thunk para cargar reservas globales
+    // Esto reemplazará la lógica de fetchAllReservas y fetchReservaById dentro de loadInitialData
+    dispatch(cargarReservasGlobal());
+
     async function loadInitialData() {
       try {
         // Cargar todos los datos en paralelo (más eficiente)
@@ -74,79 +90,22 @@ export function useAgendaData() {
           const todosLosExamenes = await examenesRes.json();
           setTodosLosExamenesOriginal(todosLosExamenes);
 
-          try {
-            // Cargar reservas con datos completos
-            const reservasData = await fetchAllReservas();
-            const reservasCompletas = await Promise.all(
-              reservasData.map(async (reserva) => {
-                try {
-                  return await fetchReservaById(reserva.ID_RESERVA);
-                } catch {
-                  return reserva; // Si falla, usar datos básicos
-                }
-              })
-            );
+          // La carga de reservas ahora la maneja el thunk `cargarReservasGlobal`
+          // El estado `reservas` se actualizará desde el store de Redux.
+          // Necesitamos esperar a que `estadoCargaReservas` sea 'succeeded' o 'failed'
+          // para procesar los exámenes contra las reservas.
+          // Esta parte de la lógica se moverá a un useEffect que dependa de `reservas` del store.
 
-            // Procesar las reservas completas para el formato del frontend
-            const reservasProcesadas = reservasCompletas.map((r) =>
-              procesarReservaParaFrontend(r, todosLosExamenes)
-            );
-            setReservas(reservasProcesadas);
-
-            // *** CAMBIO IMPORTANTE: APLICAR DOBLE FILTRO ***
-            // 1. Filtrar por estado ACTIVO
-            const examenesActivos = todosLosExamenes.filter(
-              (examen) =>
-                examen.ESTADO_ID_ESTADO === 1 ||
-                examen.ID_ESTADO === 1 ||
-                examen.nombre_estado === 'ACTIVO' ||
-                examen.NOMBRE_ESTADO === 'ACTIVO'
-            );
-
-            console.log(
-              '[useAgendaData] Exámenes activos:',
-              examenesActivos.length
-            );
-
-            // 2. Filtrar exámenes que ya tienen reserva activa
-            const examenesConReservasActivas = reservasProcesadas // <-- CORRECCIÓN AQUÍ
-              .filter(
-                (r) =>
-                  r.ESTADO_CONFIRMACION_DOCENTE !== 'DESCARTADO' &&
-                  r.ESTADO_CONFIRMACION_DOCENTE !== 'CANCELADO'
-              ) // Considerar también CANCELADO si aplica
-              .map((r) => r.ID_EXAMEN || r.EXAMEN_ID_EXAMEN);
-
-            const examenesActivosSinReserva = examenesActivos.filter(
-              (examen) => !examenesConReservasActivas.includes(examen.ID_EXAMEN)
-            );
-
-            console.log('[useAgendaData] Carga inicial - Exámenes filtrados:', {
-              total: todosLosExamenes.length,
-              activos: examenesActivos.length,
-              sinReserva: examenesActivosSinReserva.length,
-            });
-
-            setExamenes(examenesActivosSinReserva);
-          } catch (error) {
-            console.error('Error al cargar reservas:', error);
-
-            // Si falla la carga de reservas, al menos filtrar por estado ACTIVO
-            const examenesActivos = todosLosExamenes.filter(
-              (examen) =>
-                examen.ESTADO_ID_ESTADO === 1 ||
-                examen.ID_ESTADO === 1 ||
-                examen.nombre_estado === 'ACTIVO' ||
-                examen.NOMBRE_ESTADO === 'ACTIVO'
-            );
-
-            console.log(
-              '[useAgendaData] Fallback - Solo exámenes activos:',
-              examenesActivos.length
-            );
-            setReservas([]);
-            setExamenes(examenesActivos);
-          }
+          // Por ahora, solo filtramos exámenes activos si la carga de reservas falla o está pendiente
+          // La lógica de filtrar exámenes contra reservas se hará en otro useEffect
+          const examenesActivosInicial = todosLosExamenes.filter(
+            (examen) =>
+              examen.ESTADO_ID_ESTADO === 1 ||
+              examen.ID_ESTADO === 1 ||
+              examen.nombre_estado === 'ACTIVO' ||
+              examen.NOMBRE_ESTADO === 'ACTIVO'
+          );
+          setExamenes(examenesActivosInicial);
         }
       } catch (error) {
         console.error('Error al cargar datos iniciales:', error);
@@ -159,18 +118,90 @@ export function useAgendaData() {
     }
 
     loadInitialData();
-  }, []);
+  }, [dispatch]); // Añadir dispatch como dependencia
+
+  // Memoizar las reservas procesadas
+  const reservasProcesadas = useMemo(() => {
+    if (
+      estadoCargaReservas === 'succeeded' &&
+      todosLosExamenesOriginal.length > 0
+    ) {
+      // console.log('[useAgendaData] Memo: Recalculando reservasProcesadas');
+      return reservas.map((r) =>
+        procesarReservaParaFrontend(r, todosLosExamenesOriginal)
+      );
+    }
+    return [];
+  }, [
+    reservas,
+    estadoCargaReservas,
+    todosLosExamenesOriginal,
+    procesarReservaParaFrontend,
+  ]);
+
+  // useEffect para procesar exámenes una vez que las reservas del store y todosLosExamenesOriginal estén listos
+  useEffect(() => {
+    if (
+      estadoCargaReservas === 'succeeded' &&
+      todosLosExamenesOriginal.length > 0
+    ) {
+      // console.log(
+      //   '[useAgendaData] Reservas del store (antes de procesar para filtro):',
+      //   JSON.parse(JSON.stringify(reservas))
+      // ); // Log para ver las reservas del store
+
+      const examenesActivos = todosLosExamenesOriginal.filter(
+        (examen) =>
+          examen.ESTADO_ID_ESTADO === 1 ||
+          examen.ID_ESTADO === 1 ||
+          examen.nombre_estado === 'ACTIVO' ||
+          examen.NOMBRE_ESTADO === 'ACTIVO'
+      );
+
+      const reservasProcesadasParaFiltrado = reservas.map((r) =>
+        procesarReservaParaFrontend(r, todosLosExamenesOriginal)
+      );
+      // console.log(
+      //   '[useAgendaData] Reservas procesadas para filtrado:',
+      //   JSON.parse(JSON.stringify(reservasProcesadasParaFiltrado))
+      // );
+
+      // Usar las reservas ya procesadas y memoizadas
+      const examenesConReservasActivas = reservasProcesadas
+        .filter(
+          (r) =>
+            r.ESTADO_CONFIRMACION_DOCENTE !== 'DESCARTADO' &&
+            r.ESTADO_CONFIRMACION_DOCENTE !== 'CANCELADO'
+        )
+        .map((r) => r.ID_EXAMEN || r.EXAMEN_ID_EXAMEN);
+
+      const examenesActivosSinReserva = examenesActivos.filter(
+        (examen) => !examenesConReservasActivas.includes(examen.ID_EXAMEN)
+      );
+
+      setExamenes(examenesActivosSinReserva);
+      setIsLoadingReservas(false); // Marcar como cargadas las reservas para la UI
+      setIsLoadingExamenes(false); // Marcar como cargados los exámenes para la UI
+    } else if (estadoCargaReservas === 'loading') {
+      setIsLoadingReservas(true);
+    } else if (estadoCargaReservas === 'failed') {
+      setIsLoadingReservas(false);
+      // Manejar error de carga de reservas si es necesario
+    }
+  }, [
+    reservasProcesadas,
+    todosLosExamenesOriginal,
+    estadoCargaReservas,
+    dispatch,
+    // procesarReservaParaFrontend,
+  ]); // procesarReservaParaFrontend es estable si no depende de estado del hook
 
   // Función para recargar exámenes y reservas, asegurando el formato correcto
   const loadExamenesYReservas = useCallback(async () => {
     try {
       setIsLoadingExamenes(true);
-
-      // Cargar exámenes y reservas en paralelo para tener datos frescos
-      const [examenesRes, reservasData] = await Promise.all([
-        fetch('/api/examenes'),
-        fetchAllReservas(),
-      ]);
+      const examenesRes = await fetch('/api/examenes'); // Cargar exámenes locales
+      dispatch(cargarReservasGlobal()); // Recargar reservas desde Redux
 
       if (examenesRes.ok) {
         const todosLosExamenes = await examenesRes.json();
@@ -185,8 +216,9 @@ export function useAgendaData() {
             examen.NOMBRE_ESTADO === 'ACTIVO'
         );
 
+        // 'reservas' vendrá del store y se actualizará por el dispatch(cargarReservasGlobal())
         // SEGUNDO FILTRO: Exámenes sin reservas activas
-        const examenesConReservasActivas = reservasData
+        const examenesConReservasActivas = reservas // Usar 'reservas' del store
           .filter(
             (r) =>
               r.ESTADO_CONFIRMACION_DOCENTE !== 'DESCARTADO' &&
@@ -198,30 +230,16 @@ export function useAgendaData() {
           (examen) => !examenesConReservasActivas.includes(examen.ID_EXAMEN)
         );
 
-        console.log('[useAgendaData] Recarga - Exámenes filtrados:', {
-          total: todosLosExamenes.length,
-          activos: examenesActivos.length,
-          sinReserva: examenesActivosSinReserva.length,
-        });
+        // console.log('[useAgendaData] Recarga - Exámenes filtrados:', {
+        //   total: todosLosExamenes.length,
+        //   activos: examenesActivos.length,
+        //   sinReserva: examenesActivosSinReserva.length,
+        // });
 
-        // Procesar las reservas obtenidas para asegurar el formato completo
-        const reservasCompletasPlanas = await Promise.all(
-          reservasData.map(async (reservaBasica) => {
-            try {
-              return await fetchReservaById(reservaBasica.ID_RESERVA);
-            } catch (error) {
-              console.error(
-                `Error fetching details for reserva ${reservaBasica.ID_RESERVA} during reload:`,
-                error
-              );
-              return reservaBasica; // Fallback a la básica
-            }
-          })
-        );
-        const reservasProcesadas = reservasCompletasPlanas.map((r) =>
-          procesarReservaParaFrontend(r, todosLosExamenes)
-        );
-        setReservas(reservasProcesadas);
+        // setReservas ya no se llama directamente, Redux lo maneja.
+        // El useEffect que depende de 'reservas' (del store) y 'todosLosExamenesOriginal'
+        // se encargará de actualizar 'setExamenes(examenesActivosSinReserva)'
+        // cuando las 'reservas' del store se actualicen.
         setExamenes(examenesActivosSinReserva);
       }
     } catch (error) {
@@ -229,15 +247,12 @@ export function useAgendaData() {
     } finally {
       setIsLoadingExamenes(false);
     }
-    // Dependencias para useCallback: funciones set de useState son estables.
-    // fetchAllReservas y fetchReservaById son imports, estables.
-    // procesarReservaParaFrontend se define fuera, pero si usara estado del hook, necesitaría estar en dependencias o ser useCallback también.
-    // Como usa `todosLosExamenes` que es local a la función en este contexto, está bien.
   }, [
-    setTodosLosExamenesOriginal,
-    setReservas,
+    dispatch, // Añadir dispatch
     setExamenes,
     setIsLoadingExamenes,
+    setTodosLosExamenesOriginal,
+    reservasProcesadas,
   ]);
 
   // Escuchar eventos globales para actualizar el estado
@@ -263,25 +278,27 @@ export function useAgendaData() {
 
           // 2. Procesar para que coincida con la estructura esperada
           //    `todosLosExamenesOriginal` es el estado del hook, así que está disponible aquí.
+          //    Asegurarse que procesarReservaParaFrontend no dependa de 'reservas' local.
           const nuevaReservaProcesada = procesarReservaParaFrontend(
             nuevaReservaPlana,
             todosLosExamenesOriginal
           );
+          dispatch(agregarReserva(nuevaReservaProcesada)); // <-- DESPACHAR A REDUX
 
-          // 3. Añadir la nueva reserva procesada al estado local
-          setReservas((prevReservas) => {
-            // Evitar duplicados si por alguna razón ya existe (ej. múltiples eventos rápidos)
-            // O reemplazar si ya existe para asegurar la data más fresca
-            const indiceExistente = prevReservas.findIndex(
-              (r) => r.ID_RESERVA === nuevaReservaProcesada.ID_RESERVA
-            );
-            if (indiceExistente !== -1) {
-              const actualizadas = [...prevReservas];
-              actualizadas[indiceExistente] = nuevaReservaProcesada;
-              return actualizadas;
-            }
-            return [...prevReservas, nuevaReservaProcesada];
-          });
+          // // 3. Añadir la nueva reserva procesada al estado local
+          // setReservas((prevReservas) => {
+          //   // Evitar duplicados si por alguna razón ya existe (ej. múltiples eventos rápidos)
+          //   // O reemplazar si ya existe para asegurar la data más fresca
+          //   const indiceExistente = prevReservas.findIndex(
+          //     (r) => r.ID_RESERVA === nuevaReservaProcesada.ID_RESERVA
+          //   );
+          //   if (indiceExistente !== -1) {
+          //     const actualizadas = [...prevReservas];
+          //     actualizadas[indiceExistente] = nuevaReservaProcesada;
+          //     return actualizadas;
+          //   }
+          //   return [...prevReservas, nuevaReservaProcesada];
+          // });
 
           // 4. Actualizar la lista de exámenes disponibles (quitar el que se acaba de reservar)
           setExamenes((prevExamenes) =>
@@ -289,7 +306,7 @@ export function useAgendaData() {
           );
 
           console.log(
-            '[useAgendaData] Nueva reserva procesada y añadida. Exámenes actualizados.'
+            '[useAgendaData] Acción agregarReserva despachada. Exámenes actualizados.'
           );
         } catch (error) {
           console.error(
@@ -316,9 +333,10 @@ export function useAgendaData() {
         // Actualizar estados directamente.
 
         // 1. Quitar la reserva de la lista de reservas
-        setReservas((prevReservas) =>
-          prevReservas.filter((r) => r.ID_RESERVA !== reservaId)
-        );
+        // setReservas((prevReservas) =>
+        //   prevReservas.filter((r) => r.ID_RESERVA !== reservaId)
+        // );
+        dispatch(eliminarReserva(reservaId)); // <-- DESPACHAR A REDUX
 
         // 2. Añadir el examen de vuelta a la lista de exámenes disponibles
         //    Necesitamos el objeto completo del examen. Lo buscamos en todosLosExamenesOriginal.
@@ -356,8 +374,17 @@ export function useAgendaData() {
       }
     };
 
+    // El listener para 'reservaConfirmacionActualizada' ya no es necesario aquí,
+    // porque MisReservasAsignadasPage despachará una acción a Redux,
+    // y este hook (useAgendaData) leerá el estado 'reservas' actualizado desde Redux.
+    // const handleReservaConfirmacionActualizada = (event) => { ... }
+
     window.addEventListener('reservaCreada', handleReservaCreada);
     window.addEventListener('examenesActualizados', handleExamenesActualizados);
+    // window.addEventListener(
+    //   'reservaConfirmacionActualizada',
+    //   handleReservaConfirmacionActualizada // Ya no es necesario si Redux maneja el estado
+    // );
 
     return () => {
       window.removeEventListener('reservaCreada', handleReservaCreada);
@@ -366,9 +393,12 @@ export function useAgendaData() {
         handleExamenesActualizados
       );
     };
-    // `loadExamenesYReservas` es useCallback, `todosLosExamenesOriginal` es un estado.
-    // `setReservas`, `setExamenes`, `setIsLoadingReservas` son estables.
-  }, [loadExamenesYReservas, todosLosExamenesOriginal]);
+  }, [
+    loadExamenesYReservas,
+    todosLosExamenesOriginal,
+    dispatch,
+    procesarReservaParaFrontend,
+  ]); // Añadir dispatch y procesarReservaParaFrontend si se usa en los handlers
 
   // Retornar todo lo que necesita el componente
   return {
@@ -379,8 +409,7 @@ export function useAgendaData() {
     setExamenes,
     todosLosExamenesOriginal,
     modulos,
-    reservas,
-    setReservas,
+    reservas: reservasProcesadas,
     sedesDisponibles,
     edificiosDisponibles,
 
@@ -388,7 +417,7 @@ export function useAgendaData() {
     isLoadingSalas,
     isLoadingExamenes,
     isLoadingModulos,
-    isLoadingReservas,
+    isLoadingReservas: estadoCargaReservas === 'loading', // Derivar de Redux
 
     // Funciones
     loadExamenes: loadExamenesYReservas, // Exponer la función renombrada si es necesario externamente

@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { format, startOfWeek } from 'date-fns';
+import { useDispatch } from 'react-redux'; // <-- AÑADIR ESTA LÍNEA
 import { es } from 'date-fns/locale';
 import { Modal } from 'react-bootstrap';
 import { toast } from 'react-toastify';
@@ -22,6 +23,7 @@ import {
   crearReservaParaExamenExistenteService,
   crearReservaEnCursoService, // ← AGREGAR ESTA IMPORTACIÓN
 } from '../../services/reservaService';
+import { agregarReserva } from '../../store/reservasSlice'; // <-- IMPORTAR ACCIÓN DE REDUX
 
 // Estilos
 import './styles/AgendaSemanal.css';
@@ -39,13 +41,14 @@ export default function AgendaSemanal({
     setExamenes,
     modulos,
     reservas,
-    setReservas,
+    // setReservas,
     sedesDisponibles,
     edificiosDisponibles,
     isLoadingSalas,
     isLoadingExamenes,
     isLoadingModulos,
     isLoadingReservas,
+    loadExamenes,
   } = useAgendaData();
 
   const { fechas, fechaSeleccionada, handleDateChange, goToToday } =
@@ -71,6 +74,8 @@ export default function AgendaSemanal({
   const [isProcessingDrop, setIsProcessingDrop] = useState(false);
   const [lastProcessedDrop, setLastProcessedDrop] = useState(null);
 
+  const dispatch = useDispatch(); // <-- OBTENER DISPATCH
+
   // HOOK DE MODALES - Después de definir selectedSala
   const {
     showSalaFilterModal,
@@ -92,7 +97,7 @@ export default function AgendaSemanal({
     handleConfirmDelete,
     handleCloseReservaModal,
     handleShowReservaModal,
-  } = useModals(reservas, selectedSala, setReservas, setExamenes);
+  } = useModals(reservas, selectedSala, setExamenes);
 
   // FUNCIONES SIMPLIFICADAS
   const handleSelectSala = useCallback((sala) => {
@@ -389,7 +394,7 @@ export default function AgendaSemanal({
       }
 
       const nuevaReserva = await response.json();
-      setReservas((prev) => [...prev, nuevaReserva]);
+      dispatch(agregarReserva(nuevaReserva)); // <-- USAR DISPATCH
       alert(
         `Reserva para ${selectedExamInternal?.NOMBRE_ASIGNATURA} CONFIRMADA!`
       );
@@ -404,7 +409,7 @@ export default function AgendaSemanal({
     modulosSeleccionados,
     selectedSala,
     modulos,
-    setReservas,
+    dispatch, // <-- AÑADIR DISPATCH COMO DEPENDENCIA
   ]);
 
   // IMPLEMENTAR: Función para manejar cambios de módulos
@@ -423,28 +428,30 @@ export default function AgendaSemanal({
       if (reservaAfectada) {
         console.log('📝 Actualizando reserva:', reservaAfectada.ID_RESERVA);
 
-        setReservas((prevReservas) =>
-          prevReservas.map((reserva) => {
-            if (reserva.ID_RESERVA === reservaAfectada.ID_RESERVA) {
-              const updatedReserva = {
-                ...reserva,
-                CANTIDAD_MODULOS_RESERVA: nuevaCantidadModulos,
-              };
+        // TODO: Esta lógica también debería despachar una acción a Redux
+        // Por ejemplo: dispatch(actualizarModulosReserva({ reservaId: reservaAfectada.ID_RESERVA, nuevaCantidadModulos }));
+        // setReservas((prevReservas) =>
+        //   prevReservas.map((reserva) => {
+        //     if (reserva.ID_RESERVA === reservaAfectada.ID_RESERVA) {
+        //       const updatedReserva = {
+        //         ...reserva,
+        //         CANTIDAD_MODULOS_RESERVA: nuevaCantidadModulos,
+        //       };
 
-              // Si tiene examen asociado, actualizarlo también
-              if (reserva.Examen) {
-                updatedReserva.Examen = {
-                  ...reserva.Examen,
-                  CANTIDAD_MODULOS_EXAMEN: nuevaCantidadModulos,
-                };
-              }
+        //       // Si tiene examen asociado, actualizarlo también
+        //       if (reserva.Examen) {
+        //         updatedReserva.Examen = {
+        //           ...reserva.Examen,
+        //           CANTIDAD_MODULOS_EXAMEN: nuevaCantidadModulos,
+        //         };
+        //       }
 
-              console.log('✅ Reserva actualizada:', updatedReserva);
-              return updatedReserva;
-            }
-            return reserva;
-          })
-        );
+        //       console.log('✅ Reserva actualizada:', updatedReserva);
+        //       return updatedReserva;
+        //     }
+        //     return reserva;
+        //   })
+        // );
 
         // TODO: Aquí deberías hacer una llamada al backend para persistir el cambio
         // updateReservaModulos(reservaAfectada.ID_RESERVA, nuevaCantidadModulos);
@@ -456,7 +463,7 @@ export default function AgendaSemanal({
         // Lógica para exámenes pendientes...
       }
     },
-    [reservas, setReservas, selectedExamInternal]
+    [reservas, dispatch, selectedExamInternal] // <-- ACTUALIZAR DEPENDENCIAS
   );
 
   // RENDERIZADO SIMPLIFICADO
@@ -554,7 +561,7 @@ export default function AgendaSemanal({
                   dropTargetCell={dropTargetCell}
                   hoverTargetCell={hoverTargetCell}
                   // ← AGREGAR ESTAS NUEVAS PROPS
-                  setReservas={setReservas}
+                  // setReservas={setReservas}
                   refreshExamenesDisponibles={() => {
                     // Función para recargar exámenes disponibles
                     loadExamenes();

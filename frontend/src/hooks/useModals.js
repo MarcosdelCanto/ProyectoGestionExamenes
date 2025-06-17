@@ -1,8 +1,17 @@
 import { useState, useCallback } from 'react';
 import { format } from 'date-fns';
 import { deleteReserva } from '../services/reservaService';
+import { useDispatch } from 'react-redux';
+import { eliminarReserva } from '../store/reservasSlice'; // Asumiendo que esta es tu acción para eliminar
 
-export function useModals(reservas, selectedSala, setReservas, setExamenes) {
+export function useModals(
+  reservas,
+  selectedSala,
+  /* setReservas ya no se pasa */ setExamenes
+) {
+  // Obtener la función dispatch
+  const dispatch = useDispatch();
+
   // Estados de modales
   const [showSalaFilterModal, setShowSalaFilterModal] = useState(false);
   const [showReservaModal, setShowReservaModal] = useState(false);
@@ -85,11 +94,8 @@ export function useModals(reservas, selectedSala, setReservas, setExamenes) {
     setLoadingDelete(true);
     try {
       await deleteReserva(reservaToDelete.ID_RESERVA);
-
-      // Actualizar lista de reservas
-      setReservas((prev) =>
-        prev.filter((r) => r.ID_RESERVA !== reservaToDelete.ID_RESERVA)
-      );
+      // En lugar de setReservas, despachar la acción a Redux
+      dispatch(eliminarReserva(reservaToDelete.ID_RESERVA));
 
       // Devolver examen a la lista de pendientes
       if (reservaToDelete.Examen) {
@@ -113,7 +119,7 @@ export function useModals(reservas, selectedSala, setReservas, setExamenes) {
     } finally {
       setLoadingDelete(false);
     }
-  }, [reservaToDelete, handleCloseDeleteModal, setReservas, setExamenes]);
+  }, [reservaToDelete, handleCloseDeleteModal, dispatch, setExamenes]); // Añadir dispatch y quitar setReservas
 
   // Función para cerrar modal de reserva
   const handleCloseReservaModal = useCallback(() => {

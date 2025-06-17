@@ -24,6 +24,8 @@ import {
   crearReservaParaExamenExistenteService as crearReservaParaExamenExistente, // Corregir importación
 } from '../services/reservaService';
 
+import { useDispatch } from 'react-redux'; // <-- IMPORTAR useDispatch
+import { actualizarEstadoConfirmacionReserva } from '../store/reservasSlice'; // <-- IMPORTAR LA ACCIÓN
 const MisReservasAsignadasPage = () => {
   // Obtiene el usuario actual desde el servicio de autenticación
   const user = authService.getCurrentUser();
@@ -33,7 +35,7 @@ const MisReservasAsignadasPage = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [activeTab, setActiveTab] = useState(
-    user.nombre_rol === 'DOCENTE' ? 'pendientes' : 'proximas'
+    user?.nombre_rol === 'DOCENTE' ? 'pendientes' : 'proximas' // Añadir optional chaining por si user es null
   );
 
   // --- Estados para el modal de EDICIÓN (para admins/coordinadores) ---
@@ -67,6 +69,8 @@ const MisReservasAsignadasPage = () => {
   const [showConfirmDescartarModal, setShowConfirmDescartarModal] =
     useState(false);
   const [reservaParaDescartar, setReservaParaDescartar] = useState(null);
+
+  const dispatch = useDispatch(); // <-- OBTENER LA FUNCIÓN DISPATCH
   const [loadingDescartar, setLoadingDescartar] = useState(false);
 
   // --- Carga de Datos ---
@@ -279,10 +283,26 @@ const MisReservasAsignadasPage = () => {
     setLoadingRevisarModal(true);
     try {
       await actualizarConfirmacionReservaDocente(selectedReserva.ID_RESERVA, {
-        nuevoEstado: nuevoEstadoConfirmacionDocente,
+        nuevoEstado: nuevoEstadoConfirmacionDocente.trim(), // Asegurar que no haya espacios
         observaciones: nuevaObservacionDocente, // Enviar solo la nueva observación
       });
       setModalRevisarSuccess('Actualización enviada correctamente.');
+
+      // Despachar acción a Redux para actualizar el estado global
+      dispatch(
+        actualizarEstadoConfirmacionReserva({
+          id_reserva: selectedReserva.ID_RESERVA,
+          nuevo_estado_confirmacion_docente:
+            nuevoEstadoConfirmacionDocente.trim(),
+          // Opcional: si el backend devuelve las observaciones actualizadas o la fecha, pasarlas también
+          // observaciones_docente: respuestaDelBackend.observaciones_actualizadas,
+          // fecha_confirmacion_docente: respuestaDelBackend.fecha_confirmacion,
+        })
+      );
+      console.log(
+        '[MisReservasAsignadasPage] Acción Redux despachada para actualizar estado de reserva.'
+      );
+
       await cargarAsignaciones();
       setTimeout(() => handleCloseRevisarModal(), 1500);
     } catch (err) {
@@ -342,12 +362,13 @@ const MisReservasAsignadasPage = () => {
   const esAdminOComite =
     user &&
     [
+      // Añadir optional chaining por si user es null
       'ADMINISTRADOR',
       'COORDINADOR CARRERA',
       'COORDINADOR DOCENTE',
       'JEFE CARRERA',
-    ].includes(user.nombre_rol);
-  const esDocente = user && user.nombre_rol === 'DOCENTE';
+    ].includes(user?.nombre_rol);
+  const esDocente = user && user?.nombre_rol === 'DOCENTE';
 
   if (loading) {
     return (

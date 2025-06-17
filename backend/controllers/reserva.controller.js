@@ -13,6 +13,49 @@ const handleError = (res, error, message, statusCode = 500) => {
   res.status(statusCode).json({ error: message, details }); // 'details' ahora puede ser igual a 'message'
 };
 
+// Función helper para obtener una reserva completa por ID y emitirla por socket
+const emitReservaActualizada = async (
+  req,
+  connection,
+  reservaIdNum,
+  actionOrigin = 'unknown'
+) => {
+  if (req.app.get('io') && reservaIdNum) {
+    const result = await connection.execute(
+      `SELECT r.*,
+              e.ID_EXAMEN, e.NOMBRE_EXAMEN, e.CANTIDAD_MODULOS_EXAMEN, e.NOMBRE_ASIGNATURA, s.ID_SALA, s.NOMBRE_SALA, est.NOMBRE_ESTADO AS ESTADO_RESERVA
+       FROM RESERVA r
+       JOIN EXAMEN e ON r.EXAMEN_ID_EXAMEN = e.ID_EXAMEN
+       JOIN SALA s ON r.SALA_ID_SALA = s.ID_SALA
+       JOIN ESTADO est ON r.ESTADO_ID_ESTADO = est.ID_ESTADO
+       WHERE r.ID_RESERVA = :id_param`,
+      { id_param: reservaIdNum },
+      { outFormat: oracledb.OUT_FORMAT_OBJECT }
+    );
+    if (result.rows.length > 0) {
+      const reservaParaEmitir = result.rows[0];
+      // Añadir MODULOS a la reservaParaEmitir
+      const modulosResult = await connection.execute(
+        `SELECT m.ID_MODULO, m.NOMBRE_MODULO, m.INICIO_MODULO, m.FIN_MODULO, m.ORDEN
+         FROM RESERVAMODULO rm
+         JOIN MODULO m ON rm.MODULO_ID_MODULO = m.ID_MODULO
+         WHERE rm.RESERVA_ID_RESERVA = :reservaId_param
+         ORDER BY m.ORDEN`,
+        { reservaId_param: reservaIdNum },
+        { outFormat: oracledb.OUT_FORMAT_OBJECT }
+      );
+      reservaParaEmitir.MODULOS = modulosResult.rows;
+
+      req.app
+        .get('io')
+        .emit('reservaActualizadaDesdeServidor', reservaParaEmitir);
+      console.log(
+        `[${actionOrigin}] Evento Socket.IO 'reservaActualizadaDesdeServidor' emitido para reserva ${reservaIdNum}`
+      );
+    }
+  }
+};
+
 export const getAllReservas = async (req, res) => {
   let conn;
   try {
@@ -204,6 +247,13 @@ export const crearReservaParaExamenExistente = async (req, res) => {
     // 7. Confirmar toda la transacción
     await connection.commit();
 
+    // Emitir evento de socket después del commit
+    await emitReservaActualizada(
+      req,
+      connection,
+      generatedReservaId,
+      'crearReservaParaExamenExistente'
+    );
     res.status(201).json({
       message: 'Reserva creada y examen programado exitosamente.',
       id_reserva: generatedReservaId,
@@ -281,6 +331,8 @@ export const createReserva = async (req, res) => {
       });
     }
     await conn.commit();
+    // Emitir evento de socket después del commit
+    await emitReservaActualizada(req, conn, newReservaId, 'createReserva');
     res.status(201).json({
       message: 'Reserva (original) creada con éxito',
       id_reserva: newReservaId,
@@ -625,6 +677,17 @@ export const actualizarConfirmacionDocente = async (req, res) => {
     console.log(
       '[actualizarConfirmacionDocente] Commit exitoso. Enviando respuesta JSON...'
     );
+
+    // Emitir evento de Socket.IO a todos los clientes
+    // La llamada a emitReservaActualizada ya estaba correctamente aquí en el código proporcionado.
+    // Solo me aseguro de que esté después del commit y antes de la respuesta.
+    await emitReservaActualizada(
+      req,
+      connection,
+      reservaIdNum,
+      'actualizarConfirmacionDocente'
+    );
+
     res.json({
       message: `Reserva ${reservaIdNum} actualizada a estado ${nuevoEstado.trim()} por el docente.`,
     });
@@ -904,6 +967,13 @@ export const updateReserva = async (req, res) => {
     // 4. Confirma toda la transacción
     await connection.commit();
 
+    // Emitir evento de socket después del commit
+    await emitReservaActualizada(
+      req,
+      connection,
+      reservaIdNum,
+      'updateReserva'
+    );
     res.status(200).json({ message: 'Reserva actualizada exitosamente.' });
   } catch (err) {
     if (connection) await connection.rollback();
@@ -1021,6 +1091,13 @@ export const descartarReserva = async (req, res) => {
     // 4. Confirmar transacción
     await connection.commit();
 
+    // Emitir evento de socket después del commit
+    await emitReservaActualizada(
+      req,
+      connection,
+      reservaIdNum,
+      'descartarReserva'
+    );
     console.log(
       `[descartarReserva] Reserva ${reservaIdNum} descartada y examen ${examenId} reactivado exitosamente`
     );
@@ -1232,6 +1309,13 @@ export const crearReservaEnCurso = async (req, res) => {
     await connection.commit();
 
     console.log(`[crearReservaEnCurso] Transacción completada exitosamente`);
+    // Emitir evento de socket después del commit
+    await emitReservaActualizada(
+      req,
+      connection,
+      generatedReservaId,
+      'crearReservaEnCurso'
+    );
 
     res.status(201).json({
       message: 'Reserva creada exitosamente con flujo EN_CURSO.',
@@ -1336,12 +1420,20 @@ export const enviarReservaADocente = async (req, res) => {
       `[enviarReservaADocente] Reserva ${reservaIdNum} enviada a docente exitosamente`
     );
 
+    // Emitir evento de socket después del commit
+    await emitReservaActualizada(
+      req,
+      connection,
+      reservaIdNum,
+      'enviarReservaADocente'
+    );
     res.status(200).json({
       message: 'Reserva enviada a docente para confirmación',
       id_reserva: reservaIdNum,
       nuevo_estado: 'PENDIENTE',
     });
   } catch (error) {
+    // Si hay un error, no se emite el evento de socket, pero se maneja el error HTTP
     if (connection) {
       console.error(`[enviarReservaADocente] Error, haciendo rollback:`, error);
       await connection.rollback();

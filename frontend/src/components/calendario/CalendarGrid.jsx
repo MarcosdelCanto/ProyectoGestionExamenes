@@ -2,6 +2,11 @@ import React from 'react';
 import CalendarHeader from './CalendarHeader';
 import CalendarCell from './CalendarCell';
 import { useCalendarData } from '../../hooks/useCalendarData';
+import { useDispatch } from 'react-redux'; // <-- IMPORTAR
+import {
+  actualizarEstadoConfirmacionReserva,
+  eliminarReserva,
+} from '../../store/reservasSlice'; // <-- IMPORTAR ACCIONES
 
 export default function CalendarGrid({
   fechas,
@@ -18,8 +23,7 @@ export default function CalendarGrid({
   draggedExamen = null,
   dropTargetCell = null,
   hoverTargetCell = null,
-  // ← AGREGAR ESTAS NUEVAS PROPS
-  setReservas,
+  // setReservas, // Ya no se recibe como prop
   refreshExamenesDisponibles,
 }) {
   // USAR EL HOOK: Centralizar toda la lógica de datos
@@ -31,6 +35,8 @@ export default function CalendarGrid({
     modulos,
   });
 
+  const dispatch = useDispatch(); // <-- OBTENER DISPATCH
+
   // Handler para cambios de estado de reservas - MEJORADO
   const handleReservaStateChange = (reservaId, nuevoEstado, info) => {
     console.log(`[CalendarGrid] Cambio de estado de reserva ${reservaId}:`, {
@@ -40,41 +46,32 @@ export default function CalendarGrid({
 
     if (nuevoEstado === 'ELIMINADO') {
       // Remover la reserva del estado local
-      if (setReservas) {
-        setReservas((prev) => {
-          const reservaEliminada = prev.find((r) => r.ID_RESERVA === reservaId);
-          const nuevasReservas = prev.filter((r) => r.ID_RESERVA !== reservaId);
+      dispatch(eliminarReserva(reservaId));
+      console.log(
+        `[CalendarGrid] Acción eliminarReserva despachada para reserva ${reservaId}`
+      );
 
-          console.log(
-            `[CalendarGrid] Reserva ${reservaId} eliminada del estado local`
-          );
-
-          // Si hay callback para refrescar exámenes disponibles, usarlo
-          if (info.examen_id && refreshExamenesDisponibles) {
-            console.log(
-              `[CalendarGrid] Refrescando exámenes disponibles para examen ${info.examen_id}`
-            );
-            setTimeout(() => refreshExamenesDisponibles(), 100);
-          }
-
-          return nuevasReservas;
-        });
-      }
+      // Si hay callback para refrescar exámenes disponibles, usarlo
+      // if (info.examen_id && refreshExamenesDisponibles) {
+      //   console.log(
+      //     `[CalendarGrid] Refrescando exámenes disponibles para examen ${info.examen_id}`
+      //   );
+      //   setTimeout(() => refreshExamenesDisponibles(), 100);
+      // }
 
       // Mostrar mensaje de éxito más discreto
       console.log(`✅ ${info.message}`);
     } else if (nuevoEstado === 'PENDIENTE') {
       // Actualizar el estado local de la reserva
-      if (setReservas) {
-        setReservas((prevReservas) => {
-          const nuevasReservas = prevReservas.map((r) =>
-            r.ID_RESERVA === reservaId
-              ? { ...r, ESTADO_CONFIRMACION_DOCENTE: 'PENDIENTE' }
-              : r
-          );
-          return nuevasReservas;
-        });
-      }
+      dispatch(
+        actualizarEstadoConfirmacionReserva({
+          id_reserva: reservaId,
+          nuevo_estado_confirmacion_docente: 'PENDIENTE',
+        })
+      );
+      console.log(
+        `[CalendarGrid] Acción actualizarEstadoConfirmacionReserva despachada para ${reservaId} a PENDIENTE`
+      );
 
       // Mostrar mensaje informativo más discreto
       console.log(`📋 ${info.message}`);
