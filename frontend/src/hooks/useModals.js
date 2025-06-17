@@ -1,8 +1,17 @@
 import { useState, useCallback } from 'react';
 import { format } from 'date-fns';
 import { deleteReserva } from '../services/reservaService';
+import { useDispatch } from 'react-redux';
+import { eliminarReserva } from '../store/reservasSlice'; // Asumiendo que esta es tu acción para eliminar
 
-export function useModals(reservas, selectedSala, setReservas, setExamenes) {
+export function useModals(
+  reservas,
+  selectedSala,
+  /* setReservas ya no se pasa */ setExamenes
+) {
+  // Obtener la función dispatch
+  const dispatch = useDispatch();
+
   // Estados de modales
   const [showSalaFilterModal, setShowSalaFilterModal] = useState(false);
   const [showReservaModal, setShowReservaModal] = useState(false);
@@ -20,26 +29,53 @@ export function useModals(reservas, selectedSala, setReservas, setExamenes) {
   const [modalError, setModalError] = useState(null);
   const [modalSuccess, setModalSuccess] = useState(null);
 
-  // Función para mostrar modal de eliminación
+  // Función para mostrar modal de eliminación - CORREGIDA
   const handleShowDeleteModal = useCallback(
     (examenAsignado) => {
-      if (examenAsignado.esReservaConfirmada) {
-        const reservaCompleta = reservas.find(
-          (r) =>
-            r.ID_EXAMEN === examenAsignado.examen.ID_EXAMEN &&
-            r.ID_SALA === selectedSala?.ID_SALA &&
-            format(new Date(r.FECHA_RESERVA), 'yyyy-MM-dd') ===
-              examenAsignado.fecha
-        );
+      // Buscar la reserva completa sin importar el estado de confirmación
+      const reservaCompleta = reservas.find(
+        (r) =>
+          r.ID_EXAMEN === examenAsignado.examen?.ID_EXAMEN &&
+          r.ID_SALA === selectedSala?.ID_SALA &&
+          format(new Date(r.FECHA_RESERVA), 'yyyy-MM-dd') ===
+            examenAsignado.fecha
+      );
 
-        if (reservaCompleta) {
+      if (reservaCompleta) {
+        // Verificar estados que SÍ permiten eliminación
+        const estadosEliminables = [
+          'EN_CURSO',
+          'PENDIENTE',
+          'REQUIERE_REVISION',
+          'CONFIRMADO',
+        ];
+
+        const estadoActual = reservaCompleta.ESTADO_CONFIRMACION_DOCENTE;
+
+        if (estadosEliminables.includes(estadoActual)) {
           setReservaToDelete(reservaCompleta);
           setShowDeleteModal(true);
+        } else if (estadoActual === 'DESCARTADO') {
+          alert('Esta reserva ya ha sido descartada y no puede eliminarse.');
         } else {
-          alert('Error: No se pudo encontrar la reserva para eliminar.');
+          alert(`La reserva en estado "${estadoActual}" no puede eliminarse.`);
         }
       } else {
-        alert('Error: Solo se pueden eliminar reservas confirmadas.');
+        // Si no encuentra la reserva completa, verificar si es una reserva válida
+        if (examenAsignado.examen && examenAsignado.fecha) {
+          console.warn('No se encontró la reserva completa:', {
+            examenId: examenAsignado.examen.ID_EXAMEN,
+            salaId: selectedSala?.ID_SALA,
+            fecha: examenAsignado.fecha,
+            reservasDisponibles: reservas.map((r) => ({
+              id: r.ID_RESERVA,
+              examen: r.ID_EXAMEN,
+              sala: r.ID_SALA,
+              fecha: format(new Date(r.FECHA_RESERVA), 'yyyy-MM-dd'),
+            })),
+          });
+        }
+        alert('Error: No se pudo encontrar la reserva para eliminar.');
       }
     },
     [reservas, selectedSala]
@@ -58,11 +94,8 @@ export function useModals(reservas, selectedSala, setReservas, setExamenes) {
     setLoadingDelete(true);
     try {
       await deleteReserva(reservaToDelete.ID_RESERVA);
-
-      // Actualizar lista de reservas
-      setReservas((prev) =>
-        prev.filter((r) => r.ID_RESERVA !== reservaToDelete.ID_RESERVA)
-      );
+      // En lugar de setReservas, despachar la acción a Redux
+      dispatch(eliminarReserva(reservaToDelete.ID_RESERVA));
 
       // Devolver examen a la lista de pendientes
       if (reservaToDelete.Examen) {
@@ -86,7 +119,7 @@ export function useModals(reservas, selectedSala, setReservas, setExamenes) {
     } finally {
       setLoadingDelete(false);
     }
-  }, [reservaToDelete, handleCloseDeleteModal, setReservas, setExamenes]);
+  }, [reservaToDelete, handleCloseDeleteModal, dispatch, setExamenes]); // Añadir dispatch y quitar setReservas
 
   // Función para cerrar modal de reserva
   const handleCloseReservaModal = useCallback(() => {

@@ -51,11 +51,17 @@ async function startServer() {
   try {
     await initDB(); // inicializa la conexión
     const server = http.createServer(app);
+    // Configuración de Socket.IO
     const io = new Server(server, {
-      cors: { origin: '*' },
+      cors: {
+        origin: 'http://localhost:5173',
+        methods: ['GET', 'POST'],
+      },
     });
     let currentStatus = 'disponible';
     let currentUpdaterId = null;
+
+    app.set('io', io); // Hacer 'io' accesible en los request handlers vía req.app.get('io')
 
     io.on('connection', (socket) => {
       socket.emit('status-update', {
