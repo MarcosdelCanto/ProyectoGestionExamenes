@@ -1,6 +1,7 @@
 // frontend/src/store/socketMiddleware.js
 import { io } from 'socket.io-client';
 import { statusUpdated, changeStatus } from './statusSlice';
+import { procesarActualizacionReservaSocket } from './reservasSlice'; // <-- IMPORTAR ACCIÓN DE RESERVAS
 
 export const socket = io('http://localhost:3000', { autoConnect: false });
 
@@ -14,6 +15,15 @@ export const socketMiddleware = (storeAPI) => {
       updaterId = secondArg;
     }
     storeAPI.dispatch(statusUpdated({ newStatus: status, updaterId }));
+  });
+
+  // Nuevo listener para actualizaciones de reservas desde el servidor
+  socket.on('reservaActualizadaDesdeServidor', (reservaActualizada) => {
+    console.log(
+      '[socketMiddleware] Evento "reservaActualizadaDesdeServidor" recibido:',
+      reservaActualizada
+    );
+    storeAPI.dispatch(procesarActualizacionReservaSocket(reservaActualizada));
   });
 
   socket.connect();

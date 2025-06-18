@@ -6,6 +6,9 @@ import { checkPermission } from '../middlewares/permission.middleware.js';
 // Asegúrate de importar TODOS los controladores que usas en este archivo
 import {
   crearReservaParaExamenExistente,
+  crearReservaEnCurso,
+  enviarReservaADocente, // ← Agregar esta importación
+  cancelarReservaCompleta, // ← Agregar esta importación
   getMisReservasPendientes,
   actualizarConfirmacionDocente,
   getAllReservas, // Controlador para GET /
@@ -51,6 +54,30 @@ router.put(
   actualizarConfirmacionDocente
 );
 
+// Nueva ruta para crear reserva en curso (para drag & drop)
+router.post(
+  '/crear-en-curso',
+  authMiddleware,
+  checkPermission(['CREATE_RESERVAS_EXAMEN']),
+  crearReservaEnCurso
+);
+
+// Nueva ruta para enviar reserva a docente (EN_CURSO → PENDIENTE)
+router.put(
+  '/:idReserva/enviar-a-docente',
+  authMiddleware,
+  checkPermission(['UPDATE_RESERVA']),
+  enviarReservaADocente
+);
+
+// Nueva ruta para cancelar reserva completa (volver examen a ACTIVO)
+router.delete(
+  '/:idReserva/cancelar-completa',
+  authMiddleware,
+  checkPermission(['DELETE_RESERVA']),
+  cancelarReservaCompleta
+);
+
 // --- RUTAS CRUD ESTÁNDAR PARA RESERVAS (EXISTENTES) ---
 // Aplicando authMiddleware y checkPermission (con nombres de permisos de ejemplo)
 
@@ -86,14 +113,6 @@ router.delete(
   checkPermission(['DELETE_RESERVA']), // Ej: Permiso para eliminar cualquier reserva
   deleteReserva
 );
-// --- RUTA PARA DESCARTAR RESERVA ---
-router.put(
-  '/:idReserva/descartar',
-  authMiddleware,
-  checkPermission(['UPDATE_RESERVA']), // Asumiendo que el mismo permiso de actualizar sirve para descartar
-  descartarReserva
-);
-
 // --- RUTA PARA DESCARTAR RESERVA ---
 router.put(
   '/:idReserva/descartar',

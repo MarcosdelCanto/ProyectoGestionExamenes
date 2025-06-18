@@ -3,9 +3,10 @@ import { useDroppable } from '@dnd-kit/core';
 import './styles/Calendar.css';
 import ExamenPostIt from './ExamenPostIt';
 
-const CalendarCell = memo(function CalendarCell({
+export default function CalendarCell({
   fecha,
   modulo,
+  salaId, // Asegurarse de que esta prop se pasa desde el componente padre
   cellData,
   shouldRenderExamen,
   esDiaSeleccionado,
@@ -14,16 +15,24 @@ const CalendarCell = memo(function CalendarCell({
   onRemoveExamen,
   onDeleteReserva,
   onCheckConflict,
-  esDropTarget, // ← Solo para procesamiento final
-  esHoverTarget, // ← NUEVA: Para preview visual
-  draggedExamen, // ← NUEVA: Para mostrar preview
+  esDropTarget,
+  esHoverTarget,
+  draggedExamen,
+  onReservaStateChange, // ← NUEVA PROP
 }) {
   const droppableId = `droppable-${fecha}-${modulo.ORDEN}`;
 
   const { setNodeRef } = useDroppable({
-    // ← QUITAR isOver
     id: droppableId,
-    data: { type: 'celda-calendario', fecha, modulo },
+    // Incluir todos los datos necesarios para la creación de la reserva
+    data: {
+      type: 'celda-calendario',
+      fecha,
+      modulo: modulo, // Pasar el objeto completo del módulo
+      moduloId: modulo.ID_MODULO,
+      salaId, // Incluir el ID de la sala
+      orden: modulo.ORDEN, // Incluir el orden para facilitar la selección de módulos consecutivos
+    },
   });
 
   // CORREGIR: Estados de celda - usar esHoverTarget en lugar de isOver
@@ -66,6 +75,8 @@ const CalendarCell = memo(function CalendarCell({
       className={getCellClassName()}
       onClick={handleClick}
       data-celda-id={droppableId}
+      data-modulo-id={modulo.ID_MODULO}
+      data-fecha={fecha}
     >
       {/* Contenido existente de la celda */}
       {shouldRenderExamen && cellData && (
@@ -81,6 +92,7 @@ const CalendarCell = memo(function CalendarCell({
           moduloInicial={cellData.moduloInicial}
           examenAsignadoCompleto={cellData}
           reservacompleta={cellData.reservaCompleta}
+          onReservaStateChange={onReservaStateChange}
           style={{
             position: 'absolute',
             height: `${cellData.modulosTotal * 40}px`,
@@ -109,6 +121,4 @@ const CalendarCell = memo(function CalendarCell({
       )}
     </td>
   );
-});
-
-export default CalendarCell;
+}

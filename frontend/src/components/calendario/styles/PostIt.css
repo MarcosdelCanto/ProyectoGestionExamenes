@@ -185,3 +185,102 @@
   /* Altura dinámica basada en módulos */
   overflow: visible; /* ← Permitir que el resize handle sea visible */
 }
+
+/* Estilos para los botones de acción */
+.action-buttons {
+  display: flex;
+  gap: 4px;
+  align-items: center;
+}
+
+.action-btn {
+  min-width: 20px !important;
+  min-height: 20px !important;
+  padding: 2px 4px !important;
+  font-size: 11px !important;
+  line-height: 1 !important;
+  border-radius: 3px !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+}
+
+.action-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.status-info {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  flex-wrap: wrap;
+}
+
+.status-badge {
+  font-size: 9px !important;
+  padding: 1px 4px !important;
+  white-space: nowrap;
+}
+
+.action-container {
+  flex-shrink: 0;
+  margin-left: 4px;
+}
+
+/* Estilos específicos para diferentes estados */
+.examen-post-it[data-estado='EN_CURSO'] {
+  border-left: 3px solid #ffc107;
+}
+
+.examen-post-it[data-estado='PENDIENTE'] {
+  border-left: 3px solid #fd7e14;
+}
+
+.examen-post-it[data-estado='REQUIERE_REVISION'] {
+  border-left: 3px solid #0dcaf0;
+}
+
+.examen-post-it[data-estado='CONFIRMADO'] {
+  border-left: 3px solid #198754;
+}
+
+.examen-post-it[data-estado='DESCARTADO'] {
+  border-left: 3px solid #dc3545;
+  opacity: 0.7;
+}
+
+/* Animación para botones en procesamiento */
+.action-btn:disabled {
+  animation: pulse 1s infinite;
+}
+
+@keyframes pulse {
+  0% {
+    opacity: 0.6;
+  }
+  50% {
+    opacity: 0.8;
+  }
+  100% {
+    opacity: 0.6;
+  }
+}
+
+/* Responsividad para pantallas pequeñas */
+@media (max-width: 768px) {
+  .action-buttons {
+    gap: 2px;
+  }
+
+  .action-btn {
+    min-width: 20px;
+    min-height: 20px;
+    font-size: 10px;
+  }
+
+  .status-badge {
+    font-size: 9px;
+    padding: 1px 4px;
+  }
+}

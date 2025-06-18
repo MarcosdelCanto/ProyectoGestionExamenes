@@ -3,6 +3,14 @@ import React from 'react';
 import Select from 'react-select'; // Importar react-select
 import { Card, Form, Row, Col, Button } from 'react-bootstrap';
 
+// Función para normalizar el texto de búsqueda (eliminar tildes, acentos, etc.)
+const normalizeText = (text) => {
+  return text
+    .normalize('NFD') // descomponer caracteres acentuados
+    .replace(/[\u0300-\u036f]/g, '') // eliminar los diacríticos
+    .toLowerCase(); // convertir a minúsculas
+};
+
 function ExamenFilter({
   escuelas = [],
   carreras = [],
@@ -49,7 +57,12 @@ function ExamenFilter({
                   type="text"
                   placeholder="Nombre del examen..."
                   value={currentFilters.text || ''}
-                  onChange={(e) => onFilterChange({ text: e.target.value })}
+                  onChange={(e) =>
+                    onFilterChange({
+                      text: e.target.value,
+                      normalizedText: normalizeText(e.target.value),
+                    })
+                  }
                 />
               </Form.Group>
             </Col>

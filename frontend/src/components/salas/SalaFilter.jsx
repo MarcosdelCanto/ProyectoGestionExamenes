@@ -3,6 +3,15 @@ import React from 'react';
 import Select from 'react-select'; // Importar react-select
 import { Card, Form, Row, Col, Button } from 'react-bootstrap';
 
+// Función para normalizar texto (eliminar tildes)
+const normalizeText = (text) => {
+  if (!text) return '';
+  return text
+    .normalize('NFD') // Descompone caracteres acentuados
+    .replace(/[\u0300-\u036f]/g, '') // Elimina los diacríticos
+    .toLowerCase(); // Convierte a minúsculas
+};
+
 function SalaFilter({
   sedes = [],
   edificiosOptions = [], // Edificios filtrados por sede
@@ -29,6 +38,17 @@ function SalaFilter({
       ? items.map((item) => ({ value: item[valueKey], label: item[labelKey] }))
       : []),
   ];
+
+  // Normalizar el nombre de la sala para la búsqueda
+  const handleTextChange = (e) => {
+    const textValue = e.target.value;
+
+    // Envía el texto original y su versión normalizada
+    onFilterChange({
+      nombre: textValue,
+      normalizedText: normalizeText(textValue),
+    });
+  };
   return (
     <Card className="mb-3 shadow-sm">
       <Card.Body>
@@ -41,7 +61,7 @@ function SalaFilter({
                   type="text"
                   placeholder="Nombre de la sala..."
                   value={currentFilters.nombre || ''}
-                  onChange={(e) => onFilterChange({ nombre: e.target.value })}
+                  onChange={handleTextChange}
                 />
               </Form.Group>
             </Col>

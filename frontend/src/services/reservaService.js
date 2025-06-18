@@ -178,22 +178,126 @@ export const fetchMisAsignacionesDeReservas = async () => {
   }
 };
 
-// ... otras funciones de servicio de reservas que puedas tener
-
-export const descartarReserva = async (idReserva) => {
+/**
+ * Envía una reserva al docente para su confirmación (de EN_CURSO a PENDIENTE)
+ * @param {number} idReserva - ID de la reserva a enviar
+ * @returns {Promise<Object>} - Respuesta del servidor
+ */
+export const enviarReservaADocente = async (idReserva) => {
   try {
-    const response = await api.put(`/reserva/${idReserva}/descartar`);
+    // Reemplazar fetch por la instancia de api
+    const response = await api.put(`/reserva/${idReserva}/enviar-a-docente`);
     return response.data;
   } catch (error) {
     console.error(
-      `Error al descartar la reserva ${idReserva}:`,
+      '[reservaService] Error al enviar reserva a docente:',
       error.response?.data || error.message
     );
-    throw (
-      error.response?.data || {
-        error: 'Error de red o servidor',
-        details: error.message,
-      }
+    throw error.response?.data || error;
+  }
+};
+
+/**
+ * Cancela una reserva completamente, eliminándola y volviendo el examen a ACTIVO
+ * @param {number} idReserva - ID de la reserva a cancelar
+ * @returns {Promise<Object>} - Respuesta del servidor
+ */
+export const cancelarReservaCompleta = async (idReserva) => {
+  try {
+    // Reemplazar fetch por la instancia de api
+    const response = await api.delete(
+      `/reserva/${idReserva}/cancelar-completa`
     );
+    const data = response.data;
+
+    // Disparar evento global para actualizar componentes
+    window.dispatchEvent(
+      new CustomEvent('examenesActualizados', {
+        detail: {
+          accion: 'reserva_cancelada',
+          reservaId: idReserva,
+          examenId: data.examen_id,
+          timestamp: Date.now(),
+        },
+      })
+    );
+
+    return data;
+  } catch (error) {
+    console.error(
+      '[reservaService] Error al cancelar reserva:',
+      error.response?.data || error.message
+    );
+    throw error.response?.data || error;
+  }
+};
+
+/**
+ * Descarta una reserva (NO la elimina, solo cambia su estado)
+ * @param {number} idReserva - ID de la reserva a descartar
+ * @returns {Promise<Object>} - Respuesta del servidor
+ */
+export const descartarReservaService = async (idReserva) => {
+  try {
+    // Reemplazar fetch por la instancia de api
+    const response = await api.put(`/reserva/${idReserva}/descartar`);
+    const data = response.data;
+
+    // Disparar evento global para actualizar componentes
+    window.dispatchEvent(
+      new CustomEvent('examenesActualizados', {
+        detail: {
+          accion: 'reserva_descartada',
+          reservaId: idReserva,
+          examenId: data.examen_id,
+          timestamp: Date.now(),
+        },
+      })
+    );
+
+    return data;
+  } catch (error) {
+    console.error(
+      '[reservaService] Error al descartar reserva:',
+      error.response?.data || error.message
+    );
+    throw error.response?.data || error;
+  }
+};
+
+/**
+ * Crea una reserva en estado EN_CURSO (específicamente para drag & drop).
+ * @param {Object} payload - Datos de la reserva
+ * @returns {Promise<Object>} - Respuesta del servidor
+ */
+export const crearReservaEnCursoService = async (payload) => {
+  try {
+    console.log('Enviando solicitud de reserva directa:', payload);
+
+    // Usar la instancia de API configurada con los headers de autenticación
+    const response = await api.post('/reserva/crear-en-curso', payload);
+
+    const data = response.data;
+
+    // Disparar evento para actualizar componentes (importante mantener esto)
+    window.dispatchEvent(
+      new CustomEvent('reservaCreada', {
+        detail: {
+          accion: 'reserva_creada',
+          reserva: data,
+          examenId: payload.examen_id_examen,
+          timestamp: Date.now(),
+        },
+      })
+    );
+
+    console.log('Reserva creada exitosamente:', data);
+    return data;
+  } catch (error) {
+    console.error(
+      '[reservaService] Error al crear reserva en curso:',
+      error.response?.data || error.message
+    );
+    throw error.response?.data || error;
   }
 };

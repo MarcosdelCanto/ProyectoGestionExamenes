@@ -22,6 +22,14 @@ import { fetchAllSecciones } from '../services/seccionService';
 
 const ITEMS_PER_PAGE = 6; // Cambiado a 6 filas por página
 
+const normalizeText = (text) => {
+  if (!text) return '';
+  return text
+    .normalize('NFD') // Descomponer caracteres acentuados
+    .replace(/[\u0300-\u036f]/g, '') // Eliminar
+    .toLowerCase(); // Convertir a minúsculas
+};
+
 export default function ExamenesPage() {
   const [examenes, setExamenes] = useState([]);
   const [processedExamenes, setProcessedExamenes] = useState([]); // Estado para exámenes enriquecidos
@@ -459,20 +467,12 @@ export default function ExamenesPage() {
   const filteredExamenes = useMemo(() => {
     // Usar processedExamenes en lugar de examenes
     return processedExamenes.filter((examen) => {
-      // DEBUG: Muestra el examen actual y los filtros aplicados
-      // console.log(
-      //   `--- Filtrando examen ID: ${examen.ID_EXAMEN}, Nombre: ${examen.NOMBRE_EXAMEN} ---`
-      // );
-      // console.log('Filtros actuales:', JSON.stringify(filters));
-
       const matchesText =
         !filters.text ||
-        (examen.NOMBRE_EXAMEN && // Asegúrate que NOMBRE_EXAMEN exista
-          examen.NOMBRE_EXAMEN.toLowerCase().includes(
-            filters.text.toLowerCase()
+        (examen.NOMBRE_EXAMEN &&
+          normalizeText(examen.NOMBRE_EXAMEN).includes(
+            normalizeText(filters.text)
           ));
-
-      // console.log(`Examen: ${examen.NOMBRE_EXAMEN}, Filtro Texto: '${filters.text}', Coincide Texto: ${matchesText}`);
 
       // --- Filtro Escuela ---
       // Usar el ID derivado

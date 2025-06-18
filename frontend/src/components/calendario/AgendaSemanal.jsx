@@ -1,7 +1,9 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { format, startOfWeek } from 'date-fns';
+import { useDispatch } from 'react-redux'; // <-- AÑADIR ESTA LÍNEA
 import { es } from 'date-fns/locale';
 import { Modal } from 'react-bootstrap';
+import { toast } from 'react-toastify';
 
 // Componentes
 import SalaSelector from './SalaSelector';
@@ -17,7 +19,11 @@ import { useFilters } from '../../hooks/useFilters';
 import { useModals } from '../../hooks/useModals';
 
 // Servicios
-import { crearReservaParaExamenExistenteService } from '../../services/reservaService';
+import {
+  crearReservaParaExamenExistenteService,
+  crearReservaEnCursoService, // ← AGREGAR ESTA IMPORTACIÓN
+} from '../../services/reservaService';
+import { agregarReserva } from '../../store/reservasSlice'; // <-- IMPORTAR ACCIÓN DE REDUX
 
 // Estilos
 import './styles/AgendaSemanal.css';
@@ -35,13 +41,14 @@ export default function AgendaSemanal({
     setExamenes,
     modulos,
     reservas,
-    setReservas,
+    // setReservas,
     sedesDisponibles,
     edificiosDisponibles,
     isLoadingSalas,
     isLoadingExamenes,
     isLoadingModulos,
     isLoadingReservas,
+    loadExamenes,
   } = useAgendaData();
 
   const { fechas, fechaSeleccionada, handleDateChange, goToToday } =
@@ -67,6 +74,8 @@ export default function AgendaSemanal({
   const [isProcessingDrop, setIsProcessingDrop] = useState(false);
   const [lastProcessedDrop, setLastProcessedDrop] = useState(null);
 
+  const dispatch = useDispatch(); // <-- OBTENER DISPATCH
+
   // HOOK DE MODALES - Después de definir selectedSala
   const {
     showSalaFilterModal,
@@ -88,7 +97,7 @@ export default function AgendaSemanal({
     handleConfirmDelete,
     handleCloseReservaModal,
     handleShowReservaModal,
-  } = useModals(reservas, selectedSala, setReservas, setExamenes);
+  } = useModals(reservas, selectedSala, setExamenes);
 
   // FUNCIONES SIMPLIFICADAS
   const handleSelectSala = useCallback((sala) => {
@@ -202,9 +211,14 @@ export default function AgendaSemanal({
           modulosTexto: `Módulos ${modulo.ORDEN} - ${
             modulo.ORDEN + modulosNecesarios - 1
           }`,
-          examenCompleto: draggedExamen,
+          examenCompleto: draggedExamen, // ← Incluir examen completo con docentes
           moduloInicialOrden: modulo.ORDEN,
           cantidadModulosOriginal: modulosNecesarios,
+          // ← AGREGAR información de docentes si está disponible
+          docenteIds:
+            draggedExamen.DOCENTES_ASIGNADOS?.map((d) => d.ID_USUARIO) ||
+            draggedExamen.DOCENTE_IDS ||
+            [], // Array vacío si no hay docentes
         };
 
         handleShowReservaModal(modalData);
@@ -231,66 +245,112 @@ export default function AgendaSemanal({
     handleShowReservaModal,
   ]);
 
-  // FUNCIÓN PARA CREAR RESERVA
-  const handleCreateReserva = async (formDataPayload) => {
-    setLoadingReservaModal(true);
-    setModalError(null);
-    setModalSuccess(null);
+  // Efecto para procesar el drop directamente sin mostrar modal
+  useEffect(() => {
+    if (!draggedExamen || !dropTargetCell || isProcessingDrop) return;
 
-    const payloadFinal = {
-      ...formDataPayload,
-      modulos:
-        reservaModalData.modulosIds && reservaModalData.modulosIds.length > 0
-          ? reservaModalData.modulosIds
-          : formDataPayload.modulos,
-    };
+    const procesarDropDirecto = async () => {
+      try {
+        setIsProcessingDrop(true);
 
-    try {
-      const response =
-        await crearReservaParaExamenExistenteService(payloadFinal);
+        // Validar que tenemos un objeto módulo completo
+        if (!dropTargetCell.modulo || !dropTargetCell.modulo.ORDEN) {
+          console.error(
+            'Error: Datos incompletos en el módulo seleccionado',
+            dropTargetCell
+          );
+          toast.error('No se pudo determinar el módulo seleccionado');
+          onDropProcessed();
+          return;
+        }
 
-      if (reservaModalData) {
-        // Remover de exámenes pendientes
-        setExamenes((prev) =>
-          prev.filter(
-            (examen) => examen.ID_EXAMEN !== reservaModalData.examenId
-          )
+        // Extraer información de la celda donde se hizo drop
+        const { fecha, moduloId, salaId, modulo } = dropTargetCell;
+
+        // Determinar los módulos a utilizar (el módulo de drop y siguientes según requisitos del examen)
+        const modulosNecesarios = determinarModulosParaExamen(
+          draggedExamen,
+          modulo, // Usar el objeto módulo completo
+          modulos
         );
 
-        // Crear nueva reserva
-        const nuevaReserva = {
-          ID_RESERVA: response.data?.ID_RESERVA || Date.now(),
-          ID_SALA: reservaModalData.salaId,
-          FECHA_RESERVA: reservaModalData.fechaReserva,
-          ID_EXAMEN: reservaModalData.examenId,
-          MODULOS: payloadFinal.modulos.map((moduloId) => {
-            const moduloInfo = modulos.find((m) => m.ID_MODULO === moduloId);
-            return {
-              ID_MODULO: moduloId,
-              NOMBRE_MODULO:
-                moduloInfo?.NOMBRE_MODULO ||
-                `Modulo ${moduloInfo?.ORDEN || ''}`,
-            };
-          }),
-          Examen: {
-            ID_EXAMEN: reservaModalData.examenId,
-            NOMBRE_ASIGNATURA: reservaModalData.examenNombre,
-            CANTIDAD_MODULOS_EXAMEN: payloadFinal.modulos.length,
-          },
+        if (modulosNecesarios.length === 0) {
+          toast.error('No se pueden determinar los módulos para este examen');
+          onDropProcessed();
+          return;
+        }
+
+        // Preparar payload para la creación de la reserva
+        const payload = {
+          examen_id_examen: draggedExamen.ID_EXAMEN,
+          fecha_reserva: fecha,
+          sala_id_sala: salaId || selectedSala.ID_SALA,
+          modulos_ids: modulosNecesarios,
+          // Por ahora usamos un docente por defecto, luego lo haremos seleccionable
+          docente_ids: [1], // ID de docente por defecto, luego lo cambiaremos
         };
 
-        setReservas((prev) => [...prev, nuevaReserva]);
-      }
+        console.log('Creando reserva directamente con payload:', payload);
 
-      setModalSuccess(
-        response.message || 'Reserva creada exitosamente y programada.'
+        // Llamar al servicio para crear la reserva
+        const response = await crearReservaEnCursoService(payload);
+
+        toast.success('Examen programado exitosamente');
+
+        // Notificar que el drop se ha procesado (para limpiar estados)
+        onDropProcessed();
+      } catch (error) {
+        console.error('Error al crear reserva directa:', error);
+        toast.error(`Error al programar examen: ${error.message}`);
+        onDropProcessed();
+      } finally {
+        setIsProcessingDrop(false);
+      }
+    };
+
+    procesarDropDirecto();
+  }, [draggedExamen, dropTargetCell]);
+
+  // Función auxiliar para determinar los módulos contiguos necesarios
+  const determinarModulosParaExamen = (examen, modulo, todosLosModulos) => {
+    // Si no tenemos un módulo válido, retornar un array vacío
+    if (!modulo || !modulo.ORDEN) {
+      console.error(
+        'Error en determinarModulosParaExamen: módulo inválido',
+        modulo
       );
-      setTimeout(() => handleCloseReservaModal(), 2000);
-    } catch (err) {
-      setModalError(err.details || err.error || 'Error al crear la reserva.');
-    } finally {
-      setLoadingReservaModal(false);
+      return [];
     }
+
+    // Cantidad de módulos requerida por el examen
+    const cantidadModulos = examen.CANTIDAD_MODULOS_EXAMEN || 1;
+
+    // Encontrar todos los módulos del mismo día ordenados por ORDEN
+    const modulosDelDia = todosLosModulos.sort((a, b) => a.ORDEN - b.ORDEN);
+
+    // Encontrar el índice del módulo inicial
+    const indiceModuloInicial = modulosDelDia.findIndex(
+      (m) => m.ID_MODULO === modulo.ID_MODULO
+    );
+
+    if (indiceModuloInicial === -1) {
+      console.error(
+        'Error: No se encontró el módulo inicial en la lista de módulos'
+      );
+      return [];
+    }
+
+    // Obtener los módulos consecutivos necesarios
+    const modulosSeleccionados = [];
+    for (let i = 0; i < cantidadModulos; i++) {
+      const indiceActual = indiceModuloInicial + i;
+      if (indiceActual < modulosDelDia.length) {
+        modulosSeleccionados.push(modulosDelDia[indiceActual].ID_MODULO);
+      }
+    }
+
+    console.log('Módulos seleccionados:', modulosSeleccionados);
+    return modulosSeleccionados;
   };
 
   // FUNCIONES AUXILIARES
@@ -334,7 +394,7 @@ export default function AgendaSemanal({
       }
 
       const nuevaReserva = await response.json();
-      setReservas((prev) => [...prev, nuevaReserva]);
+      dispatch(agregarReserva(nuevaReserva)); // <-- USAR DISPATCH
       alert(
         `Reserva para ${selectedExamInternal?.NOMBRE_ASIGNATURA} CONFIRMADA!`
       );
@@ -349,7 +409,7 @@ export default function AgendaSemanal({
     modulosSeleccionados,
     selectedSala,
     modulos,
-    setReservas,
+    dispatch, // <-- AÑADIR DISPATCH COMO DEPENDENCIA
   ]);
 
   // IMPLEMENTAR: Función para manejar cambios de módulos
@@ -368,28 +428,30 @@ export default function AgendaSemanal({
       if (reservaAfectada) {
         console.log('📝 Actualizando reserva:', reservaAfectada.ID_RESERVA);
 
-        setReservas((prevReservas) =>
-          prevReservas.map((reserva) => {
-            if (reserva.ID_RESERVA === reservaAfectada.ID_RESERVA) {
-              const updatedReserva = {
-                ...reserva,
-                CANTIDAD_MODULOS_RESERVA: nuevaCantidadModulos,
-              };
+        // TODO: Esta lógica también debería despachar una acción a Redux
+        // Por ejemplo: dispatch(actualizarModulosReserva({ reservaId: reservaAfectada.ID_RESERVA, nuevaCantidadModulos }));
+        // setReservas((prevReservas) =>
+        //   prevReservas.map((reserva) => {
+        //     if (reserva.ID_RESERVA === reservaAfectada.ID_RESERVA) {
+        //       const updatedReserva = {
+        //         ...reserva,
+        //         CANTIDAD_MODULOS_RESERVA: nuevaCantidadModulos,
+        //       };
 
-              // Si tiene examen asociado, actualizarlo también
-              if (reserva.Examen) {
-                updatedReserva.Examen = {
-                  ...reserva.Examen,
-                  CANTIDAD_MODULOS_EXAMEN: nuevaCantidadModulos,
-                };
-              }
+        //       // Si tiene examen asociado, actualizarlo también
+        //       if (reserva.Examen) {
+        //         updatedReserva.Examen = {
+        //           ...reserva.Examen,
+        //           CANTIDAD_MODULOS_EXAMEN: nuevaCantidadModulos,
+        //         };
+        //       }
 
-              console.log('✅ Reserva actualizada:', updatedReserva);
-              return updatedReserva;
-            }
-            return reserva;
-          })
-        );
+        //       console.log('✅ Reserva actualizada:', updatedReserva);
+        //       return updatedReserva;
+        //     }
+        //     return reserva;
+        //   })
+        // );
 
         // TODO: Aquí deberías hacer una llamada al backend para persistir el cambio
         // updateReservaModulos(reservaAfectada.ID_RESERVA, nuevaCantidadModulos);
@@ -401,7 +463,7 @@ export default function AgendaSemanal({
         // Lógica para exámenes pendientes...
       }
     },
-    [reservas, setReservas, selectedExamInternal]
+    [reservas, dispatch, selectedExamInternal] // <-- ACTUALIZAR DEPENDENCIAS
   );
 
   // RENDERIZADO SIMPLIFICADO
@@ -421,7 +483,7 @@ export default function AgendaSemanal({
   }
 
   return (
-    <div className="agenda-semanal-container">
+    <div className="agenda-semanal">
       {/* CONTROLES SUPERIORES */}
       <div className="selectors-row mt-3">
         <div className="selector-container">
@@ -491,13 +553,19 @@ export default function AgendaSemanal({
                   reservas={reservas}
                   modulosSeleccionados={modulosSeleccionados}
                   onSelectModulo={handleSelectModulo}
-                  onModulosChange={handleModulosChange} // ← IMPLEMENTADO
+                  onModulosChange={handleModulosChange}
                   onRemoveExamen={eliminarExamen}
                   onDeleteReserva={handleShowDeleteModal}
                   onCheckConflict={() => {}} // ← Ya no se usa aquí, se maneja en el hook
                   draggedExamen={draggedExamen}
                   dropTargetCell={dropTargetCell}
-                  hoverTargetCell={hoverTargetCell} // ← AGREGAR ESTA LÍNEA
+                  hoverTargetCell={hoverTargetCell}
+                  // ← AGREGAR ESTAS NUEVAS PROPS
+                  // setReservas={setReservas}
+                  refreshExamenesDisponibles={() => {
+                    // Función para recargar exámenes disponibles
+                    loadExamenes();
+                  }}
                 />
                 {puedeConfirmar && (
                   <button
@@ -530,78 +598,6 @@ export default function AgendaSemanal({
         onSetSelectedEdificio={setSelectedEdificio}
         onAplicarFiltros={() => setShowSalaFilterModal(false)}
       />
-
-      {/* Modal de Reserva */}
-      {reservaModalData && (
-        <Modal
-          show={showReservaModal}
-          onHide={handleCloseReservaModal}
-          size="lg"
-          backdrop="static"
-        >
-          <Modal.Header closeButton>
-            <Modal.Title>Crear Reserva de Examen</Modal.Title>
-          </Modal.Header>
-          <Modal.Body>
-            <div className="mb-3 p-3 bg-light rounded">
-              <h6>Resumen del examen a programar:</h6>
-              <p className="mb-1">
-                <strong>Examen:</strong> {reservaModalData.examenNombre}
-              </p>
-              <p className="mb-1">
-                <strong>Sala:</strong> {reservaModalData.salaNombre}
-              </p>
-              <p className="mb-1">
-                <strong>Fecha:</strong>
-                {new Date(reservaModalData.fechaReserva).toLocaleDateString(
-                  'es-CL'
-                )}
-              </p>
-              <p className="mb-0">
-                <strong>Horario:</strong> {reservaModalData.modulosTexto}
-              </p>
-            </div>
-
-            {modalSuccess && (
-              <div className="alert alert-success" role="alert">
-                {modalSuccess}
-              </div>
-            )}
-            {modalError && (
-              <div className="alert alert-danger" role="alert">
-                {modalError}
-              </div>
-            )}
-
-            <ReservaForm
-              initialData={{
-                ID_EXAMEN: reservaModalData.examenId,
-                FECHA_RESERVA: reservaModalData.fechaReserva,
-                ID_SALA: reservaModalData.salaId,
-                MODULOS_IDS: reservaModalData.modulosIds,
-                EXAMEN_COMPLETO: reservaModalData.examenCompleto,
-                CANTIDAD_MODULOS_EXAMEN:
-                  reservaModalData.cantidadModulosOriginal,
-                MODULO_INICIAL_ORDEN: reservaModalData.moduloInicialOrden,
-              }}
-              onModulosChange={(nuevaCantidad, nuevosModulosIds) => {
-                setReservaModalData((prev) => ({
-                  ...prev,
-                  modulosIds: nuevosModulosIds,
-                  cantidadModulosOriginal: nuevaCantidad,
-                  modulosTexto: `Módulos ${prev.moduloInicialOrden} - ${prev.moduloInicialOrden + nuevaCantidad - 1}`,
-                }));
-              }}
-              modulosDisponibles={modulos}
-              onSubmit={handleCreateReserva}
-              onCancel={handleCloseReservaModal}
-              isLoadingExternamente={loadingReservaModal}
-              submitButtonText="Crear Reserva"
-              isEditMode={true}
-            />
-          </Modal.Body>
-        </Modal>
-      )}
 
       {/* Modal de Eliminación */}
       <Modal

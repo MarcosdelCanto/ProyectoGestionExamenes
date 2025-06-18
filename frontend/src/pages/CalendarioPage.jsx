@@ -14,7 +14,7 @@ import ExamenPostIt from '../components/calendario/ExamenPostIt';
 import './CalendarioPage.css';
 
 export function CalendarioPage() {
-  // ESTADOS ORIGINALES
+  // Estados existentes
   const [draggedExamen, setDraggedExamen] = useState(null);
   const [activeDraggableExamen, setActiveDraggableExamen] = useState(null);
   const [dropTargetCell, setDropTargetCell] = useState(null);
@@ -84,16 +84,6 @@ export function CalendarioPage() {
       mousePosition.y >= tableRect.top + 10 &&
       mousePosition.y <= tableRect.bottom - 10;
 
-    console.log('🎯 Verificación posición mouse:', {
-      mouseX: mousePosition.x,
-      mouseY: mousePosition.y,
-      tableLeft: tableRect.left,
-      tableRight: tableRect.right,
-      tableTop: tableRect.top,
-      tableBottom: tableRect.bottom,
-      isInside: isInside,
-    });
-
     return isInside;
   }, [mousePosition]);
 
@@ -132,39 +122,79 @@ export function CalendarioPage() {
     }
   };
 
-  // DRAG END
+  // Función para limpiar estados después de procesar el drop
+  const handleDropProcessed = () => {
+    console.log('Drop procesado correctamente, limpiando estados');
+    setDraggedExamen(null);
+    setDropTargetCell(null);
+    setHoverTargetCell(null);
+    setIsDragging(false); // ← Detener tracking
+  };
+
+  // Manejador de fin de arrastre
   const handleDragEnd = (event) => {
-    const { active, over } = event;
-
-    console.log('🏁 Drag end:', {
-      activeId: active?.id,
-      overId: over?.id,
-      activeData: active?.data?.current,
-      overData: over?.data?.current,
-      mouseInsideCalendar: isMouseInsideCalendar(),
-    });
-
-    // LIMPIAR estados de drag
     setActiveDraggableExamen(null);
     setIsDragging(false);
-    setHoverTargetCell(null);
 
-    // VERIFICAR que el drop es válido Y que el mouse está dentro del calendario
-    const isValidDrop =
-      over &&
-      active.data.current?.type === 'examen' &&
-      over.data.current?.type === 'celda-calendario' &&
-      isMouseInsideCalendar(); // ← VERIFICACIÓN ADICIONAL
+    const { active, over } = event;
 
-    if (isValidDrop) {
-      console.log('✅ Drop válido dentro del calendario - procesando');
-      setDraggedExamen(active.data.current.examen);
-      setDropTargetCell(over.data.current);
-    } else {
-      console.log('❌ Drop inválido o fuera del calendario');
-      setDraggedExamen(null);
-      setDropTargetCell(null);
+    if (!active || !over) {
+      console.log('Drop cancelado: No hay active o over');
+      return;
     }
+
+    const examDropData = active.data?.current?.examen;
+    const targetData = over.data?.current;
+
+    // Verificación más completa
+    if (!examDropData) {
+      console.error('Drop cancelado: No hay datos del examen');
+      return;
+    }
+
+    if (!targetData) {
+      console.error('Drop cancelado: No hay datos del objetivo');
+      return;
+    }
+
+    if (targetData.type !== 'celda-calendario') {
+      console.error(
+        'Drop cancelado: El objetivo no es una celda de calendario'
+      );
+      return;
+    }
+
+    // Verificar que tenemos un módulo válido
+    if (!targetData.modulo) {
+      console.error('Drop cancelado: No hay datos del módulo');
+      return;
+    }
+
+    // A partir de aquí, ya sabemos que tenemos todos los datos necesarios
+    const { fecha, moduloId, salaId, modulo } = targetData;
+
+    // Crear un objeto módulo completo si solo tenemos el ID
+    const moduloCompleto = modulo || {
+      ID_MODULO: moduloId,
+      ORDEN: targetData.orden || 0,
+    };
+
+    // Actualizar estados
+    setDraggedExamen(examDropData);
+    setDropTargetCell({
+      fecha,
+      moduloId,
+      salaId,
+      modulo: moduloCompleto,
+      cellId: over.id,
+    });
+
+    console.log('Drop procesado con éxito:', {
+      examen: examDropData.NOMBRE_EXAMEN,
+      fecha,
+      modulo: moduloCompleto,
+      salaId,
+    });
   };
 
   // DRAG CANCEL
@@ -175,14 +205,6 @@ export function CalendarioPage() {
     setHoverTargetCell(null);
     setIsDragging(false); // ← Detener tracking
     console.log('🚫 Drag cancelado');
-  };
-
-  // DROP PROCESSED
-  const handleDropProcessed = () => {
-    setDraggedExamen(null);
-    setDropTargetCell(null);
-    setHoverTargetCell(null);
-    setIsDragging(false); // ← Detener tracking
   };
 
   return (
