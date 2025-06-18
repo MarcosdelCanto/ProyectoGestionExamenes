@@ -5,6 +5,7 @@ import {
   enviarReservaADocente,
   cancelarReservaCompleta, // Usar esta en lugar de descartarReservaService
 } from '../../services/reservaService';
+import { toast } from 'react-toastify'; // <-- AÑADIR IMPORTACIÓN SI NO ESTÁ
 import { fetchAllDocentes } from '../../services/usuarioService';
 import './styles/PostIt.css';
 
@@ -180,7 +181,7 @@ export default function ExamenPostIt({
 
       if (!reservaId) {
         console.error('No se encontró ID de reserva');
-        alert('Error: No se puede procesar la reserva');
+        toast.error('Error: No se puede procesar la reserva'); // <-- CAMBIO AQUÍ
         return;
       }
 
@@ -203,10 +204,10 @@ export default function ExamenPostIt({
         });
       }
 
-      alert('✅ Reserva enviada a docente para confirmación');
+      toast.success('✅ Reserva enviada a docente para confirmación'); // <-- CAMBIO AQUÍ
     } catch (error) {
       console.error('[ExamenPostIt] Error al enviar reserva a docente:', error);
-      alert(`❌ Error: ${error.message}`);
+      toast.error(`❌ Error: ${error.message}`); // <-- CAMBIO AQUÍ
     } finally {
       setIsProcessingAction(false);
     }
@@ -243,7 +244,7 @@ export default function ExamenPostIt({
 
       if (!reservaId) {
         console.error('No se encontró ID de reserva');
-        alert('Error: No se puede procesar la reserva');
+        toast.error('Error: No se puede procesar la reserva'); // <-- CAMBIO AQUÍ
         return;
       }
 
@@ -260,9 +261,10 @@ export default function ExamenPostIt({
           examen_id: response.examen_id,
         });
       }
+      toast.success('Reserva cancelada y examen reactivado'); // <-- AÑADIR TOAST DE ÉXITO
     } catch (error) {
       console.error('[ExamenPostIt] Error al cancelar reserva:', error);
-      alert(`❌ Error: ${error.message || 'Error desconocido'}`);
+      toast.error(`❌ Error: ${error.message || 'Error desconocido'}`); // <-- CAMBIO AQUÍ
     } finally {
       setIsProcessingAction(false);
     }
@@ -416,10 +418,8 @@ export default function ExamenPostIt({
 
   const getStyles = () => ({
     backgroundColor: getPostItColor(),
-    height: isPreview
-      ? `${60 + (moduloscountState - 1) * 20}px`
-      : `${40 * moduloscountState}px`,
-    width: isPreview ? '120px' : '100%',
+    height: isPreview ? '100%' : `120px`, // Tomar 100% de la altura del padre en preview
+    width: isPreview ? '100%' : '100%', // Tomar 100% del ancho del padre en preview
     zIndex: isResizing ? 100 : isPreview ? 1 : 50,
     ...style,
   });

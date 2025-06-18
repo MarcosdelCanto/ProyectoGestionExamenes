@@ -2,6 +2,7 @@ import { useState, useCallback } from 'react';
 import { format } from 'date-fns';
 import { deleteReserva } from '../services/reservaService';
 import { useDispatch } from 'react-redux';
+import { toast } from 'react-toastify'; // <-- AÑADIR IMPORTACIÓN
 import { eliminarReserva } from '../store/reservasSlice'; // Asumiendo que esta es tu acción para eliminar
 
 export function useModals(
@@ -56,9 +57,13 @@ export function useModals(
           setReservaToDelete(reservaCompleta);
           setShowDeleteModal(true);
         } else if (estadoActual === 'DESCARTADO') {
-          alert('Esta reserva ya ha sido descartada y no puede eliminarse.');
+          toast.warn(
+            'Esta reserva ya ha sido descartada y no puede eliminarse.'
+          ); // <-- CAMBIO AQUÍ
         } else {
-          alert(`La reserva en estado "${estadoActual}" no puede eliminarse.`);
+          toast.error(
+            `La reserva en estado "${estadoActual}" no puede eliminarse.`
+          ); // <-- CAMBIO AQUÍ
         }
       } else {
         // Si no encuentra la reserva completa, verificar si es una reserva válida
@@ -75,7 +80,7 @@ export function useModals(
             })),
           });
         }
-        alert('Error: No se pudo encontrar la reserva para eliminar.');
+        toast.error('Error: No se pudo encontrar la reserva para eliminar.'); // <-- CAMBIO AQUÍ
       }
     },
     [reservas, selectedSala]
@@ -108,12 +113,14 @@ export function useModals(
       }
 
       handleCloseDeleteModal();
-      alert(
+      toast.success(
+        // <-- CAMBIO AQUÍ
         'Reserva eliminada exitosamente. El examen ha vuelto a la lista de pendientes.'
       );
     } catch (error) {
       console.error('Error al eliminar reserva:', error);
-      alert(
+      toast.error(
+        // <-- CAMBIO AQUÍ
         `Error al eliminar la reserva: ${error.message || 'Error desconocido'}`
       );
     } finally {

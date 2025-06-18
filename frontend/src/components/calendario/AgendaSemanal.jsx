@@ -196,9 +196,7 @@ export default function AgendaSemanal({
           );
 
           if (yaReservado) {
-            mensajesConflicto.push(
-              `Módulo ${ordenActual} (${moduloObj.NOMBRE_MODULO}) ya está reservado.`
-            );
+            mensajesConflicto.push(`Módulo ${ordenActual} ya está reservado.`);
             hayConflicto = true;
           }
         }
@@ -327,14 +325,15 @@ export default function AgendaSemanal({
 
       const nuevaReserva = await response.json();
       dispatch(agregarReserva(nuevaReserva)); // <-- USAR DISPATCH
-      alert(
+      toast.success(
+        // <-- CAMBIO AQUÍ
         `Reserva para ${selectedExamInternal?.NOMBRE_ASIGNATURA} CONFIRMADA!`
       );
       setSelectedExamInternal(null);
       setModulosSeleccionados([]);
     } catch (error) {
       console.error('Error al confirmar reserva:', error);
-      alert(`Error al confirmar reserva: ${error.message}`);
+      toast.error(`Error al confirmar reserva: ${error.message}`); // <-- CAMBIO AQUÍ
     }
   }, [
     selectedExamInternal,

@@ -14,17 +14,29 @@
   user-select: none;
   transition: all 0.2s ease;
 }
-
-/* === ESTADOS PRINCIPALES === */
+/* Estilo base para el post-it cuando está en el selector (preview) */
 .examen-post-it.is-preview {
-  position: relative;
+  position: relative; /* Para que el contenido interno se posicione correctamente */
   padding: 4px;
   cursor: grab;
-  height: 120px !important; /* Altura fija para preview */
-  min-height: 120px !important;
-  max-height: 120px !important;
+  width: 100%; /* Tomará el ancho del wrapper en ExamenSelector */
+  height: 100%; /* Tomará la altura del wrapper en ExamenSelector */
+  /* Las reglas de altura fija que estaban aquí (120px !important) se eliminaron
+     porque el tamaño ahora lo dicta el wrapper y el height: 100% del post-it */
 }
 
+/* Anular efecto hover del calendario cuando el post-it está en el selector (preview) */
+.examen-post-it.is-preview:hover {
+  background-color: inherit; /* O el color de fondo base del post-it si es diferente */
+}
+
+/* Asegurar que data-modulos no afecte la altura del post-it en el selector */
+.examen-post-it.is-preview[data-modulos] {
+  height: 100% !important; /* Debe tomar la altura del wrapper */
+  min-height: auto !important; /* Resetear min-height si no es necesario */
+}
+
+/* Estilo base para el post-it cuando está colocado en el calendario */
 .examen-post-it.is-placed {
   position: absolute;
   padding: 4px;
@@ -32,6 +44,10 @@
   left: 0;
   right: 0;
   /* Altura dinámica basada en módulos */
+  width: 100%; /* Ocupa todo el ancho de la celda */
+  z-index: 50; /* Un z-index base para los post-its colocados */
+  transition: height 0.2s ease; /* Transición para el cambio de altura */
+  overflow: visible; /* Permitir que el resize handle sea visible */
 }
 
 /* === ALTURAS DINÁMICAS SOLO PARA EXÁMENES COLOCADOS === */
@@ -77,6 +93,10 @@
   transform: rotate(3deg);
   box-shadow: 0 8px 16px rgba(0, 0, 0, 0.3);
   z-index: 1000;
+  /* Cuando se arrastra un post-it que estaba colocado */
+}
+.examen-post-it.is-placed.is-dragging {
+  z-index: 800 !important; /* Asegurar que esté por encima de otros post-its colocados */
 }
 
 .examen-post-it.is-resizing {
@@ -85,15 +105,18 @@
   border: 2px solid #007bff;
   transition: none;
 }
+.examen-post-it.is-placed.is-resizing {
+  z-index: 500 !important; /* Asegurar que esté por encima durante el resize */
+}
 
 /* === CONTENIDO === */
 .examen-content {
   flex: 1;
   display: flex;
   flex-direction: column;
-  height: calc(100% - 12px); /* ← Restar altura del resize handle */
   position: relative;
   padding-bottom: 0; /* ← Remover padding bottom */
+  /* La altura será determinada por flex: 1 y el espacio disponible */
 }
 
 .examen-header {
@@ -173,17 +196,6 @@
   background: #007bff !important;
   color: white !important;
   border-top-color: #0056b3 !important;
-}
-
-/* === ASEGURAR QUE EL POSTIT PERMITA EL RESIZE === */
-.examen-post-it.is-placed {
-  position: absolute;
-  padding: 4px;
-  top: 0;
-  left: 0;
-  right: 0;
-  /* Altura dinámica basada en módulos */
-  overflow: visible; /* ← Permitir que el resize handle sea visible */
 }
 
 /* Estilos para los botones de acción */

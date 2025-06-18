@@ -7,6 +7,8 @@ import {
 } from 'react-router-dom';
 import { DndProvider } from 'react-dnd';
 import { HTML5Backend } from 'react-dnd-html5-backend';
+import { ToastContainer } from 'react-toastify'; // <-- IMPORTAR ToastContainer
+import 'react-toastify/dist/ReactToastify.css'; // <-- IMPORTAR ESTILOS CSS
 
 // Tus Páginas
 import Login from './pages/Login';
@@ -36,106 +38,131 @@ import './index.css'; // Si tus estilos globales principales están referenciado
 
 function App() {
   return (
-    // <BrowserRouter> SE ELIMINA DE AQUÍ
-    <DndProvider backend={HTML5Backend}>
-      <Routes>
-        {/* Ruta pública de login */}
-        <Route path="/login" element={<Login />} />
-        <Route path="/consulta-examenes" element={<ConsultaExamenes />} />
+    <>
+      {' '}
+      {/* Envuelve todo en un Fragment o un div si prefieres */}
+      <DndProvider backend={HTML5Backend}>
+        <Routes>
+          {/* Ruta pública de login */}
+          <Route path="/login" element={<Login />} />
+          <Route path="/consulta-examenes" element={<ConsultaExamenes />} />
 
-        {/* Página de acceso no autorizado */}
-        <Route path="/unauthorized" element={<UnauthorizedPage />} />
+          {/* Página de acceso no autorizado */}
+          <Route path="/unauthorized" element={<UnauthorizedPage />} />
 
-        {/* Ruta pública de inicio */}
-        <Route path="/" element={<HomePage />} />
+          {/* Ruta pública de inicio */}
+          <Route path="/" element={<HomePage />} />
 
-        {/* Ruta para que el alumno vea sus reservas  CONFIRMADOs */}
-        {/* Rutas protegidas por permisos específicos */}
-        <Route
-          element={<PrivateRoute requiredPermissions={['VIEW_CALENDARIO']} />}
-        >
-          <Route path="/calendario" element={<CalendarioPage />} />
-        </Route>
-
-        {/* Ruta para que el docente vea sus reservas pendientes */}
-        {/* Usando el nombre de permiso que definimos en la BD */}
-        <Route
-          element={
-            <PrivateRoute
-              requiredPermissions={['DOCENTE_VIEW_RESERVAS_PENDIENTES']}
-            />
-          }
-        >
+          {/* Ruta para que el alumno vea sus reservas  CONFIRMADOs */}
+          {/* Rutas protegidas por permisos específicos */}
           <Route
-            path="/reserva/docente/pendientes"
-            element={<DocenteReservasPage />}
-          />
-        </Route>
+            element={<PrivateRoute requiredPermissions={['VIEW_CALENDARIO']} />}
+          >
+            <Route path="/calendario" element={<CalendarioPage />} />
+          </Route>
 
-        <Route element={<PrivateRoute />}>
-          <Route path="/mis-reservas" element={<MisReservasAsignadasPage />} />
-        </Route>
+          {/* Ruta para que el docente vea sus reservas pendientes */}
+          {/* Usando el nombre de permiso que definimos en la BD */}
+          <Route
+            element={
+              <PrivateRoute
+                requiredPermissions={['DOCENTE_VIEW_RESERVAS_PENDIENTES']}
+              />
+            }
+          >
+            <Route
+              path="/reserva/docente/pendientes"
+              element={<DocenteReservasPage />}
+            />
+          </Route>
 
-        {/* Ruta para crear reservas */}
-        {/* Usando el nombre de permiso que definimos en la BD */}
-        <Route
-          element={
-            <PrivateRoute requiredPermissions={['CREATE_RESERVAS_EXAMEN']} />
-          }
-        >
-          <Route path="/reservas/crear" element={<CrearReservaPage />} />
-        </Route>
+          <Route element={<PrivateRoute />}>
+            <Route
+              path="/mis-reservas"
+              element={<MisReservasAsignadasPage />}
+            />
+          </Route>
 
-        <Route
-          element={<PrivateRoute requiredPermissions={['VIEW_EXAMENES']} />}
-        >
-          <Route path="/examen" element={<ExamenesPage />} />
-        </Route>
+          {/* Ruta para crear reservas */}
+          {/* Usando el nombre de permiso que definimos en la BD */}
+          <Route
+            element={
+              <PrivateRoute requiredPermissions={['CREATE_RESERVAS_EXAMEN']} />
+            }
+          >
+            <Route path="/reservas/crear" element={<CrearReservaPage />} />
+          </Route>
 
-        <Route element={<PrivateRoute requiredPermissions={['VIEW_SALAS']} />}>
-          <Route path="/salas" element={<SalasPage />} />
-        </Route>
+          <Route
+            element={<PrivateRoute requiredPermissions={['VIEW_EXAMENES']} />}
+          >
+            <Route path="/examen" element={<ExamenesPage />} />
+          </Route>
 
-        <Route
-          element={<PrivateRoute requiredPermissions={['VIEW_ASIGNATURAS']} />}
-        >
-          <Route path="/asignaturas" element={<AsignaturasPage />} />
-        </Route>
+          <Route
+            element={<PrivateRoute requiredPermissions={['VIEW_SALAS']} />}
+          >
+            <Route path="/salas" element={<SalasPage />} />
+          </Route>
 
-        <Route
-          element={<PrivateRoute requiredPermissions={['VIEW_MODULOS']} />}
-        >
-          <Route path="/modulos" element={<ModulosPage />} />
-        </Route>
+          <Route
+            element={
+              <PrivateRoute requiredPermissions={['VIEW_ASIGNATURAS']} />
+            }
+          >
+            <Route path="/asignaturas" element={<AsignaturasPage />} />
+          </Route>
 
-        <Route
-          element={<PrivateRoute requiredPermissions={['VIEW_USUARIOS']} />}
-        >
-          <Route path="/usuarios" element={<UsuariosPage />} />
-        </Route>
+          <Route
+            element={<PrivateRoute requiredPermissions={['VIEW_MODULOS']} />}
+          >
+            <Route path="/modulos" element={<ModulosPage />} />
+          </Route>
 
-        <Route
-          element={<PrivateRoute requiredPermissions={['VIEW_CARGA_DATOS']} />}
-        >
-          <Route path="/carga-datos" element={<CargaDatosPage />} />
-        </Route>
+          <Route
+            element={<PrivateRoute requiredPermissions={['VIEW_USUARIOS']} />}
+          >
+            <Route path="/usuarios" element={<UsuariosPage />} />
+          </Route>
 
-        <Route element={<PrivateRoute requiredPermissions={['VIEW_ROLES']} />}>
-          <Route path="/roles" element={<RolesPage />} />
-        </Route>
+          <Route
+            element={
+              <PrivateRoute requiredPermissions={['VIEW_CARGA_DATOS']} />
+            }
+          >
+            <Route path="/carga-datos" element={<CargaDatosPage />} />
+          </Route>
 
-        <Route
-          element={<PrivateRoute requiredPermissions={['VIEW_REPORTES']} />}
-        >
-          <Route path="/reportes" element={<ReportesPage />} />
-        </Route>
+          <Route
+            element={<PrivateRoute requiredPermissions={['VIEW_ROLES']} />}
+          >
+            <Route path="/roles" element={<RolesPage />} />
+          </Route>
 
-        {/* Si tienes otras rutas, asegúrate de que estén aquí */}
-      </Routes>
-      <ScrollRestoration />
-      {/* ScrollRestoration ahora funcionará correctamente */}
-    </DndProvider>
-    // </BrowserRouter> SE ELIMINA DE AQUÍ
+          <Route
+            element={<PrivateRoute requiredPermissions={['VIEW_REPORTES']} />}
+          >
+            <Route path="/reportes" element={<ReportesPage />} />
+          </Route>
+
+          {/* Si tienes otras rutas, asegúrate de que estén aquí */}
+        </Routes>
+        <ScrollRestoration />
+        {/* ScrollRestoration ahora funcionará correctamente */}
+      </DndProvider>
+      <ToastContainer
+        position="top-right"
+        autoClose={5000} // Cierra automáticamente después de 5 segundos
+        hideProgressBar={false}
+        newestOnTop={false}
+        closeOnClick
+        rtl={false}
+        pauseOnFocusLoss
+        draggable
+        pauseOnHover
+        theme="colored" // Puedes usar "light", "dark", o "colored"
+      />
+    </>
   );
 }
 
