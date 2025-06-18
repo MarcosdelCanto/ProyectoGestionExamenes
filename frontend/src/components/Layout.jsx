@@ -115,13 +115,23 @@ export default function Layout({ children }) {
   }
 
   return (
-    <div className="d-flex flex-column w-100" style={{ minHeight: '100vh' }}>
+    <div
+      className="d-flex flex-column w-100"
+      style={{ height: '100vh', overflow: 'hidden' }} // 1. Altura estricta y ocultar desbordamiento
+    >
       <div
         className={`sidebar-overlay ${!isSidebarMinimized ? 'show' : ''}`}
         onClick={handleOverlayClick}
       ></div>
 
-      <main className="flex-grow-1 bg-light overflow-auto app-main content-shifted-for-minimized-sidebar">
+      <main
+        className="d-flex flex-column flex-grow-1 bg-light app-main content-shifted-for-minimized-sidebar" // 2. Asegurar que es flex column
+        style={{
+          overflow: 'hidden', // 3. Evitar que <main> muestre su propio scroll
+          position: 'relative', // Para contexto de posicionamiento si es necesario
+          minHeight: 0, // 4. Crucial para que flex-grow-1 funcione bien con contenido interno
+        }}
+      >
         {children}
       </main>
 

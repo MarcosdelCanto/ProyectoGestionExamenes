@@ -133,118 +133,6 @@ export default function AgendaSemanal({
     [selectedExamInternal]
   );
 
-  // LÓGICA DE DRAG & DROP SIMPLIFICADA
-  useEffect(() => {
-    if (!draggedExamen || !dropTargetCell || !selectedSala) return;
-
-    const dropId = `${draggedExamen.ID_EXAMEN}-${dropTargetCell.fecha}-${dropTargetCell.modulo.ORDEN}`;
-    if (isProcessingDrop || lastProcessedDrop === dropId) return;
-
-    const procesarDrop = async () => {
-      setIsProcessingDrop(true);
-      setLastProcessedDrop(dropId);
-
-      try {
-        const { fecha, modulo } = dropTargetCell;
-        const modulosNecesarios = draggedExamen.CANTIDAD_MODULOS_EXAMEN;
-
-        if (!modulosNecesarios || modulosNecesarios <= 0) {
-          alert('Error: El examen no tiene una cantidad válida de módulos.');
-          return;
-        }
-
-        // Verificar conflictos básicos
-        let hayConflicto = false;
-        const conflictos = [];
-
-        for (let i = 0; i < modulosNecesarios; i++) {
-          const ordenActual = modulo.ORDEN + i;
-          const moduloExiste = modulos.some((m) => m.ORDEN === ordenActual);
-
-          if (!moduloExiste) {
-            conflictos.push(`Módulo ${ordenActual} no existe`);
-            hayConflicto = true;
-            continue;
-          }
-
-          // Verificar si ya está reservado
-          const yaReservado = reservas.some(
-            (r) =>
-              r.ID_SALA === selectedSala.ID_SALA &&
-              format(new Date(r.FECHA_RESERVA), 'yyyy-MM-dd') === fecha &&
-              r.MODULOS?.some(
-                (m) =>
-                  modulos.find((mod) => mod.ID_MODULO === m.ID_MODULO)
-                    ?.ORDEN === ordenActual
-              )
-          );
-
-          if (yaReservado) {
-            conflictos.push(`Módulo ${ordenActual} ya está reservado`);
-            hayConflicto = true;
-          }
-        }
-
-        if (hayConflicto) {
-          alert(`No se puede crear la reserva:\n${conflictos.join('\n')}`);
-          return;
-        }
-
-        // Preparar datos del modal
-        const modulosParaReserva = [];
-        for (let i = 0; i < modulosNecesarios; i++) {
-          const ordenActual = modulo.ORDEN + i;
-          const moduloObj = modulos.find((m) => m.ORDEN === ordenActual);
-          if (moduloObj) {
-            modulosParaReserva.push(moduloObj.ID_MODULO);
-          }
-        }
-
-        const modalData = {
-          examenId: draggedExamen.ID_EXAMEN,
-          fechaReserva: fecha,
-          salaId: selectedSala.ID_SALA,
-          modulosIds: modulosParaReserva,
-          examenNombre:
-            draggedExamen.NOMBRE_ASIGNATURA || draggedExamen.NOMBRE_EXAMEN,
-          salaNombre: selectedSala.NOMBRE_SALA,
-          modulosTexto: `Módulos ${modulo.ORDEN} - ${
-            modulo.ORDEN + modulosNecesarios - 1
-          }`,
-          examenCompleto: draggedExamen, // ← Incluir examen completo con docentes
-          moduloInicialOrden: modulo.ORDEN,
-          cantidadModulosOriginal: modulosNecesarios,
-          // ← AGREGAR información de docentes si está disponible
-          docenteIds:
-            draggedExamen.DOCENTES_ASIGNADOS?.map((d) => d.ID_USUARIO) ||
-            draggedExamen.DOCENTE_IDS ||
-            [], // Array vacío si no hay docentes
-        };
-
-        handleShowReservaModal(modalData);
-      } catch (error) {
-        console.error('Error procesando drop:', error);
-        alert('Error al procesar el examen. Inténtalo de nuevo.');
-      } finally {
-        setIsProcessingDrop(false);
-        if (onDropProcessed) onDropProcessed();
-      }
-    };
-
-    procesarDrop();
-  }, [
-    draggedExamen?.ID_EXAMEN,
-    dropTargetCell?.fecha,
-    dropTargetCell?.modulo?.ORDEN,
-    selectedSala?.ID_SALA,
-    isProcessingDrop,
-    lastProcessedDrop,
-    modulos,
-    reservas,
-    onDropProcessed,
-    handleShowReservaModal,
-  ]);
-
   // Efecto para procesar el drop directamente sin mostrar modal
   useEffect(() => {
     if (!draggedExamen || !dropTargetCell || isProcessingDrop) return;
@@ -267,25 +155,69 @@ export default function AgendaSemanal({
         // Extraer información de la celda donde se hizo drop
         const { fecha, moduloId, salaId, modulo } = dropTargetCell;
 
-        // Determinar los módulos a utilizar (el módulo de drop y siguientes según requisitos del examen)
-        const modulosNecesarios = determinarModulosParaExamen(
+        // Determinar los IDs de los módulos a utilizar
+        const modulosIdsParaReserva = determinarModulosParaExamen(
           draggedExamen,
           modulo, // Usar el objeto módulo completo
           modulos
         );
 
-        if (modulosNecesarios.length === 0) {
-          toast.error('No se pueden determinar los módulos para este examen');
+        if (modulosIdsParaReserva.length === 0) {
+          toast.error(
+            'No se pudieron determinar los módulos para este examen.'
+          );
           onDropProcessed();
           return;
         }
 
+        // --- INICIO DE LÓGICA DE DETECCIÓN DE CONFLICTOS ---
+        let hayConflicto = false;
+        const mensajesConflicto = [];
+
+        for (const moduloIdAUsar of modulosIdsParaReserva) {
+          const moduloObj = modulos.find((m) => m.ID_MODULO === moduloIdAUsar);
+          if (!moduloObj) {
+            mensajesConflicto.push(`Módulo con ID ${moduloIdAUsar} no existe.`);
+            hayConflicto = true;
+            continue;
+          }
+          const ordenActual = moduloObj.ORDEN;
+
+          const yaReservado = reservas.some(
+            (r) =>
+              r.ID_SALA === (salaId || selectedSala.ID_SALA) &&
+              format(new Date(r.FECHA_RESERVA), 'yyyy-MM-dd') === fecha &&
+              r.MODULOS?.some(
+                (mReserva) =>
+                  modulos.find(
+                    (modGlobal) => modGlobal.ID_MODULO === mReserva.ID_MODULO
+                  )?.ORDEN === ordenActual
+              )
+          );
+
+          if (yaReservado) {
+            mensajesConflicto.push(
+              `Módulo ${ordenActual} (${moduloObj.NOMBRE_MODULO}) ya está reservado.`
+            );
+            hayConflicto = true;
+          }
+        }
+
+        if (hayConflicto) {
+          toast.error(
+            `No se puede crear la reserva:\n${mensajesConflicto.join('\n')}`
+          );
+          onDropProcessed(); // Limpiar estados de drag
+          setIsProcessingDrop(false); // Asegurar que se resetea el estado de procesamiento
+          return; // Detener la ejecución aquí
+        }
+        // --- FIN DE LÓGICA DE DETECCIÓN DE CONFLICTOS ---
         // Preparar payload para la creación de la reserva
         const payload = {
           examen_id_examen: draggedExamen.ID_EXAMEN,
           fecha_reserva: fecha,
           sala_id_sala: salaId || selectedSala.ID_SALA,
-          modulos_ids: modulosNecesarios,
+          modulos_ids: modulosIdsParaReserva,
           // Por ahora usamos un docente por defecto, luego lo haremos seleccionable
           docente_ids: [1], // ID de docente por defecto, luego lo cambiaremos
         };
