@@ -74,24 +74,16 @@ const reservasSlice = createSlice({
     // Nueva acción para procesar actualizaciones desde WebSockets
     procesarActualizacionReservaSocket: (state, action) => {
       const reservaActualizada = action.payload;
-      // Reestructurar para anidar el objeto Examen
-      // Asumimos que el payload del socket tiene los campos del examen en el nivel superior
-      const reservaConExamenAnidado = {
-        ...reservaActualizada, // Mantiene todos los campos de la reserva
-        Examen: {
-          ID_EXAMEN: reservaActualizada.ID_EXAMEN,
-          NOMBRE_EXAMEN: reservaActualizada.NOMBRE_EXAMEN,
-          CANTIDAD_MODULOS_EXAMEN: reservaActualizada.CANTIDAD_MODULOS_EXAMEN,
-          NOMBRE_ASIGNATURA: reservaActualizada.NOMBRE_ASIGNATURA,
-        },
-      };
+      // El payload del socket (reservaActualizada) ya debería tener los campos del examen
+      // en el nivel superior (ej. ID_EXAMEN, NOMBRE_EXAMEN) gracias a emitReservaActualizada del backend.
+      // No es necesario anidar 'Examen' aquí; eso lo hará procesarReservaParaFrontend.
 
       const indice = state.lista.findIndex(
-        (r) => r.ID_RESERVA === reservaConExamenAnidado.ID_RESERVA
+        (r) => r.ID_RESERVA === reservaActualizada.ID_RESERVA
       );
       if (indice !== -1) {
         // Reemplazar la reserva existente con la actualizada del socket
-        state.lista[indice] = reservaConExamenAnidado;
+        state.lista[indice] = reservaActualizada; // Guardar la reserva "plana" del socket
         console.log(
           `[reservasSlice] Reserva ${reservaActualizada.ID_RESERVA} actualizada desde socket.`
         );

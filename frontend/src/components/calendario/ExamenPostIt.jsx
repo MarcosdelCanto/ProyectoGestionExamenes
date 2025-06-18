@@ -66,6 +66,19 @@ export default function ExamenPostIt({
     }
   }, [moduloscount, moduloscountState]);
 
+  // Log para depurar la prop examen
+  useEffect(() => {
+    // Solo loguear para post-its reales en el calendario y no para vistas previas de arrastre
+    if (!isPreview && !isDragOverlay && examen) {
+      console.log(
+        '[ExamenPostIt] Prop examen recibida/actualizada:',
+        JSON.parse(JSON.stringify(examen)), // Loguear una copia para ver el estado actual
+        'Reserva Asociada (estado confirmación):',
+        examenAsignadoCompleto?.reservaCompleta?.ESTADO_CONFIRMACION_DOCENTE
+      );
+    }
+  }, [examen, examenAsignadoCompleto, isPreview, isDragOverlay]);
+
   // RESIZE: Solo si NO es preview, NO es overlay y NO está siendo arrastrado
   const canResize = !isPreview && !isDragOverlay && !isBeingDragged;
 
