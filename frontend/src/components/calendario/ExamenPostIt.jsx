@@ -418,7 +418,7 @@ export default function ExamenPostIt({
 
   const getStyles = () => ({
     backgroundColor: getPostItColor(),
-    height: isPreview ? '100%' : `120px`, // Tomar 100% de la altura del padre en preview
+    height: isPreview ? '100%' : `${40 * moduloscountState}px`, // Tomar 100% de la altura del padre en preview
     width: isPreview ? '100%' : '100%', // Tomar 100% del ancho del padre en preview
     zIndex: isResizing ? 100 : isPreview ? 1 : 50,
     ...style,

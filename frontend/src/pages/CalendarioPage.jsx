@@ -20,6 +20,7 @@ export function CalendarioPage() {
   const [dropTargetCell, setDropTargetCell] = useState(null);
   const [hoverTargetCell, setHoverTargetCell] = useState(null);
 
+  const [dragOverlayStyle, setDragOverlayStyle] = useState({}); // Estado para el estilo del overlay
   // NUEVO: Tracking de posición del mouse
   const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
   const [isDragging, setIsDragging] = useState(false);
@@ -63,6 +64,27 @@ export function CalendarioPage() {
     if (examenData.type === 'examen' && examenData.examen) {
       console.log('✅ Examen encontrado para drag:', examenData.examen);
       setActiveDraggableExamen(examenData.examen);
+
+      // Calcular el estilo para el DragOverlay
+      let cellWidth = 120; // Ancho por defecto o fallback
+      const firstCalendarCell = document.querySelector(
+        '.calendar-table td.calendar-cell:not(.orden-col):not(.horario-col)'
+      );
+      if (firstCalendarCell) {
+        cellWidth = firstCalendarCell.offsetWidth;
+      }
+
+      const modulosCount = examenData.examen.CANTIDAD_MODULOS_EXAMEN || 3;
+      const overlayHeight = modulosCount * 40; // 40px por módulo
+
+      setDragOverlayStyle({
+        width: `${cellWidth}px`,
+        height: `${overlayHeight}px`,
+        transform: 'rotate(3deg)', // Rotación más sutil
+        boxShadow: '0 6px 12px rgba(0,0,0,0.25)', // Sombra más sutil
+        opacity: 0.9, // Un poco más opaco para mejor visibilidad
+      });
+
       setIsDragging(true); // ← Activar tracking del mouse
     }
   };
@@ -128,6 +150,7 @@ export function CalendarioPage() {
     setDraggedExamen(null);
     setDropTargetCell(null);
     setHoverTargetCell(null);
+    setDragOverlayStyle({}); // Limpiar estilo del overlay
     setIsDragging(false); // ← Detener tracking
   };
 
@@ -203,6 +226,7 @@ export function CalendarioPage() {
     setDraggedExamen(null);
     setDropTargetCell(null);
     setHoverTargetCell(null);
+    setDragOverlayStyle({}); // Limpiar estilo del overlay
     setIsDragging(false); // ← Detener tracking
     console.log('🚫 Drag cancelado');
   };
@@ -286,10 +310,7 @@ export function CalendarioPage() {
                 moduloscount={
                   activeDraggableExamen.CANTIDAD_MODULOS_EXAMEN || 3
                 }
-                style={{
-                  transform: 'rotate(5deg)',
-                  boxShadow: '0 8px 16px rgba(0,0,0,0.3)',
-                }}
+                style={dragOverlayStyle} // Usar el estilo calculado
               />
             ) : null}
           </DragOverlay>
