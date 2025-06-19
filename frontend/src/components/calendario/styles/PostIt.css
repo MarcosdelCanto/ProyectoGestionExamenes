@@ -296,3 +296,21 @@
     padding: 1px 4px;
   }
 }
+
+@keyframes floatAnimation {
+  0%,
+  100% {
+    transform: translateY(0) rotate(3deg); /* Mantener la rotación inicial */
+    box-shadow: 0 6px 12px rgba(0, 0, 0, 0.25); /* Mantener la sombra inicial */
+  }
+  50% {
+    transform: translateY(-5px) rotate(3.5deg); /* Mover un poco hacia arriba y rotar un poco más */
+    box-shadow: 0 10px 20px rgba(0, 0, 0, 0.3); /* Sombra un poco más pronunciada */
+  }
+}
+
+/* Clase que se aplicará al ExamenPostIt dentro del DragOverlay */
+.examen-post-it.drag-overlay.is-animating {
+  animation: floatAnimation 1.5s ease-in-out infinite;
+  /* Los estilos de width, height, opacity, etc., vendrán de dragOverlayStyle en CalendarioPage.jsx */
+}

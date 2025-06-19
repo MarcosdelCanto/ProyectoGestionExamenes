@@ -431,7 +431,7 @@ export default function ExamenPostIt({
       ref={setNodeRef}
       style={getStyles()}
       className={`examen-post-it ${isBeingDragged ? 'being-dragged' : ''} ${
-        isDragOverlay ? 'drag-overlay' : ''
+        isDragOverlay ? 'drag-overlay is-animating' : '' // Añadir is-animating aquí
       } ${isResizing ? 'resizing' : ''}`}
       data-estado={getEstadoConfirmacion()}
       {...props}
