@@ -77,57 +77,71 @@ const reservasSlice = createSlice({
       console.log(
         '[reservasSlice] actualizarModulosReservaLocalmente - id_reserva RECIBIDO:',
         id_reserva,
-        '| state.lista ACTUAL:',
-        JSON.parse(JSON.stringify(state.lista))
+        '| nuevaCantidadModulos:',
+        nuevaCantidadModulos
       );
+
       const indice = state.lista.findIndex((r) => r.ID_RESERVA === id_reserva);
       if (indice !== -1) {
-        // Asumimos que la altura del post-it se basa en Examen.CANTIDAD_MODULOS_EXAMEN
-        // o un campo similar. Ajusta esto según tu estructura.
-        if (state.lista[indice].Examen) {
-          state.lista[indice].Examen.CANTIDAD_MODULOS_EXAMEN =
-            nuevaCantidadModulos;
-        }
-        state.lista[indice].MODULOS_RESERVA_COUNT = nuevaCantidadModulos; // Si tienes un campo así
-
-        // AJUSTE CRÍTICO: Modificar el array MODULOS para que su longitud coincida.
-        // Esto es importante para que `reserva.MODULOS.length` en `useCalendarData` sea correcto.
-        // Si MODULOS no existe o no es un array, inicialízalo.
         const reservaActual = state.lista[indice];
-        if (!Array.isArray(reservaActual.MODULOS)) {
-          reservaActual.MODULOS = [];
+
+        // Actualizar la cantidad en el examen anidado
+        if (reservaActual.Examen) {
+          reservaActual.Examen.CANTIDAD_MODULOS_EXAMEN = nuevaCantidadModulos;
         }
-        const currentModulosArray = reservaActual.MODULOS;
+        reservaActual.MODULOS_RESERVA_COUNT = nuevaCantidadModulos;
 
-        // Determinar el ORDEN de inicio.
-        // Asumimos que la reserva tiene un campo 'moduloInicial' que es el ORDEN del primer módulo.
-        // Este campo debe ser consistente y estar presente en el objeto reserva.
-        const ordenDeInicio =
-          reservaActual.moduloInicial || // Si 'moduloInicial' es el ORDEN del primer módulo
-          (currentModulosArray[0] && currentModulosArray[0].ORDEN !== undefined
-            ? currentModulosArray[0].ORDEN
-            : 1); // Fallback al ORDEN del primer módulo existente o 1
+        // CORREGIR: Recalcular completamente el array MODULOS
+        const modulosExistentes = reservaActual.MODULOS || [];
 
-        // Crear un nuevo array con la longitud deseada.
-        // Si se expande, se pueden añadir placeholders. Si se reduce, se trunca.
-        reservaActual.MODULOS = Array(nuevaCantidadModulos)
-          .fill(null)
-          .map(
-            (_, i) =>
-              currentModulosArray[i] || {
-                ID_MODULO: `temp-id-${i}`,
-                NOMBRE_MODULO: `Módulo Temporal ${i + 1}`,
-                ORDEN: ordenDeInicio + i, // Usar el ordenDeInicio calculado
-              } // Placeholder con orden si es posible
+        // Obtener el orden inicial de los módulos existentes
+        let ordenInicial = 1; // fallback
+        if (modulosExistentes.length > 0) {
+          const primerosOrdenes = modulosExistentes
+            .map((m) => m.ORDEN)
+            .filter((orden) => orden !== undefined)
+            .sort((a, b) => a - b);
+          if (primerosOrdenes.length > 0) {
+            ordenInicial = primerosOrdenes[0];
+          }
+        }
+
+        // Crear nuevo array de módulos con la cantidad correcta
+        const nuevosModulos = [];
+        for (let i = 0; i < nuevaCantidadModulos; i++) {
+          const ordenActual = ordenInicial + i;
+
+          // Reutilizar módulo existente si está disponible, sino crear uno nuevo
+          const moduloExistente = modulosExistentes.find(
+            (m) => m.ORDEN === ordenActual
           );
 
+          if (moduloExistente) {
+            nuevosModulos.push(moduloExistente);
+          } else {
+            // Crear un módulo temporal para el nuevo slot
+            nuevosModulos.push({
+              ID_MODULO: `temp-${id_reserva}-${i}`,
+              NOMBRE_MODULO: `Módulo ${ordenActual}`,
+              ORDEN: ordenActual,
+              ID_RESERVA: id_reserva,
+            });
+          }
+        }
+
+        // Asignar el nuevo array
+        reservaActual.MODULOS = nuevosModulos;
+
+        // IMPORTANTE: Forzar una actualización del timestamp para que useCalendarData detecte el cambio
+        reservaActual._lastModified = Date.now();
+
         console.log(
-          `[reservasSlice] Estado de la reserva ${id_reserva} en Redux DESPUÉS de la actualización:`, // Asegúrate que id_reserva esté definido aquí
-          JSON.stringify(state.lista[indice], null, 2)
+          `[reservasSlice] Reserva ${id_reserva} actualizada. Nuevos módulos:`,
+          JSON.parse(JSON.stringify(nuevosModulos))
         );
       } else {
         console.error(
-          `[reservasSlice] ERROR AL ACTUALIZAR MÓDULOS: No se encontró reserva con ID_RESERVA = ${id_reserva} en state.lista.`
+          `[reservasSlice] ERROR: No se encontró reserva con ID_RESERVA = ${id_reserva}`
         );
       }
     },

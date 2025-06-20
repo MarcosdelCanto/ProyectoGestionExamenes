@@ -2,7 +2,7 @@ import React from 'react';
 import CalendarHeader from './CalendarHeader';
 import CalendarCell from './CalendarCell';
 import { useCalendarData } from '../../hooks/useCalendarData';
-import { useDispatch } from 'react-redux'; // <-- IMPORTAR
+import { useDispatch, useSelector } from 'react-redux'; // <-- IMPORTAR
 import {
   actualizarEstadoConfirmacionReserva,
   eliminarReserva,
@@ -26,9 +26,15 @@ export default function CalendarGrid({
   // setReservas, // Ya no se recibe como prop
   refreshExamenesDisponibles,
 }) {
+  // ASEGURAR: Que estamos usando las reservas más actualizadas del store
+  const reservasFromStore = useSelector((state) => state.reservas.lista);
+
+  // Usar las reservas del store en lugar de las del prop
+  const reservasActualizadas = reservas || reservasFromStore;
+
   // USAR EL HOOK: Centralizar toda la lógica de datos
   const { getCellData, shouldRenderExamen, checkConflict } = useCalendarData({
-    reservas,
+    reservas: reservasActualizadas, // Usar las reservas actualizadas
     selectedSala,
     selectedExam,
     modulosSeleccionados,

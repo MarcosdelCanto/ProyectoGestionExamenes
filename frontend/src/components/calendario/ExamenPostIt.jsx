@@ -7,6 +7,8 @@ import {
 } from '../../services/reservaService';
 import { toast } from 'react-toastify'; // <-- AÑADIR IMPORTACIÓN SI NO ESTÁ
 import { fetchAllDocentes } from '../../services/usuarioService';
+import { useDispatch } from 'react-redux'; // Agregar esta importación
+import { actualizarModulosReservaLocalmente } from '../../store/reservasSlice'; // Agregar esta importación
 import './styles/PostIt.css';
 
 export default function ExamenPostIt({
@@ -31,6 +33,7 @@ export default function ExamenPostIt({
   onReservaStateChange,
   ...props
 }) {
+  const dispatch = useDispatch(); // Agregar esta línea
   const [moduloscountState, setModuloscountState] = useState(
     moduloscount ||
       examen?.MODULOS?.length ||
@@ -234,11 +237,15 @@ export default function ExamenPostIt({
   const handleAumentarModulo = (e) => {
     e.stopPropagation();
     e.preventDefault();
+
     if (moduloscountState >= maxModulos) {
       toast.warn(`No se pueden asignar más de ${maxModulos} módulos.`);
       return;
     }
+
     const nuevaCantidad = moduloscountState + 1;
+
+    // Verificar conflictos antes de actualizar
     if (
       onCheckConflict &&
       typeof onCheckConflict === 'function' &&
@@ -256,61 +263,77 @@ export default function ExamenPostIt({
         return;
       }
     }
-    setModuloscountState(nuevaCantidad);
-    if (onModulosChange) {
-      const reservaId =
-        examenAsignadoCompleto?.reservaCompleta?.ID_RESERVA ||
-        examenAsignadoCompleto?.ID_RESERVA;
+
+    const reservaId =
+      examenAsignadoCompleto?.reservaCompleta?.ID_RESERVA ||
+      examenAsignadoCompleto?.ID_RESERVA;
+
+    if (reservaId) {
       console.log(
-        '[ExamenPostIt] handleAumentarModulo - reservaId:',
-        reservaId,
-        'examenAsignadoCompleto:',
-        JSON.parse(JSON.stringify(examenAsignadoCompleto || {}))
+        `[ExamenPostIt] Aumentando módulos para reserva ${reservaId} de ${moduloscountState} a ${nuevaCantidad}`
       );
-      if (reservaId) {
+
+      // Actualizar estado local inmediatamente
+      setModuloscountState(nuevaCantidad);
+
+      // Actualizar Redux store
+      dispatch(
+        actualizarModulosReservaLocalmente({
+          id_reserva: reservaId,
+          nuevaCantidadModulos: nuevaCantidad,
+        })
+      );
+
+      // Llamar callback si existe (para comunicación con backend)
+      if (onModulosChange) {
         onModulosChange(reservaId, nuevaCantidad);
-      } else {
-        console.warn(
-          '[ExamenPostIt] No se pudo obtener reservaId para onModulosChange al aumentar.'
-        );
       }
+    } else {
+      console.warn(
+        '[ExamenPostIt] No se pudo obtener reservaId para aumentar módulos'
+      );
     }
   };
 
   const handleDisminuirModulo = (e) => {
     e.stopPropagation();
     e.preventDefault();
+
     if (moduloscountState <= minModulos) {
       toast.warn(`La reserva debe tener al menos ${minModulos} módulo.`);
       return;
     }
+
     const nuevaCantidad = moduloscountState - 1;
-    // No es necesario verificar conflicto al disminuir, pero sí mantener la lógica si se quiere
-    // if (onCheckConflict && typeof onCheckConflict === 'function' && fecha && moduloInicial) {
-    //   const hasConflict = onCheckConflict(examen.ID_EXAMEN, fecha, moduloInicial, nuevaCantidad);
-    //   if (hasConflict) { // Esto sería raro al disminuir, pero por completitud
-    //     toast.error('Conflicto detectado. No se puede disminuir la duración.');
-    //     return;
-    //   }
-    // }
-    setModuloscountState(nuevaCantidad);
-    if (onModulosChange) {
-      const reservaId =
-        examenAsignadoCompleto?.reservaCompleta?.ID_RESERVA ||
-        examenAsignadoCompleto?.ID_RESERVA;
+
+    const reservaId =
+      examenAsignadoCompleto?.reservaCompleta?.ID_RESERVA ||
+      examenAsignadoCompleto?.ID_RESERVA;
+
+    if (reservaId) {
       console.log(
-        '[ExamenPostIt] handleDisminuirModulo - reservaId:',
-        reservaId,
-        'examenAsignadoCompleto:',
-        JSON.parse(JSON.stringify(examenAsignadoCompleto || {}))
+        `[ExamenPostIt] Disminuyendo módulos para reserva ${reservaId} de ${moduloscountState} a ${nuevaCantidad}`
       );
-      if (reservaId) {
+
+      // Actualizar estado local inmediatamente
+      setModuloscountState(nuevaCantidad);
+
+      // Actualizar Redux store
+      dispatch(
+        actualizarModulosReservaLocalmente({
+          id_reserva: reservaId,
+          nuevaCantidadModulos: nuevaCantidad,
+        })
+      );
+
+      // Llamar callback si existe (para comunicación con backend)
+      if (onModulosChange) {
         onModulosChange(reservaId, nuevaCantidad);
-      } else {
-        console.warn(
-          '[ExamenPostIt] No se pudo obtener reservaId para onModulosChange al disminuir.'
-        );
       }
+    } else {
+      console.warn(
+        '[ExamenPostIt] No se pudo obtener reservaId para disminuir módulos'
+      );
     }
   };
 

@@ -8,111 +8,89 @@ export function useCalendarData({
   modulosSeleccionados,
   modulos,
 }) {
+  // MEJORAR: Agregar un timestamp para forzar recálculo cuando sea necesario
+  const reservasWithTimestamp = useMemo(() => {
+    return (
+      reservas?.map((reserva) => ({
+        ...reserva,
+        _timestamp: reserva._lastModified || Date.now(),
+      })) || []
+    );
+  }, [reservas]);
+
   // SIMPLIFICAR: Una sola fuente de verdad para todas las celdas
   const calendarData = useMemo(() => {
     const data = new Map();
 
+    console.log(
+      '[useCalendarData] Recalculando calendarData con reservas:',
+      JSON.parse(JSON.stringify(reservasWithTimestamp))
+    );
+
     // Procesar reservas confirmadas
-    if (reservas && reservas.length > 0) {
-      // console.log(
-      //   '[useCalendarData] Recibiendo reservas para procesar:',
-      //   JSON.parse(JSON.stringify(reservas))
-      // );
-      console.log(
-        '[useCalendarData] Hook re-ejecutado. Reservas:',
-        JSON.parse(JSON.stringify(reservas))
-      );
-
-      reservas.forEach((reserva) => {
-        // console.log(
-        //   '[useCalendarData] Procesando para calendarData:',
-        //   JSON.parse(
-        //     JSON.stringify({
-        //       EXAMEN: reserva.Examen,
-        //       ID_RESERVA: reserva.ID_RESERVA,
-        //       ESTADO_CONFIRMACION_DOCENTE: reserva.ESTADO_CONFIRMACION_DOCENTE,
-        //       ID_EXAMEN: reserva.ID_EXAMEN,
-        //       TIENE_EXAMEN_ANIDADO: !!reserva.Examen,
-        //       NOMBRE_EXAMEN_ANIDADO:
-        //         reserva.Examen?.NOMBRE_EXAMEN ||
-        //         reserva.Examen?.NOMBRE_ASIGNATURA,
-        //       MODULOS_EN_RESERVA: reserva.MODULOS,
-        //     })
-        //   )
-        // );
-
+    if (reservasWithTimestamp && reservasWithTimestamp.length > 0) {
+      reservasWithTimestamp.forEach((reserva) => {
         if (reserva.ID_SALA !== selectedSala?.ID_SALA) {
-          // console.log(
-          //   `[useCalendarData] Reserva ${reserva.ID_RESERVA} descartada, sala no coincide: ${reserva.ID_SALA} vs ${selectedSala?.ID_SALA}`
-          // );
           return;
         }
 
         const fecha = format(new Date(reserva.FECHA_RESERVA), 'yyyy-MM-dd');
-        // Log para cada reserva ANTES de la condición específica del ID
-        // console.log(
-        //   `[useCalendarData] Chequeando reserva con ID: ${reserva.ID_RESERVA} (tipo: ${typeof reserva.ID_RESERVA})`
-        // );
-        const modulosReserva = reserva.MODULOS || []; // Estos son los módulos de la reserva específica
+        const modulosReserva = reserva.MODULOS || [];
 
-        // Log específico para la reserva de prueba
-        if (reserva.ID_RESERVA === 106) {
-          // console.log(
-          //   `[useCalendarData] Reserva ID ${reserva.ID_RESERVA} - modulosReserva (directo de reserva.MODULOS):`,
-          //   JSON.parse(JSON.stringify(modulosReserva))
-          // );
-        }
+        // MEJORAR: Usar la cantidad más confiable disponible
         const cantidadModulosReal =
           modulosReserva.length ||
-          reserva.MODULOS_RESERVA_COUNT ||
           reserva.Examen?.CANTIDAD_MODULOS_EXAMEN ||
+          reserva.MODULOS_RESERVA_COUNT ||
           3;
 
-        // console.log('🔍 Procesando reserva:', {
-        //   id: reserva.ID_RESERVA,
-        //   modulosArray: modulosReserva,
-        //   cantidadCalculada: cantidadModulosReal,
-        // });
+        console.log(
+          `[useCalendarData] Procesando reserva ${reserva.ID_RESERVA}:`,
+          {
+            modulosReserva: modulosReserva.length,
+            cantidadCalculada: cantidadModulosReal,
+            modulosArray: JSON.parse(JSON.stringify(modulosReserva)),
+          }
+        );
 
         if (cantidadModulosReal === 0) return;
 
-        // Calcular módulo inicial una sola vez
+        // Calcular módulo inicial
         const ordenesModulos = modulosReserva
           .map((m) => {
-            // 'modulos' aquí es la lista completa de todos los módulos del sistema
             const moduloCompletoDelSistema = modulos.find(
               (mod) => mod.ID_MODULO === m.ID_MODULO
             );
-            return moduloCompletoDelSistema?.ORDEN;
+            return moduloCompletoDelSistema?.ORDEN || m.ORDEN; // Usar m.ORDEN como fallback
           })
           .filter((orden) => orden !== undefined);
 
-        // // Log específico para la reserva de prueba
-        // if (reserva.ID_RESERVA === 106) {
-        //   // console.log(
-        //   //   `[useCalendarData] Reserva ID ${reserva.ID_RESERVA} - ordenesModulos calculadas:`,
-        //   //   ordenesModulos
-        //   // );
-        // }
-
-        if (ordenesModulos.length === 0) return;
+        if (ordenesModulos.length === 0) {
+          console.warn(
+            `[useCalendarData] No se pudieron calcular órdenes para reserva ${reserva.ID_RESERVA}`
+          );
+          return;
+        }
 
         const moduloInicial = Math.min(...ordenesModulos);
 
         // Crear entrada para cada módulo de la reserva
         ordenesModulos.forEach((orden) => {
           const key = `${fecha}-${orden}`;
-
           data.set(key, {
             tipo: 'reserva',
             examen: reserva.Examen,
             modulosTotal: cantidadModulosReal,
             moduloInicial,
-            reservaCompleta: reserva, // ← CORREGIR nombre de prop
+            reservaCompleta: reserva,
             fecha,
             orden,
           });
         });
+
+        console.log(
+          `[useCalendarData] Reserva ${reserva.ID_RESERVA} mapeada a ${ordenesModulos.length} celdas`
+        );
       });
     }
 
@@ -141,8 +119,18 @@ export function useCalendarData({
       });
     }
 
+    console.log(
+      '[useCalendarData] CalendarData final:',
+      Array.from(data.entries())
+    );
     return data;
-  }, [reservas, selectedSala, selectedExam, modulosSeleccionados, modulos]);
+  }, [
+    reservasWithTimestamp,
+    selectedSala,
+    selectedExam,
+    modulosSeleccionados,
+    modulos,
+  ]);
 
   // SIMPLIFICAR: Una función simple para obtener datos de celda
   const getCellData = useCallback(
