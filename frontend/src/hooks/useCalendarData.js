@@ -14,49 +14,53 @@ export function useCalendarData({
 
     // Procesar reservas confirmadas
     if (reservas && reservas.length > 0) {
+      // console.log(
+      //   '[useCalendarData] Recibiendo reservas para procesar:',
+      //   JSON.parse(JSON.stringify(reservas))
+      // );
       console.log(
-        '[useCalendarData] Recibiendo reservas para procesar:',
+        '[useCalendarData] Hook re-ejecutado. Reservas:',
         JSON.parse(JSON.stringify(reservas))
-      ); // Log para ver las reservas que llegan al hook
+      );
 
       reservas.forEach((reserva) => {
-        console.log(
-          '[useCalendarData] Procesando para calendarData:',
-          JSON.parse(
-            JSON.stringify({
-              EXAMEN: reserva.Examen,
-              ID_RESERVA: reserva.ID_RESERVA,
-              ESTADO_CONFIRMACION_DOCENTE: reserva.ESTADO_CONFIRMACION_DOCENTE,
-              ID_EXAMEN: reserva.ID_EXAMEN,
-              TIENE_EXAMEN_ANIDADO: !!reserva.Examen,
-              NOMBRE_EXAMEN_ANIDADO:
-                reserva.Examen?.NOMBRE_EXAMEN ||
-                reserva.Examen?.NOMBRE_ASIGNATURA,
-              MODULOS_EN_RESERVA: reserva.MODULOS,
-            })
-          )
-        );
+        // console.log(
+        //   '[useCalendarData] Procesando para calendarData:',
+        //   JSON.parse(
+        //     JSON.stringify({
+        //       EXAMEN: reserva.Examen,
+        //       ID_RESERVA: reserva.ID_RESERVA,
+        //       ESTADO_CONFIRMACION_DOCENTE: reserva.ESTADO_CONFIRMACION_DOCENTE,
+        //       ID_EXAMEN: reserva.ID_EXAMEN,
+        //       TIENE_EXAMEN_ANIDADO: !!reserva.Examen,
+        //       NOMBRE_EXAMEN_ANIDADO:
+        //         reserva.Examen?.NOMBRE_EXAMEN ||
+        //         reserva.Examen?.NOMBRE_ASIGNATURA,
+        //       MODULOS_EN_RESERVA: reserva.MODULOS,
+        //     })
+        //   )
+        // );
 
         if (reserva.ID_SALA !== selectedSala?.ID_SALA) {
-          console.log(
-            `[useCalendarData] Reserva ${reserva.ID_RESERVA} descartada, sala no coincide: ${reserva.ID_SALA} vs ${selectedSala?.ID_SALA}`
-          );
+          // console.log(
+          //   `[useCalendarData] Reserva ${reserva.ID_RESERVA} descartada, sala no coincide: ${reserva.ID_SALA} vs ${selectedSala?.ID_SALA}`
+          // );
           return;
         }
 
         const fecha = format(new Date(reserva.FECHA_RESERVA), 'yyyy-MM-dd');
         // Log para cada reserva ANTES de la condición específica del ID
-        console.log(
-          `[useCalendarData] Chequeando reserva con ID: ${reserva.ID_RESERVA} (tipo: ${typeof reserva.ID_RESERVA})`
-        );
+        // console.log(
+        //   `[useCalendarData] Chequeando reserva con ID: ${reserva.ID_RESERVA} (tipo: ${typeof reserva.ID_RESERVA})`
+        // );
         const modulosReserva = reserva.MODULOS || []; // Estos son los módulos de la reserva específica
 
         // Log específico para la reserva de prueba
         if (reserva.ID_RESERVA === 106) {
-          console.log(
-            `[useCalendarData] Reserva ID ${reserva.ID_RESERVA} - modulosReserva (directo de reserva.MODULOS):`,
-            JSON.parse(JSON.stringify(modulosReserva))
-          );
+          // console.log(
+          //   `[useCalendarData] Reserva ID ${reserva.ID_RESERVA} - modulosReserva (directo de reserva.MODULOS):`,
+          //   JSON.parse(JSON.stringify(modulosReserva))
+          // );
         }
         const cantidadModulosReal =
           modulosReserva.length ||
@@ -83,13 +87,13 @@ export function useCalendarData({
           })
           .filter((orden) => orden !== undefined);
 
-        // Log específico para la reserva de prueba
-        if (reserva.ID_RESERVA === 106) {
-          console.log(
-            `[useCalendarData] Reserva ID ${reserva.ID_RESERVA} - ordenesModulos calculadas:`,
-            ordenesModulos
-          );
-        }
+        // // Log específico para la reserva de prueba
+        // if (reserva.ID_RESERVA === 106) {
+        //   // console.log(
+        //   //   `[useCalendarData] Reserva ID ${reserva.ID_RESERVA} - ordenesModulos calculadas:`,
+        //   //   ordenesModulos
+        //   // );
+        // }
 
         if (ordenesModulos.length === 0) return;
 

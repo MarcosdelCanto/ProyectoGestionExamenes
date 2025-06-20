@@ -77,6 +77,24 @@ async function startServer() {
           updaterId: socket.id,
         });
       });
+
+      // NUEVO: Listener para cambios temporales de módulos desde un cliente
+      socket.on('cambioModulosTemporalClienteAlServidor', (data) => {
+        const { id_reserva, nuevaCantidadModulos } = data;
+        console.log(
+          `[Socket Servidor] Evento 'cambioModulosTemporalClienteAlServidor' recibido de ${socket.id}: Reserva ID ${id_reserva}, Nueva Cantidad ${nuevaCantidadModulos}`
+        );
+
+        // Re-emitir a TODOS los OTROS clientes.
+        // El cliente que originó el cambio ya actualizó su UI localmente.
+        socket.broadcast.emit('actualizacionModulosTemporalServidorAClientes', {
+          id_reserva,
+          nuevaCantidadModulos,
+        });
+        console.log(
+          `[Socket Servidor] Evento 'actualizacionModulosTemporalServidorAClientes' re-emitido a otros clientes.`
+        );
+      });
     });
 
     // Rutas API

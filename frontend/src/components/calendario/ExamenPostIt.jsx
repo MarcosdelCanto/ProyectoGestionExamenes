@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { FaArrowsAltV } from 'react-icons/fa';
 import { Badge } from 'react-bootstrap';
+import { FaPlus, FaMinus } from 'react-icons/fa'; // Importar iconos
 import {
   enviarReservaADocente,
   cancelarReservaCompleta, // Usar esta en lugar de descartarReservaService
@@ -18,9 +18,9 @@ export default function ExamenPostIt({
   onModulosChange,
   onRemove,
   onDeleteReserva,
-  onCheckConflict,
-  minModulos = 1,
-  maxModulos = 12,
+  onCheckConflict, // Necesario para validar el cambio de módulos
+  minModulos = 1, // Límite inferior para módulos
+  maxModulos = 12, // Límite superior para módulos
   isPreview = false,
   isDragOverlay = false,
   dragHandleListeners,
@@ -37,11 +37,7 @@ export default function ExamenPostIt({
       examen?.CANTIDAD_MODULOS_EXAMEN ||
       3
   );
-  const [isResizing, setIsResizing] = useState(false);
-  const [resizeError, setResizeError] = useState(null);
   const [isProcessingAction, setIsProcessingAction] = useState(false);
-  const startResizeRef = useRef(null);
-  const startHeightRef = useRef(null);
 
   // Agregar estado para selección de docente (para implementación futura)
   const [selectedDocenteId, setSelectedDocenteId] = useState(null);
@@ -62,10 +58,50 @@ export default function ExamenPostIt({
 
   // Sincronizar con prop externa
   useEffect(() => {
-    if (moduloscount !== undefined && moduloscount !== moduloscountState) {
-      setModuloscountState(moduloscount);
+    // Sincronizar el estado interno con la prop moduloscount si esta cambia
+    // O con la cantidad de módulos del examen si la prop moduloscount no está definida
+    const modulosDeReservaDirectos = examenAsignadoCompleto?.MODULOS?.length;
+    // Intentar obtener de la reserva completa primero, luego del examen dentro de la reserva, luego del examen directo
+    let modulosDeExamenEnReserva;
+    if (examenAsignadoCompleto) {
+      modulosDeExamenEnReserva =
+        examenAsignadoCompleto?.reservaCompleta?.Examen
+          ?.CANTIDAD_MODULOS_EXAMEN ||
+        examenAsignadoCompleto?.Examen?.CANTIDAD_MODULOS_EXAMEN;
     }
-  }, [moduloscount, moduloscountState]);
+    const modulosDeExamenPropDirecta = examen?.CANTIDAD_MODULOS_EXAMEN; // Prop 'examen' directa
+    const modulosDePropModuloscount = moduloscount; // Prop directa moduloscount (alta prioridad si existe)
+
+    let nuevaCantidadDesdeProps;
+
+    if (modulosDePropModuloscount !== undefined) {
+      nuevaCantidadDesdeProps = modulosDePropModuloscount;
+    } else if (modulosDeExamenEnReserva !== undefined) {
+      nuevaCantidadDesdeProps = modulosDeExamenEnReserva;
+    } else if (
+      modulosDeReservaDirectos !== undefined &&
+      modulosDeReservaDirectos > 0
+    ) {
+      // Usar la longitud del array MODULOS de examenAsignadoCompleto si existe
+      nuevaCantidadDesdeProps = modulosDeReservaDirectos;
+    } else if (modulosDeExamenPropDirecta !== undefined) {
+      nuevaCantidadDesdeProps = modulosDeExamenPropDirecta;
+    } else {
+      nuevaCantidadDesdeProps = 3; // Fallback
+    }
+    if (nuevaCantidadDesdeProps !== moduloscountState) {
+      console.log(
+        `[ExamenPostIt SYNC useEffect] Sincronizando moduloscountState de ${moduloscountState} a ${nuevaCantidadDesdeProps}.`,
+        `Detalles: prop moduloscount=${modulosDePropModuloscount},`,
+        `examenAsignadoCompleto.MODULOS.length=${modulosDeReservaDirectos},`,
+        `examenAsignadoCompleto.Examen.CANTIDAD_MODULOS_EXAMEN=${modulosDeExamenEnReserva},`,
+        `examen.CANTIDAD_MODULOS_EXAMEN=${modulosDeExamenPropDirecta},`,
+        `examenAsignadoCompleto (props):`,
+        JSON.parse(JSON.stringify(examenAsignadoCompleto || {})) // Log seguro
+      );
+      setModuloscountState(nuevaCantidadDesdeProps);
+    }
+  }, [moduloscount, examen, examenAsignadoCompleto, moduloscountState]);
 
   // Log para depurar la prop examen
   useEffect(() => {
@@ -79,88 +115,6 @@ export default function ExamenPostIt({
       );
     }
   }, [examen, examenAsignadoCompleto, isPreview, isDragOverlay]);
-
-  // RESIZE: Solo si NO es preview, NO es overlay y NO está siendo arrastrado
-  const canResize = !isPreview && !isDragOverlay && !isBeingDragged;
-
-  const handleResizeMove = (e) => {
-    if (!isResizing) return;
-    e.preventDefault();
-
-    const deltaY = e.clientY - startResizeRef.current;
-    const newHeight = Math.max(40, startHeightRef.current + deltaY);
-    const newModulosCount = Math.max(
-      minModulos,
-      Math.min(maxModulos, Math.round(newHeight / 40))
-    );
-
-    if (newModulosCount !== moduloscountState) {
-      if (
-        onCheckConflict &&
-        typeof onCheckConflict === 'function' &&
-        fecha &&
-        moduloInicial
-      ) {
-        try {
-          const hasConflict = onCheckConflict(
-            examen.ID_EXAMEN,
-            fecha,
-            moduloInicial,
-            newModulosCount
-          );
-
-          if (hasConflict) {
-            setResizeError('Conflicto detectado');
-            return;
-          } else {
-            setResizeError(null);
-          }
-        } catch (error) {
-          console.error('Error verificando conflictos:', error);
-          setResizeError('Error al verificar disponibilidad');
-          return;
-        }
-      }
-
-      setModuloscountState(newModulosCount);
-      if (onModulosChange) {
-        onModulosChange(examen.ID_EXAMEN, newModulosCount);
-      }
-    }
-  };
-
-  const handleMouseDown = (e) => {
-    if (!canResize) return;
-
-    e.stopPropagation();
-    e.preventDefault();
-    e.stopImmediatePropagation();
-
-    console.log('🎯 Resize start event captured');
-
-    setIsResizing(true);
-    startResizeRef.current = e.clientY;
-    startHeightRef.current = e.currentTarget.parentElement.offsetHeight;
-
-    document.body.style.pointerEvents = 'none';
-    e.currentTarget.style.pointerEvents = 'auto';
-
-    document.addEventListener('mousemove', handleResizeMove, {
-      passive: false,
-    });
-    document.addEventListener('mouseup', handleResizeEnd);
-  };
-
-  const handleResizeEnd = () => {
-    console.log('🏁 Resize end');
-    setIsResizing(false);
-    setResizeError(null);
-
-    document.body.style.pointerEvents = '';
-
-    document.removeEventListener('mousemove', handleResizeMove);
-    document.removeEventListener('mouseup', handleResizeEnd);
-  };
 
   /**
    * Handler para enviar reserva a docente (EN_CURSO → PENDIENTE)
@@ -185,9 +139,16 @@ export default function ExamenPostIt({
         return;
       }
 
+      console.log(
+        `[ExamenPostIt] Preparando para enviar reserva ${reservaId} a docente. moduloscountState actual: ${moduloscountState}`
+      );
+
       console.log(`[ExamenPostIt] Enviando reserva ${reservaId} a docente`);
 
-      const response = await enviarReservaADocente(reservaId);
+      const response = await enviarReservaADocente(
+        reservaId,
+        moduloscountState
+      ); // Enviar moduloscountState
 
       console.log('[ExamenPostIt] Reserva enviada exitosamente:', response);
 
@@ -270,6 +231,89 @@ export default function ExamenPostIt({
     }
   };
 
+  const handleAumentarModulo = (e) => {
+    e.stopPropagation();
+    e.preventDefault();
+    if (moduloscountState >= maxModulos) {
+      toast.warn(`No se pueden asignar más de ${maxModulos} módulos.`);
+      return;
+    }
+    const nuevaCantidad = moduloscountState + 1;
+    if (
+      onCheckConflict &&
+      typeof onCheckConflict === 'function' &&
+      fecha &&
+      moduloInicial
+    ) {
+      const hasConflict = onCheckConflict(
+        examen.ID_EXAMEN,
+        fecha,
+        moduloInicial,
+        nuevaCantidad
+      );
+      if (hasConflict) {
+        toast.error('Conflicto detectado. No se puede aumentar la duración.');
+        return;
+      }
+    }
+    setModuloscountState(nuevaCantidad);
+    if (onModulosChange) {
+      const reservaId =
+        examenAsignadoCompleto?.reservaCompleta?.ID_RESERVA ||
+        examenAsignadoCompleto?.ID_RESERVA;
+      console.log(
+        '[ExamenPostIt] handleAumentarModulo - reservaId:',
+        reservaId,
+        'examenAsignadoCompleto:',
+        JSON.parse(JSON.stringify(examenAsignadoCompleto || {}))
+      );
+      if (reservaId) {
+        onModulosChange(reservaId, nuevaCantidad);
+      } else {
+        console.warn(
+          '[ExamenPostIt] No se pudo obtener reservaId para onModulosChange al aumentar.'
+        );
+      }
+    }
+  };
+
+  const handleDisminuirModulo = (e) => {
+    e.stopPropagation();
+    e.preventDefault();
+    if (moduloscountState <= minModulos) {
+      toast.warn(`La reserva debe tener al menos ${minModulos} módulo.`);
+      return;
+    }
+    const nuevaCantidad = moduloscountState - 1;
+    // No es necesario verificar conflicto al disminuir, pero sí mantener la lógica si se quiere
+    // if (onCheckConflict && typeof onCheckConflict === 'function' && fecha && moduloInicial) {
+    //   const hasConflict = onCheckConflict(examen.ID_EXAMEN, fecha, moduloInicial, nuevaCantidad);
+    //   if (hasConflict) { // Esto sería raro al disminuir, pero por completitud
+    //     toast.error('Conflicto detectado. No se puede disminuir la duración.');
+    //     return;
+    //   }
+    // }
+    setModuloscountState(nuevaCantidad);
+    if (onModulosChange) {
+      const reservaId =
+        examenAsignadoCompleto?.reservaCompleta?.ID_RESERVA ||
+        examenAsignadoCompleto?.ID_RESERVA;
+      console.log(
+        '[ExamenPostIt] handleDisminuirModulo - reservaId:',
+        reservaId,
+        'examenAsignadoCompleto:',
+        JSON.parse(JSON.stringify(examenAsignadoCompleto || {}))
+      );
+      if (reservaId) {
+        onModulosChange(reservaId, nuevaCantidad);
+      } else {
+        console.warn(
+          '[ExamenPostIt] No se pudo obtener reservaId para onModulosChange al disminuir.'
+        );
+      }
+    }
+  };
+
   /**
    * Genera los botones de acción según el estado de confirmación docente
    */
@@ -281,7 +325,27 @@ export default function ExamenPostIt({
     switch (estadoConfirmacion) {
       case 'EN_CURSO':
         return (
-          <div className="action-buttons d-flex gap-1">
+          <div className="action-buttons d-flex align-items-center gap-1">
+            <button
+              className="btn btn-outline-secondary btn-sm action-btn"
+              onClick={handleDisminuirModulo}
+              disabled={isProcessingAction || moduloscountState <= minModulos}
+              title="Disminuir módulos"
+            >
+              <FaMinus />
+            </button>
+            <span className="mx-1 text-muted" style={{ fontSize: '0.8em' }}>
+              {moduloscountState}
+            </span>
+            <button
+              className="btn btn-outline-secondary btn-sm action-btn"
+              onClick={handleAumentarModulo}
+              disabled={isProcessingAction || moduloscountState >= maxModulos}
+              title="Aumentar módulos"
+            >
+              <FaPlus />
+            </button>
+
             <button
               className="btn btn-success btn-sm action-btn"
               onClick={handleEnviarADocente} // Ya tiene e.stopPropagation
@@ -389,14 +453,6 @@ export default function ExamenPostIt({
     }
   }, [isPreview, isDragOverlay, esReservaConfirmada]);
 
-  // Cleanup
-  useEffect(() => {
-    return () => {
-      document.removeEventListener('mousemove', handleResizeMove);
-      document.removeEventListener('mouseup', handleResizeEnd);
-    };
-  }, []);
-
   // Color y estilos
   const getPostItColor = () => {
     if (!examen) return '#fffacd';
@@ -420,7 +476,7 @@ export default function ExamenPostIt({
     backgroundColor: getPostItColor(),
     height: isPreview ? '100%' : `${40 * moduloscountState}px`, // Tomar 100% de la altura del padre en preview
     width: isPreview ? '100%' : '100%', // Tomar 100% del ancho del padre en preview
-    zIndex: isResizing ? 100 : isPreview ? 1 : 50,
+    zIndex: isPreview ? 1 : 50, // zIndex ya no depende de isResizing
     ...style,
   });
 
@@ -432,7 +488,7 @@ export default function ExamenPostIt({
       style={getStyles()}
       className={`examen-post-it ${isBeingDragged ? 'being-dragged' : ''} ${
         isDragOverlay ? 'drag-overlay is-animating' : '' // Añadir is-animating aquí
-      } ${isResizing ? 'resizing' : ''}`}
+      }`}
       data-estado={getEstadoConfirmacion()}
       {...props}
     >
@@ -467,13 +523,6 @@ export default function ExamenPostIt({
           </small>
         </div>
 
-        {/* Mensaje de error si hay */}
-        {resizeError && (
-          <div className="alert alert-danger alert-sm mt-1">
-            <small>{resizeError}</small>
-          </div>
-        )}
-
         {/* Selector de docente (para implementación futura) */}
         {docentes.length > 0 && (
           <select
@@ -490,17 +539,6 @@ export default function ExamenPostIt({
           </select>
         )}
       </div>
-
-      {/* Handle de redimensión */}
-      {!isPreview && !isDragOverlay && !esReservaConfirmada && (
-        <div
-          className="resize-handle"
-          onMouseDown={handleMouseDown}
-          title="Arrastrar para cambiar duración"
-        >
-          <FaArrowsAltV />
-        </div>
-      )}
     </div>
   );
 }

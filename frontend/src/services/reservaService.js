@@ -181,12 +181,26 @@ export const fetchMisAsignacionesDeReservas = async () => {
 /**
  * Envía una reserva al docente para su confirmación (de EN_CURSO a PENDIENTE)
  * @param {number} idReserva - ID de la reserva a enviar
+ * @param {number} [nuevaCantidadModulos] - Opcional: Nueva cantidad de módulos para la reserva
  * @returns {Promise<Object>} - Respuesta del servidor
  */
-export const enviarReservaADocente = async (idReserva) => {
+export const enviarReservaADocente = async (
+  idReserva,
+  nuevaCantidadModulos
+) => {
   try {
-    // Reemplazar fetch por la instancia de api
-    const response = await api.put(`/reserva/${idReserva}/enviar-a-docente`);
+    const payload = {};
+    if (nuevaCantidadModulos !== undefined) {
+      payload.nuevaCantidadModulos = nuevaCantidadModulos;
+    }
+    console.log(
+      `[reservaService] Enviando a /reserva/${idReserva}/enviar-a-docente con payload:`,
+      JSON.stringify(payload)
+    );
+    const response = await api.put(
+      `/reserva/${idReserva}/enviar-a-docente`,
+      payload
+    );
     return response.data;
   } catch (error) {
     console.error(

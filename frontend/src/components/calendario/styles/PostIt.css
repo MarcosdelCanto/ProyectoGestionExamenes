@@ -99,12 +99,6 @@
   z-index: 800 !important; /* Asegurar que esté por encima de otros post-its colocados */
 }
 
-.examen-post-it.is-resizing {
-  z-index: 1000;
-  box-shadow: 0 4px 12px rgba(0, 0, 255, 0.3);
-  border: 2px solid #007bff;
-  transition: none;
-}
 .examen-post-it.is-placed.is-resizing {
   z-index: 500 !important; /* Asegurar que esté por encima durante el resize */
 }
@@ -137,65 +131,6 @@
 .calendar-table .calendar-cell {
   overflow: visible !important;
   position: relative;
-}
-
-/* === ESTILOS PARA LAS BARRAS EXTERNAS (Portal) === */
-/* Estos estilos se aplicarán a las barras renderizadas en el body */
-.resize-handle-portal {
-  position: absolute;
-  background: rgba(0, 123, 255, 0.8);
-  color: white;
-  cursor: ns-resize;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 10px;
-  z-index: 999999;
-  border: 1px solid #0056b3;
-  user-select: none;
-  pointer-events: auto;
-  border-radius: 0 0 4px 4px;
-  transition: background-color 0.2s ease;
-}
-
-.resize-handle-portal:hover {
-  background: rgba(0, 123, 255, 1);
-}
-
-.resize-handle-portal.is-resizing {
-  background: #007bff;
-  transition: none;
-}
-
-/* === RESIZE HANDLE MEJORADO === */
-.resize-handle {
-  /* Asegurar que sea clickeable */
-  pointer-events: auto !important;
-  user-select: none !important;
-
-  /* Mejorar visibilidad */
-  border-top: 2px solid #ddd !important;
-  background: rgba(0, 0, 0, 0.1) !important;
-
-  /* Hover effect */
-  transition: all 0.2s ease;
-}
-
-.resize-handle:hover {
-  background: rgba(0, 123, 255, 0.2) !important;
-  border-top-color: #007bff !important;
-}
-
-.resize-handle:active {
-  background: #007bff !important;
-  color: white !important;
-}
-
-/* === DURANTE RESIZE === */
-.examen-post-it.is-resizing .resize-handle {
-  background: #007bff !important;
-  color: white !important;
-  border-top-color: #0056b3 !important;
 }
 
 /* Estilos para los botones de acción */

@@ -29,7 +29,7 @@
   height: 40px !important;
   min-width: 120px;
   vertical-align: top;
-  background: white;
+  /* background: white; */
   z-index: 1;
   overflow: visible !important; /* ← CLAVE */
 }
@@ -52,7 +52,7 @@
 
 /* Celdas que contienen exámenes */
 .calendar-table .calendar-cell.contains-examen {
-  overflow: visible !important;
+  overflow: visible;
   z-index: 1;
 }
 

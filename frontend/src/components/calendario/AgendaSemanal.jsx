@@ -23,7 +23,10 @@ import {
   crearReservaParaExamenExistenteService,
   crearReservaEnCursoService, // ← AGREGAR ESTA IMPORTACIÓN
 } from '../../services/reservaService';
-import { agregarReserva } from '../../store/reservasSlice'; // <-- IMPORTAR ACCIÓN DE REDUX
+import {
+  agregarReserva,
+  actualizarModulosReservaLocalmente,
+} from '../../store/reservasSlice'; // <-- IMPORTAR ACCIÓN DE REDUX
 
 // Estilos
 import './styles/AgendaSemanal.css';
@@ -32,7 +35,8 @@ export default function AgendaSemanal({
   draggedExamen, // ← Para procesar el drop final
   dropTargetCell, // ← Para procesar el drop final
   hoverTargetCell, // ← NUEVA: Para preview en tiempo real
-  onDropProcessed,
+  onDropProcessed, // Prop que viene de CalendarioPage
+  onModulosChange, // <--- ESTA ES LA PROP QUE VIENE DE CalendarioPage.jsx (handleModulosChangeGlobal)
 }) {
   // HOOKS PERSONALIZADOS - Toda la lógica compleja separada
   const {
@@ -343,58 +347,24 @@ export default function AgendaSemanal({
     dispatch, // <-- AÑADIR DISPATCH COMO DEPENDENCIA
   ]);
 
-  // IMPLEMENTAR: Función para manejar cambios de módulos
-  const handleModulosChange = useCallback(
-    (examenId, nuevaCantidadModulos) => {
-      console.log('📝 Cambio de módulos recibido:', {
-        examenId,
+  // Esta es la función que se pasa como prop a CalendarGrid
+  // Ahora simplemente llamará a la función onModulosChange recibida de CalendarioPage.jsx
+  const handleModulosChangeLocal = useCallback(
+    (reservaId, nuevaCantidadModulos) => {
+      console.log('📝 [AgendaSemanal] handleModulosChangeLocal llamado con:', {
+        reservaId,
         nuevaCantidadModulos,
       });
-
-      // Actualizar reservas confirmadas
-      const reservaAfectada = reservas.find(
-        (r) => r.ID_EXAMEN === examenId || r.Examen?.ID_EXAMEN === examenId
-      );
-
-      if (reservaAfectada) {
-        console.log('📝 Actualizando reserva:', reservaAfectada.ID_RESERVA);
-
-        // TODO: Esta lógica también debería despachar una acción a Redux
-        // Por ejemplo: dispatch(actualizarModulosReserva({ reservaId: reservaAfectada.ID_RESERVA, nuevaCantidadModulos }));
-        // setReservas((prevReservas) =>
-        //   prevReservas.map((reserva) => {
-        //     if (reserva.ID_RESERVA === reservaAfectada.ID_RESERVA) {
-        //       const updatedReserva = {
-        //         ...reserva,
-        //         CANTIDAD_MODULOS_RESERVA: nuevaCantidadModulos,
-        //       };
-
-        //       // Si tiene examen asociado, actualizarlo también
-        //       if (reserva.Examen) {
-        //         updatedReserva.Examen = {
-        //           ...reserva.Examen,
-        //           CANTIDAD_MODULOS_EXAMEN: nuevaCantidadModulos,
-        //         };
-        //       }
-
-        //       console.log('✅ Reserva actualizada:', updatedReserva);
-        //       return updatedReserva;
-        //     }
-        //     return reserva;
-        //   })
-        // );
-
-        // TODO: Aquí deberías hacer una llamada al backend para persistir el cambio
-        // updateReservaModulos(reservaAfectada.ID_RESERVA, nuevaCantidadModulos);
-      }
-
-      // Actualizar exámenes pendientes si es necesario
-      if (selectedExamInternal?.ID_EXAMEN === examenId) {
-        console.log('📝 Actualizando examen pendiente seleccionado');
-        // Lógica para exámenes pendientes...
+      // Llamar a la función onModulosChange que viene de CalendarioPage (que es handleModulosChangeGlobal)
+      if (onModulosChange) {
+        onModulosChange(reservaId, nuevaCantidadModulos);
+      } else {
+        console.error(
+          '[AgendaSemanal] onModulosChange (prop de CalendarioPage) no está definida.'
+        );
       }
     },
-    [reservas, dispatch, selectedExamInternal] // <-- ACTUALIZAR DEPENDENCIAS
+    [onModulosChange] // Dependencia de la prop de CalendarioPage
   );
 
   // RENDERIZADO SIMPLIFICADO
@@ -483,8 +453,8 @@ export default function AgendaSemanal({
                   selectedExam={selectedExamInternal}
                   reservas={reservas}
                   modulosSeleccionados={modulosSeleccionados}
-                  onSelectModulo={handleSelectModulo}
-                  onModulosChange={handleModulosChange}
+                  onSelectModulo={handleSelectModulo} // Esto es para seleccionar módulos al crear, no para +/-
+                  onModulosChange={handleModulosChangeLocal} // Pasar la función local que llama a la global
                   onRemoveExamen={eliminarExamen}
                   onDeleteReserva={handleShowDeleteModal}
                   onCheckConflict={() => {}} // ← Ya no se usa aquí, se maneja en el hook

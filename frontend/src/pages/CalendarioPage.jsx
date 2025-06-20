@@ -10,6 +10,9 @@ import {
 import AgendaSemanal from '../components/calendario/AgendaSemanal';
 import Layout from '../components/Layout';
 import DragFeedback from '../components/calendario/DragFeedback';
+import { useDispatch } from 'react-redux'; // Importar useDispatch
+import { actualizarModulosReservaLocalmente } from '../store/reservasSlice'; // Importar la acción
+import { socket } from '../store/socketMiddleware'; // Importar el socket
 import ExamenPostIt from '../components/calendario/ExamenPostIt';
 import './CalendarioPage.css';
 
@@ -20,6 +23,7 @@ export function CalendarioPage() {
   const [dropTargetCell, setDropTargetCell] = useState(null);
   const [hoverTargetCell, setHoverTargetCell] = useState(null);
 
+  const dispatch = useDispatch(); // Hook para despachar acciones de Redux
   const [dragOverlayStyle, setDragOverlayStyle] = useState({}); // Estado para el estilo del overlay
   // NUEVO: Tracking de posición del mouse
   const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
@@ -51,6 +55,34 @@ export function CalendarioPage() {
       document.removeEventListener('mousemove', handleMouseMove);
     };
   }, [isDragging]);
+
+  // Esta función se pasará a AgendaSemanal como prop, y de ahí a CalendarGrid, etc.
+  const handleModulosChangeGlobal = useCallback(
+    (reservaId, nuevaCantidadModulos) => {
+      console.log(
+        `[CalendarioPage] handleModulosChangeGlobal: reservaId=${reservaId}, nuevaCantidad=${nuevaCantidadModulos}`
+      );
+
+      // 1. Actualizar Redux localmente para el cliente actual
+      dispatch(
+        actualizarModulosReservaLocalmente({
+          id_reserva: reservaId,
+          nuevaCantidadModulos,
+        })
+      );
+
+      // 2. Emitir evento de Socket.IO al servidor
+      // El nombre del evento debe ser consistente con el backend
+      socket.emit('cambioModulosTemporalClienteAlServidor', {
+        id_reserva: reservaId, // Usar el id_reserva recibido
+        nuevaCantidadModulos,
+      });
+      console.log(
+        `[CalendarioPage] Evento 'cambioModulosTemporalClienteAlServidor' emitido para reserva ${reservaId}, nueva cantidad: ${nuevaCantidadModulos}`
+      );
+    },
+    [dispatch]
+  );
 
   // DRAG START
   const handleDragStart = (event) => {
@@ -248,6 +280,7 @@ export function CalendarioPage() {
               dropTargetCell={dropTargetCell}
               hoverTargetCell={hoverTargetCell}
               onDropProcessed={handleDropProcessed}
+              onModulosChange={handleModulosChangeGlobal} // Pasar la nueva función
             />
 
             {/* Feedback solo cuando está siendo arrastrado Y dentro del calendario */}
