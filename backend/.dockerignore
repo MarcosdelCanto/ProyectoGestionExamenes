@@ -1,0 +1,8 @@
+node_modules/
+.env # No copiar el .env al contenedor, usaremos variables de entorno de Docker Compose
+npm-debug.log*
+yarn-error.log*
+.git/
+.gitignore
+# wallet/ # ¡IMPORTANTE! Esta línea DEBE ESTAR COMENTADA O ELIMINADA para que la carpeta 'wallet'
+          # sea copiada por el Dockerfile del backend.

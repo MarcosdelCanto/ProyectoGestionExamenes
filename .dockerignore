@@ -1,0 +1,8 @@
+.git/
+.gitignore
+.vscode/
+node_modules/ # Esto no es crítico aquí ya que cada Dockerfile copia sus propios node_modules
+npm-debug.log
+yarn-error.log
+*.swp
+*.swo
