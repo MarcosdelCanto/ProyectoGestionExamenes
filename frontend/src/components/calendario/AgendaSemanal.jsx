@@ -1,6 +1,6 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { format, startOfWeek } from 'date-fns';
-import { useDispatch } from 'react-redux'; // <-- AÑADIR ESTA LÍNEA
+import { useDispatch, useSelector } from 'react-redux'; // <-- AGREGAR useSelector si no está
 import { es } from 'date-fns/locale';
 import { Modal } from 'react-bootstrap';
 import { toast } from 'react-toastify';
@@ -32,11 +32,11 @@ import {
 import './styles/AgendaSemanal.css';
 
 export default function AgendaSemanal({
-  draggedExamen, // ← Para procesar el drop final
-  dropTargetCell, // ← Para procesar el drop final
-  hoverTargetCell, // ← NUEVA: Para preview en tiempo real
-  onDropProcessed, // Prop que viene de CalendarioPage
-  onModulosChange, // <--- ESTA ES LA PROP QUE VIENE DE CalendarioPage.jsx (handleModulosChangeGlobal)
+  draggedExamen,
+  dropTargetCell,
+  hoverTargetCell,
+  onDropProcessed,
+  onModulosChange,
 }) {
   // HOOKS PERSONALIZADOS - Toda la lógica compleja separada
   const {
@@ -44,8 +44,7 @@ export default function AgendaSemanal({
     examenes,
     setExamenes,
     modulos,
-    reservas,
-    // setReservas,
+    reservas: reservasFromHook,
     sedesDisponibles,
     edificiosDisponibles,
     isLoadingSalas,
@@ -78,7 +77,71 @@ export default function AgendaSemanal({
   const [isProcessingDrop, setIsProcessingDrop] = useState(false);
   const [lastProcessedDrop, setLastProcessedDrop] = useState(null);
 
-  const dispatch = useDispatch(); // <-- OBTENER DISPATCH
+  const dispatch = useDispatch();
+  const reservasFromStore = useSelector((state) => state.reservas.lista);
+
+  // CREAR RESERVAS COMBINADAS: Usar hook como base, actualizar con store
+  const reservas = useMemo(() => {
+    if (!reservasFromHook || reservasFromHook.length === 0) {
+      return reservasFromStore || [];
+    }
+
+    if (!reservasFromStore || reservasFromStore.length === 0) {
+      return reservasFromHook;
+    }
+
+    // Combinar: usar hook como base, actualizar con store cuando sea más reciente
+    const reservasStoreMap = new Map(
+      reservasFromStore.map((r) => [r.ID_RESERVA, r])
+    );
+
+    const reservasCombinadas = reservasFromHook.map((reservaHook) => {
+      const reservaStore = reservasStoreMap.get(reservaHook.ID_RESERVA);
+
+      if (
+        reservaStore &&
+        reservaStore._lastModified > (reservaHook._lastModified || 0)
+      ) {
+        console.log(
+          `🔄 Usando datos actualizados del store para reserva ${reservaHook.ID_RESERVA}`
+        );
+        return {
+          ...reservaHook, // Mantener estructura original
+          ...reservaStore, // Sobrescribir con datos del store
+          _lastModified: reservaStore._lastModified,
+        };
+      }
+
+      return reservaHook;
+    });
+
+    // Agregar nuevas reservas del store que no estén en el hook
+    reservasFromStore.forEach((reservaStore) => {
+      const existeEnHook = reservasFromHook.some(
+        (rh) => rh.ID_RESERVA === reservaStore.ID_RESERVA
+      );
+      if (!existeEnHook) {
+        console.log(
+          `➕ Agregando nueva reserva ${reservaStore.ID_RESERVA} desde store`
+        );
+        reservasCombinadas.push(reservaStore);
+      }
+    });
+
+    return reservasCombinadas;
+  }, [reservasFromHook, reservasFromStore]);
+
+  // AGREGAR ESTE useEffect PARA DEBUGGING
+  useEffect(() => {
+    console.log('🔄 [AgendaSemanal] Estado de reservas:', {
+      fromHook: reservasFromHook?.length || 0,
+      fromStore: reservasFromStore?.length || 0,
+      combined: reservas?.length || 0,
+      hookIds: reservasFromHook?.map((r) => r.ID_RESERVA) || [],
+      storeIds: reservasFromStore?.map((r) => r.ID_RESERVA) || [],
+      combinedIds: reservas?.map((r) => r.ID_RESERVA) || [],
+    });
+  }, [reservas, reservasFromHook, reservasFromStore]);
 
   // HOOK DE MODALES - Después de definir selectedSala
   const {
@@ -174,7 +237,16 @@ export default function AgendaSemanal({
           return;
         }
 
-        // --- INICIO DE LÓGICA DE DETECCIÓN DE CONFLICTOS ---
+        // --- REEMPLAZAR TODA ESTA SECCIÓN DE DETECCIÓN DE CONFLICTOS ---
+        console.log('🔍 Verificando conflictos con reservas combinadas:', {
+          totalReservas: reservas.length,
+          reservasParaSala: reservas.filter(
+            (r) => r.ID_SALA === (salaId || selectedSala.ID_SALA)
+          ).length,
+          fecha,
+          modulosIdsParaReserva,
+        });
+
         let hayConflicto = false;
         const mensajesConflicto = [];
 
@@ -187,17 +259,52 @@ export default function AgendaSemanal({
           }
           const ordenActual = moduloObj.ORDEN;
 
-          const yaReservado = reservas.some(
-            (r) =>
-              r.ID_SALA === (salaId || selectedSala.ID_SALA) &&
-              format(new Date(r.FECHA_RESERVA), 'yyyy-MM-dd') === fecha &&
-              r.MODULOS?.some(
-                (mReserva) =>
-                  modulos.find(
-                    (modGlobal) => modGlobal.ID_MODULO === mReserva.ID_MODULO
-                  )?.ORDEN === ordenActual
-              )
-          );
+          // VERIFICACIÓN MEJORADA: Usar las reservas más actualizadas
+          const yaReservado = reservas.some((r) => {
+            // Verificar misma sala
+            if (r.ID_SALA !== (salaId || selectedSala.ID_SALA)) {
+              return false;
+            }
+
+            // Verificar misma fecha
+            const fechaReserva = format(
+              new Date(r.FECHA_RESERVA),
+              'yyyy-MM-dd'
+            );
+            if (fechaReserva !== fecha) {
+              return false;
+            }
+
+            // Verificar si algún módulo de la reserva conflicta con el orden actual
+            const modulosReserva = r.MODULOS || [];
+            const conflicto = modulosReserva.some((mReserva) => {
+              // Buscar el módulo en la lista global para obtener su orden
+              const moduloGlobal = modulos.find(
+                (modGlobal) => modGlobal.ID_MODULO === mReserva.ID_MODULO
+              );
+
+              // Si no se encuentra el módulo en la lista global, usar el orden del módulo de la reserva
+              const ordenModulo = moduloGlobal?.ORDEN || mReserva.ORDEN;
+
+              return ordenModulo === ordenActual;
+            });
+
+            if (conflicto) {
+              console.log(
+                `❌ Conflicto detectado en reserva ${r.ID_RESERVA}:`,
+                {
+                  fechaReserva,
+                  ordenConflicto: ordenActual,
+                  modulosReserva: modulosReserva.map((m) => ({
+                    ID_MODULO: m.ID_MODULO,
+                    ORDEN: m.ORDEN || 'sin orden',
+                  })),
+                }
+              );
+            }
+
+            return conflicto;
+          });
 
           if (yaReservado) {
             mensajesConflicto.push(`Módulo ${ordenActual} ya está reservado.`);
@@ -206,6 +313,7 @@ export default function AgendaSemanal({
         }
 
         if (hayConflicto) {
+          console.log('❌ Conflictos detectados:', mensajesConflicto);
           toast.error(
             `No se puede crear la reserva:\n${mensajesConflicto.join('\n')}`
           );
@@ -213,6 +321,10 @@ export default function AgendaSemanal({
           setIsProcessingDrop(false); // Asegurar que se resetea el estado de procesamiento
           return; // Detener la ejecución aquí
         }
+
+        console.log(
+          '✅ Sin conflictos detectados. Procediendo a crear reserva.'
+        );
         // --- FIN DE LÓGICA DE DETECCIÓN DE CONFLICTOS ---
         // Preparar payload para la creación de la reserva
         const payload = {
@@ -243,7 +355,24 @@ export default function AgendaSemanal({
     };
 
     procesarDropDirecto();
-  }, [draggedExamen, dropTargetCell]);
+  }, [draggedExamen, dropTargetCell, reservas, selectedSala, modulos]); // <-- AGREGAR 'reservas' como dependencia
+
+  // AGREGAR ESTE useEffect DESPUÉS DE definir 'reservas' y antes del useEffect de procesarDropDirecto:
+  useEffect(() => {
+    console.log('🔄 [AgendaSemanal] Reservas actualizadas:', {
+      fromHook: reservasFromHook.length,
+      fromStore: reservasFromStore.length,
+      using: reservas.length,
+      reservasDetalle: reservas.map((r) => ({
+        ID_RESERVA: r.ID_RESERVA,
+        ID_EXAMEN: r.ID_EXAMEN,
+        FECHA_RESERVA: r.FECHA_RESERVA,
+        ID_SALA: r.ID_SALA,
+        modulosCount: r.MODULOS?.length || 0,
+        _lastModified: r._lastModified,
+      })),
+    });
+  }, [reservas, reservasFromHook, reservasFromStore]);
 
   // Función auxiliar para determinar los módulos contiguos necesarios
   const determinarModulosParaExamen = (examen, modulo, todosLosModulos) => {
@@ -451,20 +580,17 @@ export default function AgendaSemanal({
                   modulos={modulos}
                   selectedSala={selectedSala}
                   selectedExam={selectedExamInternal}
-                  reservas={reservas}
+                  reservas={reservas} // <-- ASEGURAR QUE USE 'reservas' (no 'reservasFromHook')
                   modulosSeleccionados={modulosSeleccionados}
-                  onSelectModulo={handleSelectModulo} // Esto es para seleccionar módulos al crear, no para +/-
-                  onModulosChange={handleModulosChangeLocal} // Pasar la función local que llama a la global
+                  onSelectModulo={handleSelectModulo}
+                  onModulosChange={handleModulosChangeLocal}
                   onRemoveExamen={eliminarExamen}
                   onDeleteReserva={handleShowDeleteModal}
-                  onCheckConflict={() => {}} // ← Ya no se usa aquí, se maneja en el hook
+                  onCheckConflict={() => {}}
                   draggedExamen={draggedExamen}
                   dropTargetCell={dropTargetCell}
                   hoverTargetCell={hoverTargetCell}
-                  // ← AGREGAR ESTAS NUEVAS PROPS
-                  // setReservas={setReservas}
                   refreshExamenesDisponibles={() => {
-                    // Función para recargar exámenes disponibles
                     loadExamenes();
                   }}
                 />
