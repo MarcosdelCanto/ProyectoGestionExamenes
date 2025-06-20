@@ -3,7 +3,7 @@ import React, { useState, useEffect, useCallback, useMemo } from 'react'; // Añ
 import Layout from '../components/Layout'; // Ajusta la ruta
 import ModuloTable from '../components/modulos/ModuloTable';
 import ModuloForm from '../components/modulos/ModuloForm';
-import ModuloActions from '../components/modulos/ModuloActions';
+import ModuloActions from '../components/modulos/moduloActions';
 import ModuloFilter from '../components/modulos/ModuloFilter'; // <-- IMPORTAR ModuloFilter
 import PaginationComponent from '../components/PaginationComponent';
 import {
