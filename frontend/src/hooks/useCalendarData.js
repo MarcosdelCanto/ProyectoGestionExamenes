@@ -8,7 +8,7 @@ export function useCalendarData({
   modulosSeleccionados,
   modulos,
 }) {
-  // MEJORAR: Agregar un timestamp para forzar recálculo cuando sea necesario
+  // Agregar un timestamp para forzar recálculo cuando sea necesario
   const reservasWithTimestamp = useMemo(() => {
     return (
       reservas?.map((reserva) => ({
@@ -18,14 +18,9 @@ export function useCalendarData({
     );
   }, [reservas]);
 
-  // SIMPLIFICAR: Una sola fuente de verdad para todas las celdas
+  // Una sola fuente de verdad para todas las celdas
   const calendarData = useMemo(() => {
     const data = new Map();
-
-    console.log(
-      '[useCalendarData] Recalculando calendarData con reservas:',
-      JSON.parse(JSON.stringify(reservasWithTimestamp))
-    );
 
     // Procesar reservas confirmadas
     if (reservasWithTimestamp && reservasWithTimestamp.length > 0) {
@@ -37,46 +32,50 @@ export function useCalendarData({
         const fecha = format(new Date(reserva.FECHA_RESERVA), 'yyyy-MM-dd');
         const modulosReserva = reserva.MODULOS || [];
 
-        // MEJORAR: Usar la cantidad más confiable disponible
+        // Usar la cantidad más confiable disponible
         const cantidadModulosReal =
           modulosReserva.length ||
           reserva.Examen?.CANTIDAD_MODULOS_EXAMEN ||
           reserva.MODULOS_RESERVA_COUNT ||
           3;
 
-        console.log(
-          `[useCalendarData] Procesando reserva ${reserva.ID_RESERVA}:`,
-          {
-            modulosReserva: modulosReserva.length,
-            cantidadCalculada: cantidadModulosReal,
-            modulosArray: JSON.parse(JSON.stringify(modulosReserva)),
-          }
-        );
-
         if (cantidadModulosReal === 0) return;
 
-        // Calcular módulo inicial
-        const ordenesModulos = modulosReserva
-          .map((m) => {
-            const moduloCompletoDelSistema = modulos.find(
-              (mod) => mod.ID_MODULO === m.ID_MODULO
-            );
-            return moduloCompletoDelSistema?.ORDEN || m.ORDEN; // Usar m.ORDEN como fallback
-          })
-          .filter((orden) => orden !== undefined);
+        // Usar módulo inicial de la reserva si está disponible
+        let moduloInicial;
 
-        if (ordenesModulos.length === 0) {
-          console.warn(
-            `[useCalendarData] No se pudieron calcular órdenes para reserva ${reserva.ID_RESERVA}`
-          );
+        if (
+          reserva.MODULO_INICIAL_RESERVA &&
+          reserva.MODULO_INICIAL_RESERVA > 0
+        ) {
+          // La reserva tiene un módulo inicial explícito (desde BD)
+          moduloInicial = reserva.MODULO_INICIAL_RESERVA;
+        } else if (modulosReserva.length > 0) {
+          // Calcular desde los módulos existentes
+          const ordenesModulos = modulosReserva
+            .map((m) => {
+              const moduloCompletoDelSistema = modulos.find(
+                (mod) => mod.ID_MODULO === m.ID_MODULO
+              );
+              return moduloCompletoDelSistema?.ORDEN || m.ORDEN;
+            })
+            .filter((orden) => orden !== undefined && orden !== null);
+
+          if (ordenesModulos.length > 0) {
+            moduloInicial = Math.min(...ordenesModulos);
+          } else {
+            return;
+          }
+        } else {
+          // No hay módulos ni módulo inicial definido
           return;
         }
 
-        const moduloInicial = Math.min(...ordenesModulos);
+        // Crear entrada para todos los módulos necesarios
+        for (let i = 0; i < cantidadModulosReal; i++) {
+          const ordenActual = moduloInicial + i;
+          const key = `${fecha}-${ordenActual}`;
 
-        // Crear entrada para cada módulo de la reserva
-        ordenesModulos.forEach((orden) => {
-          const key = `${fecha}-${orden}`;
           data.set(key, {
             tipo: 'reserva',
             examen: reserva.Examen,
@@ -84,13 +83,9 @@ export function useCalendarData({
             moduloInicial,
             reservaCompleta: reserva,
             fecha,
-            orden,
+            orden: ordenActual,
           });
-        });
-
-        console.log(
-          `[useCalendarData] Reserva ${reserva.ID_RESERVA} mapeada a ${ordenesModulos.length} celdas`
-        );
+        }
       });
     }
 
@@ -112,17 +107,13 @@ export function useCalendarData({
           examen: selectedExam,
           modulosTotal: modulosSeleccionados.length,
           moduloInicial,
-          reservaCompleta: null, // ← CORREGIR nombre de prop
+          reservaCompleta: null,
           fecha: m.fecha,
           orden: m.numero,
         });
       });
     }
 
-    console.log(
-      '[useCalendarData] CalendarData final:',
-      Array.from(data.entries())
-    );
     return data;
   }, [
     reservasWithTimestamp,
@@ -132,7 +123,7 @@ export function useCalendarData({
     modulos,
   ]);
 
-  // SIMPLIFICAR: Una función simple para obtener datos de celda
+  // Función simple para obtener datos de celda
   const getCellData = useCallback(
     (fecha, orden) => {
       const key = `${fecha}-${orden}`;
@@ -141,14 +132,14 @@ export function useCalendarData({
     [calendarData]
   );
 
-  // SIMPLIFICAR: Una función simple para determinar si renderizar
+  // Función simple para determinar si renderizar
   const shouldRenderExamen = useCallback((cellData) => {
     if (!cellData) return false;
     // Convertir a número para asegurar la comparación correcta
     return Number(cellData.moduloInicial) === Number(cellData.orden);
   }, []);
 
-  // ÚTIL: Función para verificar si una celda está ocupada
+  // Función para verificar si una celda está ocupada
   const isCellOccupied = useCallback(
     (fecha, orden) => {
       return calendarData.has(`${fecha}-${orden}`);
@@ -156,7 +147,7 @@ export function useCalendarData({
     [calendarData]
   );
 
-  // ÚTIL: Función para obtener el tipo de ocupación
+  // Función para obtener el tipo de ocupación
   const getCellType = useCallback(
     (fecha, orden) => {
       const cellData = calendarData.get(`${fecha}-${orden}`);
@@ -165,19 +156,11 @@ export function useCalendarData({
     [calendarData]
   );
 
-  // NUEVA FUNCIÓN: Verificar conflictos para redimensionamiento
+  // Verificar conflictos para redimensionamiento
   const checkConflict = useCallback(
     (examenId, fecha, moduloInicial, nuevaCantidadModulos) => {
-      console.log('🔍 Verificando conflicto:', {
-        examenId,
-        fecha,
-        moduloInicial,
-        nuevaCantidadModulos,
-      });
-
       // Validar parámetros
       if (!fecha || !moduloInicial || !nuevaCantidadModulos) {
-        console.log('❌ Parámetros inválidos');
         return true;
       }
 
@@ -187,7 +170,6 @@ export function useCalendarData({
         const moduloExiste = modulos.some((m) => m.ORDEN === ordenActual);
 
         if (!moduloExiste) {
-          console.log(`❌ Módulo ${ordenActual} no existe`);
           return true;
         }
       }
@@ -215,12 +197,10 @@ export function useCalendarData({
         });
 
         if (hayConflicto) {
-          console.log(`❌ Conflicto en módulo ${ordenActual}`);
           return true;
         }
       }
 
-      console.log('✅ Sin conflictos');
       return false;
     },
     [reservas, selectedSala, modulos]
@@ -231,6 +211,6 @@ export function useCalendarData({
     shouldRenderExamen,
     isCellOccupied,
     getCellType,
-    checkConflict, // ← NUEVA FUNCIÓN
+    checkConflict,
   };
 }

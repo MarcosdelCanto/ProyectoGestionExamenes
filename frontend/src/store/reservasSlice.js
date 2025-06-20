@@ -59,8 +59,43 @@ const reservasSlice = createSlice({
     },
     // Acción para añadir una nueva reserva (creada desde el calendario)
     agregarReserva: (state, action) => {
-      // Podrías querer verificar si ya existe para evitar duplicados
-      state.lista.push(action.payload);
+      const nuevaReserva = action.payload;
+
+      // ASEGURAR que la nueva reserva tenga MODULO_INICIAL_RESERVA establecido
+      if (
+        !nuevaReserva.MODULO_INICIAL_RESERVA &&
+        nuevaReserva.MODULOS &&
+        nuevaReserva.MODULOS.length > 0
+      ) {
+        const ordenesValidos = nuevaReserva.MODULOS.map((m) => m.ORDEN)
+          .filter((orden) => orden !== undefined && orden !== null)
+          .sort((a, b) => a - b);
+
+        if (ordenesValidos.length > 0) {
+          nuevaReserva.MODULO_INICIAL_RESERVA = ordenesValidos[0];
+          console.log(
+            `[reservasSlice] Estableciendo MODULO_INICIAL_RESERVA: ${nuevaReserva.MODULO_INICIAL_RESERVA} para nueva reserva ${nuevaReserva.ID_RESERVA}`
+          );
+        }
+      }
+
+      // Agregar timestamp
+      nuevaReserva._lastModified = Date.now();
+
+      // Verificar si ya existe para evitar duplicados
+      const existe = state.lista.some(
+        (r) => r.ID_RESERVA === nuevaReserva.ID_RESERVA
+      );
+      if (!existe) {
+        state.lista.push(nuevaReserva);
+        console.log(
+          `[reservasSlice] Nueva reserva agregada: ${nuevaReserva.ID_RESERVA}`
+        );
+      } else {
+        console.warn(
+          `[reservasSlice] Reserva ${nuevaReserva.ID_RESERVA} ya existe, no se agregó duplicado`
+        );
+      }
     },
     // Acción para eliminar una reserva (cancelada desde el calendario)
     eliminarReserva: (state, action) => {
@@ -73,12 +108,15 @@ const reservasSlice = createSlice({
     },
     // Nueva acción para actualizar la cantidad de módulos localmente
     actualizarModulosReservaLocalmente: (state, action) => {
-      const { id_reserva, nuevaCantidadModulos } = action.payload;
+      const { id_reserva, nuevaCantidadModulos, moduloInicialActual } =
+        action.payload; // <-- AGREGAR moduloInicialActual
       console.log(
         '[reservasSlice] actualizarModulosReservaLocalmente - id_reserva RECIBIDO:',
         id_reserva,
         '| nuevaCantidadModulos:',
-        nuevaCantidadModulos
+        nuevaCantidadModulos,
+        '| moduloInicialActual:',
+        moduloInicialActual // <-- AGREGAR LOG
       );
 
       const indice = state.lista.findIndex((r) => r.ID_RESERVA === id_reserva);
@@ -91,53 +129,79 @@ const reservasSlice = createSlice({
         }
         reservaActual.MODULOS_RESERVA_COUNT = nuevaCantidadModulos;
 
-        // CORREGIR: Recalcular completamente el array MODULOS
-        const modulosExistentes = reservaActual.MODULOS || [];
+        // USAR EL MÓDULO INICIAL PASADO DESDE EL COMPONENTE
+        let moduloInicialOriginal;
 
-        // Obtener el orden inicial de los módulos existentes
-        let ordenInicial = 1; // fallback
-        if (modulosExistentes.length > 0) {
-          const primerosOrdenes = modulosExistentes
-            .map((m) => m.ORDEN)
-            .filter((orden) => orden !== undefined)
-            .sort((a, b) => a - b);
-          if (primerosOrdenes.length > 0) {
-            ordenInicial = primerosOrdenes[0];
+        if (moduloInicialActual && moduloInicialActual > 0) {
+          // PRIORIDAD 1: Usar el módulo inicial pasado desde el componente
+          moduloInicialOriginal = moduloInicialActual;
+          reservaActual.MODULO_INICIAL_RESERVA = moduloInicialOriginal; // Guardarlo
+          console.log(
+            `[reservasSlice] USANDO módulo inicial del componente: ${moduloInicialOriginal} para reserva ${id_reserva}`
+          );
+        } else if (
+          reservaActual.MODULO_INICIAL_RESERVA &&
+          reservaActual.MODULO_INICIAL_RESERVA > 0
+        ) {
+          // PRIORIDAD 2: Usar el que ya estaba guardado
+          moduloInicialOriginal = reservaActual.MODULO_INICIAL_RESERVA;
+          console.log(
+            `[reservasSlice] USANDO módulo inicial ya guardado: ${moduloInicialOriginal} para reserva ${id_reserva}`
+          );
+        } else {
+          // PRIORIDAD 3: Calcular desde módulos existentes (fallback)
+          const modulosExistentes = reservaActual.MODULOS || [];
+          if (modulosExistentes.length > 0) {
+            const ordenesValidos = modulosExistentes
+              .map((m) => m.ORDEN)
+              .filter((orden) => orden !== undefined && orden !== null)
+              .sort((a, b) => a - b);
+
+            if (ordenesValidos.length > 0) {
+              moduloInicialOriginal = ordenesValidos[0];
+              reservaActual.MODULO_INICIAL_RESERVA = moduloInicialOriginal;
+              console.log(
+                `[reservasSlice] CALCULANDO módulo inicial desde módulos: ${moduloInicialOriginal} para reserva ${id_reserva}`
+              );
+            } else {
+              moduloInicialOriginal = 1;
+              reservaActual.MODULO_INICIAL_RESERVA = moduloInicialOriginal;
+              console.warn(
+                `[reservasSlice] USANDO FALLBACK módulo inicial: 1 para reserva ${id_reserva}`
+              );
+            }
+          } else {
+            moduloInicialOriginal = 1;
+            reservaActual.MODULO_INICIAL_RESERVA = moduloInicialOriginal;
+            console.warn(
+              `[reservasSlice] SIN módulos, usando fallback: 1 para reserva ${id_reserva}`
+            );
           }
         }
 
-        // Crear nuevo array de módulos con la cantidad correcta
+        // Crear nuevo array de módulos manteniendo el orden inicial fijo
         const nuevosModulos = [];
         for (let i = 0; i < nuevaCantidadModulos; i++) {
-          const ordenActual = ordenInicial + i;
+          const ordenActual = moduloInicialOriginal + i;
 
-          // Reutilizar módulo existente si está disponible, sino crear uno nuevo
-          const moduloExistente = modulosExistentes.find(
-            (m) => m.ORDEN === ordenActual
-          );
-
-          if (moduloExistente) {
-            nuevosModulos.push(moduloExistente);
-          } else {
-            // Crear un módulo temporal para el nuevo slot
-            nuevosModulos.push({
-              ID_MODULO: `temp-${id_reserva}-${i}`,
-              NOMBRE_MODULO: `Módulo ${ordenActual}`,
-              ORDEN: ordenActual,
-              ID_RESERVA: id_reserva,
-            });
-          }
+          const nuevoModulo = {
+            ID_MODULO: `temp-${id_reserva}-${ordenActual}`,
+            NOMBRE_MODULO: `Módulo ${ordenActual}`,
+            ORDEN: ordenActual,
+            ID_RESERVA: id_reserva,
+          };
+          nuevosModulos.push(nuevoModulo);
         }
 
         // Asignar el nuevo array
         reservaActual.MODULOS = nuevosModulos;
 
-        // IMPORTANTE: Forzar una actualización del timestamp para que useCalendarData detecte el cambio
+        // IMPORTANTE: Forzar una actualización del timestamp
         reservaActual._lastModified = Date.now();
 
         console.log(
-          `[reservasSlice] Reserva ${id_reserva} actualizada. Nuevos módulos:`,
-          JSON.parse(JSON.stringify(nuevosModulos))
+          `[reservasSlice] Reserva ${id_reserva} actualizada. Módulo inicial PRESERVADO: ${moduloInicialOriginal}`,
+          `Nuevos módulos: ${nuevosModulos.map((m) => m.ORDEN).join(', ')}`
         );
       } else {
         console.error(

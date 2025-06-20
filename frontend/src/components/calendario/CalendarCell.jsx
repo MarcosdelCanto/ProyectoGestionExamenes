@@ -61,19 +61,6 @@ export default function CalendarCell({
     }
     return classes.join(' ');
   };
-  // Log para depuración de clases y cellData
-  if (
-    cellData &&
-    cellData.reservaCompleta &&
-    cellData.reservaCompleta.ID_RESERVA === 175
-  ) {
-    // Log para la reserva específica
-    console.log(
-      `[CalendarCell DEBUG 175] fecha=${fecha}, modulo.ORDEN=${modulo?.ORDEN}, cellData:`,
-      JSON.parse(JSON.stringify(cellData || null)),
-      `Clases: ${getCellClassName()}`
-    );
-  }
 
   // SIMPLIFICAR: Manejador de clic
   const handleClick = () => {

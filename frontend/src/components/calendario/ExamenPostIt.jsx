@@ -59,65 +59,51 @@ export default function ExamenPostIt({
     return estado;
   };
 
-  // Sincronizar con prop externa
+  // Sincronizar con prop externa PERO sin cambiar la posición
   useEffect(() => {
-    // Sincronizar el estado interno con la prop moduloscount si esta cambia
-    // O con la cantidad de módulos del examen si la prop moduloscount no está definida
-    const modulosDeReservaDirectos = examenAsignadoCompleto?.MODULOS?.length;
-    // Intentar obtener de la reserva completa primero, luego del examen dentro de la reserva, luego del examen directo
-    let modulosDeExamenEnReserva;
-    if (examenAsignadoCompleto) {
-      modulosDeExamenEnReserva =
-        examenAsignadoCompleto?.reservaCompleta?.Examen
-          ?.CANTIDAD_MODULOS_EXAMEN ||
-        examenAsignadoCompleto?.Examen?.CANTIDAD_MODULOS_EXAMEN;
-    }
-    const modulosDeExamenPropDirecta = examen?.CANTIDAD_MODULOS_EXAMEN; // Prop 'examen' directa
-    const modulosDePropModuloscount = moduloscount; // Prop directa moduloscount (alta prioridad si existe)
+    const nuevaCantidad =
+      moduloscount ||
+      examen?.MODULOS?.length ||
+      examen?.CANTIDAD_MODULOS_EXAMEN ||
+      examenAsignadoCompleto?.Examen?.CANTIDAD_MODULOS_EXAMEN ||
+      examenAsignadoCompleto?.MODULOS?.length ||
+      3;
 
-    let nuevaCantidadDesdeProps;
-
-    if (modulosDePropModuloscount !== undefined) {
-      nuevaCantidadDesdeProps = modulosDePropModuloscount;
-    } else if (modulosDeExamenEnReserva !== undefined) {
-      nuevaCantidadDesdeProps = modulosDeExamenEnReserva;
-    } else if (
-      modulosDeReservaDirectos !== undefined &&
-      modulosDeReservaDirectos > 0
-    ) {
-      // Usar la longitud del array MODULOS de examenAsignadoCompleto si existe
-      nuevaCantidadDesdeProps = modulosDeReservaDirectos;
-    } else if (modulosDeExamenPropDirecta !== undefined) {
-      nuevaCantidadDesdeProps = modulosDeExamenPropDirecta;
-    } else {
-      nuevaCantidadDesdeProps = 3; // Fallback
-    }
-    if (nuevaCantidadDesdeProps !== moduloscountState) {
+    // SOLO actualizar si la cantidad cambió, NO la posición
+    if (nuevaCantidad !== moduloscountState) {
       console.log(
-        `[ExamenPostIt SYNC useEffect] Sincronizando moduloscountState de ${moduloscountState} a ${nuevaCantidadDesdeProps}.`,
-        `Detalles: prop moduloscount=${modulosDePropModuloscount},`,
-        `examenAsignadoCompleto.MODULOS.length=${modulosDeReservaDirectos},`,
-        `examenAsignadoCompleto.Examen.CANTIDAD_MODULOS_EXAMEN=${modulosDeExamenEnReserva},`,
-        `examen.CANTIDAD_MODULOS_EXAMEN=${modulosDeExamenPropDirecta},`,
-        `examenAsignadoCompleto (props):`,
-        JSON.parse(JSON.stringify(examenAsignadoCompleto || {})) // Log seguro
+        `[ExamenPostIt] Sincronizando cantidad de módulos: ${moduloscountState} → ${nuevaCantidad}`
       );
-      setModuloscountState(nuevaCantidadDesdeProps);
+      setModuloscountState(nuevaCantidad);
     }
-  }, [moduloscount, examen, examenAsignadoCompleto, moduloscountState]);
 
-  // Log para depurar la prop examen
+    // NO tocar moduloInicial ni fecha - deben mantenerse constantes
+  }, [moduloscount, examen, examenAsignadoCompleto]);
+
+  // Log para depurar la prop examen - AGREGAR VERIFICACIÓN DE POSICIÓN
   useEffect(() => {
-    // Solo loguear para post-its reales en el calendario y no para vistas previas de arrastre
-    if (!isPreview && !isDragOverlay && examen) {
-      console.log(
-        '[ExamenPostIt] Prop examen recibida/actualizada:',
-        JSON.parse(JSON.stringify(examen)), // Loguear una copia para ver el estado actual
-        'Reserva Asociada (estado confirmación):',
-        examenAsignadoCompleto?.reservaCompleta?.ESTADO_CONFIRMACION_DOCENTE
-      );
+    if (!isPreview && !isDragOverlay && examenAsignadoCompleto) {
+      console.log('[ExamenPostIt] Estado actual del post-it:', {
+        ID_RESERVA: examenAsignadoCompleto?.reservaCompleta?.ID_RESERVA,
+        fecha: fecha,
+        moduloInicial: moduloInicial,
+        modulosActuales: moduloscountState,
+        modulosEnReserva: examenAsignadoCompleto?.MODULOS?.length || 0,
+        ordenesModulos:
+          examenAsignadoCompleto?.MODULOS?.map((m) => m.ORDEN).sort(
+            (a, b) => a - b
+          ) || [],
+      });
     }
-  }, [examen, examenAsignadoCompleto, isPreview, isDragOverlay]);
+  }, [
+    examen,
+    examenAsignadoCompleto,
+    isPreview,
+    isDragOverlay,
+    fecha,
+    moduloInicial,
+    moduloscountState,
+  ]);
 
   /**
    * Handler para enviar reserva a docente (EN_CURSO → PENDIENTE)
@@ -238,6 +224,15 @@ export default function ExamenPostIt({
     e.stopPropagation();
     e.preventDefault();
 
+    console.log(`[ExamenPostIt] ANTES de aumentar módulo:`, {
+      moduloscountState,
+      fecha,
+      moduloInicial,
+      reservaId:
+        examenAsignadoCompleto?.reservaCompleta?.ID_RESERVA ||
+        examenAsignadoCompleto?.ID_RESERVA,
+    });
+
     if (moduloscountState >= maxModulos) {
       toast.warn(`No se pueden asignar más de ${maxModulos} módulos.`);
       return;
@@ -272,15 +267,19 @@ export default function ExamenPostIt({
       console.log(
         `[ExamenPostIt] Aumentando módulos para reserva ${reservaId} de ${moduloscountState} a ${nuevaCantidad}`
       );
+      console.log(
+        `[ExamenPostIt] Posición DEBE mantenerse en: fecha=${fecha}, moduloInicial=${moduloInicial}`
+      );
 
       // Actualizar estado local inmediatamente
       setModuloscountState(nuevaCantidad);
 
-      // Actualizar Redux store
+      // PASAR EL MÓDULO INICIAL AL REDUX - ESTA ES LA CLAVE
       dispatch(
         actualizarModulosReservaLocalmente({
           id_reserva: reservaId,
           nuevaCantidadModulos: nuevaCantidad,
+          moduloInicialActual: moduloInicial, // <-- AGREGAR ESTA LÍNEA
         })
       );
 
@@ -318,11 +317,12 @@ export default function ExamenPostIt({
       // Actualizar estado local inmediatamente
       setModuloscountState(nuevaCantidad);
 
-      // Actualizar Redux store
+      // PASAR EL MÓDULO INICIAL AL REDUX
       dispatch(
         actualizarModulosReservaLocalmente({
           id_reserva: reservaId,
           nuevaCantidadModulos: nuevaCantidad,
+          moduloInicialActual: moduloInicial, // <-- AGREGAR ESTA LÍNEA
         })
       );
 

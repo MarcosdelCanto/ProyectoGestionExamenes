@@ -225,9 +225,12 @@ export default function AgendaSemanal({
         // Determinar los IDs de los módulos a utilizar
         const modulosIdsParaReserva = determinarModulosParaExamen(
           draggedExamen,
-          modulo, // Usar el objeto módulo completo
+          modulo,
           modulos
         );
+
+        // OBTENER EL MÓDULO INICIAL PARA GUARDARLO
+        const moduloInicial = modulo.ORDEN;
 
         if (modulosIdsParaReserva.length === 0) {
           toast.error(
@@ -332,8 +335,8 @@ export default function AgendaSemanal({
           fecha_reserva: fecha,
           sala_id_sala: salaId || selectedSala.ID_SALA,
           modulos_ids: modulosIdsParaReserva,
-          // Por ahora usamos un docente por defecto, luego lo haremos seleccionable
-          docente_ids: [1], // ID de docente por defecto, luego lo cambiaremos
+          docente_ids: [1],
+          modulo_inicial: moduloInicial, // AGREGAR ESTA LÍNEA
         };
 
         console.log('Creando reserva directamente con payload:', payload);
@@ -341,9 +344,17 @@ export default function AgendaSemanal({
         // Llamar al servicio para crear la reserva
         const response = await crearReservaEnCursoService(payload);
 
-        toast.success('Examen programado exitosamente');
+        // ASEGURAR QUE LA RESPUESTA TENGA EL MÓDULO INICIAL
+        if (response && response.reserva) {
+          response.reserva.MODULO_INICIAL_RESERVA = moduloInicial;
 
-        // Notificar que el drop se ha procesado (para limpiar estados)
+          // Agregar al store de Redux
+          dispatch(agregarReserva(response.reserva));
+
+          console.log(`✅ Reserva creada con módulo inicial: ${moduloInicial}`);
+        }
+
+        toast.success('Examen programado exitosamente');
         onDropProcessed();
       } catch (error) {
         console.error('Error al crear reserva directa:', error);
@@ -355,7 +366,14 @@ export default function AgendaSemanal({
     };
 
     procesarDropDirecto();
-  }, [draggedExamen, dropTargetCell, reservas, selectedSala, modulos]); // <-- AGREGAR 'reservas' como dependencia
+  }, [
+    draggedExamen,
+    dropTargetCell,
+    reservas,
+    selectedSala,
+    modulos,
+    dispatch,
+  ]);
 
   // AGREGAR ESTE useEffect DESPUÉS DE definir 'reservas' y antes del useEffect de procesarDropDirecto:
   useEffect(() => {
