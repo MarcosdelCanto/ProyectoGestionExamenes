@@ -7,7 +7,7 @@ import {
 } from '../../services/reservaService';
 import { toast } from 'react-toastify'; // <-- AÑADIR IMPORTACIÓN SI NO ESTÁ
 import { fetchAllDocentes } from '../../services/usuarioService';
-import { useDispatch } from 'react-redux'; // Agregar esta importación
+import { useDispatch, useSelector } from 'react-redux'; // Agregar esta importación
 import { actualizarModulosReservaLocalmente } from '../../store/reservasSlice'; // Agregar esta importación
 import './styles/PostIt.css';
 
@@ -33,7 +33,7 @@ export default function ExamenPostIt({
   onReservaStateChange,
   ...props
 }) {
-  const dispatch = useDispatch(); // Agregar esta línea
+  const dispatch = useDispatch();
   const [moduloscountState, setModuloscountState] = useState(
     moduloscount ||
       examen?.MODULOS?.length ||
@@ -42,7 +42,7 @@ export default function ExamenPostIt({
   );
   const [isProcessingAction, setIsProcessingAction] = useState(false);
 
-  // Agregar estado para selección de docente (para implementación futura)
+  // Estado para selección de docente
   const [selectedDocenteId, setSelectedDocenteId] = useState(null);
   const [docentes, setDocentes] = useState([]);
 
@@ -59,7 +59,7 @@ export default function ExamenPostIt({
     return estado;
   };
 
-  // Sincronizar con prop externa PERO sin cambiar la posición
+  // Sincronizar con prop externa
   useEffect(() => {
     const nuevaCantidad =
       moduloscount ||
@@ -69,15 +69,9 @@ export default function ExamenPostIt({
       examenAsignadoCompleto?.MODULOS?.length ||
       3;
 
-    // SOLO actualizar si la cantidad cambió, NO la posición
     if (nuevaCantidad !== moduloscountState) {
-      console.log(
-        `[ExamenPostIt] Sincronizando cantidad de módulos: ${moduloscountState} → ${nuevaCantidad}`
-      );
       setModuloscountState(nuevaCantidad);
     }
-
-    // NO tocar moduloInicial ni fecha - deben mantenerse constantes
   }, [moduloscount, examen, examenAsignadoCompleto]);
 
   // Log para depurar la prop examen - AGREGAR VERIFICACIÓN DE POSICIÓN
@@ -124,7 +118,7 @@ export default function ExamenPostIt({
 
       if (!reservaId) {
         console.error('No se encontró ID de reserva');
-        toast.error('Error: No se puede procesar la reserva'); // <-- CAMBIO AQUÍ
+        toast.error('Error: No se puede procesar la reserva');
         return;
       }
 
@@ -154,10 +148,10 @@ export default function ExamenPostIt({
         });
       }
 
-      toast.success('✅ Reserva enviada a docente para confirmación'); // <-- CAMBIO AQUÍ
+      toast.success('✅ Reserva enviada a docente para confirmación');
     } catch (error) {
       console.error('[ExamenPostIt] Error al enviar reserva a docente:', error);
-      toast.error(`❌ Error: ${error.message}`); // <-- CAMBIO AQUÍ
+      toast.error(`❌ Error: ${error.message}`);
     } finally {
       setIsProcessingAction(false);
     }
@@ -194,7 +188,7 @@ export default function ExamenPostIt({
 
       if (!reservaId) {
         console.error('No se encontró ID de reserva');
-        toast.error('Error: No se puede procesar la reserva'); // <-- CAMBIO AQUÍ
+        toast.error('Error: No se puede procesar la reserva');
         return;
       }
 
@@ -214,7 +208,7 @@ export default function ExamenPostIt({
       toast.success('Reserva cancelada y examen reactivado'); // <-- AÑADIR TOAST DE ÉXITO
     } catch (error) {
       console.error('[ExamenPostIt] Error al cancelar reserva:', error);
-      toast.error(`❌ Error: ${error.message || 'Error desconocido'}`); // <-- CAMBIO AQUÍ
+      toast.error(`❌ Error: ${error.message || 'Error desconocido'}`);
     } finally {
       setIsProcessingAction(false);
     }
@@ -224,73 +218,57 @@ export default function ExamenPostIt({
     e.stopPropagation();
     e.preventDefault();
 
-    console.log(`[ExamenPostIt] ANTES de aumentar módulo:`, {
-      moduloscountState,
-      fecha,
-      moduloInicial,
-      reservaId:
-        examenAsignadoCompleto?.reservaCompleta?.ID_RESERVA ||
-        examenAsignadoCompleto?.ID_RESERVA,
-    });
-
     if (moduloscountState >= maxModulos) {
       toast.warn(`No se pueden asignar más de ${maxModulos} módulos.`);
       return;
-    }
-
-    const nuevaCantidad = moduloscountState + 1;
-
-    // Verificar conflictos antes de actualizar
-    if (
-      onCheckConflict &&
-      typeof onCheckConflict === 'function' &&
-      fecha &&
-      moduloInicial
-    ) {
-      const hasConflict = onCheckConflict(
-        examen.ID_EXAMEN,
-        fecha,
-        moduloInicial,
-        nuevaCantidad
-      );
-      if (hasConflict) {
-        toast.error('Conflicto detectado. No se puede aumentar la duración.');
-        return;
-      }
     }
 
     const reservaId =
       examenAsignadoCompleto?.reservaCompleta?.ID_RESERVA ||
       examenAsignadoCompleto?.ID_RESERVA;
 
-    if (reservaId) {
-      console.log(
-        `[ExamenPostIt] Aumentando módulos para reserva ${reservaId} de ${moduloscountState} a ${nuevaCantidad}`
-      );
-      console.log(
-        `[ExamenPostIt] Posición DEBE mantenerse en: fecha=${fecha}, moduloInicial=${moduloInicial}`
-      );
+    const nuevaCantidad = moduloscountState + 1;
 
-      // Actualizar estado local inmediatamente
+    // Verificación de conflictos
+    if (fecha && moduloInicial && onCheckConflict) {
+      try {
+        const hasConflict = onCheckConflict({
+          examenId: examen.ID_EXAMEN,
+          reservaId: reservaId,
+          fecha: fecha,
+          moduloInicial: moduloInicial,
+          cantidadModulos: nuevaCantidad,
+        });
+
+        if (hasConflict) {
+          toast.error(
+            'Conflicto detectado. Ya existe otra reserva en ese horario.'
+          );
+          return;
+        }
+      } catch (error) {
+        console.error('Error en checkConflict:', error);
+        return;
+      }
+    }
+
+    // Ejecutar el cambio
+    if (reservaId) {
       setModuloscountState(nuevaCantidad);
 
-      // PASAR EL MÓDULO INICIAL AL REDUX - ESTA ES LA CLAVE
       dispatch(
         actualizarModulosReservaLocalmente({
           id_reserva: reservaId,
           nuevaCantidadModulos: nuevaCantidad,
-          moduloInicialActual: moduloInicial, // <-- AGREGAR ESTA LÍNEA
+          moduloInicialActual: moduloInicial,
         })
       );
 
-      // Llamar callback si existe (para comunicación con backend)
       if (onModulosChange) {
         onModulosChange(reservaId, nuevaCantidad);
       }
-    } else {
-      console.warn(
-        '[ExamenPostIt] No se pudo obtener reservaId para aumentar módulos'
-      );
+
+      toast.success(`Módulos aumentados a ${nuevaCantidad}`);
     }
   };
 
@@ -310,26 +288,21 @@ export default function ExamenPostIt({
       examenAsignadoCompleto?.ID_RESERVA;
 
     if (reservaId) {
-      console.log(
-        `[ExamenPostIt] Disminuyendo módulos para reserva ${reservaId} de ${moduloscountState} a ${nuevaCantidad}`
-      );
-
-      // Actualizar estado local inmediatamente
       setModuloscountState(nuevaCantidad);
 
-      // PASAR EL MÓDULO INICIAL AL REDUX
       dispatch(
         actualizarModulosReservaLocalmente({
           id_reserva: reservaId,
           nuevaCantidadModulos: nuevaCantidad,
-          moduloInicialActual: moduloInicial, // <-- AGREGAR ESTA LÍNEA
+          moduloInicialActual: moduloInicial,
         })
       );
 
-      // Llamar callback si existe (para comunicación con backend)
       if (onModulosChange) {
         onModulosChange(reservaId, nuevaCantidad);
       }
+
+      toast.success(`Módulos reducidos a ${nuevaCantidad}`);
     } else {
       console.warn(
         '[ExamenPostIt] No se pudo obtener reservaId para disminuir módulos'

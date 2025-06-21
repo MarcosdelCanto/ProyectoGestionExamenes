@@ -132,16 +132,16 @@ export default function AgendaSemanal({
   }, [reservasFromHook, reservasFromStore]);
 
   // AGREGAR ESTE useEffect PARA DEBUGGING
-  useEffect(() => {
-    console.log('🔄 [AgendaSemanal] Estado de reservas:', {
-      fromHook: reservasFromHook?.length || 0,
-      fromStore: reservasFromStore?.length || 0,
-      combined: reservas?.length || 0,
-      hookIds: reservasFromHook?.map((r) => r.ID_RESERVA) || [],
-      storeIds: reservasFromStore?.map((r) => r.ID_RESERVA) || [],
-      combinedIds: reservas?.map((r) => r.ID_RESERVA) || [],
-    });
-  }, [reservas, reservasFromHook, reservasFromStore]);
+  // useEffect(() => {
+  //   console.log('🔄 [AgendaSemanal] Estado de reservas:', {
+  //     fromHook: reservasFromHook?.length || 0,
+  //     fromStore: reservasFromStore?.length || 0,
+  //     combined: reservas?.length || 0,
+  //     hookIds: reservasFromHook?.map((r) => r.ID_RESERVA) || [],
+  //     storeIds: reservasFromStore?.map((r) => r.ID_RESERVA) || [],
+  //     combinedIds: reservas?.map((r) => r.ID_RESERVA) || [],
+  //   });
+  // }, [reservas, reservasFromHook, reservasFromStore]);
 
   // HOOK DE MODALES - Después de definir selectedSala
   const {
@@ -376,21 +376,21 @@ export default function AgendaSemanal({
   ]);
 
   // AGREGAR ESTE useEffect DESPUÉS DE definir 'reservas' y antes del useEffect de procesarDropDirecto:
-  useEffect(() => {
-    console.log('🔄 [AgendaSemanal] Reservas actualizadas:', {
-      fromHook: reservasFromHook.length,
-      fromStore: reservasFromStore.length,
-      using: reservas.length,
-      reservasDetalle: reservas.map((r) => ({
-        ID_RESERVA: r.ID_RESERVA,
-        ID_EXAMEN: r.ID_EXAMEN,
-        FECHA_RESERVA: r.FECHA_RESERVA,
-        ID_SALA: r.ID_SALA,
-        modulosCount: r.MODULOS?.length || 0,
-        _lastModified: r._lastModified,
-      })),
-    });
-  }, [reservas, reservasFromHook, reservasFromStore]);
+  // useEffect(() => {
+  //   console.log('🔄 [AgendaSemanal] Reservas actualizadas:', {
+  //     fromHook: reservasFromHook.length,
+  //     fromStore: reservasFromStore.length,
+  //     using: reservas.length,
+  //     reservasDetalle: reservas.map((r) => ({
+  //       ID_RESERVA: r.ID_RESERVA,
+  //       ID_EXAMEN: r.ID_EXAMEN,
+  //       FECHA_RESERVA: r.FECHA_RESERVA,
+  //       ID_SALA: r.ID_SALA,
+  //       modulosCount: r.MODULOS?.length || 0,
+  //       _lastModified: r._lastModified,
+  //     })),
+  //   });
+  // }, [reservas, reservasFromHook, reservasFromStore]);
 
   // Función auxiliar para determinar los módulos contiguos necesarios
   const determinarModulosParaExamen = (examen, modulo, todosLosModulos) => {
