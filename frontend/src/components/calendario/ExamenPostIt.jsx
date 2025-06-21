@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Badge } from 'react-bootstrap';
-import { FaPlus, FaMinus } from 'react-icons/fa'; // Importar iconos
+import { Badge, Modal, Button } from 'react-bootstrap'; // Agregar Modal y Button
+import { FaPlus, FaMinus, FaExclamationTriangle } from 'react-icons/fa'; // Agregar icono de advertencia
 import {
   enviarReservaADocente,
   cancelarReservaCompleta, // Usar esta en lugar de descartarReservaService
@@ -45,6 +45,7 @@ export default function ExamenPostIt({
   // Estado para selección de docente
   const [selectedDocenteId, setSelectedDocenteId] = useState(null);
   const [docentes, setDocentes] = useState([]);
+  const [showCancelModal, setShowCancelModal] = useState(false);
 
   /**
    * Obtiene el estado de confirmación docente de la reserva
@@ -311,6 +312,53 @@ export default function ExamenPostIt({
   };
 
   /**
+   * Handler para mostrar modal de confirmación
+   */
+  const handleClickCancelar = (e) => {
+    e.stopPropagation();
+    e.preventDefault();
+    setShowCancelModal(true);
+  };
+
+  /**
+   * Handler para cancelar reserva después de confirmación
+   */
+  const handleConfirmarCancelacion = async () => {
+    if (isProcessingAction) return;
+
+    try {
+      setIsProcessingAction(true);
+      setShowCancelModal(false); // Cerrar modal
+
+      const reservaId =
+        examenAsignadoCompleto?.reservaCompleta?.ID_RESERVA ||
+        examenAsignadoCompleto?.ID_RESERVA;
+
+      if (!reservaId) {
+        console.error('No se encontró ID de reserva');
+        toast.error('Error: No se puede procesar la reserva');
+        return;
+      }
+
+      const response = await cancelarReservaCompleta(reservaId);
+
+      if (onReservaStateChange) {
+        onReservaStateChange(reservaId, 'ELIMINADO', {
+          message: 'Reserva cancelada y examen reactivado',
+          previousState: getEstadoConfirmacion(),
+          examen_id: response.examen_id,
+        });
+      }
+      toast.success('Reserva cancelada y examen reactivado');
+    } catch (error) {
+      console.error('[ExamenPostIt] Error al cancelar reserva:', error);
+      toast.error(`❌ Error: ${error.message || 'Error desconocido'}`);
+    } finally {
+      setIsProcessingAction(false);
+    }
+  };
+
+  /**
    * Genera los botones de acción según el estado de confirmación docente
    */
   const getActionButtons = () => {
@@ -344,15 +392,16 @@ export default function ExamenPostIt({
 
             <button
               className="btn btn-success btn-sm action-btn"
-              onClick={handleEnviarADocente} // Ya tiene e.stopPropagation
+              onClick={handleEnviarADocente}
               disabled={isProcessingAction}
               title="Enviar a docente para confirmación"
             >
               {isProcessingAction ? '⏳' : '✓'}
             </button>
+            {/* CANCELAR SOLO EN EN_CURSO */}
             <button
               className="btn btn-danger btn-sm action-btn"
-              onClick={handleCancelarReserva} // Ya tiene e.stopPropagation
+              onClick={handleClickCancelar}
               disabled={isProcessingAction}
               title="Cancelar reserva"
             >
@@ -367,14 +416,7 @@ export default function ExamenPostIt({
             <Badge bg="warning" text="dark" className="status-badge">
               📋 Pendiente
             </Badge>
-            <button
-              className="btn btn-outline-danger btn-sm action-btn"
-              onClick={handleCancelarReserva} // Ya tiene e.stopPropagation
-              disabled={isProcessingAction}
-              title="Cancelar reserva"
-            >
-              {isProcessingAction ? '⏳' : '✕'}
-            </button>
+            {/* NO HAY BOTÓN DE CANCELAR EN PENDIENTE */}
           </div>
         );
 
@@ -384,46 +426,33 @@ export default function ExamenPostIt({
             <Badge bg="info" className="status-badge">
               📝 Revisión
             </Badge>
-            <button
-              className="btn btn-outline-danger btn-sm action-btn"
-              onClick={handleCancelarReserva} // Ya tiene e.stopPropagation
-              disabled={isProcessingAction}
-              title="Cancelar reserva"
-            >
-              {isProcessingAction ? '⏳' : '✕'}
-            </button>
+            {/* NO HAY BOTÓN DE CANCELAR EN REQUIERE_REVISION */}
           </div>
         );
 
       case 'CONFIRMADO':
         return (
-          <div className="status-info">
+          <div className="status-info d-flex align-items-center gap-2">
             <Badge bg="success" className="status-badge">
               ✅ Confirmado
             </Badge>
+            {/* NO HAY BOTÓN DE CANCELAR EN CONFIRMADO */}
           </div>
         );
 
-      case 'DESCARTADO':
+      case 'RECHAZADO':
         return (
-          <div className="status-info">
+          <div className="status-info d-flex align-items-center gap-2">
             <Badge bg="danger" className="status-badge">
-              🗑️ Descartado
+              ❌ Rechazado
             </Badge>
+            {/* NO HAY BOTÓN DE CANCELAR EN RECHAZADO */}
           </div>
         );
 
       default:
-        return (
-          <button
-            className="btn btn-outline-danger btn-sm action-btn"
-            onClick={handleCancelarReserva} // Ya tiene e.stopPropagation
-            disabled={isProcessingAction}
-            title="Eliminar"
-          >
-            {isProcessingAction ? '⏳' : '✕'}
-          </button>
-        );
+        // Para estados desconocidos, no mostrar botones
+        return null;
     }
   };
 
@@ -479,62 +508,135 @@ export default function ExamenPostIt({
   if (!examen) return null;
 
   return (
-    <div
-      ref={setNodeRef}
-      style={getStyles()}
-      className={`examen-post-it ${isBeingDragged ? 'being-dragged' : ''} ${
-        isDragOverlay ? 'drag-overlay is-animating' : '' // Añadir is-animating aquí
-      }`}
-      data-estado={getEstadoConfirmacion()}
-      {...props}
-    >
-      <div className="examen-content">
-        <div className="examen-header d-flex justify-content-between align-items-start">
-          <div className="examen-info flex-grow-1">
-            <div className="examen-title">
-              {examen.NOMBRE_ASIGNATURA || examen.NOMBRE_EXAMEN || 'Sin nombre'}
+    <>
+      <div
+        ref={setNodeRef}
+        style={getStyles()}
+        className={`examen-post-it ${isBeingDragged ? 'being-dragged' : ''} ${
+          isDragOverlay ? 'drag-overlay is-animating' : ''
+        }`}
+        data-estado={getEstadoConfirmacion()}
+        {...props}
+      >
+        <div className="examen-content">
+          <div className="examen-header d-flex justify-content-between align-items-start">
+            <div className="examen-info flex-grow-1">
+              <div className="examen-title">
+                {examen.NOMBRE_ASIGNATURA ||
+                  examen.NOMBRE_EXAMEN ||
+                  'Sin nombre'}
+              </div>
+              <div className="examen-details text-muted small">
+                {examen.NOMBRE_CARRERA && <div>{examen.NOMBRE_CARRERA}</div>}
+                {examen.NOMBRE_SECCION && (
+                  <div>Sección: {examen.NOMBRE_SECCION}</div>
+                )}
+              </div>
             </div>
-            <div className="examen-details text-muted small">
-              {examen.NOMBRE_CARRERA && <div>{examen.NOMBRE_CARRERA}</div>}
-              {examen.NOMBRE_SECCION && (
-                <div>Sección: {examen.NOMBRE_SECCION}</div>
-              )}
-            </div>
+
+            {/* Botones de acción según el estado */}
+            <div className="action-container">{getActionButtons()}</div>
           </div>
 
-          {/* Botones de acción según el estado */}
-          <div className="action-container">{getActionButtons()}</div>
-        </div>
+          {/* Información de módulos */}
+          <div className="modulos-info mt-2">
+            <small className="text-muted">
+              Módulos: {moduloscountState}
+              {fecha && moduloInicial && (
+                <span>
+                  {' '}
+                  | {fecha} - Módulo {moduloInicial}
+                </span>
+              )}
+            </small>
+          </div>
 
-        {/* Información de módulos */}
-        <div className="modulos-info mt-2">
-          <small className="text-muted">
-            Módulos: {moduloscountState}
-            {fecha && moduloInicial && (
-              <span>
-                {' '}
-                | {fecha} - Módulo {moduloInicial}
-              </span>
-            )}
-          </small>
+          {/* Selector de docente (para implementación futura) */}
+          {docentes.length > 0 && (
+            <select
+              value={selectedDocenteId}
+              onChange={(e) => setSelectedDocenteId(e.target.value)}
+              className="form-select form-select-sm mt-2"
+            >
+              <option value="">Seleccionar docente</option>
+              {docentes.map((docente) => (
+                <option key={docente.ID_USUARIO} value={docente.ID_USUARIO}>
+                  {docente.NOMBRE} {docente.APELLIDO}
+                </option>
+              ))}
+            </select>
+          )}
         </div>
-
-        {/* Selector de docente (para implementación futura) */}
-        {docentes.length > 0 && (
-          <select
-            value={selectedDocenteId}
-            onChange={(e) => setSelectedDocenteId(e.target.value)}
-            className="form-select form-select-sm mt-2"
-          >
-            <option value="">Seleccionar docente</option>
-            {docentes.map((docente) => (
-              <option key={docente.ID_USUARIO} value={docente.ID_USUARIO}>
-                {docente.NOMBRE} {docente.APELLIDO}
-              </option>
-            ))}
-          </select>
-        )}
       </div>
-    </div>
+
+      {/* Modal de confirmación - solo se muestra si está EN_CURSO */}
+      <Modal
+        show={showCancelModal}
+        onHide={() => setShowCancelModal(false)}
+        centered
+      >
+        <Modal.Header closeButton className="border-0 pb-0">
+          <Modal.Title className="d-flex align-items-center text-danger">
+            <FaExclamationTriangle className="me-2" />
+            Confirmar Cancelación
+          </Modal.Title>
+        </Modal.Header>
+        <Modal.Body className="pt-2">
+          <div className="mb-3">
+            <p className="mb-2">
+              ¿Estás seguro de que quieres{' '}
+              <strong>cancelar esta reserva</strong>?
+            </p>
+
+            {/* Información de la reserva */}
+            <div className="alert alert-light border-start border-4 border-warning">
+              <div className="fw-semibold text-dark mb-1">
+                {examen.NOMBRE_ASIGNATURA || 'Reserva'}
+              </div>
+              <small className="text-muted">
+                {fecha && `📅 ${fecha}`}
+                {moduloInicial && ` • 🕒 Módulo ${moduloInicial}`}
+                {moduloscountState && ` • 📊 ${moduloscountState} módulos`}
+              </small>
+            </div>
+
+            {/* Consecuencias */}
+            <div className="mb-3">
+              <small className="text-muted fw-semibold">Esta acción:</small>
+              <ul className="small text-muted mb-0 ps-3">
+                <li>Eliminará la reserva en desarrollo</li>
+                <li>Liberará los módulos ocupados</li>
+                <li>Volverá el examen al selector</li>
+                <li className="text-danger">No se puede deshacer</li>
+              </ul>
+            </div>
+
+            {/* Nota adicional */}
+            <div className="alert alert-info border-0 bg-light">
+              <small className="text-muted">
+                <strong>Nota:</strong> Solo puedes cancelar reservas que aún no
+                han sido enviadas al docente.
+              </small>
+            </div>
+          </div>
+        </Modal.Body>
+        <Modal.Footer className="border-0 pt-0">
+          <Button
+            variant="outline-secondary"
+            onClick={() => setShowCancelModal(false)}
+            disabled={isProcessingAction}
+          >
+            No, mantener reserva
+          </Button>
+          <Button
+            variant="danger"
+            onClick={handleConfirmarCancelacion}
+            disabled={isProcessingAction}
+          >
+            {isProcessingAction ? '⏳ Cancelando...' : 'Sí, cancelar reserva'}
+          </Button>
+        </Modal.Footer>
+      </Modal>
+    </>
   );
 }
