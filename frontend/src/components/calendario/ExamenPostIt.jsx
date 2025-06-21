@@ -610,14 +610,6 @@ export default function ExamenPostIt({
                 <li className="text-danger">No se puede deshacer</li>
               </ul>
             </div>
-
-            {/* Nota adicional */}
-            <div className="alert alert-info border-0 bg-light">
-              <small className="text-muted">
-                <strong>Nota:</strong> Solo puedes cancelar reservas que aún no
-                han sido enviadas al docente.
-              </small>
-            </div>
           </div>
         </Modal.Body>
         <Modal.Footer className="border-0 pt-0">
