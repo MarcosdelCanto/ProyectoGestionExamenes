@@ -1,5 +1,6 @@
-import { useMemo, useCallback } from 'react';
+import { useSelector } from 'react-redux';
 import { format } from 'date-fns';
+import { useMemo, useCallback } from 'react';
 
 export function useCalendarData({
   reservas,
@@ -8,107 +9,91 @@ export function useCalendarData({
   modulosSeleccionados,
   modulos,
 }) {
-  // SIMPLIFICAR: Una sola fuente de verdad para todas las celdas
+  // Obtener reservas actualizadas de Redux
+  const reservasFromRedux = useSelector((state) => state.reservas.lista);
+
+  // Usar las reservas más actualizadas (priorizar Redux)
+  const reservasActualizadas =
+    reservasFromRedux?.length > 0 ? reservasFromRedux : reservas;
+
+  // Agregar un timestamp para forzar recálculo cuando sea necesario
+  const reservasWithTimestamp = useMemo(() => {
+    return (
+      reservas?.map((reserva) => ({
+        ...reserva,
+        _timestamp: reserva._lastModified || Date.now(),
+      })) || []
+    );
+  }, [reservas]);
+
+  // Una sola fuente de verdad para todas las celdas
   const calendarData = useMemo(() => {
     const data = new Map();
 
     // Procesar reservas confirmadas
-    if (reservas && reservas.length > 0) {
-      console.log(
-        '[useCalendarData] Recibiendo reservas para procesar:',
-        JSON.parse(JSON.stringify(reservas))
-      ); // Log para ver las reservas que llegan al hook
-
-      reservas.forEach((reserva) => {
-        console.log(
-          '[useCalendarData] Procesando para calendarData:',
-          JSON.parse(
-            JSON.stringify({
-              EXAMEN: reserva.Examen,
-              ID_RESERVA: reserva.ID_RESERVA,
-              ESTADO_CONFIRMACION_DOCENTE: reserva.ESTADO_CONFIRMACION_DOCENTE,
-              ID_EXAMEN: reserva.ID_EXAMEN,
-              TIENE_EXAMEN_ANIDADO: !!reserva.Examen,
-              NOMBRE_EXAMEN_ANIDADO:
-                reserva.Examen?.NOMBRE_EXAMEN ||
-                reserva.Examen?.NOMBRE_ASIGNATURA,
-              MODULOS_EN_RESERVA: reserva.MODULOS,
-            })
-          )
-        );
-
+    if (reservasWithTimestamp && reservasWithTimestamp.length > 0) {
+      reservasWithTimestamp.forEach((reserva) => {
         if (reserva.ID_SALA !== selectedSala?.ID_SALA) {
-          console.log(
-            `[useCalendarData] Reserva ${reserva.ID_RESERVA} descartada, sala no coincide: ${reserva.ID_SALA} vs ${selectedSala?.ID_SALA}`
-          );
           return;
         }
 
         const fecha = format(new Date(reserva.FECHA_RESERVA), 'yyyy-MM-dd');
-        // Log para cada reserva ANTES de la condición específica del ID
-        console.log(
-          `[useCalendarData] Chequeando reserva con ID: ${reserva.ID_RESERVA} (tipo: ${typeof reserva.ID_RESERVA})`
-        );
-        const modulosReserva = reserva.MODULOS || []; // Estos son los módulos de la reserva específica
+        const modulosReserva = reserva.MODULOS || [];
 
-        // Log específico para la reserva de prueba
-        if (reserva.ID_RESERVA === 106) {
-          console.log(
-            `[useCalendarData] Reserva ID ${reserva.ID_RESERVA} - modulosReserva (directo de reserva.MODULOS):`,
-            JSON.parse(JSON.stringify(modulosReserva))
-          );
-        }
+        // Usar la cantidad más confiable disponible
         const cantidadModulosReal =
           modulosReserva.length ||
-          reserva.MODULOS_RESERVA_COUNT ||
           reserva.Examen?.CANTIDAD_MODULOS_EXAMEN ||
+          reserva.MODULOS_RESERVA_COUNT ||
           3;
-
-        // console.log('🔍 Procesando reserva:', {
-        //   id: reserva.ID_RESERVA,
-        //   modulosArray: modulosReserva,
-        //   cantidadCalculada: cantidadModulosReal,
-        // });
 
         if (cantidadModulosReal === 0) return;
 
-        // Calcular módulo inicial una sola vez
-        const ordenesModulos = modulosReserva
-          .map((m) => {
-            // 'modulos' aquí es la lista completa de todos los módulos del sistema
-            const moduloCompletoDelSistema = modulos.find(
-              (mod) => mod.ID_MODULO === m.ID_MODULO
-            );
-            return moduloCompletoDelSistema?.ORDEN;
-          })
-          .filter((orden) => orden !== undefined);
+        // Usar módulo inicial de la reserva si está disponible
+        let moduloInicial;
 
-        // Log específico para la reserva de prueba
-        if (reserva.ID_RESERVA === 106) {
-          console.log(
-            `[useCalendarData] Reserva ID ${reserva.ID_RESERVA} - ordenesModulos calculadas:`,
-            ordenesModulos
-          );
+        if (
+          reserva.MODULO_INICIAL_RESERVA &&
+          reserva.MODULO_INICIAL_RESERVA > 0
+        ) {
+          // La reserva tiene un módulo inicial explícito (desde BD)
+          moduloInicial = reserva.MODULO_INICIAL_RESERVA;
+        } else if (modulosReserva.length > 0) {
+          // Calcular desde los módulos existentes
+          const ordenesModulos = modulosReserva
+            .map((m) => {
+              const moduloCompletoDelSistema = modulos.find(
+                (mod) => mod.ID_MODULO === m.ID_MODULO
+              );
+              return moduloCompletoDelSistema?.ORDEN || m.ORDEN;
+            })
+            .filter((orden) => orden !== undefined && orden !== null);
+
+          if (ordenesModulos.length > 0) {
+            moduloInicial = Math.min(...ordenesModulos);
+          } else {
+            return;
+          }
+        } else {
+          // No hay módulos ni módulo inicial definido
+          return;
         }
 
-        if (ordenesModulos.length === 0) return;
-
-        const moduloInicial = Math.min(...ordenesModulos);
-
-        // Crear entrada para cada módulo de la reserva
-        ordenesModulos.forEach((orden) => {
-          const key = `${fecha}-${orden}`;
+        // Crear entrada para todos los módulos necesarios
+        for (let i = 0; i < cantidadModulosReal; i++) {
+          const ordenActual = moduloInicial + i;
+          const key = `${fecha}-${ordenActual}`;
 
           data.set(key, {
             tipo: 'reserva',
             examen: reserva.Examen,
             modulosTotal: cantidadModulosReal,
             moduloInicial,
-            reservaCompleta: reserva, // ← CORREGIR nombre de prop
+            reservaCompleta: reserva,
             fecha,
-            orden,
+            orden: ordenActual,
           });
-        });
+        }
       });
     }
 
@@ -130,7 +115,7 @@ export function useCalendarData({
           examen: selectedExam,
           modulosTotal: modulosSeleccionados.length,
           moduloInicial,
-          reservaCompleta: null, // ← CORREGIR nombre de prop
+          reservaCompleta: null,
           fecha: m.fecha,
           orden: m.numero,
         });
@@ -138,9 +123,15 @@ export function useCalendarData({
     }
 
     return data;
-  }, [reservas, selectedSala, selectedExam, modulosSeleccionados, modulos]);
+  }, [
+    reservasWithTimestamp,
+    selectedSala,
+    selectedExam,
+    modulosSeleccionados,
+    modulos,
+  ]);
 
-  // SIMPLIFICAR: Una función simple para obtener datos de celda
+  // Función simple para obtener datos de celda
   const getCellData = useCallback(
     (fecha, orden) => {
       const key = `${fecha}-${orden}`;
@@ -149,14 +140,14 @@ export function useCalendarData({
     [calendarData]
   );
 
-  // SIMPLIFICAR: Una función simple para determinar si renderizar
+  // Función simple para determinar si renderizar
   const shouldRenderExamen = useCallback((cellData) => {
     if (!cellData) return false;
     // Convertir a número para asegurar la comparación correcta
     return Number(cellData.moduloInicial) === Number(cellData.orden);
   }, []);
 
-  // ÚTIL: Función para verificar si una celda está ocupada
+  // Función para verificar si una celda está ocupada
   const isCellOccupied = useCallback(
     (fecha, orden) => {
       return calendarData.has(`${fecha}-${orden}`);
@@ -164,7 +155,7 @@ export function useCalendarData({
     [calendarData]
   );
 
-  // ÚTIL: Función para obtener el tipo de ocupación
+  // Función para obtener el tipo de ocupación
   const getCellType = useCallback(
     (fecha, orden) => {
       const cellData = calendarData.get(`${fecha}-${orden}`);
@@ -173,72 +164,96 @@ export function useCalendarData({
     [calendarData]
   );
 
-  // NUEVA FUNCIÓN: Verificar conflictos para redimensionamiento
+  // Verificar conflictos para redimensionamiento
   const checkConflict = useCallback(
-    (examenId, fecha, moduloInicial, nuevaCantidadModulos) => {
-      console.log('🔍 Verificando conflicto:', {
-        examenId,
-        fecha,
-        moduloInicial,
-        nuevaCantidadModulos,
-      });
-
+    ({
+      examenId,
+      reservaId,
+      fecha,
+      moduloInicial,
+      cantidadModulos,
+      celdasAVerificar,
+    }) => {
       // Validar parámetros
-      if (!fecha || !moduloInicial || !nuevaCantidadModulos) {
-        console.log('❌ Parámetros inválidos');
+      if (!fecha || !moduloInicial || !cantidadModulos) {
         return true;
       }
 
-      // Verificar que los módulos existan
-      for (let i = 0; i < nuevaCantidadModulos; i++) {
+      // Verificar que los módulos existan en el rango válido
+      for (let i = 0; i < cantidadModulos; i++) {
         const ordenActual = moduloInicial + i;
         const moduloExiste = modulos.some((m) => m.ORDEN === ordenActual);
 
         if (!moduloExiste) {
-          console.log(`❌ Módulo ${ordenActual} no existe`);
           return true;
         }
       }
 
-      // Verificar conflictos con reservas existentes (excluyendo el examen actual)
-      for (let i = 0; i < nuevaCantidadModulos; i++) {
+      // Verificar conflictos con reservas existentes
+      for (let i = 0; i < cantidadModulos; i++) {
         const ordenActual = moduloInicial + i;
 
-        const hayConflicto = reservas.some((reserva) => {
-          // Excluir el mismo examen
-          if (reserva.ID_EXAMEN === examenId) return false;
-
-          // Verificar misma sala y fecha
-          if (reserva.ID_SALA !== selectedSala?.ID_SALA) return false;
-          if (format(new Date(reserva.FECHA_RESERVA), 'yyyy-MM-dd') !== fecha)
+        const reservaConflictiva = reservasActualizadas.find((reserva) => {
+          // Excluir la misma reserva que se está modificando
+          if (reservaId && reserva.ID_RESERVA === reservaId) {
             return false;
+          }
 
-          // Verificar si algún módulo de la reserva conflicta
-          return reserva.MODULOS?.some((m) => {
-            const moduloInfo = modulos.find(
-              (mod) => mod.ID_MODULO === m.ID_MODULO
-            );
-            return moduloInfo?.ORDEN === ordenActual;
+          // Excluir el mismo examen (si se proporciona examenId)
+          if (examenId && reserva.ID_EXAMEN === examenId) {
+            return false;
+          }
+
+          // Verificar misma sala
+          if (reserva.ID_SALA !== selectedSala?.ID_SALA) {
+            return false;
+          }
+
+          // Verificar misma fecha
+          if (format(new Date(reserva.FECHA_RESERVA), 'yyyy-MM-dd') !== fecha) {
+            return false;
+          }
+
+          // Verificar si algún módulo de la reserva conflicta con el orden actual
+          const moduloConflicta = reserva.MODULOS?.some((m) => {
+            let ordenDelModulo;
+
+            // Manejar módulos temporales (creados por Redux)
+            if (
+              typeof m.ID_MODULO === 'string' &&
+              m.ID_MODULO.startsWith('temp-')
+            ) {
+              // Para módulos temporales, usar directamente el ORDEN del objeto
+              ordenDelModulo = m.ORDEN;
+            } else {
+              // Para módulos reales, buscar en el array modulos
+              const moduloInfo = modulos.find(
+                (mod) => mod.ID_MODULO === m.ID_MODULO
+              );
+              ordenDelModulo = moduloInfo?.ORDEN;
+            }
+
+            return ordenDelModulo === ordenActual;
           });
+
+          return moduloConflicta;
         });
 
-        if (hayConflicto) {
-          console.log(`❌ Conflicto en módulo ${ordenActual}`);
+        if (reservaConflictiva) {
           return true;
         }
       }
 
-      console.log('✅ Sin conflictos');
       return false;
     },
-    [reservas, selectedSala, modulos]
+    [reservasActualizadas, selectedSala, modulos]
   );
 
   return {
+    calendarData,
     getCellData,
     shouldRenderExamen,
-    isCellOccupied,
+    checkConflict,
     getCellType,
-    checkConflict, // ← NUEVA FUNCIÓN
   };
 }

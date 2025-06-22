@@ -14,17 +14,29 @@
   user-select: none;
   transition: all 0.2s ease;
 }
-
-/* === ESTADOS PRINCIPALES === */
+/* Estilo base para el post-it cuando está en el selector (preview) */
 .examen-post-it.is-preview {
-  position: relative;
+  position: relative; /* Para que el contenido interno se posicione correctamente */
   padding: 4px;
   cursor: grab;
-  height: 120px !important; /* Altura fija para preview */
-  min-height: 120px !important;
-  max-height: 120px !important;
+  width: 100%; /* Tomará el ancho del wrapper en ExamenSelector */
+  height: 100%; /* Tomará la altura del wrapper en ExamenSelector */
+  /* Las reglas de altura fija que estaban aquí (120px !important) se eliminaron
+     porque el tamaño ahora lo dicta el wrapper y el height: 100% del post-it */
 }
 
+/* Anular efecto hover del calendario cuando el post-it está en el selector (preview) */
+.examen-post-it.is-preview:hover {
+  background-color: inherit; /* O el color de fondo base del post-it si es diferente */
+}
+
+/* Asegurar que data-modulos no afecte la altura del post-it en el selector */
+.examen-post-it.is-preview[data-modulos] {
+  height: 100% !important; /* Debe tomar la altura del wrapper */
+  min-height: auto !important; /* Resetear min-height si no es necesario */
+}
+
+/* Estilo base para el post-it cuando está colocado en el calendario */
 .examen-post-it.is-placed {
   position: absolute;
   padding: 4px;
@@ -32,6 +44,10 @@
   left: 0;
   right: 0;
   /* Altura dinámica basada en módulos */
+  width: 100%; /* Ocupa todo el ancho de la celda */
+  z-index: 50; /* Un z-index base para los post-its colocados */
+  transition: height 0.2s ease; /* Transición para el cambio de altura */
+  overflow: visible; /* Permitir que el resize handle sea visible */
 }
 
 /* === ALTURAS DINÁMICAS SOLO PARA EXÁMENES COLOCADOS === */
@@ -77,13 +93,14 @@
   transform: rotate(3deg);
   box-shadow: 0 8px 16px rgba(0, 0, 0, 0.3);
   z-index: 1000;
+  /* Cuando se arrastra un post-it que estaba colocado */
+}
+.examen-post-it.is-placed.is-dragging {
+  z-index: 800 !important; /* Asegurar que esté por encima de otros post-its colocados */
 }
 
-.examen-post-it.is-resizing {
-  z-index: 1000;
-  box-shadow: 0 4px 12px rgba(0, 0, 255, 0.3);
-  border: 2px solid #007bff;
-  transition: none;
+.examen-post-it.is-placed.is-resizing {
+  z-index: 500 !important; /* Asegurar que esté por encima durante el resize */
 }
 
 /* === CONTENIDO === */
@@ -91,9 +108,9 @@
   flex: 1;
   display: flex;
   flex-direction: column;
-  height: calc(100% - 12px); /* ← Restar altura del resize handle */
   position: relative;
   padding-bottom: 0; /* ← Remover padding bottom */
+  /* La altura será determinada por flex: 1 y el espacio disponible */
 }
 
 .examen-header {
@@ -114,76 +131,6 @@
 .calendar-table .calendar-cell {
   overflow: visible !important;
   position: relative;
-}
-
-/* === ESTILOS PARA LAS BARRAS EXTERNAS (Portal) === */
-/* Estos estilos se aplicarán a las barras renderizadas en el body */
-.resize-handle-portal {
-  position: absolute;
-  background: rgba(0, 123, 255, 0.8);
-  color: white;
-  cursor: ns-resize;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 10px;
-  z-index: 999999;
-  border: 1px solid #0056b3;
-  user-select: none;
-  pointer-events: auto;
-  border-radius: 0 0 4px 4px;
-  transition: background-color 0.2s ease;
-}
-
-.resize-handle-portal:hover {
-  background: rgba(0, 123, 255, 1);
-}
-
-.resize-handle-portal.is-resizing {
-  background: #007bff;
-  transition: none;
-}
-
-/* === RESIZE HANDLE MEJORADO === */
-.resize-handle {
-  /* Asegurar que sea clickeable */
-  pointer-events: auto !important;
-  user-select: none !important;
-
-  /* Mejorar visibilidad */
-  border-top: 2px solid #ddd !important;
-  background: rgba(0, 0, 0, 0.1) !important;
-
-  /* Hover effect */
-  transition: all 0.2s ease;
-}
-
-.resize-handle:hover {
-  background: rgba(0, 123, 255, 0.2) !important;
-  border-top-color: #007bff !important;
-}
-
-.resize-handle:active {
-  background: #007bff !important;
-  color: white !important;
-}
-
-/* === DURANTE RESIZE === */
-.examen-post-it.is-resizing .resize-handle {
-  background: #007bff !important;
-  color: white !important;
-  border-top-color: #0056b3 !important;
-}
-
-/* === ASEGURAR QUE EL POSTIT PERMITA EL RESIZE === */
-.examen-post-it.is-placed {
-  position: absolute;
-  padding: 4px;
-  top: 0;
-  left: 0;
-  right: 0;
-  /* Altura dinámica basada en módulos */
-  overflow: visible; /* ← Permitir que el resize handle sea visible */
 }
 
 /* Estilos para los botones de acción */
@@ -283,4 +230,22 @@
     font-size: 9px;
     padding: 1px 4px;
   }
+}
+
+@keyframes floatAnimation {
+  0%,
+  100% {
+    transform: translateY(0) rotate(3deg); /* Mantener la rotación inicial */
+    box-shadow: 0 6px 12px rgba(0, 0, 0, 0.25); /* Mantener la sombra inicial */
+  }
+  50% {
+    transform: translateY(-5px) rotate(3.5deg); /* Mover un poco hacia arriba y rotar un poco más */
+    box-shadow: 0 10px 20px rgba(0, 0, 0, 0.3); /* Sombra un poco más pronunciada */
+  }
+}
+
+/* Clase que se aplicará al ExamenPostIt dentro del DragOverlay */
+.examen-post-it.drag-overlay.is-animating {
+  animation: floatAnimation 1.5s ease-in-out infinite;
+  /* Los estilos de width, height, opacity, etc., vendrán de dragOverlayStyle en CalendarioPage.jsx */
 }

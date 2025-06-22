@@ -23,7 +23,7 @@ const emitReservaActualizada = async (
   if (req.app.get('io') && reservaIdNum) {
     const result = await connection.execute(
       `SELECT r.*,
-              e.ID_EXAMEN, e.NOMBRE_EXAMEN, e.CANTIDAD_MODULOS_EXAMEN, e.NOMBRE_ASIGNATURA, s.ID_SALA, s.NOMBRE_SALA, est.NOMBRE_ESTADO AS ESTADO_RESERVA
+              e.ID_EXAMEN, e.NOMBRE_EXAMEN, e.CANTIDAD_MODULOS_EXAMEN, e.INSCRITOS_EXAMEN, e.TIPO_PROCESAMIENTO_EXAMEN, e.PLATAFORMA_PROSE_EXAMEN, e.SITUACION_EVALUATIVA_EXAMEN, s.ID_SALA, s.NOMBRE_SALA, est.NOMBRE_ESTADO AS ESTADO_RESERVA
        FROM RESERVA r
        JOIN EXAMEN e ON r.EXAMEN_ID_EXAMEN = e.ID_EXAMEN
        JOIN SALA s ON r.SALA_ID_SALA = s.ID_SALA
@@ -45,12 +45,15 @@ const emitReservaActualizada = async (
         { outFormat: oracledb.OUT_FORMAT_OBJECT }
       );
       reservaParaEmitir.MODULOS = modulosResult.rows;
-
+      console.log(
+        `[Backend Ctrl: emitReservaActualizada] Emitiendo para reserva ${reservaIdNum}. Datos:`,
+        JSON.stringify(reservaParaEmitir, null, 2)
+      );
       req.app
         .get('io')
         .emit('reservaActualizadaDesdeServidor', reservaParaEmitir);
       console.log(
-        `[${actionOrigin}] Evento Socket.IO 'reservaActualizadaDesdeServidor' emitido para reserva ${reservaIdNum}`
+        `[Backend Ctrl: emitReservaActualizada] Evento Socket.IO 'reservaActualizadaDesdeServidor' emitido para reserva ${reservaIdNum} desde ${actionOrigin}.`
       );
     }
   }
@@ -1363,6 +1366,10 @@ export const enviarReservaADocente = async (req, res) => {
   let connection;
   try {
     const { idReserva } = req.params;
+    const { nuevaCantidadModulos } = req.body;
+    console.log(
+      `[Backend Ctrl: enviarReservaADocente] Solicitud para reserva ${idReserva}. Payload recibido (nuevaCantidadModulos): ${nuevaCantidadModulos}`
+    );
     const reservaIdNum = parseInt(idReserva, 10);
 
     if (isNaN(reservaIdNum)) {
@@ -1376,26 +1383,101 @@ export const enviarReservaADocente = async (req, res) => {
     connection = await getConnection();
 
     // Verificar que la reserva existe y está en estado EN_CURSO
-    const verificarReservaResult = await connection.execute(
-      `SELECT ESTADO_CONFIRMACION_DOCENTE, EXAMEN_ID_EXAMEN
+    const reservaActualResult = await connection.execute(
+      `SELECT r.ESTADO_CONFIRMACION_DOCENTE, r.EXAMEN_ID_EXAMEN, COUNT(rm.MODULO_ID_MODULO) AS MODULOS_ACTUALES
        FROM RESERVA
-       WHERE ID_RESERVA = :reserva_id`,
+       LEFT JOIN RESERVAMODULO rm ON r.ID_RESERVA = rm.RESERVA_ID_RESERVA
+       WHERE ID_RESERVA = :reserva_id
+       GROUP BY r.ESTADO_CONFIRMACION_DOCENTE, r.EXAMEN_ID_EXAMEN, r.ID_RESERVA`,
       { reserva_id: reservaIdNum },
       { outFormat: oracledb.OUT_FORMAT_OBJECT }
     );
 
-    if (verificarReservaResult.rows.length === 0) {
+    if (reservaActualResult.rows.length === 0) {
       return handleError(res, null, 'Reserva no encontrada', 404);
     }
 
     const estadoActual =
-      verificarReservaResult.rows[0].ESTADO_CONFIRMACION_DOCENTE;
+      reservaActualResult.rows[0].ESTADO_CONFIRMACION_DOCENTE;
+    const modulosActualesCount = reservaActualResult.rows[0].MODULOS_ACTUALES;
     if (estadoActual !== 'EN_CURSO') {
       return handleError(
         res,
         null,
         `No se puede enviar a docente. Estado actual: ${estadoActual}`,
         400
+      );
+    }
+    // Si se proporciona nuevaCantidadModulos y es diferente, actualizar módulos
+    if (
+      nuevaCantidadModulos !== undefined &&
+      nuevaCantidadModulos !== modulosActualesCount
+    ) {
+      console.log(
+        `[Backend Ctrl: enviarReservaADocente] Condición CUMPLIDA para actualizar módulos. Reserva: ${reservaIdNum}, Actuales: ${modulosActualesCount}, Nuevos: ${nuevaCantidadModulos}`
+      );
+
+      // 1. Obtener el ORDEN del módulo inicial actual
+      const modulosOrdenResult = await connection.execute(
+        `SELECT m.ORDEN
+         FROM RESERVAMODULO rm
+         JOIN MODULO m ON rm.MODULO_ID_MODULO = m.ID_MODULO
+         WHERE rm.RESERVA_ID_RESERVA = :reserva_id
+         ORDER BY m.ORDEN ASC`,
+        { reserva_id: reservaIdNum },
+        { outFormat: oracledb.OUT_FORMAT_OBJECT }
+      );
+
+      if (modulosOrdenResult.rows.length === 0) {
+        // Esto no debería pasar si modulosActualesCount > 0, pero por si acaso
+        return handleError(
+          res,
+          null,
+          'No se encontraron módulos para la reserva actual.',
+          500
+        );
+      }
+      const ordenModuloInicial = modulosOrdenResult.rows[0].ORDEN;
+
+      // 2. Eliminar módulos antiguos de RESERVAMODULO
+      await connection.execute(
+        `DELETE FROM RESERVAMODULO WHERE RESERVA_ID_RESERVA = :reserva_id`,
+        { reserva_id: reservaIdNum }
+      );
+
+      // 3. Calcular y obtener los nuevos ID_MODULO
+      const nuevosModulosIds = [];
+      for (let i = 0; i < nuevaCantidadModulos; i++) {
+        const ordenTarget = ordenModuloInicial + i;
+        const moduloIdResult = await connection.execute(
+          `SELECT ID_MODULO FROM MODULO WHERE ORDEN = :orden`,
+          { orden: ordenTarget },
+          { outFormat: oracledb.OUT_FORMAT_OBJECT }
+        );
+        if (moduloIdResult.rows.length > 0) {
+          nuevosModulosIds.push(moduloIdResult.rows[0].ID_MODULO);
+        } else {
+          return handleError(
+            res,
+            null,
+            `Módulo con orden ${ordenTarget} no encontrado.`,
+            500
+          );
+        }
+      }
+
+      // 4. Insertar nuevos módulos en RESERVAMODULO
+      const reservamoduloSql = `INSERT INTO RESERVAMODULO (MODULO_ID_MODULO, RESERVA_ID_RESERVA) VALUES (:modulo_id, :reserva_id)`;
+      await connection.executeMany(
+        reservamoduloSql,
+        nuevosModulosIds.map((id) => ({
+          modulo_id: id,
+          reserva_id: reservaIdNum,
+        }))
+      );
+    } else {
+      console.log(
+        `[Backend Ctrl: enviarReservaADocente] Condición NO CUMPLIDA para actualizar módulos. Reserva: ${reservaIdNum}, Actuales: ${modulosActualesCount}, Recibidos (nuevaCantidadModulos): ${nuevaCantidadModulos}`
       );
     }
 

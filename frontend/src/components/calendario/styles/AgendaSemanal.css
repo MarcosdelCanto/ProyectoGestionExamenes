@@ -1,7 +1,7 @@
 .agenda-semanal-container {
   display: flex;
   flex-direction: column;
-  height: 100vh; /* Cambiar a altura completa del viewport */
+  height: 100%; /* Tomar el 100% de la altura de su contenedor padre en CalendarioPage.jsx */
   overflow: hidden;
 }
 .top-row {
@@ -11,12 +11,18 @@
   gap: 20px;
   width: 100%;
 }
-
+.agenda-semanal {
+  /* O la clase que realmente tenga el div raíz de AgendaSemanal.jsx */
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  overflow: hidden;
+}
 /* Fila superior con los selectores de sala y semana */
 .selectors-row {
   display: flex;
   justify-content: space-between;
-  margin-bottom: 20px;
+  /* margin-bottom: 20px; */
   flex-shrink: 0; /* Evitar que se encoja */
 }
 
@@ -34,15 +40,17 @@
 .main-content {
   display: flex;
   flex: 1; /* Tomar todo el espacio restante */
-  gap: 20px;
-  min-height: 0; /* Importante para flexbox */
+  gap: 20px; /* Espacio entre el selector de exámenes y el calendario */
+  /* height: 82vh; */
+  min-height: 0; /* MUY IMPORTANTE: Permite que flex:1 encoja el contenedor si es necesario */
+  overflow: hidden; /* Evitar que .main-content muestre su propio scroll si los hijos se desbordan */
 }
 
 /* Contenedor de exámenes pendientes */
 .examenes-pendientes {
   flex: 0 0 300px; /* ancho fijo */
   height: 100%; /* Misma altura que el contenedor padre */
-  overflow: hidden;
+  overflow: hidden; /* Evitar que este contenedor muestre scroll, su hijo .examenes-content lo hará */
   display: flex;
   flex-direction: column;
   background-color: #fff;
@@ -80,19 +88,11 @@
   font-size: 12px;
 }
 
-/* Contenido de exámenes */
-.calendar-content {
-  flex: 1;
-  overflow: hidden; /* Cambiar de auto a hidden */
-  padding: 0;
-  min-height: 0; /* Importante para flexbox */
-}
-
 /* Contenedor del calendario */
 .calendar-container {
   flex: 1;
   height: 100%; /* Misma altura que el contenedor padre */
-  overflow: hidden;
+  overflow: hidden; /* Evitar que este contenedor muestre scroll, su hijo .calendar-content lo hará */
   display: flex;
   flex-direction: column;
   background-color: #fff;
@@ -116,7 +116,7 @@
 /* Sección del calendario (contenido) */
 .calendar-content {
   flex: 1;
-  overflow: hidden;
+  overflow-y: auto; /* Permitir scroll vertical para el contenido del calendario */
   padding: 0;
   min-height: 0; /* Importante para flexbox */
 }
