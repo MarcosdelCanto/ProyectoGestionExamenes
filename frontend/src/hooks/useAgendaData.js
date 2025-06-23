@@ -36,20 +36,37 @@ export function useAgendaData() {
   const procesarReservaParaFrontend = useCallback(
     (reservaPlana, todosExamenesDisponibles) => {
       let procesada = { ...reservaPlana };
-      // Anidar el objeto Examen si no existe y tenemos la info
-      if (!procesada.Examen && procesada.ID_EXAMEN) {
+
+      // Intentar encontrar el examen completo en todosLosExamenesOriginal
+      // usando el ID_EXAMEN de la reservaPlana.
+      let examenCompletoAnidado = null;
+      if (procesada.ID_EXAMEN) {
+        // ID_EXAMEN debe venir de la reservaPlana
         const examenOriginal = todosExamenesDisponibles.find(
           (e) => e.ID_EXAMEN === procesada.ID_EXAMEN
         );
         if (examenOriginal) {
-          procesada.Examen = { ...examenOriginal };
+          // Si encontramos el examen original, lo usamos como base
+          examenCompletoAnidado = { ...examenOriginal };
+        } else {
+          examenCompletoAnidado = {
+            ID_EXAMEN: procesada.ID_EXAMEN,
+            NOMBRE_EXAMEN: procesada.NOMBRE_EXAMEN,
+            CANTIDAD_MODULOS_EXAMEN: procesada.CANTIDAD_MODULOS_EXAMEN,
+            NOMBRE_ASIGNATURA: procesada.NOMBRE_ASIGNATURA,
+          };
         }
       }
+
+      // Asignar el objeto Examen construido (o null si no hay ID_EXAMEN)
+      procesada.Examen = examenCompletoAnidado;
+
+      // Calcular otros campos
       procesada = {
         ...procesada,
         MODULOS_RESERVA_COUNT: procesada.MODULOS?.length || 0,
         Examen: {
-          ...(procesada.Examen || {}),
+          ...(procesada.Examen || {}), // Usar el Examen ya anidado o un objeto vacío
           MODULOS_RESERVA:
             procesada.MODULOS?.length ||
             procesada.Examen?.CANTIDAD_MODULOS_EXAMEN ||
@@ -58,7 +75,7 @@ export function useAgendaData() {
       };
       return procesada;
     },
-    [] // Esta función no depende de nada del scope del hook que cambie, sus dependencias son argumentos.
+    [] // Asumiendo que `todosExamenesDisponibles` se pasa como argumento y no cambia la referencia innecesariamente.
   );
 
   // Cargar datos iniciales cuando el componente se monta

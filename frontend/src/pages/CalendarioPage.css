@@ -2,8 +2,17 @@
 .calendario-page-container {
   display: flex;
   flex-direction: column;
-  height: 100%;
+  height: 100%; /* Tomará el 100% de la altura de .calendario-page */
   background: #ecf0f1;
+  flex-grow: 1; /* Asegurar que crezca para llenar el espacio si es necesario */
+  min-height: 0; /* Importante para flexbox en contenedores que crecen */
+}
+
+.calendario-page {
+  display: flex;
+  flex-direction: column;
+  height: 100%; /* Tomará el 100% de la altura que le da el <main> del Layout */
+  flex-grow: 1; /* Asegurar que crezca para llenar el espacio del <main> */
 }
 
 /* Título principal */

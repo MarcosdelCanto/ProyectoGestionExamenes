@@ -10,6 +10,9 @@ import {
 import AgendaSemanal from '../components/calendario/AgendaSemanal';
 import Layout from '../components/Layout';
 import DragFeedback from '../components/calendario/DragFeedback';
+import { useDispatch } from 'react-redux'; // Importar useDispatch
+import { actualizarModulosReservaLocalmente } from '../store/reservasSlice'; // Importar la acción
+import { socket } from '../store/socketMiddleware'; // Importar el socket
 import ExamenPostIt from '../components/calendario/ExamenPostIt';
 import './CalendarioPage.css';
 
@@ -20,6 +23,8 @@ export function CalendarioPage() {
   const [dropTargetCell, setDropTargetCell] = useState(null);
   const [hoverTargetCell, setHoverTargetCell] = useState(null);
 
+  const dispatch = useDispatch(); // Hook para despachar acciones de Redux
+  const [dragOverlayStyle, setDragOverlayStyle] = useState({}); // Estado para el estilo del overlay
   // NUEVO: Tracking de posición del mouse
   const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
   const [isDragging, setIsDragging] = useState(false);
@@ -51,6 +56,34 @@ export function CalendarioPage() {
     };
   }, [isDragging]);
 
+  // Esta función se pasará a AgendaSemanal como prop, y de ahí a CalendarGrid, etc.
+  const handleModulosChangeGlobal = useCallback(
+    (reservaId, nuevaCantidadModulos) => {
+      console.log(
+        `[CalendarioPage] handleModulosChangeGlobal: reservaId=${reservaId}, nuevaCantidad=${nuevaCantidadModulos}`
+      );
+
+      // 1. Actualizar Redux localmente para el cliente actual
+      dispatch(
+        actualizarModulosReservaLocalmente({
+          id_reserva: reservaId,
+          nuevaCantidadModulos,
+        })
+      );
+
+      // 2. Emitir evento de Socket.IO al servidor
+      // El nombre del evento debe ser consistente con el backend
+      socket.emit('cambioModulosTemporalClienteAlServidor', {
+        id_reserva: reservaId, // Usar el id_reserva recibido
+        nuevaCantidadModulos,
+      });
+      console.log(
+        `[CalendarioPage] Evento 'cambioModulosTemporalClienteAlServidor' emitido para reserva ${reservaId}, nueva cantidad: ${nuevaCantidadModulos}`
+      );
+    },
+    [dispatch]
+  );
+
   // DRAG START
   const handleDragStart = (event) => {
     console.log('🔄 Drag start:', event);
@@ -63,6 +96,27 @@ export function CalendarioPage() {
     if (examenData.type === 'examen' && examenData.examen) {
       console.log('✅ Examen encontrado para drag:', examenData.examen);
       setActiveDraggableExamen(examenData.examen);
+
+      // Calcular el estilo para el DragOverlay
+      let cellWidth = 120; // Ancho por defecto o fallback
+      const firstCalendarCell = document.querySelector(
+        '.calendar-table td.calendar-cell:not(.orden-col):not(.horario-col)'
+      );
+      if (firstCalendarCell) {
+        cellWidth = firstCalendarCell.offsetWidth;
+      }
+
+      const modulosCount = examenData.examen.CANTIDAD_MODULOS_EXAMEN || 3;
+      const overlayHeight = modulosCount * 40; // 40px por módulo
+
+      setDragOverlayStyle({
+        width: `${cellWidth}px`,
+        height: `${overlayHeight}px`,
+        transform: 'rotate(3deg)', // Rotación más sutil
+        boxShadow: '0 6px 12px rgba(0,0,0,0.25)', // Sombra más sutil
+        opacity: 0.9, // Un poco más opaco para mejor visibilidad
+      });
+
       setIsDragging(true); // ← Activar tracking del mouse
     }
   };
@@ -128,6 +182,7 @@ export function CalendarioPage() {
     setDraggedExamen(null);
     setDropTargetCell(null);
     setHoverTargetCell(null);
+    setDragOverlayStyle({}); // Limpiar estilo del overlay
     setIsDragging(false); // ← Detener tracking
   };
 
@@ -203,6 +258,7 @@ export function CalendarioPage() {
     setDraggedExamen(null);
     setDropTargetCell(null);
     setHoverTargetCell(null);
+    setDragOverlayStyle({}); // Limpiar estilo del overlay
     setIsDragging(false); // ← Detener tracking
     console.log('🚫 Drag cancelado');
   };
@@ -224,6 +280,7 @@ export function CalendarioPage() {
               dropTargetCell={dropTargetCell}
               hoverTargetCell={hoverTargetCell}
               onDropProcessed={handleDropProcessed}
+              onModulosChange={handleModulosChangeGlobal} // Pasar la nueva función
             />
 
             {/* Feedback solo cuando está siendo arrastrado Y dentro del calendario */}
@@ -286,10 +343,7 @@ export function CalendarioPage() {
                 moduloscount={
                   activeDraggableExamen.CANTIDAD_MODULOS_EXAMEN || 3
                 }
-                style={{
-                  transform: 'rotate(5deg)',
-                  boxShadow: '0 8px 16px rgba(0,0,0,0.3)',
-                }}
+                style={dragOverlayStyle} // Usar el estilo calculado
               />
             ) : null}
           </DragOverlay>

@@ -29,7 +29,7 @@
   height: 40px !important;
   min-width: 120px;
   vertical-align: top;
-  background: white;
+  /* background: white; */
   z-index: 1;
   overflow: visible !important; /* ← CLAVE */
 }
@@ -52,34 +52,13 @@
 
 /* Celdas que contienen exámenes */
 .calendar-table .calendar-cell.contains-examen {
-  overflow: visible !important;
+  overflow: visible;
   z-index: 1;
 }
 
 /* Celdas que son parte de un examen */
 .calendar-table .calendar-cell.part-of-examen {
   background-color: rgba(255, 255, 200, 0.1);
-}
-
-/* Estilos para exámenes colocados en el calendario (específicamente) */
-.calendar-table .calendar-cell .examen-post-it.is-placed {
-  position: absolute !important;
-  top: 0 !important;
-  left: 0 !important;
-  right: 0 !important;
-  width: 100% !important;
-  z-index: 100 !important;
-  transition: height 0.2s ease;
-}
-
-/* DURANTE RESIZE, aún más alto */
-.calendar-table .calendar-cell .examen-post-it.is-placed.is-resizing {
-  z-index: 500 !important;
-}
-
-/* DURANTE DRAG, el más alto */
-.calendar-table .calendar-cell .examen-post-it.is-placed.is-dragging {
-  z-index: 800 !important;
 }
 
 /* Hover para las celdas del calendario */
@@ -227,32 +206,6 @@
   border: 2px dashed #dc3545;
 }
 
-/* REGLAS EXPLÍCITAS PARA PREVENIR INTERFERENCIAS */
-/* Asegurar que las reglas del calendario no afecten al selector de exámenes */
-.vista-examenes-postits .examen-post-it {
-  position: static !important;
-  top: auto !important;
-  left: auto !important;
-  right: auto !important;
-  width: 100% !important;
-}
-
-/* Asegurar que los atributos data-modulos no afecten a los componentes fuera del calendario */
-.vista-examenes-postits [data-modulos] {
-  height: auto !important;
-  min-height: 120px !important;
-}
-
-/* Asegurar que la vista de grid no sea afectada */
-.vista-examenes-postits {
-  display: grid !important;
-}
-
-/* Prevenir que los estilos de hover del calendario afecten al selector */
-.vista-examenes-postits .examen-post-it:hover {
-  background-color: inherit;
-}
-
 /* Agregar estas reglas al final del archivo CSS existente */
 
 /* Estados durante drag & drop */
@@ -291,24 +244,6 @@
   font-size: 14px;
   max-width: 250px;
   pointer-events: none;
-}
-
-/* REGLA DE EMERGENCIA: Forzar las tarjetas siempre encima */
-.calendar-table .calendar-cell .examen-post-it {
-  /* position: relative; */
-  z-index: 100 !important;
-}
-
-/* PostIt dentro de la celda */
-.examen-post-it {
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  border: 1px solid #333;
-  border-radius: 4px;
-  overflow: hidden; /* Contenido interno controlado */
-  z-index: 10;
 }
 
 /* === HOVER PREVIEW MEJORADO === */
