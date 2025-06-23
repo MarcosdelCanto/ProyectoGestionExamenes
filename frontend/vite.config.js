@@ -11,6 +11,11 @@ export default defineConfig({
         changeOrigin: true,
         secure: false,
       },
+      // --- AÑADE ESTA NUEVA REGLA PARA SOCKET.IO ---
+      '/socket.io': {
+        target: 'http://localhost:3000',
+        ws: true, // La clave 'ws: true' habilita el proxy para WebSockets
+      },
     },
   },
 });

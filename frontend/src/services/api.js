@@ -7,10 +7,20 @@ import {
   logout,
 } from './authService';
 
-const baseURL = import.meta.env.VITE_API_URL || 'http://localhost:3000/api';
+// 1. URL Base Relativa (La clave del éxito)
+// Al usar '/api', tu frontend buscará la API en el mismo dominio desde donde se sirve la página.
+// - En tu Mac, Vite lo redirigirá a http://localhost:3000/api.
+// - En AWS, Nginx lo redirigirá al contenedor del backend.
+// ¡Es la solución perfecta para ambos entornos!
+const baseURL = '/api';
+
+// 2. Creación de la Instancia de Axios
+// Aquí se establece que todas las llamadas hechas con 'api' (ej. api.get('/usuarios'))
+// tendrán el prefijo '/api'.
 const api = axios.create({ baseURL });
 
-// Interceptor para añadir el token de acceso a cada petición
+// 3. Interceptor de Petición (Request)
+// Esto está perfecto. Añade el token de autorización a cada petición saliente.
 api.interceptors.request.use(
   (config) => {
     const token = getAccessToken();
@@ -22,15 +32,19 @@ api.interceptors.request.use(
   (error) => Promise.reject(error)
 );
 
-// response interceptor al 401 refresh token y reintentar la petición
-
+// 4. Interceptor de Respuesta (Refresh Token)
+// Esta lógica es robusta. Si una petición falla por token expirado (error 401),
+// intentará obtener un nuevo token de acceso usando el refresh token.
 let isRefreshing = false;
 let failedQueue = [];
 
 const processQueue = (error, token = null) => {
   failedQueue.forEach((prom) => {
-    if (error) prom.reject(error);
-    else prom.resolve(token);
+    if (error) {
+      prom.reject(error);
+    } else {
+      prom.resolve(token);
+    }
   });
   failedQueue = [];
 };
@@ -38,44 +52,46 @@ const processQueue = (error, token = null) => {
 api.interceptors.response.use(
   (response) => response,
   async (error) => {
-    const { config, response } = error;
-    if (response?.status === 401 && !config._retry) {
-      config._retry = true;
-
+    const originalRequest = error.config;
+    if (error.response?.status === 401 && !originalRequest._retry) {
       if (isRefreshing) {
-        // Estamos refrescando: encolamos la petición
-        return new Promise((resolve, reject) => {
+        return new Promise(function (resolve, reject) {
           failedQueue.push({ resolve, reject });
-        }).then((token) => {
-          config.headers.Authorization = `Bearer ${token}`;
-          return api(config);
-        });
+        })
+          .then((token) => {
+            originalRequest.headers['Authorization'] = 'Bearer ' + token;
+            return api(originalRequest);
+          })
+          .catch((err) => {
+            return Promise.reject(err);
+          });
       }
 
+      originalRequest._retry = true;
       isRefreshing = true;
-      try {
-        // Llamada al endpoint de refresh
-        const { data } = await axios.post(`${baseURL}/auth/refresh`, {
-          token: getRefreshToken(),
-        });
-        const newToken = data.accessToken;
-        setAccessToken(newToken);
-        api.defaults.headers.common.Authorization = `Bearer ${newToken}`;
-        processQueue(null, newToken);
 
-        // Reintenta la petición original
-        config.headers.Authorization = `Bearer ${newToken}`;
-        return api(config);
-      } catch (e) {
-        processQueue(e, null);
-        logout();
-        window.location.href = '/login';
-        return Promise.reject(e);
+      try {
+        const refreshToken = getRefreshToken();
+        // Usamos axios.post con la URL completa para evitar que este interceptor se llame a sí mismo en un bucle.
+        const res = await axios.post(`${baseURL}/auth/refresh`, {
+          token: refreshToken,
+        });
+
+        const newAccessToken = res.data.accessToken;
+        setAccessToken(newAccessToken);
+        processQueue(null, newAccessToken);
+
+        originalRequest.headers['Authorization'] = 'Bearer ' + newAccessToken;
+        return api(originalRequest);
+      } catch (_error) {
+        processQueue(_error, null);
+        logout(); // Si el refresh token falla, cerramos sesión.
+        window.location = '/login';
+        return Promise.reject(_error);
       } finally {
         isRefreshing = false;
       }
     }
-
     return Promise.reject(error);
   }
 );

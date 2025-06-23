@@ -1,3 +1,6 @@
+import dotenv from 'dotenv';
+dotenv.config();
+
 import express from 'express';
 import http from 'http';
 import cors from 'cors';
@@ -34,9 +37,9 @@ const app = express();
 
 app.use(
   cors({
-    origin: 'http://localhost:5173', // Reemplaza con el puerto exacto de tu frontend Vite
-    methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'], // Asegúrate de incluir OPTIONS
-    allowedHeaders: ['Content-Type', 'Authorization'], // ¡Muy importante incluir Authorization!
+    origin: process.env.CORS_ORIGIN || 'http://localhost:5173', // Esto está CORRECTO.
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization'],
   })
 );
 //app.use(express.json());
@@ -54,7 +57,7 @@ async function startServer() {
     // Configuración de Socket.IO
     const io = new Server(server, {
       cors: {
-        origin: 'http://localhost:5173',
+        origin: process.env.CORS_ORIGIN || 'http://localhost:5173',
         methods: ['GET', 'POST'],
       },
     });

@@ -11,7 +11,7 @@ build/
 # Ignorar archivos del sistema
 .DS_Store
 
-/backend/db.js
+#/backend/db.js
 
 # Ignorar archivos de configuración de IDE
 #backend/wallet

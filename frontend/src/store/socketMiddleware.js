@@ -3,7 +3,8 @@ import { io } from 'socket.io-client';
 import { statusUpdated, changeStatus } from './statusSlice';
 import { procesarActualizacionReservaSocket } from './reservasSlice'; // <-- IMPORTAR ACCIÓN DE RESERVAS
 
-export const socket = io('http://localhost:3000', { autoConnect: false });
+// La URL del socket vendrá de la variable de entorno de Vite, sin el '/api' final.
+export const socket = io({ autoConnect: false });
 
 export const socketMiddleware = (storeAPI) => {
   socket.on('status-update', (firstArg, secondArg) => {

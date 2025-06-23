@@ -1,53 +1,37 @@
-version: "3.8"
+# docker-compose.yml
 
 services:
   backend:
-    build: ./backend # Docker buscará el Dockerfile en el directorio './backend'
-    ports:
-      - "3000:3000" # Mapea el puerto 3000 del contenedor al puerto 3000 de tu host.
-        # Útil para acceder al backend directamente en desarrollo/depuración.
+    build:
+      context: ./backend
+      platforms:
+        - "linux/amd64"
+    image: micobo/proyectogestionexamenes-backend:1.0
+    env_file:
+      - .env
     environment:
-      # Las variables de entorno de tu archivo .env (en la raíz del proyecto)
-      # serán cargadas automáticamente por Docker Compose para estos valores.
-      DB_USER: ${DB_USER}
-      DB_PASSWORD: ${DB_PASSWORD}
-      DB_CONNECTSTRING: ${DB_CONNECTSTRING}
-      DB_POOL_MIN: ${DB_POOL_MIN}
-      DB_POOL_MAX: ${DB_POOL_MAX}
-      DB_POOL_INCREMENT: ${DB_POOL_INCREMENT}
-      TNS_ADMIN: /app/wallet # Ruta INTERNA del contenedor donde se copió la wallet
-      JWT_SECRET: ${JWT_SECRET}
-      REFRESH_SECRET: ${REFRESH_SECRET}
-      JWT_EXPIRES_IN: ${JWT_EXPIRES_IN}
-      API_BASE_URL: ${API_BASE_URL} # e.g., http://localhost:3000 para desarrollo local
-      PORT: 3000
-      # Opcional: Si el límite de body-parser necesita ser configurable por env.
-      # BODY_PARSER_LIMIT: 50mb
-    # En producción, se suele comentar o quitar para usar el código que ya está en la imagen.
-    # Para desarrollo local, puedes activar estos volúmenes si usas nodemon o similar en el backend
-    # para auto-reiniciar cambios de código sin reconstruir la imagen.
-    # volumes:
-    #   - ./backend:/app
-    #   - /app/node_modules
+      DOCKER_ENV: "true" # <--- AÑADE ESTA LÍNEA
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./backend/wallet:/app/wallet
+    restart: always
     networks:
       - app-network
 
   frontend:
-    build: ./frontend # Docker buscará el Dockerfile en el directorio './frontend'
+    build:
+      context: ./frontend
+      platforms:
+        - "linux/amd64" # <-- Instrucción clave para compatibilidad
+    image: micobo/proyectogestionexamenes-frontend:1.0
     ports:
-      - "80:80" # Mapea el puerto 80 del contenedor (Nginx) al puerto 80 de tu host.
-        # Si el puerto 80 de tu máquina está ocupado, cámbialo a '8080:80'.
+      - "8080:80"
     depends_on:
-      - backend # Asegura que el servicio 'backend' se inicie antes que el 'frontend'.
-    # Para desarrollo local, si quieres que Nginx sirva archivos directamente desde tu carpeta dist local
-    # sin reconstruir la imagen del frontend en cada cambio de código React, activa este volumen.
-    # Requiere que ejecutes `npm run build` en tu máquina local cada vez que cambies el frontend.
-    # volumes:
-    #   - ./frontend/dist:/usr/share/nginx/html
-    #   - ./frontend/nginx.conf:/etc/nginx/conf.d/default.conf
+      - backend
     networks:
       - app-network
 
 networks:
   app-network:
-    driver: bridge # Crea una red interna para que los servicios se comuniquen entre sí por sus nombres
+    driver: bridge

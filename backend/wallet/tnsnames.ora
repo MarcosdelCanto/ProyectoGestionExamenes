@@ -3,6 +3,3 @@ basedatosexamenes_high = (description= (retry_count=20)(retry_delay=3)(address=(
 basedatosexamenes_low = (description= (retry_count=20)(retry_delay=3)(address=(protocol=tcps)(port=1522)(host=adb.sa-santiago-1.oraclecloud.com))(connect_data=(service_name=g2bcbd7b3e8e567_basedatosexamenes_low.adb.oraclecloud.com))(security=(ssl_server_dn_match=yes)))
 
 basedatosexamenes_medium = (description= (retry_count=20)(retry_delay=3)(address=(protocol=tcps)(port=1522)(host=adb.sa-santiago-1.oraclecloud.com))(connect_data=(service_name=g2bcbd7b3e8e567_basedatosexamenes_medium.adb.oraclecloud.com))(security=(ssl_server_dn_match=yes)))
-
-
-

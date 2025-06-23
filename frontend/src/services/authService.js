@@ -1,8 +1,11 @@
 // src/services/authService.js
-import { fetchPermisosByRol } from './permisoService'; // Asegúrate que la ruta sea correcta
+import { fetchPermisosByRol } from './permisoService';
 
-const baseURL = import.meta.env.VITE_API_URL || 'http://localhost:3000/api';
+// --- CAMBIO CLAVE AQUÍ ---
+// Usamos una ruta relativa. Nginx en producción se encargará de redirigirla.
+const baseURL = '/api';
 
+// El resto de las funciones ahora usarán esta baseURL correcta.
 export async function login(email_usuario, password_usuario) {
   const resp = await fetch(`${baseURL}/auth/login`, {
     method: 'POST',
@@ -23,28 +26,15 @@ export async function login(email_usuario, password_usuario) {
   localStorage.setItem('refreshToken', refreshToken);
 
   if (usuario && usuario.ROL_ID_ROL) {
-    // Es crucial tener ROL_ID_ROL
     const userToStore = {
       ...usuario,
-      isAuthenticated: true, // Añadimos isAuthenticated aquí
-      // Asegúrate que el backend devuelva 'NOMBRE_ROL' si lo necesitas en el frontend
-      // Si 'usuario.rol' ya viene como el string del nombre del rol, puedes usarlo directamente
-      // o buscarlo aquí si el backend solo envía ROL_ID_ROL.
-      // Por simplicidad, asumiremos que 'usuario.nombre_rol' viene del backend.
-      rol: usuario.nombre_rol || `ROL_ID_${usuario.ROL_ID_ROL}`, // Fallback si nombre_rol no viene
+      isAuthenticated: true,
+      rol: usuario.nombre_rol || `ROL_ID_${usuario.ROL_ID_ROL}`,
     };
 
     try {
-      console.log(
-        '[AuthService] Cargando permisos para el rol ID:',
-        usuario.ROL_ID_ROL
-      );
-      const permisos = await fetchPermisosByRol(usuario.ROL_ID_ROL); // Esto debe devolver un array de objetos [{NOMBRE_PERMISO: '...'}, ...]
-      userToStore.permisos = permisos || []; // Aseguramos que sea un array
-      console.log(
-        '[AuthService] Permisos cargados para el usuario:',
-        userToStore.permisos.length
-      );
+      const permisos = await fetchPermisosByRol(usuario.ROL_ID_ROL);
+      userToStore.permisos = permisos || [];
     } catch (error) {
       console.error(
         '[AuthService] Error al cargar permisos durante login:',
@@ -53,12 +43,9 @@ export async function login(email_usuario, password_usuario) {
       userToStore.permisos = [];
     }
     localStorage.setItem('user', JSON.stringify(userToStore));
-    return userToStore; // Devolvemos el usuario con sus permisos
+    return userToStore;
   } else {
-    console.error(
-      '[AuthService] Información de usuario incompleta desde el servidor (falta ROL_ID_ROL o nombre_rol).'
-    );
-    logout(); // Limpiar para evitar estado inconsistente
+    logout();
     throw new Error('Información de usuario incompleta desde el servidor.');
   }
 }
@@ -72,7 +59,6 @@ export function getRefreshToken() {
 }
 
 export function setAccessToken(token) {
-  // Usado por el interceptor de Axios
   localStorage.setItem('accessToken', token);
 }
 
@@ -80,8 +66,6 @@ export function logout() {
   localStorage.removeItem('accessToken');
   localStorage.removeItem('refreshToken');
   localStorage.removeItem('user');
-  // Opcional: Despachar un evento o actualizar un estado global para notificar a la app
-  // window.location.href = '/login'; // Descomentar si quieres forzar redirección
 }
 
 export function getCurrentUser() {
@@ -89,13 +73,8 @@ export function getCurrentUser() {
   if (userString) {
     try {
       const user = JSON.parse(userString);
-      // Aseguramos que tenga la estructura esperada
       return { isAuthenticated: true, ...user };
     } catch (e) {
-      console.error(
-        '[AuthService] Error al parsear datos del usuario desde localStorage',
-        e
-      );
       logout();
       return { isAuthenticated: false, rol: null, permisos: [] };
     }
@@ -103,36 +82,22 @@ export function getCurrentUser() {
   return { isAuthenticated: false, rol: null, permisos: [] };
 }
 
-/**
- * Refresca los permisos del usuario actual desde el backend y actualiza localStorage.
- * Devuelve el objeto de usuario actualizado con sus permisos.
- */
 export async function refreshCurrentUserPermissions() {
-  const currentUserData = getCurrentUser(); // Obtiene el usuario base de localStorage
+  const currentUserData = getCurrentUser();
 
   if (currentUserData.isAuthenticated && currentUserData.ROL_ID_ROL) {
     try {
-      console.log(
-        '[AuthService] Refrescando permisos para el rol ID:',
-        currentUserData.ROL_ID_ROL
-      );
       const permisos = await fetchPermisosByRol(currentUserData.ROL_ID_ROL);
-
       const updatedUser = {
-        ...currentUserData, // Mantenemos otros datos del usuario
-        permisos: permisos || [], // Actualizamos con los nuevos permisos
+        ...currentUserData,
+        permisos: permisos || [],
       };
-
-      localStorage.setItem('user', JSON.stringify(updatedUser)); // Guardamos en localStorage
-      console.log('[AuthService] Permisos refrescados y guardados.');
-      return updatedUser; // Devolvemos el usuario actualizado
+      localStorage.setItem('user', JSON.stringify(updatedUser));
+      return updatedUser;
     } catch (error) {
-      console.error('[AuthService] Error al refrescar permisos:', error);
-      // Devolvemos el usuario que teníamos, pero sin los permisos actualizados o con permisos vacíos
       return { ...currentUserData, permisos: currentUserData.permisos || [] };
     }
   }
-  // Si no está autenticado o no tiene rol, devolvemos el usuario tal cual o uno vacío
   return currentUserData.isAuthenticated
     ? currentUserData
     : { isAuthenticated: false, rol: null, permisos: [] };
