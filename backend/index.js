@@ -5,7 +5,10 @@ import express from 'express';
 import http from 'http';
 import cors from 'cors';
 import { Server } from 'socket.io';
-import { initDB } from './db.js';
+import { initDB, getConnection } from './db.js'; // Importar getConnection
+import oracledb from 'oracledb'; // Importar oracledb
+
+// Importar los controladores y rutas
 import moduloRoutes from './routes/modulo.routes.js';
 import authRoutes from './routes/auth.routes.js';
 import userRoutes from './routes/user.routes.js';
@@ -25,84 +28,204 @@ import cargaAlumnoRoutes from './routes/cargaAlumno.routes.js';
 import cargaDocenteRoutes from './routes/cargaDocente.routes.js';
 import rolesRouter from './routes/rol.routes.js';
 import cargaSalaRoutes from './routes/cargaSala.routes.js';
-import calendarioRoutes from './routes/calendario.routes.js'; // Importa las rutas de calendario
-import usuarioCarreraRoutes from './routes/usuarioCarrera.routes.js'; // Nueva importación
-import usuarioSeccionRoutes from './routes/usuarioSeccion.routes.js'; // Nueva importación
-import permisosRoutes from './routes/permiso.routes.js'; // Nueva importación
-import dashboardRoutes from './routes/dashboard.routes.js'; // Importar rutas del dashboard
-import reservaRoutes from './routes/reserva.routes.js'; // Importar rutas de reserva
-import reportsRoutes from './routes/reports.routes.js'; // Importar rutas de reportes
-import publicRoutes from './routes/public.routes.js'; // Importar rutas públicas
+import calendarioRoutes from './routes/calendario.routes.js';
+import usuarioCarreraRoutes from './routes/usuarioCarrera.routes.js';
+import usuarioSeccionRoutes from './routes/usuarioSeccion.routes.js';
+import permisosRoutes from './routes/permiso.routes.js';
+import dashboardRoutes from './routes/dashboard.routes.js';
+import reservaRoutes from './routes/reserva.routes.js';
+import reportsRoutes from './routes/reports.routes.js';
+import publicRoutes from './routes/public.routes.js';
+
 const app = express();
 
 app.use(
   cors({
-    origin: process.env.CORS_ORIGIN || 'http://localhost:5173', // Esto está CORRECTO.
+    origin: process.env.CORS_ORIGIN || 'http://localhost:5173',
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization'],
   })
 );
-//app.use(express.json());
-// Aumentamos el límite para aceptar payloads de hasta 50MB (puedes ajustar este valor)
 app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ limit: '50mb', extended: true }));
-
-// Ruta de prueba
 app.get('/', (req, res) => res.send('API funcionando 🚀'));
+
+// --- Función Auxiliar para emitir reservas actualizadas ---
+// La movemos aquí para que sea accesible por los listeners del socket
+const emitReservaActualizada = async (io, reservaIdNum) => {
+  let conn;
+  try {
+    conn = await getConnection();
+    const sql = `
+          SELECT r.*, e.NOMBRE_EXAMEN, a.NOMBRE_ASIGNATURA, s.NOMBRE_SALA, est.NOMBRE_ESTADO AS ESTADO_RESERVA
+          FROM RESERVA r
+          JOIN EXAMEN e ON r.EXAMEN_ID_EXAMEN = e.ID_EXAMEN
+          JOIN SALA s ON r.SALA_ID_SALA = s.ID_SALA
+          JOIN ESTADO est ON r.ESTADO_ID_ESTADO = est.ID_ESTADO
+          JOIN SECCION sec ON e.SECCION_ID_SECCION = sec.ID_SECCION
+          JOIN ASIGNATURA a ON sec.ASIGNATURA_ID_ASIGNATURA = a.ID_ASIGNATURA
+          WHERE r.ID_RESERVA = :id
+        `;
+    const result = await conn.execute(
+      sql,
+      { id: reservaIdNum },
+      { outFormat: oracledb.OUT_FORMAT_OBJECT }
+    );
+    if (result.rows.length > 0) {
+      const reserva = result.rows[0];
+      const modulosResult = await conn.execute(
+        `SELECT m.ID_MODULO, m.ORDEN FROM RESERVAMODULO rm JOIN MODULO m ON rm.MODULO_ID_MODULO = m.ID_MODULO WHERE rm.RESERVA_ID_RESERVA = :id ORDER BY m.ORDEN`,
+        { id: reservaIdNum },
+        { outFormat: oracledb.OUT_FORMAT_OBJECT }
+      );
+      reserva.MODULOS = modulosResult.rows;
+      io.emit('reservaActualizadaDesdeServidor', reserva);
+      console.log(
+        `[Socket.IO] Evento 'reservaActualizadaDesdeServidor' emitido para reserva #${reservaIdNum}.`
+      );
+    }
+  } catch (err) {
+    console.error(
+      `[Socket.IO] Error al obtener y emitir reserva actualizada #${reservaIdNum}:`,
+      err
+    );
+  } finally {
+    if (conn) await conn.close();
+  }
+};
 
 async function startServer() {
   try {
-    await initDB(); // inicializa la conexión
+    await initDB();
     const server = http.createServer(app);
-    // Configuración de Socket.IO
     const io = new Server(server, {
       cors: {
         origin: process.env.CORS_ORIGIN || 'http://localhost:5173',
         methods: ['GET', 'POST'],
       },
     });
-    let currentStatus = 'disponible';
-    let currentUpdaterId = null;
 
-    app.set('io', io); // Hacer 'io' accesible en los request handlers vía req.app.get('io')
+    app.set('io', io);
 
     io.on('connection', (socket) => {
-      socket.emit('status-update', {
-        status: currentStatus,
-        updaterId: currentUpdaterId,
-      });
+      // ... otros listeners ...
 
-      socket.on('change-status', (newStatus) => {
-        currentStatus = newStatus;
-        currentUpdaterId = socket.id;
-        io.emit('status-update', {
-          status: currentStatus,
-          updaterId: socket.id,
-        });
-      });
-
-      // NUEVO: Listener para cambios temporales de módulos desde un cliente
-      socket.on('cambioModulosTemporalClienteAlServidor', (data) => {
+      socket.on('cambioModulosTemporalClienteAlServidor', async (data) => {
         const { id_reserva, nuevaCantidadModulos } = data;
-        console.log(
-          `[Socket Servidor] Evento 'cambioModulosTemporalClienteAlServidor' recibido de ${socket.id}: Reserva ID ${id_reserva}, Nueva Cantidad ${nuevaCantidadModulos}`
-        );
+        let conn;
+        try {
+          conn = await getConnection();
+          const primerModuloResult = await conn.execute(
+            `SELECT MIN(m.ORDEN) AS ORDEN_INICIAL FROM RESERVAMODULO rm JOIN MODULO m ON rm.MODULO_ID_MODULO = m.ID_MODULO WHERE rm.RESERVA_ID_RESERVA = :id_reserva`,
+            { id_reserva },
+            { outFormat: oracledb.OUT_FORMAT_OBJECT }
+          );
+          if (!primerModuloResult.rows[0]?.ORDEN_INICIAL)
+            throw new Error('No se pudo determinar el módulo inicial.');
+          const ordenInicial = primerModuloResult.rows[0].ORDEN_INICIAL;
 
-        // Re-emitir a TODOS los OTROS clientes.
-        // El cliente que originó el cambio ya actualizó su UI localmente.
-        socket.broadcast.emit('actualizacionModulosTemporalServidorAClientes', {
-          id_reserva,
-          nuevaCantidadModulos,
-        });
-        console.log(
-          `[Socket Servidor] Evento 'actualizacionModulosTemporalServidorAClientes' re-emitido a otros clientes.`
-        );
+          const nuevosModulosResult = await conn.execute(
+            `SELECT ID_MODULO FROM MODULO WHERE ORDEN >= :ordenInicial AND ORDEN < :ordenFinal ORDER BY ORDEN`,
+            { ordenInicial, ordenFinal: ordenInicial + nuevaCantidadModulos },
+            { outFormat: oracledb.OUT_FORMAT_OBJECT }
+          );
+          if (nuevosModulosResult.rows.length !== nuevaCantidadModulos)
+            throw new Error('No hay suficientes módulos consecutivos.');
+
+          const nuevosModulosIds = nuevosModulosResult.rows.map(
+            (m) => m.ID_MODULO
+          );
+
+          await conn.execute(
+            `DELETE FROM RESERVAMODULO WHERE RESERVA_ID_RESERVA = :id_reserva`,
+            { id_reserva }
+          );
+          await conn.executeMany(
+            `INSERT INTO RESERVAMODULO (MODULO_ID_MODULO, RESERVA_ID_RESERVA) VALUES (:1, :2)`,
+            nuevosModulosIds.map((modId) => [modId, id_reserva])
+          );
+          await conn.execute(
+            `UPDATE EXAMEN SET CANTIDAD_MODULOS_EXAMEN = :cantidad WHERE ID_EXAMEN = (SELECT EXAMEN_ID_EXAMEN FROM RESERVA WHERE ID_RESERVA = :id_reserva)`,
+            { cantidad: nuevaCantidadModulos, id_reserva }
+          );
+
+          await conn.commit();
+
+          await emitReservaActualizada(io, id_reserva);
+        } catch (err) {
+          console.error(
+            `[Socket] Error actualizando módulos para reserva #${id_reserva}:`,
+            err
+          );
+          if (conn) await conn.rollback();
+        } finally {
+          if (conn) await conn.close();
+        }
+      });
+
+      // --- NUEVO LISTENER PARA CANCELAR RESERVA ---
+      socket.on('cancelarReservaClienteServidor', async (data) => {
+        const { id_reserva } = data;
+        let conn;
+        try {
+          conn = await getConnection();
+          // Lógica de negocio para cancelar la reserva (moverla del controlador aquí)
+          const examenResult = await conn.execute(
+            `SELECT EXAMEN_ID_EXAMEN FROM RESERVA WHERE ID_RESERVA = :id_reserva`,
+            { id_reserva },
+            { outFormat: oracledb.OUT_FORMAT_OBJECT }
+          );
+          if (examenResult.rows.length === 0)
+            throw new Error('Reserva no encontrada para cancelar.');
+
+          const examenId = examenResult.rows[0].EXAMEN_ID_EXAMEN;
+          const estadoActivoResult = await conn.execute(
+            `SELECT ID_ESTADO FROM ESTADO WHERE NOMBRE_ESTADO = 'ACTIVO'`,
+            {},
+            { outFormat: oracledb.OUT_FORMAT_OBJECT }
+          );
+          const idEstadoActivo = estadoActivoResult.rows[0]?.ID_ESTADO;
+          if (!idEstadoActivo)
+            throw new Error("Estado 'ACTIVO' no configurado.");
+
+          await conn.execute(
+            `DELETE FROM RESERVAMODULO WHERE RESERVA_ID_RESERVA = :id_reserva`,
+            { id_reserva }
+          );
+          await conn.execute(
+            `DELETE FROM RESERVA_DOCENTES WHERE RESERVA_ID_RESERVA = :id_reserva`,
+            { id_reserva }
+          );
+          await conn.execute(
+            `DELETE FROM RESERVA WHERE ID_RESERVA = :id_reserva`,
+            { id_reserva }
+          );
+          await conn.execute(
+            `UPDATE EXAMEN SET ESTADO_ID_ESTADO = :idEstadoActivo WHERE ID_EXAMEN = :examenId`,
+            { idEstadoActivo, examenId }
+          );
+
+          await conn.commit();
+
+          // Notificar a todos los clientes que la reserva fue eliminada
+          io.emit('reservaEliminadaDesdeServidor', { id_reserva });
+          console.log(
+            `[Socket.IO] Evento 'reservaEliminadaDesdeServidor' emitido para reserva #${id_reserva}.`
+          );
+        } catch (err) {
+          console.error(
+            `[Socket] Error cancelando reserva #${id_reserva}:`,
+            err
+          );
+          if (conn) await conn.rollback();
+        } finally {
+          if (conn) await conn.close();
+        }
       });
     });
 
-    // Rutas API
+    // --- RUTAS API ---
     app.use('/api/auth', authRoutes);
-    //app.use('/api/user', userRoutes);
     app.use('/api/usuarios', userRoutes);
     app.use('/api/modulo', moduloRoutes);
     app.use('/api/sala', salaRoutes);
@@ -121,14 +244,14 @@ async function startServer() {
     app.use('/api/cargaAlumno', cargaAlumnoRoutes);
     app.use('/api/cargaDocente', cargaDocenteRoutes);
     app.use('/api/cargaSala', cargaSalaRoutes);
-    app.use('/api/usuario-carreras', usuarioCarreraRoutes); // Nueva ruta para usuario-carrera
-    app.use('/api/usuario-secciones', usuarioSeccionRoutes); // Nueva ruta para usuario-sección
+    app.use('/api/usuario-carreras', usuarioCarreraRoutes);
+    app.use('/api/usuario-secciones', usuarioSeccionRoutes);
     app.use('/api/permisos', permisosRoutes);
-    app.use('/api/dashboard', dashboardRoutes); // Usar rutas del dashboard
+    app.use('/api/dashboard', dashboardRoutes);
     app.use('/api', calendarioRoutes);
-    app.use('/api/reserva', reservaRoutes); // Usar rutas de reserva
-    app.use('/api/reports', reportsRoutes); // Asegúrate de que las rutas de reportes estén correctamente definidas
-    app.use('/api/public', publicRoutes); // Nuevo prefijo para rutas públicas
+    app.use('/api/reserva', reservaRoutes);
+    app.use('/api/reports', reportsRoutes);
+    app.use('/api/public', publicRoutes);
 
     const PORT = process.env.PORT || 3000;
     server.listen(PORT, () =>

@@ -1666,8 +1666,8 @@ export const enviarReservaADocente = async (req, res) => {
 };
 
 /**
- * Cancela una reserva completa y vuelve el examen a estado ACTIVO
- * Esto permite que el examen vuelva al selector
+ * Cancela una reserva completa, vuelve el examen a estado ACTIVO
+ * y emite un evento de socket para notificar a los clientes.
  * @param {Object} req - Request object
  * @param {Object} res - Response object
  */
@@ -1685,7 +1685,6 @@ export const cancelarReservaCompleta = async (req, res) => {
 
     connection = await getConnection();
 
-    // Obtener el examen asociado antes de eliminar
     const examenResult = await connection.execute(
       `SELECT EXAMEN_ID_EXAMEN FROM RESERVA WHERE ID_RESERVA = :reserva_id`,
       { reserva_id: reservaIdNum },
@@ -1698,7 +1697,6 @@ export const cancelarReservaCompleta = async (req, res) => {
 
     const examenId = examenResult.rows[0].EXAMEN_ID_EXAMEN;
 
-    // Obtener ID del estado ACTIVO
     const estadoActivoResult = await connection.execute(
       `SELECT ID_ESTADO FROM ESTADO WHERE NOMBRE_ESTADO = 'ACTIVO'`,
       {},
@@ -1711,26 +1709,18 @@ export const cancelarReservaCompleta = async (req, res) => {
     }
 
     // --- Inicia la transacción ---
-
-    // 1. Eliminar módulos asociados
     await connection.execute(
       `DELETE FROM RESERVAMODULO WHERE RESERVA_ID_RESERVA = :reserva_id`,
       { reserva_id: reservaIdNum }
     );
-
-    // 2. Eliminar docentes asociados
     await connection.execute(
       `DELETE FROM RESERVA_DOCENTES WHERE RESERVA_ID_RESERVA = :reserva_id`,
       { reserva_id: reservaIdNum }
     );
-
-    // 3. Eliminar la reserva
     await connection.execute(
       `DELETE FROM RESERVA WHERE ID_RESERVA = :reserva_id`,
       { reserva_id: reservaIdNum }
     );
-
-    // 4. Volver el examen a estado ACTIVO
     await connection.execute(
       `UPDATE EXAMEN SET ESTADO_ID_ESTADO = :estado_activo WHERE ID_EXAMEN = :examen_id`,
       {
@@ -1740,6 +1730,18 @@ export const cancelarReservaCompleta = async (req, res) => {
     );
 
     await connection.commit();
+
+    // --- INICIO DE LA CORRECCIÓN CLAVE ---
+    // Después de confirmar la transacción, emitimos un evento de Socket.IO
+    if (req.app.get('io')) {
+      req.app
+        .get('io')
+        .emit('reservaEliminadaDesdeServidor', { id_reserva: reservaIdNum });
+      console.log(
+        `[Socket.IO] Evento 'reservaEliminadaDesdeServidor' emitido para reserva #${reservaIdNum}.`
+      );
+    }
+    // --- FIN DE LA CORRECCIÓN CLAVE ---
 
     console.log(
       `[cancelarReservaCompleta] Reserva ${reservaIdNum} cancelada y examen ${examenId} reactivado`

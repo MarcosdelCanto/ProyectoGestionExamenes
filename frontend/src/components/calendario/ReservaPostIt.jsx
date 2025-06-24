@@ -57,7 +57,7 @@ export default function ReservaPostIt({ reserva, style }) {
                 reserva.NOMBRE_EXAMEN ||
                 'Sin nombre'}
             </div>
-            <div className="examen-details text-muted small mt-1">
+            <div className="examen-details text-muted small mt-1 fw-bold">
               {reserva.NOMBRE_CARRERA && (
                 <div className="d-flex align-items-center">
                   <i className="bi bi-mortarboard me-1"></i>
@@ -67,7 +67,7 @@ export default function ReservaPostIt({ reserva, style }) {
               {reserva.NOMBRE_SECCION && (
                 <div className="d-flex align-items-center">
                   <i className="bi bi-diagram-3 me-1"></i>
-                  <span>Sección: {reserva.NOMBRE_SECCION}</span>
+                  <span>{reserva.NOMBRE_SECCION}</span>
                 </div>
               )}
               {reserva.NOMBRE_DOCENTE && (

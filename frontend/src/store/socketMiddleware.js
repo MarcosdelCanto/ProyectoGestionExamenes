@@ -1,52 +1,84 @@
-// frontend/src/store/socketMiddleware.js
 import { io } from 'socket.io-client';
 import { statusUpdated, changeStatus } from './statusSlice';
-import { procesarActualizacionReservaSocket } from './reservasSlice';
-// --- 1. IMPORTAR LA NUEVA ACCIÓN DE LA OTRA SLICE ---
-import { procesarActualizacionReservaConfirmada } from './reservasConfirmadasSlice';
 
+// --- IMPORTACIONES DE ACCIONES ---
+// Importamos todas las acciones necesarias de sus respectivas slices.
+import {
+  procesarActualizacionReservaSocket,
+  eliminarReserva,
+  actualizarModulosReservaLocalmente, // Necesaria para el calendario de planificación
+} from './reservasSlice';
+
+import {
+  procesarActualizacionReservaConfirmada,
+  // Si reservasConfirmadasSlice también necesita manejar eliminaciones, se añadiría aquí.
+} from './reservasConfirmadasSlice';
+
+// La URL del socket se obtiene de las variables de entorno de Vite.
+// En desarrollo, el proxy de vite.config.js redirigirá esto a tu backend.
 export const socket = io({ autoConnect: false });
 
 export const socketMiddleware = (storeAPI) => {
-  socket.on('status-update', (firstArg, secondArg) => {
-    let status, updaterId;
-    if (typeof firstArg === 'object' && firstArg !== null) {
-      ({ status, updaterId } = firstArg);
-    } else {
-      status = firstArg;
-      updaterId = secondArg;
-    }
-    storeAPI.dispatch(statusUpdated({ newStatus: status, updaterId }));
+  // Listener para el estado de la conexión (ejemplo, no crucial para las reservas)
+  socket.on('status-update', (data) => {
+    storeAPI.dispatch(
+      statusUpdated({ newStatus: data.status, updaterId: data.updaterId })
+    );
   });
 
-  // --- 2. MODIFICAR ESTE LISTENER ---
+  // Listener para cuando una reserva se CREA o se ACTUALIZA (ej. cambio de estado, módulos, etc.)
   socket.on('reservaActualizadaDesdeServidor', (reservaActualizada) => {
     console.log(
       '[SocketMiddleware] Evento de reserva actualizada recibido:',
       reservaActualizada
     );
 
-    // Despachamos la actualización a AMBAS slices. Cada una sabrá qué hacer.
-    storeAPI.dispatch(procesarActualizacionReservaSocket(reservaActualizada)); // Para el calendario de planificación
+    // Despachamos a AMBAS slices. Cada una decidirá qué hacer con la información.
+    storeAPI.dispatch(procesarActualizacionReservaSocket(reservaActualizada)); // Para la slice del calendario de planificación
     storeAPI.dispatch(
       procesarActualizacionReservaConfirmada(reservaActualizada)
-    ); // Para el calendario del Home
+    ); // Para la slice del calendario del Home (confirmadas)
   });
 
+  // Listener para cuando una reserva es ELIMINADA o CANCELADA
+  socket.on('reservaEliminadaDesdeServidor', (data) => {
+    const { id_reserva } = data;
+    console.log(
+      `[SocketMiddleware] Evento 'reservaEliminadaDesdeServidor' RECIBIDO para ID: ${id_reserva}`
+    );
+    if (id_reserva) {
+      // Despachamos la acción de eliminar a la slice principal.
+      // Si la otra slice también necesita saberlo, se añadiría aquí.
+      storeAPI.dispatch(eliminarReserva(id_reserva));
+    }
+  });
+
+  // Listener para actualizaciones temporales de módulos (usado en el calendario de planificación)
   socket.on('actualizacionModulosTemporalServidorAClientes', (data) => {
     const { id_reserva, nuevaCantidadModulos } = data;
-    // Esta acción parece pertenecer solo a la slice de planificación. Lo mantenemos como está.
+    console.log(
+      `[SocketMiddleware] Evento de módulos temporales recibido para reserva #${id_reserva}`
+    );
     storeAPI.dispatch(
       actualizarModulosReservaLocalmente({ id_reserva, nuevaCantidadModulos })
     );
   });
 
+  // Conectar el socket después de definir todos los listeners
   socket.connect();
 
   return (next) => (action) => {
+    // Middleware para emitir eventos desde el cliente al servidor
     if (action.type === changeStatus.type) {
       socket.emit('change-status', action.payload);
     }
+
+    // Si tuvieras otras acciones que necesiten emitir eventos, irían aquí.
+    // Ejemplo:
+    // if (action.type === 'reservas/cancelarReserva') {
+    //   socket.emit('cancelarReservaClienteServidor', action.payload);
+    // }
+
     return next(action);
   };
 };
