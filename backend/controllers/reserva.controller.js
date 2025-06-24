@@ -68,12 +68,19 @@ export const getAllReservas = async (req, res) => {
   let conn;
   try {
     conn = await getConnection();
+    // --- INICIO DE LA MODIFICACIÓN ---
+    // Se añade la subconsulta para obtener el nombre del docente asignado
     const result = await conn.execute(
       `SELECT r.ID_RESERVA, r.FECHA_RESERVA,
               e.ID_EXAMEN, e.NOMBRE_EXAMEN,
               s.ID_SALA, s.NOMBRE_SALA,
               est.ID_ESTADO, est.NOMBRE_ESTADO AS ESTADO_RESERVA,
-              r.ESTADO_CONFIRMACION_DOCENTE, r.OBSERVACIONES_DOCENTE
+              r.ESTADO_CONFIRMACION_DOCENTE, r.OBSERVACIONES_DOCENTE,
+              (SELECT u.NOMBRE_USUARIO
+               FROM RESERVA_DOCENTES rd
+               JOIN USUARIO u ON rd.USUARIO_ID_USUARIO = u.ID_USUARIO
+               WHERE rd.RESERVA_ID_RESERVA = r.ID_RESERVA AND ROWNUM = 1
+              ) AS NOMBRE_DOCENTE_ASIGNADO
        FROM RESERVA r
        JOIN EXAMEN e ON r.EXAMEN_ID_EXAMEN = e.ID_EXAMEN
        JOIN SALA s ON r.SALA_ID_SALA = s.ID_SALA
@@ -82,6 +89,7 @@ export const getAllReservas = async (req, res) => {
       [],
       { outFormat: oracledb.OUT_FORMAT_OBJECT }
     );
+    // --- FIN DE LA MODIFICACIÓN ---
     res.json(result.rows);
   } catch (err) {
     handleError(res, err, 'Error al obtener reservas');
