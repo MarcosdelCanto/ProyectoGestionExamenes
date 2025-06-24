@@ -1,12 +1,10 @@
 // frontend/src/store/socketMiddleware.js
 import { io } from 'socket.io-client';
 import { statusUpdated, changeStatus } from './statusSlice';
-import {
-  procesarActualizacionReservaSocket,
-  actualizarModulosReservaLocalmente, // Reutilizaremos esta acción
-} from './reservasSlice';
+import { procesarActualizacionReservaSocket } from './reservasSlice';
+// --- 1. IMPORTAR LA NUEVA ACCIÓN DE LA OTRA SLICE ---
+import { procesarActualizacionReservaConfirmada } from './reservasConfirmadasSlice';
 
-// La URL del socket vendrá de la variable de entorno de Vite, sin el '/api' final.
 export const socket = io({ autoConnect: false });
 
 export const socketMiddleware = (storeAPI) => {
@@ -21,30 +19,26 @@ export const socketMiddleware = (storeAPI) => {
     storeAPI.dispatch(statusUpdated({ newStatus: status, updaterId }));
   });
 
-  // Nuevo listener para actualizaciones de reservas desde el servidor
+  // --- 2. MODIFICAR ESTE LISTENER ---
   socket.on('reservaActualizadaDesdeServidor', (reservaActualizada) => {
     console.log(
-      '[socketMiddleware] Evento "reservaActualizadaDesdeServidor" RECIBIDO. Datos:',
-      JSON.stringify(reservaActualizada, null, 2)
+      '[SocketMiddleware] Evento de reserva actualizada recibido:',
+      reservaActualizada
     );
-    storeAPI.dispatch(procesarActualizacionReservaSocket(reservaActualizada));
-    console.log('[SocketMiddleware] Reserva recibida:', reservaActualizada);
+
+    // Despachamos la actualización a AMBAS slices. Cada una sabrá qué hacer.
+    storeAPI.dispatch(procesarActualizacionReservaSocket(reservaActualizada)); // Para el calendario de planificación
+    storeAPI.dispatch(
+      procesarActualizacionReservaConfirmada(reservaActualizada)
+    ); // Para el calendario del Home
   });
 
-  // Nuevo listener para actualizaciones temporales de módulos desde el servidor
   socket.on('actualizacionModulosTemporalServidorAClientes', (data) => {
     const { id_reserva, nuevaCantidadModulos } = data;
-    // Verificar que el cliente actual no sea el que originó el cambio
-    // (Aunque el servidor usa socket.broadcast, esta es una doble seguridad opcional
-    // si se quisiera emitir a todos incluyendo el sender desde el server por alguna razón)
-    // if (socket.id !== data.originSocketId) { // Necesitarías que el server envíe originSocketId
-    console.log(
-      `[socketMiddleware] Evento 'actualizacionModulosTemporalServidorAClientes' RECIBIDO. Reserva ID: ${id_reserva}, Nueva Cantidad: ${nuevaCantidadModulos}`
-    );
+    // Esta acción parece pertenecer solo a la slice de planificación. Lo mantenemos como está.
     storeAPI.dispatch(
       actualizarModulosReservaLocalmente({ id_reserva, nuevaCantidadModulos })
     );
-    // }
   });
 
   socket.connect();

@@ -1,6 +1,6 @@
 // src/components/calendario/CalendarioReservas.jsx
 
-import React, { useRef, useEffect, useState } from 'react';
+import React, { useRef, useEffect, useState, useCallback } from 'react';
 import { Spinner, Alert, Button } from 'react-bootstrap';
 import { format, isValid } from 'date-fns';
 import html2pdf from 'html2pdf.js';
@@ -28,7 +28,7 @@ export default function CalendarioReservas() {
   const {
     lista: reservas,
     estadoCarga,
-    error,
+    error: errorReservas,
   } = useSelector((state) => state.reservasConfirmadas);
 
   // --- ESTADO LOCAL PARA MÓDULOS (sin cambios) ---
@@ -68,7 +68,7 @@ export default function CalendarioReservas() {
   } = useDateManagement();
 
   const isLoading = estadoCarga === 'loading' || loadingModulos;
-  const finalError = error || errorModulos; // Combinar ambos posibles errores
+  const finalError = errorReservas || errorModulos; // Combinar ambos posibles errores
 
   if (isLoading) {
     return (
@@ -175,6 +175,7 @@ export default function CalendarioReservas() {
           </Button>
         </div>
       </div>
+
       <div className="table-wrapper-readonly m-2">
         <table className="calendar-table">
           <CalendarHeader fechas={fechas} />

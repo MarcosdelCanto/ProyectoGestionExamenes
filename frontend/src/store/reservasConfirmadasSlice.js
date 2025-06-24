@@ -1,7 +1,6 @@
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
 import { fetchMisReservasConfirmadas } from '../services/reservaService';
 
-// Thunk asíncrono para cargar las reservas confirmadas del usuario
 export const cargarReservasConfirmadas = createAsyncThunk(
   'reservasConfirmadas/cargar',
   async (_, { rejectWithValue }) => {
@@ -16,7 +15,7 @@ export const cargarReservasConfirmadas = createAsyncThunk(
 
 const initialState = {
   lista: [],
-  estadoCarga: 'idle', // 'idle' | 'loading' | 'succeeded' | 'failed'
+  estadoCarga: 'idle',
   error: null,
 };
 
@@ -24,12 +23,38 @@ const reservasConfirmadasSlice = createSlice({
   name: 'reservasConfirmadas',
   initialState,
   reducers: {
-    // Puedes añadir reducers síncronos aquí en el futuro si los necesitas
-    // Por ejemplo, para limpiar el estado al hacer logout.
     limpiarReservasConfirmadas: (state) => {
       state.lista = [];
       state.estadoCarga = 'idle';
       state.error = null;
+    },
+    // --- ACCIÓN NUEVA PARA ACTUALIZACIONES DE SOCKET ---
+    // Este reducer se encargará de mantener actualizada la lista de reservas confirmadas.
+    procesarActualizacionReservaConfirmada: (state, action) => {
+      const reservaActualizada = action.payload;
+      const indice = state.lista.findIndex(
+        (r) => r.ID_RESERVA === reservaActualizada.ID_RESERVA
+      );
+
+      // Esta slice solo se preocupa de reservas CONFIRMADAS.
+      if (reservaActualizada.ESTADO_CONFIRMACION_DOCENTE === 'CONFIRMADO') {
+        if (indice !== -1) {
+          // Si ya existe en la lista (poco probable, pero seguro), la actualiza.
+          state.lista[indice] = {
+            ...state.lista[indice],
+            ...reservaActualizada,
+          };
+        } else {
+          // Si no existe y está confirmada, LA AÑADE. Este es el caso clave.
+          state.lista.push(reservaActualizada);
+        }
+      } else {
+        // Si la actualización cambia el estado a algo que NO es CONFIRMADO
+        // (ej. se descarta), la eliminamos de esta lista.
+        if (indice !== -1) {
+          state.lista.splice(indice, 1);
+        }
+      }
     },
   },
   extraReducers: (builder) => {
@@ -49,6 +74,9 @@ const reservasConfirmadasSlice = createSlice({
   },
 });
 
-// Exportamos las acciones y el reducer
-export const { limpiarReservasConfirmadas } = reservasConfirmadasSlice.actions;
+// Exportamos la nueva acción junto con las existentes
+export const {
+  limpiarReservasConfirmadas,
+  procesarActualizacionReservaConfirmada,
+} = reservasConfirmadasSlice.actions;
 export default reservasConfirmadasSlice.reducer;

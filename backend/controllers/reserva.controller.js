@@ -15,6 +15,8 @@ const handleError = (res, error, message, statusCode = 500) => {
 
 // Función helper para obtener una reserva completa por ID y emitirla por socket
 // Función helper para obtener una reserva completa por ID y emitirla por socket
+// --- INICIO DE LA CORRECCIÓN ---
+// Esta función ahora es mucho más robusta y trae todos los datos necesarios.
 const emitReservaActualizada = async (
   req,
   connection,
@@ -22,28 +24,39 @@ const emitReservaActualizada = async (
   actionOrigin = 'unknown'
 ) => {
   if (req.app.get('io') && reservaIdNum) {
-    // --- INICIO DE LA MODIFICACIÓN ---
+    // Consulta SQL enriquecida que trae toda la información necesaria para el frontend.
+    const sql = `
+      SELECT
+        r.ID_RESERVA, r.FECHA_RESERVA, r.ESTADO_CONFIRMACION_DOCENTE, r.OBSERVACIONES_DOCENTE, r.FECHA_CONFIRMACION_DOCENTE,
+        e.ID_EXAMEN, e.NOMBRE_EXAMEN, e.CANTIDAD_MODULOS_EXAMEN,
+        s.ID_SALA, s.NOMBRE_SALA,
+        est.NOMBRE_ESTADO AS ESTADO_RESERVA,
+        sec.NOMBRE_SECCION,
+        a.NOMBRE_ASIGNATURA, -- <--- CAMPO CLAVE QUE FALTABA
+        c.NOMBRE_CARRERA,
+        (SELECT LISTAGG(u.NOMBRE_USUARIO, ', ') WITHIN GROUP (ORDER BY u.NOMBRE_USUARIO)
+           FROM RESERVA_DOCENTES rd
+           JOIN USUARIO u ON rd.USUARIO_ID_USUARIO = u.ID_USUARIO
+           WHERE rd.RESERVA_ID_RESERVA = r.ID_RESERVA) AS NOMBRE_DOCENTE
+      FROM RESERVA r
+      JOIN EXAMEN e ON r.EXAMEN_ID_EXAMEN = e.ID_EXAMEN
+      JOIN SALA s ON r.SALA_ID_SALA = s.ID_SALA
+      JOIN ESTADO est ON r.ESTADO_ID_ESTADO = est.ID_ESTADO
+      JOIN SECCION sec ON e.SECCION_ID_SECCION = sec.ID_SECCION
+      JOIN ASIGNATURA a ON sec.ASIGNATURA_ID_ASIGNATURA = a.ID_ASIGNATURA
+      JOIN CARRERA c ON a.CARRERA_ID_CARRERA = c.ID_CARRERA
+      WHERE r.ID_RESERVA = :id_param
+    `;
+
     const result = await connection.execute(
-      `SELECT r.*,
-              e.ID_EXAMEN, e.NOMBRE_EXAMEN, e.CANTIDAD_MODULOS_EXAMEN, e.INSCRITOS_EXAMEN, e.TIPO_PROCESAMIENTO_EXAMEN, e.PLATAFORMA_PROSE_EXAMEN, e.SITUACION_EVALUATIVA_EXAMEN, s.ID_SALA, s.NOMBRE_SALA, est.NOMBRE_ESTADO AS ESTADO_RESERVA,
-              (SELECT u.NOMBRE_USUARIO
-               FROM RESERVA_DOCENTES rd
-               JOIN USUARIO u ON rd.USUARIO_ID_USUARIO = u.ID_USUARIO
-               WHERE rd.RESERVA_ID_RESERVA = r.ID_RESERVA AND ROWNUM = 1
-              ) AS NOMBRE_DOCENTE_ASIGNADO
-       FROM RESERVA r
-       JOIN EXAMEN e ON r.EXAMEN_ID_EXAMEN = e.ID_EXAMEN
-       JOIN SALA s ON r.SALA_ID_SALA = s.ID_SALA
-       JOIN ESTADO est ON r.ESTADO_ID_ESTADO = est.ID_ESTADO
-       WHERE r.ID_RESERVA = :id_param`,
+      sql,
       { id_param: reservaIdNum },
       { outFormat: oracledb.OUT_FORMAT_OBJECT }
     );
-    // --- FIN DE LA MODIFICACIÓN ---
 
     if (result.rows.length > 0) {
       const reservaParaEmitir = result.rows[0];
-      // ... (el resto de la función para añadir módulos se mantiene igual)
+
       const modulosResult = await connection.execute(
         `SELECT m.ID_MODULO, m.NOMBRE_MODULO, m.INICIO_MODULO, m.FIN_MODULO, m.ORDEN
          FROM RESERVAMODULO rm
@@ -53,16 +66,23 @@ const emitReservaActualizada = async (
         { reservaId_param: reservaIdNum },
         { outFormat: oracledb.OUT_FORMAT_OBJECT }
       );
+
       reservaParaEmitir.MODULOS = modulosResult.rows;
+      // Añadimos MODULOS_IDS para consistencia con otras partes de la app
+      reservaParaEmitir.MODULOS_IDS = modulosResult.rows
+        .map((m) => m.ID_MODULO)
+        .join(',');
+
       req.app
         .get('io')
         .emit('reservaActualizadaDesdeServidor', reservaParaEmitir);
       console.log(
-        `[Backend Ctrl: emitReservaActualizada] Evento Socket.IO 'reservaActualizadaDesdeServidor' emitido para reserva ${reservaIdNum} desde ${actionOrigin}.`
+        `[Socket.IO] Evento 'reservaActualizadaDesdeServidor' emitido para reserva #${reservaIdNum} desde ${actionOrigin}.`
       );
     }
   }
 };
+// --- FIN DE LA CORRECCIÓN ---
 
 export const getAllReservas = async (req, res) => {
   let conn;
