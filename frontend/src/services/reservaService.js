@@ -181,26 +181,43 @@ export const fetchMisAsignacionesDeReservas = async () => {
 /**
  * Envía una reserva al docente para su confirmación (de EN_CURSO a PENDIENTE)
  * @param {number} idReserva - ID de la reserva a enviar
- * @param {number} [nuevaCantidadModulos] - Opcional: Nueva cantidad de módulos para la reserva
+ * @param {number|Object} segundoParametro - Puede ser nuevaCantidadModulos (número) o un objeto con {nuevaCantidadModulos, docente_id}
  * @returns {Promise<Object>} - Respuesta del servidor
  */
-export const enviarReservaADocente = async (
-  idReserva,
-  nuevaCantidadModulos
-) => {
+export const enviarReservaADocente = async (idReserva, segundoParametro) => {
   try {
     const payload = {};
-    if (nuevaCantidadModulos !== undefined) {
-      payload.nuevaCantidadModulos = nuevaCantidadModulos;
+
+    // Mantener compatibilidad con la llamada existente
+    if (typeof segundoParametro === 'number') {
+      // Llamada existente: enviarReservaADocente(reservaId, moduloscountState)
+      payload.nuevaCantidadModulos = segundoParametro;
+    } else if (
+      typeof segundoParametro === 'object' &&
+      segundoParametro !== null
+    ) {
+      // Nueva llamada: enviarReservaADocente(reservaId, {nuevaCantidadModulos, docente_id})
+      if (segundoParametro.nuevaCantidadModulos !== undefined) {
+        payload.nuevaCantidadModulos = segundoParametro.nuevaCantidadModulos;
+      }
+      if (segundoParametro.docente_id !== undefined) {
+        payload.docente_id = segundoParametro.docente_id;
+      }
+    } else if (segundoParametro !== undefined) {
+      // Por si acaso, tratar como módulos
+      payload.nuevaCantidadModulos = segundoParametro;
     }
+
     console.log(
       `[reservaService] Enviando a /reserva/${idReserva}/enviar-a-docente con payload:`,
       JSON.stringify(payload)
     );
+
     const response = await api.put(
       `/reserva/${idReserva}/enviar-a-docente`,
       payload
     );
+
     return response.data;
   } catch (error) {
     console.error(

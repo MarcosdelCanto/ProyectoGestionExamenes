@@ -1366,10 +1366,12 @@ export const enviarReservaADocente = async (req, res) => {
   let connection;
   try {
     const { idReserva } = req.params;
-    const { nuevaCantidadModulos } = req.body;
+    const { nuevaCantidadModulos, docente_id } = req.body; // ← AGREGAR docente_id
+
     console.log(
-      `[Backend Ctrl: enviarReservaADocente] Solicitud para reserva ${idReserva}. Payload recibido (nuevaCantidadModulos): ${nuevaCantidadModulos}`
+      `[Backend Ctrl: enviarReservaADocente] Solicitud para reserva ${idReserva}. Payload: módulos=${nuevaCantidadModulos}, docente=${docente_id}`
     );
+
     const reservaIdNum = parseInt(idReserva, 10);
 
     if (isNaN(reservaIdNum)) {
@@ -1385,9 +1387,9 @@ export const enviarReservaADocente = async (req, res) => {
     // Verificar que la reserva existe y está en estado EN_CURSO
     const reservaActualResult = await connection.execute(
       `SELECT r.ESTADO_CONFIRMACION_DOCENTE, r.EXAMEN_ID_EXAMEN, COUNT(rm.MODULO_ID_MODULO) AS MODULOS_ACTUALES
-       FROM RESERVA
+       FROM RESERVA r
        LEFT JOIN RESERVAMODULO rm ON r.ID_RESERVA = rm.RESERVA_ID_RESERVA
-       WHERE ID_RESERVA = :reserva_id
+       WHERE r.ID_RESERVA = :reserva_id
        GROUP BY r.ESTADO_CONFIRMACION_DOCENTE, r.EXAMEN_ID_EXAMEN, r.ID_RESERVA`,
       { reserva_id: reservaIdNum },
       { outFormat: oracledb.OUT_FORMAT_OBJECT }
@@ -1400,6 +1402,7 @@ export const enviarReservaADocente = async (req, res) => {
     const estadoActual =
       reservaActualResult.rows[0].ESTADO_CONFIRMACION_DOCENTE;
     const modulosActualesCount = reservaActualResult.rows[0].MODULOS_ACTUALES;
+
     if (estadoActual !== 'EN_CURSO') {
       return handleError(
         res,
@@ -1408,76 +1411,168 @@ export const enviarReservaADocente = async (req, res) => {
         400
       );
     }
-    // Si se proporciona nuevaCantidadModulos y es diferente, actualizar módulos
+
+    // **NUEVA LÓGICA: Actualizar docente asignado**
+    if (docente_id) {
+      console.log(
+        `[enviarReservaADocente] Asignando docente ${docente_id} a reserva ${reservaIdNum}`
+      );
+
+      // 1. Eliminar docente anterior (si existe)
+      await connection.execute(
+        `DELETE FROM RESERVA_DOCENTES WHERE RESERVA_ID_RESERVA = :reserva_id`,
+        { reserva_id: reservaIdNum }
+      );
+
+      // 2. Insertar nuevo docente
+      await connection.execute(
+        `INSERT INTO RESERVA_DOCENTES (RESERVA_ID_RESERVA, USUARIO_ID_USUARIO) VALUES (:reserva_id, :docente_id)`,
+        {
+          reserva_id: reservaIdNum,
+          docente_id: parseInt(docente_id),
+        }
+      );
+
+      console.log(
+        `[enviarReservaADocente] Docente ${docente_id} asignado exitosamente`
+      );
+    }
+
+    // **LÓGICA EXISTENTE DE ACTUALIZACIÓN DE MÓDULOS - RESTAURADA COMPLETA**
     if (
       nuevaCantidadModulos !== undefined &&
       nuevaCantidadModulos !== modulosActualesCount
     ) {
       console.log(
-        `[Backend Ctrl: enviarReservaADocente] Condición CUMPLIDA para actualizar módulos. Reserva: ${reservaIdNum}, Actuales: ${modulosActualesCount}, Nuevos: ${nuevaCantidadModulos}`
+        `[enviarReservaADocente] Actualizando módulos de ${modulosActualesCount} a ${nuevaCantidadModulos}`
       );
 
-      // 1. Obtener el ORDEN del módulo inicial actual
-      const modulosOrdenResult = await connection.execute(
-        `SELECT m.ORDEN
-         FROM RESERVAMODULO rm
-         JOIN MODULO m ON rm.MODULO_ID_MODULO = m.ID_MODULO
-         WHERE rm.RESERVA_ID_RESERVA = :reserva_id
-         ORDER BY m.ORDEN ASC`,
+      // Validar que la nueva cantidad sea válida
+      if (nuevaCantidadModulos < 1 || nuevaCantidadModulos > 12) {
+        return handleError(
+          res,
+          null,
+          'La cantidad de módulos debe estar entre 1 y 12',
+          400
+        );
+      }
+
+      // Obtener información de la reserva para generar la nueva secuencia de módulos
+      const infoReservaResult = await connection.execute(
+        `SELECT r.FECHA_RESERVA, r.SALA_ID_SALA,
+                MIN(rm.MODULO_ID_MODULO) as PRIMER_MODULO_ID
+         FROM RESERVA r
+         LEFT JOIN RESERVAMODULO rm ON r.ID_RESERVA = rm.RESERVA_ID_RESERVA
+         WHERE r.ID_RESERVA = :reserva_id
+         GROUP BY r.FECHA_RESERVA, r.SALA_ID_SALA`,
         { reserva_id: reservaIdNum },
         { outFormat: oracledb.OUT_FORMAT_OBJECT }
       );
 
-      if (modulosOrdenResult.rows.length === 0) {
-        // Esto no debería pasar si modulosActualesCount > 0, pero por si acaso
+      if (infoReservaResult.rows.length === 0) {
         return handleError(
           res,
           null,
-          'No se encontraron módulos para la reserva actual.',
-          500
+          'No se encontró información de la reserva',
+          404
         );
       }
-      const ordenModuloInicial = modulosOrdenResult.rows[0].ORDEN;
 
-      // 2. Eliminar módulos antiguos de RESERVAMODULO
+      const { FECHA_RESERVA, SALA_ID_SALA, PRIMER_MODULO_ID } =
+        infoReservaResult.rows[0];
+
+      // Obtener el orden del primer módulo actual
+      const ordenPrimerModuloResult = await connection.execute(
+        `SELECT ORDEN FROM MODULO WHERE ID_MODULO = :modulo_id`,
+        { modulo_id: PRIMER_MODULO_ID },
+        { outFormat: oracledb.OUT_FORMAT_OBJECT }
+      );
+
+      if (ordenPrimerModuloResult.rows.length === 0) {
+        return handleError(res, null, 'No se encontró el módulo inicial', 404);
+      }
+
+      const ordenInicial = ordenPrimerModuloResult.rows[0].ORDEN;
+
+      // Generar IDs de los nuevos módulos
+      const nuevosModulosResult = await connection.execute(
+        `SELECT ID_MODULO, ORDEN, NOMBRE_MODULO
+         FROM MODULO
+         WHERE ORDEN >= :orden_inicial
+         AND ORDEN < :orden_final
+         ORDER BY ORDEN`,
+        {
+          orden_inicial: ordenInicial,
+          orden_final: ordenInicial + nuevaCantidadModulos,
+        },
+        { outFormat: oracledb.OUT_FORMAT_OBJECT }
+      );
+
+      if (nuevosModulosResult.rows.length !== nuevaCantidadModulos) {
+        return handleError(
+          res,
+          null,
+          `No hay suficientes módulos consecutivos disponibles. Se encontraron ${nuevosModulosResult.rows.length} de ${nuevaCantidadModulos} requeridos`,
+          400
+        );
+      }
+
+      const nuevosModulosIds = nuevosModulosResult.rows.map(
+        (row) => row.ID_MODULO
+      );
+
+      // Verificar conflictos con otras reservas
+      const conflictosResult = await connection.execute(
+        `SELECT COUNT(*) as CONFLICTOS
+         FROM RESERVAMODULO rm
+         JOIN RESERVA r ON rm.RESERVA_ID_RESERVA = r.ID_RESERVA
+         WHERE rm.MODULO_ID_MODULO IN (${nuevosModulosIds.map(() => ':modulo_id').join(',')})
+         AND r.FECHA_RESERVA = :fecha_reserva
+         AND r.SALA_ID_SALA = :sala_id
+         AND r.ID_RESERVA != :reserva_id
+         AND r.ESTADO_CONFIRMACION_DOCENTE != 'DESCARTADO'`,
+        {
+          ...nuevosModulosIds.reduce((acc, id, index) => {
+            acc[`modulo_id_${index}`] = id;
+            return acc;
+          }, {}),
+          fecha_reserva: FECHA_RESERVA,
+          sala_id: SALA_ID_SALA,
+          reserva_id: reservaIdNum,
+        },
+        { outFormat: oracledb.OUT_FORMAT_OBJECT }
+      );
+
+      if (conflictosResult.rows[0].CONFLICTOS > 0) {
+        return handleError(
+          res,
+          null,
+          'Conflicto detectado: Los nuevos módulos ya están ocupados por otra reserva',
+          409
+        );
+      }
+
+      // Eliminar módulos actuales
       await connection.execute(
         `DELETE FROM RESERVAMODULO WHERE RESERVA_ID_RESERVA = :reserva_id`,
         { reserva_id: reservaIdNum }
       );
 
-      // 3. Calcular y obtener los nuevos ID_MODULO
-      const nuevosModulosIds = [];
-      for (let i = 0; i < nuevaCantidadModulos; i++) {
-        const ordenTarget = ordenModuloInicial + i;
-        const moduloIdResult = await connection.execute(
-          `SELECT ID_MODULO FROM MODULO WHERE ORDEN = :orden`,
-          { orden: ordenTarget },
-          { outFormat: oracledb.OUT_FORMAT_OBJECT }
-        );
-        if (moduloIdResult.rows.length > 0) {
-          nuevosModulosIds.push(moduloIdResult.rows[0].ID_MODULO);
-        } else {
-          return handleError(
-            res,
-            null,
-            `Módulo con orden ${ordenTarget} no encontrado.`,
-            500
-          );
-        }
+      // Insertar nuevos módulos
+      const insertModulosSql = `
+        INSERT INTO RESERVAMODULO (MODULO_ID_MODULO, RESERVA_ID_RESERVA)
+        VALUES (:modulo_id, :reserva_id)
+      `;
+
+      for (const moduloId of nuevosModulosIds) {
+        await connection.execute(insertModulosSql, {
+          modulo_id: moduloId,
+          reserva_id: reservaIdNum,
+        });
       }
 
-      // 4. Insertar nuevos módulos en RESERVAMODULO
-      const reservamoduloSql = `INSERT INTO RESERVAMODULO (MODULO_ID_MODULO, RESERVA_ID_RESERVA) VALUES (:modulo_id, :reserva_id)`;
-      await connection.executeMany(
-        reservamoduloSql,
-        nuevosModulosIds.map((id) => ({
-          modulo_id: id,
-          reserva_id: reservaIdNum,
-        }))
-      );
-    } else {
       console.log(
-        `[Backend Ctrl: enviarReservaADocente] Condición NO CUMPLIDA para actualizar módulos. Reserva: ${reservaIdNum}, Actuales: ${modulosActualesCount}, Recibidos (nuevaCantidadModulos): ${nuevaCantidadModulos}`
+        `[enviarReservaADocente] Módulos actualizados exitosamente. Nuevos módulos: ${nuevosModulosIds.join(', ')}`
       );
     }
 
@@ -1509,13 +1604,18 @@ export const enviarReservaADocente = async (req, res) => {
       reservaIdNum,
       'enviarReservaADocente'
     );
+
     res.status(200).json({
       message: 'Reserva enviada a docente para confirmación',
       id_reserva: reservaIdNum,
       nuevo_estado: 'PENDIENTE',
+      modulos_actualizados:
+        nuevaCantidadModulos !== undefined &&
+        nuevaCantidadModulos !== modulosActualesCount,
+      nueva_cantidad_modulos: nuevaCantidadModulos || modulosActualesCount,
+      docente_asignado: docente_id || null,
     });
   } catch (error) {
-    // Si hay un error, no se emite el evento de socket, pero se maneja el error HTTP
     if (connection) {
       console.error(`[enviarReservaADocente] Error, haciendo rollback:`, error);
       await connection.rollback();
