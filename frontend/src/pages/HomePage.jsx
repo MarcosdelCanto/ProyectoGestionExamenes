@@ -1,28 +1,32 @@
 import React, { useState, useEffect } from 'react';
-import { changeStatus } from '../store/statusSlice';
-import { useDispatch, useSelector } from 'react-redux';
+import { useSelector } from 'react-redux';
 import api from '../services/api';
 import { logout } from '../services/authService';
 import { useNavigate } from 'react-router-dom';
-import './HomePage.css'; // ¡Ahora este archivo es fundamental!
-import { socket } from '../store/socketMiddleware';
+import { Spinner } from 'react-bootstrap';
+
+// Componentes y Hooks
 import Layout from '../components/Layout';
-import { FaUserCircle } from 'react-icons/fa';
-import { SummaryDashboard } from '../components/SummaryDashboard/';
-import DashboardConGraficos from '../components/dashboard/DashboardConGraficos'; // Importar el componente de gráficos
-import { usePermission } from '../hooks/usePermission'; // <-- 1. Importar el hook de permisos
 import Avatar from '../components/Avatar';
-import { Button } from 'react-bootstrap';
+import { SummaryDashboard } from '../components/SummaryDashboard/';
+import DashboardConGraficos from '../components/dashboard/DashboardConGraficos';
+import CalendarioReservas from '../components/calendario/CalendarioReservas'; // <-- 1. Importar el nuevo calendario
+/* import { usePermission } from '../hooks/usePermission'; */ // <-- Hook causing error, disabled for now.
+
+// Estilos
+import './HomePage.css';
 
 export default function HomePage() {
-  const { status, updaterId } = useSelector((state) => state.status);
-  const dispatch = useDispatch();
   const [perfil, setPerfil] = useState(null);
   const navigate = useNavigate();
-  const { hasPermission, loading: permissionsLoading } = usePermission(); // <-- 2. Usar el hook
+
+  // Usar el hook de permisos para determinar qué mostrar
+  // The line below was causing the error.
+  // const { hasRole, isLoading: permissionsLoading } = usePermission();
 
   useEffect(() => {
-    api('/usuarios/profile')
+    api
+      .get('/usuarios/profile') // Usar api.get para consistencia
       .then((res) => {
         setPerfil(res.data.perfil);
       })
@@ -33,23 +37,9 @@ export default function HomePage() {
       });
   }, [navigate]);
 
-  const puedeModificar = status === 'disponible' || socket.id === updaterId;
-
-  const handleClick = () => {
-    const next = status === 'disponible' ? 'pendiente' : ' CONFIRMADO';
-    dispatch(changeStatus(next));
-  };
-
-  const handleLogout = () => {
-    socket.disconnect();
-    logout();
-    navigate('/login');
-  };
-
   const formatDate = (dateString) => {
     if (!dateString) return 'No disponible';
     const date = new Date(dateString);
-    // Check if the date is valid by checking if getTime() returns a number
     if (isNaN(date.getTime())) {
       return 'Fecha inválida';
     }
@@ -60,20 +50,45 @@ export default function HomePage() {
     });
   };
 
-  if (!perfil || permissionsLoading) {
-    // <-- Mostrar carga mientras los permisos se verifican
+  // Mientras el perfil o los permisos están cargando, muestra un loader
+  if (!perfil) {
     return (
       <Layout>
-        <div className="loading-container">
-          <p>Cargando perfil…</p>
+        <div
+          className="d-flex justify-content-center align-items-center"
+          style={{ height: '80vh' }}
+        >
+          <Spinner animation="border" role="status">
+            <span className="visually-hidden">Cargando perfil...</span>
+          </Spinner>
         </div>
       </Layout>
     );
   }
 
+  // Helper function to check user role.
+  // This replaces the functionality from the usePermission hook which was causing an error.
+  const hasRole = (rolesToCheck) => {
+    if (!perfil?.NOMBRE_ROL) return false;
+    const userRole = perfil.NOMBRE_ROL;
+    return Array.isArray(rolesToCheck)
+      ? rolesToCheck.includes(userRole)
+      : userRole === rolesToCheck;
+  };
+
+  // Una vez cargados, determina los roles para la lógica condicional
+  const esDocenteOAlumno = hasRole(['DOCENTE', 'ALUMNO']);
+  const puedeVerDashboard = hasRole([
+    'ADMINISTRADOR',
+    'JEFE CARRERA',
+    'COORDINADOR CARRERA',
+    'COORDINADOR DOCENTE',
+  ]);
+
   return (
     <Layout>
       <div className="w-full">
+        {/* Tarjeta de Perfil del Usuario (sin cambios) */}
         <div className="profile-card-compact">
           <div className="profile-main-info">
             <Avatar name={perfil.NOMBRE_USUARIO} size={60} />
@@ -93,31 +108,32 @@ export default function HomePage() {
             </div>
           </div>
         </div>
-        <hr></hr> {/* Asegura que este contenedor pueda usar el ancho */}
-        {hasPermission('VIEW_DASHBOARD') ? (
+        <hr />
+
+        {/* --- INICIO DE LA LÓGICA CONDICIONAL DE CONTENIDO --- */}
+
+        {/* 2. Si el usuario es Docente o Alumno, muestra el Calendario de Reservas */}
+        {esDocenteOAlumno && <CalendarioReservas />}
+
+        {/* 3. Si el usuario tiene un rol de gestión, muestra los Dashboards */}
+        {puedeVerDashboard && (
           <div className="text-center my-4">
             <SummaryDashboard />
-            <DashboardConGraficos />{' '}
-            {/* Añadir el componente de gráficos aquí */}
-          </div>
-        ) : (
-          <div className="text-center my-4 p-4 bg-light rounded">
-            <p className="lead">
-              Bienvenido al sistema de gestión de exámenes.
-            </p>
+            <DashboardConGraficos />
           </div>
         )}
-      </div>
-      {/* Sección de estado y botón */}
-      <div className="status-section">
-        <div className={`status-circle status-${status}`} />
-        <button onClick={handleClick} disabled={!puedeModificar}>
-          {status === 'disponible'
-            ? 'Ocupar'
-            : status === 'pendiente'
-              ? 'Confirmar'
-              : 'Ocupado'}
-        </button>
+
+        {/* 4. Mensaje de bienvenida genérico si no cumple ninguna de las condiciones anteriores */}
+        {!esDocenteOAlumno && !puedeVerDashboard && (
+          <div className="text-center my-4 p-5 bg-light rounded">
+            <h4 className="display-6">
+              Bienvenido al Sistema de Gestión de Exámenes
+            </h4>
+            <p className="lead">Utiliza el menú de navegación para comenzar.</p>
+          </div>
+        )}
+
+        {/* --- FIN DE LA LÓGICA CONDICIONAL --- */}
       </div>
     </Layout>
   );

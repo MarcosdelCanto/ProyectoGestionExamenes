@@ -1737,3 +1737,61 @@ export const cancelarReservaCompleta = async (req, res) => {
     }
   }
 };
+
+export const getMisReservasConfirmadas = async (req, res) => {
+  let connection;
+  const { id_usuario: userId } = req.user;
+
+  try {
+    connection = await getConnection();
+    const sql = `
+      SELECT
+        R.ID_RESERVA, R.FECHA_RESERVA,
+        S.ID_SALA, S.NOMBRE_SALA,
+        EX.ID_EXAMEN, EX.NOMBRE_EXAMEN,
+        SEC.ID_SECCION, SEC.NOMBRE_SECCION,
+        A.NOMBRE_ASIGNATURA,
+        (SELECT LISTAGG(U.NOMBRE_USUARIO, ', ') WITHIN GROUP (ORDER BY U.NOMBRE_USUARIO)
+           FROM USUARIOSECCION US_DOC
+           JOIN USUARIO U ON US_DOC.USUARIO_ID_USUARIO = U.ID_USUARIO
+           JOIN ROL RL ON U.ROL_ID_ROL = RL.ID_ROL
+           WHERE US_DOC.SECCION_ID_SECCION = SEC.ID_SECCION AND RL.NOMBRE_ROL = 'DOCENTE'
+        ) AS NOMBRE_DOCENTE,
+        (SELECT LISTAGG(M.ID_MODULO, ',') WITHIN GROUP (ORDER BY M.ORDEN) FROM RESERVAMODULO RM JOIN MODULO M ON RM.MODULO_ID_MODULO = M.ID_MODULO WHERE RM.RESERVA_ID_RESERVA = R.ID_RESERVA) AS MODULOS_IDS
+      FROM RESERVA R
+      JOIN EXAMEN EX ON R.EXAMEN_ID_EXAMEN = EX.ID_EXAMEN
+      JOIN SECCION SEC ON EX.SECCION_ID_SECCION = SEC.ID_SECCION
+      JOIN ASIGNATURA A ON SEC.ASIGNATURA_ID_ASIGNATURA = A.ID_ASIGNATURA
+      JOIN SALA S ON R.SALA_ID_SALA = S.ID_SALA
+      JOIN USUARIOSECCION US ON SEC.ID_SECCION = US.SECCION_ID_SECCION -- Unimos con las secciones del usuario
+      WHERE R.ESTADO_CONFIRMACION_DOCENTE = 'CONFIRMADO' -- Solo las confirmadas
+      AND US.USUARIO_ID_USUARIO = :userId -- Solo las del usuario logueado
+      ORDER BY R.FECHA_RESERVA
+    `;
+
+    const result = await connection.execute(
+      sql,
+      { userId },
+      {
+        outFormat: oracledb.OUT_FORMAT_OBJECT,
+      }
+    );
+
+    // Usamos un Set para obtener resultados únicos por ID_RESERVA
+    const uniqueReservas = [
+      ...new Map(result.rows.map((item) => [item.ID_RESERVA, item])).values(),
+    ];
+
+    res.json(uniqueReservas);
+  } catch (error) {
+    handleError(res, error, 'Error al obtener mis reservas confirmadas');
+  } finally {
+    if (connection) {
+      try {
+        await connection.close();
+      } catch (err) {
+        console.error('Error al cerrar la conexión:', err);
+      }
+    }
+  }
+};

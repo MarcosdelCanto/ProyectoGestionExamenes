@@ -18,11 +18,18 @@ import {
   deleteReserva, // Controlador para DELETE /:id
   getMisAsignacionesDeReservas, // Controlador para GET /mis-asignaciones
   descartarReserva, // Importar el nuevo controlador
+  getMisReservasConfirmadas, // Importar el controlador para obtener reservas confirmadas
 } from '../controllers/reserva.controller.js';
 
 const router = Router();
 
 // --- RUTAS PARA LA NUEVA FUNCIONALIDAD DE CREACIÓN Y CONFIRMACIÓN DE DOCENTES ---
+router.get(
+  '/mis-confirmadas',
+  authMiddleware,
+  checkPermission(['VIEW_RESERVA_DETAIL']),
+  getMisReservasConfirmadas
+);
 
 // Nueva ruta para "Mis Asignaciones de Reservas" según rol
 router.get(
@@ -87,6 +94,7 @@ router.get(
   checkPermission(['VIEW_ALL_RESERVAS']), // Ej: Permiso para ver todas las reservas
   getAllReservas
 );
+
 router.post(
   '/', // Tu ruta original para crear reservas
   authMiddleware,
