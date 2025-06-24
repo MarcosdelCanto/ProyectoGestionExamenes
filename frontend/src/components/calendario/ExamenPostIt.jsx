@@ -3,13 +3,12 @@ import { Badge, Modal, Button } from 'react-bootstrap'; // Agregar Modal y Butto
 import { FaPlus, FaMinus, FaExclamationTriangle } from 'react-icons/fa'; // Agregar icono de advertencia
 import {
   enviarReservaADocente,
-  cancelarReservaCompleta, // Usar esta en lugar de descartarReservaService
+  cancelarReservaCompleta,
+  updateReserva, // **ASEGURAR QUE ESTE IMPORT EXISTE**
 } from '../../services/reservaService';
 import { toast } from 'react-toastify'; // <-- AÑADIR IMPORTACIÓN SI NO ESTÁ
 import {
-  fetchAllDocentes,
-  searchDocentes,
-  fetchDocentesBySeccion,
+  searchDocentes, // ← Mantener solo este para buscar por nombre
 } from '../../services/usuarioService';
 import { useDispatch, useSelector } from 'react-redux'; // Agregar esta importación
 import { actualizarModulosReservaLocalmente } from '../../store/reservasSlice'; // Agregar esta importación
@@ -52,8 +51,8 @@ export default function ExamenPostIt({
   // Estado para selección de docente
   const [selectedDocenteId, setSelectedDocenteId] = useState(null);
   const [docentes, setDocentes] = useState([]);
-  const [defaultDocenteOptions, setDefaultDocenteOptions] = useState([]);
   const [showCancelModal, setShowCancelModal] = useState(false);
+  const [defaultDocenteOptions, setDefaultDocenteOptions] = useState([]); // <-- Estado agregado
 
   /**
    * Obtiene el estado de confirmación docente de la reserva
@@ -378,107 +377,113 @@ export default function ExamenPostIt({
    */
   const getActionButtons = () => {
     if (isPreview || isDragOverlay) return null;
-
     const estadoConfirmacion = getEstadoConfirmacion();
 
     switch (estadoConfirmacion) {
       case 'EN_CURSO':
         return (
-          <div className="action-buttons d-flex align-items-center gap-1">
-            <button
-              className="btn btn-outline-secondary btn-sm action-btn"
-              onClick={handleDisminuirModulo}
-              disabled={isProcessingAction || moduloscountState <= minModulos}
-              title="Disminuir módulos"
-            >
-              <FaMinus />
-            </button>
-            <span className="mx-1 text-muted" style={{ fontSize: '0.8em' }}>
-              {moduloscountState}
-            </span>
-            <button
-              className="btn btn-outline-secondary btn-sm action-btn"
-              onClick={handleAumentarModulo}
-              disabled={isProcessingAction || moduloscountState >= maxModulos}
-              title="Aumentar módulos"
-            >
-              <FaPlus />
-            </button>
+          <div className="action-buttons">
+            {/* **SELECTOR DE DOCENTE COMPACTO** */}
+            {renderDocenteSelector()}
 
+            {/* **CONTROLES DE MÓDULOS** */}
+            <div className="modulos-controls">
+              <button
+                className="btn btn-sm btn-outline-secondary action-btn"
+                onClick={handleDisminuirModulo}
+                disabled={isProcessingAction || moduloscountState <= minModulos}
+                title="Reducir módulos"
+              >
+                <FaMinus size={8} />
+              </button>
+              <span className="modulos-count">{moduloscountState}</span>
+              <button
+                className="btn btn-sm btn-outline-secondary action-btn"
+                onClick={handleAumentarModulo}
+                disabled={isProcessingAction || moduloscountState >= maxModulos}
+                title="Aumentar módulos"
+              >
+                <FaPlus size={8} />
+              </button>
+            </div>
+
+            {/* **BOTÓN ENVIAR A DOCENTE** */}
             <button
               className="btn btn-success btn-sm action-btn"
               onClick={handleEnviarADocente}
               disabled={isProcessingAction || !selectedDocenteId}
               title={
                 selectedDocenteId
-                  ? 'Enviar a docente para confirmación'
+                  ? `Enviar a ${selectedDocenteId.label} para confirmación`
                   : 'Selecciona un docente primero'
               }
             >
               {isProcessingAction ? '⏳' : !selectedDocenteId ? '⚠️' : '✓'}
             </button>
-            {/* CANCELAR SOLO EN EN_CURSO */}
+
+            {/* **BOTÓN CANCELAR** */}
             <button
               className="btn btn-danger btn-sm action-btn"
-              onClick={handleClickCancelar}
+              onClick={() => setShowCancelModal(true)}
               disabled={isProcessingAction}
               title="Cancelar reserva"
             >
-              {isProcessingAction ? '⏳' : '✕'}
+              ✕
             </button>
           </div>
         );
 
       case 'PENDIENTE':
         return (
-          <div className="status-info d-flex align-items-center gap-2">
-            <Badge bg="warning" text="dark" className="status-badge">
-              📋 Pendiente
-            </Badge>
-            {/* NO HAY BOTÓN DE CANCELAR EN PENDIENTE */}
-          </div>
-        );
-
-      case 'REQUIERE_REVISION':
-        return (
-          <div className="status-info d-flex align-items-center gap-2">
-            <Badge bg="info" className="status-badge">
-              📝 Revisión
-            </Badge>
-            {/* NO HAY BOTÓN DE CANCELAR EN REQUIERE_REVISION */}
+          <div className="action-buttons">
+            <span
+              className="status-indicator pendiente"
+              title="Esperando confirmación del docente"
+            >
+              ⏳ Pendiente
+            </span>
           </div>
         );
 
       case 'CONFIRMADO':
         return (
-          <div className="status-info d-flex align-items-center gap-2">
-            <Badge bg="success" className="status-badge">
+          <div className="action-buttons">
+            <span
+              className="status-indicator confirmado"
+              title="Confirmado por el docente"
+            >
               ✅ Confirmado
-            </Badge>
-            {/* NO HAY BOTÓN DE CANCELAR EN CONFIRMADO */}
+            </span>
           </div>
         );
 
       case 'RECHAZADO':
         return (
-          <div className="status-info d-flex align-items-center gap-2">
-            <Badge bg="danger" className="status-badge">
+          <div className="action-buttons">
+            <span
+              className="status-indicator rechazado"
+              title="Rechazado por el docente"
+            >
               ❌ Rechazado
-            </Badge>
-            {/* NO HAY BOTÓN DE CANCELAR EN RECHAZADO */}
+            </span>
           </div>
         );
 
       default:
-        // Para estados desconocidos, no mostrar botones
-        return null;
+        return (
+          <div className="action-buttons">
+            <span className="status-indicator unknown">
+              ❓ Estado desconocido
+            </span>
+          </div>
+        );
     }
   };
 
-  // Función para cargar opciones de docentes (igual que en ReservaForm)
+  // Función para cargar opciones de docentes - actualizar
   const loadDocenteOptions = (inputValue, callback) => {
     if (!inputValue) {
-      callback(defaultDocenteOptions);
+      callback(defaultDocenteOptions); // ← Usar defaultDocenteOptions cuando no hay input
       return;
     }
     searchDocentes(inputValue)
@@ -486,7 +491,7 @@ export default function ExamenPostIt({
         callback(
           data.map((d) => ({
             value: d.ID_USUARIO,
-            label: `${d.NOMBRE} ${d.APELLIDO}`,
+            label: d.NOMBRE_USUARIO, // ← Usar NOMBRE_USUARIO (consistente con backend)
             SECCIONES: d.SECCIONES,
           }))
         );
@@ -543,41 +548,112 @@ export default function ExamenPostIt({
 
   // Cargar docentes disponibles al montar el componente
   useEffect(() => {
-    const cargarDocentes = async () => {
-      try {
-        // Si tenemos sección del examen, cargar docentes por sección
-        if (examen?.ID_SECCION) {
-          const docentesData = await fetchDocentesBySeccion(examen.ID_SECCION);
-          const opciones = docentesData.map((d) => ({
-            value: d.ID_USUARIO,
-            label: `${d.NOMBRE} ${d.APELLIDO}`,
-            SECCIONES: d.SECCIONES,
-          }));
-          setDefaultDocenteOptions(opciones);
-        }
+    const cargarDocenteInicial = async () => {
+      console.log(`[PostIt DEBUG] Cargando docente inicial:`, {
+        examen: examen?.NOMBRE_ASIGNATURA,
+        nombreDocente: examen?.NOMBRE_DOCENTE,
+        isPreview,
+        isDragOverlay,
+        examenAsignadoCompleto: !!examenAsignadoCompleto,
+      });
 
-        // Si ya hay un docente asignado, mostrarlo
+      try {
+        let docenteInicialSeleccionado = null;
+
+        // **PRIORIDAD 1: Verificar si hay docente asignado en la reserva**
         const docenteAsignado =
           examenAsignadoCompleto?.reservaCompleta?.DOCENTE_ASIGNADO ||
           examenAsignadoCompleto?.DOCENTE_ASIGNADO ||
           null;
 
         if (docenteAsignado) {
+          console.log(
+            `[PostIt DEBUG] Docente asignado en reserva:`,
+            docenteAsignado
+          );
+
           const docenteFormateado = {
             value: docenteAsignado.ID_USUARIO,
             label: `${docenteAsignado.NOMBRE} ${docenteAsignado.APELLIDO}`,
+            tipo: 'asignado',
           };
           setSelectedDocenteId(docenteFormateado);
+          setDefaultDocenteOptions([docenteFormateado]); // **AGREGAR ESTA LÍNEA**
+          console.log(
+            `[PostIt DEBUG] Docente de reserva aplicado:`,
+            docenteFormateado
+          );
+          return;
         }
+
+        // **PRIORIDAD 2: Usar el docente del examen**
+        if (examen?.NOMBRE_DOCENTE && !selectedDocenteId) {
+          console.log(
+            `[PostIt DEBUG] Usando docente del examen:`,
+            examen.NOMBRE_DOCENTE
+          );
+
+          try {
+            const resultadoBusqueda = await searchDocentes(
+              examen.NOMBRE_DOCENTE
+            );
+            console.log(
+              `[PostIt DEBUG] Resultado búsqueda docente:`,
+              resultadoBusqueda
+            );
+
+            if (resultadoBusqueda.length > 0) {
+              const docenteEncontrado =
+                resultadoBusqueda.find(
+                  (d) => d.NOMBRE_USUARIO === examen.NOMBRE_DOCENTE
+                ) || resultadoBusqueda[0];
+
+              docenteInicialSeleccionado = {
+                value: docenteEncontrado.ID_USUARIO,
+                label: docenteEncontrado.NOMBRE_USUARIO,
+                SECCIONES: docenteEncontrado.SECCIONES,
+                tipo: 'inicial',
+              };
+
+              setSelectedDocenteId(docenteInicialSeleccionado);
+              setDefaultDocenteOptions([docenteInicialSeleccionado]); // **AGREGAR ESTA LÍNEA**
+
+              console.log(
+                `[PostIt DEBUG] Docente inicial del examen asignado:`,
+                docenteInicialSeleccionado
+              );
+            } else {
+              console.log(
+                `[PostIt DEBUG] No se encontró el docente: ${examen.NOMBRE_DOCENTE}`
+              );
+              setDefaultDocenteOptions([]); // **AGREGAR ESTA LÍNEA**
+            }
+          } catch (error) {
+            console.error(`[PostIt DEBUG] Error buscando docente:`, error);
+            setDefaultDocenteOptions([]); // **AGREGAR ESTA LÍNEA**
+          }
+        } else {
+          setDefaultDocenteOptions([]); // **AGREGAR ESTA LÍNEA**
+        }
+
+        console.log(`[PostIt DEBUG] Resultado final:`, {
+          selectedDocenteId,
+          defaultDocenteOptions,
+          tipo: docenteInicialSeleccionado?.tipo || 'ninguno',
+        });
       } catch (error) {
-        console.error('Error al cargar docentes:', error);
+        console.error('[PostIt DEBUG] Error al cargar docente inicial:', error);
+        setDefaultDocenteOptions([]); // **AGREGAR ESTA LÍNEA**
       }
     };
 
     if (!isPreview && !isDragOverlay) {
-      cargarDocentes();
+      console.log(`[PostIt DEBUG] Ejecutando carga de docente inicial...`);
+      cargarDocenteInicial();
+    } else {
+      setDefaultDocenteOptions([]); // **AGREGAR ESTA LÍNEA**
     }
-  }, [examen, examenAsignadoCompleto, isPreview, isDragOverlay]);
+  }, [examen, examenAsignadoCompleto, isPreview, isDragOverlay]); // Eliminar dependencia de secciones
 
   // Color y estilos
   const getPostItColor = () => {
@@ -605,6 +681,109 @@ export default function ExamenPostIt({
     zIndex: isPreview ? 1 : 50, // zIndex ya no depende de isResizing
     ...style,
   });
+
+  // En ExamenPostIt.jsx - Agregar función para renderizar selector compacto
+  const renderDocenteSelector = () => {
+    if (isPreview || isDragOverlay || getEstadoConfirmacion() !== 'EN_CURSO') {
+      return null;
+    }
+
+    return (
+      <div
+        className="docente-selector-control"
+        title={
+          selectedDocenteId
+            ? `Docente: ${selectedDocenteId.label} (${selectedDocenteId.tipo === 'inicial' ? 'Sugerido' : selectedDocenteId.tipo === 'asignado' ? 'Confirmado' : 'Seleccionado'})`
+            : examen.NOMBRE_DOCENTE
+              ? `Docente del examen: ${examen.NOMBRE_DOCENTE}`
+              : 'Seleccionar docente'
+        }
+      >
+        <AsyncSelect
+          styles={{
+            control: (provided) => ({
+              ...provided,
+              fontSize: '7px',
+              minHeight: '20px',
+              height: '20px',
+              backgroundColor: selectedDocenteId
+                ? selectedDocenteId.tipo === 'asignado'
+                  ? '#e8f5e8' // Verde para asignado
+                  : '#e3f2fd' // Azul claro para inicial
+                : 'white',
+              border: '1px solid #ccc',
+              borderRadius: '3px',
+              boxShadow: 'none',
+              '&:hover': {
+                borderColor: '#007bff',
+              },
+            }),
+            valueContainer: (provided) => ({
+              ...provided,
+              height: '20px',
+              padding: '0 4px',
+              fontSize: '7px',
+            }),
+            input: (provided) => ({
+              ...provided,
+              fontSize: '7px',
+              height: '20px',
+              margin: 0,
+            }),
+            placeholder: (provided) => ({
+              ...provided,
+              fontSize: '7px',
+              color: '#999',
+            }),
+            singleValue: (provided) => ({
+              ...provided,
+              fontSize: '7px',
+              color: '#333',
+            }),
+            indicatorsContainer: (provided) => ({
+              ...provided,
+              height: '20px',
+              padding: 0,
+            }),
+            clearIndicator: (provided) => ({
+              ...provided,
+              padding: '2px',
+              fontSize: '10px',
+            }),
+            menu: (provided) => ({
+              ...provided,
+              fontSize: '8px',
+              zIndex: 1000,
+            }),
+            option: (provided) => ({
+              ...provided,
+              fontSize: '8px',
+              padding: '4px 8px',
+            }),
+          }}
+          cacheOptions
+          defaultOptions={defaultDocenteOptions}
+          value={selectedDocenteId}
+          onChange={handleAsignarDocente}
+          loadOptions={loadDocenteOptions}
+          placeholder={
+            selectedDocenteId
+              ? selectedDocenteId.label
+              : examen.NOMBRE_DOCENTE
+                ? `${examen.NOMBRE_DOCENTE.split(' ')[0]}...` // Mostrar solo primer nombre
+                : '👨‍🏫'
+          }
+          noOptionsMessage={() => 'Sin docentes'}
+          isDisabled={isProcessingAction}
+          isClearable={false} // No permitir limpiar desde el control compacto
+          components={{
+            DropdownIndicator: () => null, // Sin flecha
+            IndicatorSeparator: () => null,
+          }}
+        />
+      </div>
+    );
+  };
 
   if (!examen) return null;
 
@@ -648,57 +827,39 @@ export default function ExamenPostIt({
           {moduloscountState > 1 && (
             <div className="postit-expandable-section">
               <div className="postit-details">
-                {/* **SELECTOR DE DOCENTE** */}
-                {!isPreview &&
-                  !isDragOverlay &&
-                  getEstadoConfirmacion() === 'EN_CURSO' && (
-                    <div className="postit-docente-section">
-                      <div className="docente-label">Asignar Docente:</div>
-                      <AsyncSelect
-                        styles={{
-                          control: (provided) => ({
-                            ...provided,
-                            fontSize: '8px',
-                            minHeight: '18px',
-                            height: '18px',
-                          }),
-                          valueContainer: (provided) => ({
-                            ...provided,
-                            height: '18px',
-                            padding: '0 4px',
-                          }),
-                          input: (provided) => ({
-                            ...provided,
-                            fontSize: '8px',
-                            height: '18px',
-                          }),
-                          indicatorsContainer: (provided) => ({
-                            ...provided,
-                            height: '18px',
-                          }),
-                          option: (provided) => ({
-                            ...provided,
-                            fontSize: '8px',
-                            padding: '2px 4px',
-                          }),
-                        }}
-                        cacheOptions
-                        defaultOptions={defaultDocenteOptions}
-                        value={selectedDocenteId}
-                        onChange={handleAsignarDocente}
-                        loadOptions={loadDocenteOptions}
-                        placeholder="Buscar docente..."
-                        noOptionsMessage={() => 'No se encontraron docentes'}
-                        isDisabled={isProcessingAction}
-                        isClearable
-                        components={{
-                          DropdownIndicator: () => null, // Ocultar flecha para ahorrar espacio
-                          IndicatorSeparator: () => null,
-                        }}
-                      />
-                    </div>
-                  )}
+                {examen.NOMBRE_CARRERA && (
+                  <div className="postit-carrera">{examen.NOMBRE_CARRERA}</div>
+                )}
+                {/* {examen.NOMBRE_SECCION && (
+                  <div className="postit-seccion">
+                    Sección: {examen.NOMBRE_SECCION}
+                  </div>
+                )} */}
               </div>
+            </div>
+          )}
+
+          {/* **INFORMACIÓN COMPACTA PARA 1 MÓDULO** */}
+          {moduloscountState === 1 && (
+            <div className="postit-compact-details">
+              {examen.NOMBRE_CARRERA && (
+                <span className="compact-carrera">{examen.NOMBRE_CARRERA}</span>
+              )}
+              {examen.NOMBRE_SECCION && (
+                <span className="compact-seccion">
+                  {' '}
+                  | {examen.NOMBRE_SECCION}
+                </span>
+              )}
+              {/* **MOSTRAR DOCENTE INICIAL DEL EXAMEN** */}
+              {(selectedDocenteId || examen.NOMBRE_DOCENTE) && (
+                <span className="docente-info">
+                  {' '}
+                  | 👨‍🏫 {selectedDocenteId?.label || examen.NOMBRE_DOCENTE}
+                  {selectedDocenteId?.tipo === 'inicial' && ' (Sugerido)'}
+                  {selectedDocenteId?.tipo === 'asignado' && ' (Confirmado)'}
+                </span>
+              )}
             </div>
           )}
         </div>

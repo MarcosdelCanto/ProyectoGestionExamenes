@@ -168,7 +168,7 @@ export default function Layout({ children }) {
   return (
     <div
       className="d-flex flex-column w-100"
-      style={{ height: '100vh', overflow: 'hidden' }} // 1. Altura estricta y ocultar desbordamiento
+      style={{ height: '100vh' }} // 1. Altura estricta y ocultar desbordamiento
     >
       <div
         className={`sidebar-overlay ${!isSidebarMinimized ? 'show' : ''}`}

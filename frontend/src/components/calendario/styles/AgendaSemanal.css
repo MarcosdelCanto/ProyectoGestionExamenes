@@ -48,7 +48,7 @@
 
 /* Contenedor de exámenes pendientes */
 .examenes-pendientes {
-  flex: 0 0 300px; /* ancho fijo */
+  flex: 0 0 230px; /* ancho fijo */
   height: 100%; /* Misma altura que el contenedor padre */
   overflow: hidden; /* Evitar que este contenedor muestre scroll, su hijo .examenes-content lo hará */
   display: flex;
@@ -141,12 +141,6 @@
   .main-content {
     flex-direction: column;
     height: auto; /* En móvil permitir altura automática */
-  }
-
-  .examenes-pendientes {
-    flex: 0 0 300px;
-    width: 100%;
-    height: 300px; /* Altura fija en móvil */
   }
 
   .calendar-container {
