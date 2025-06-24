@@ -760,7 +760,7 @@ export const getMisAsignacionesDeReservas = async (req, res) => {
 
     // --- Consulta Base Enriquecida ---
     let baseSelect = `
-      SELECT
+      SELECT DISTINCT
         R.ID_RESERVA, R.FECHA_RESERVA,
         R.ESTADO_CONFIRMACION_DOCENTE, R.OBSERVACIONES_DOCENTE, R.FECHA_CONFIRMACION_DOCENTE,
         E.ID_EXAMEN, E.NOMBRE_EXAMEN, E.CANTIDAD_MODULOS_EXAMEN, /* <-- Añadido para el formulario de edición */
