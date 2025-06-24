@@ -637,24 +637,12 @@ export default function ExamenPostIt({
                 )}
               </div>
             </div>
-
-            {/* **REMOVER LOS CONTROLES DE AQUÍ** */}
-            {/* <div className="action-container">{getActionButtons()}</div> */}
           </div>
 
           {/* **SECCIÓN EXPANSIVA: Solo para 2+ módulos** */}
           {moduloscountState > 1 && (
             <div className="postit-expandable-section">
               <div className="postit-details">
-                {examen.NOMBRE_CARRERA && (
-                  <div className="postit-carrera">{examen.NOMBRE_CARRERA}</div>
-                )}
-                {examen.NOMBRE_SECCION && (
-                  <div className="postit-seccion">
-                    Sección: {examen.NOMBRE_SECCION}
-                  </div>
-                )}
-
                 {/* **SELECTOR DE DOCENTE** */}
                 {!isPreview &&
                   !isDragOverlay &&
