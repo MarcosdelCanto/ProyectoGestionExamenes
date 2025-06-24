@@ -1,0 +1,71 @@
+# Nombre del flujo de trabajo que aparecerá en la pestaña "Actions" de GitHub
+name: Despliegue Continuo a EC2
+
+# Evento que activa el flujo de trabajo
+on:
+  push:
+    branches:
+      - desarrollo_simultaneo # Se activa con cada push a esta rama
+
+jobs:
+  build-and-deploy:
+    # El tipo de máquina virtual que usará GitHub
+    runs-on: ubuntu-latest
+
+    steps:
+      # 1. Clona tu repositorio en la máquina virtual de GitHub
+      - name: Checkout del Repositorio
+        uses: actions/checkout@v4
+
+      # 2. Configura QEMU para poder construir imágenes de diferentes arquitecturas
+      - name: Configurar QEMU (para buildx)
+        uses: docker/setup-qemu-action@v3
+
+      # 3. Configura Docker Buildx, la herramienta para construir imágenes
+      - name: Configurar Docker Buildx
+        id: buildx
+        uses: docker/setup-buildx-action@v3
+
+      # 4. Inicia sesión en Docker Hub usando los secretos que configuraste
+      - name: Login a Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      # 5. Construye y sube la imagen del BACKEND
+      - name: Construir y Subir Backend
+        uses: docker/build-push-action@v5
+        with:
+          context: ./backend
+          file: ./backend/Dockerfile
+          platforms: linux/amd64 # La arquitectura de tu EC2
+          push: true
+          tags: micobo/proyectogestionexamenes-backend:latest # Usamos 'latest' para el desarrollo continuo
+
+      # 6. Construye y sube la imagen del FRONTEND
+      - name: Construir y Subir Frontend
+        uses: docker/build-push-action@v5
+        with:
+          context: ./frontend
+          file: ./frontend/Dockerfile
+          platforms: linux/amd64
+          push: true
+          tags: micobo/proyectogestionexamenes-frontend:latest
+
+      # 7. Desplegar en EC2 conectándose por SSH
+      - name: Desplegar en EC2
+        uses: appleboy/ssh-action@master
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ${{ secrets.EC2_USER }}
+          key: ${{ secrets.EC2_SSH_KEY }}
+          script: |
+            # Navega a la carpeta donde están tus archivos de configuración
+            cd /home/ubuntu
+            # Descarga las imágenes actualizadas desde Docker Hub
+            docker compose pull
+            # Reinicia los contenedores con las nuevas imágenes
+            docker compose up -d --force-recreate
+            # (Opcional) Limpia imágenes viejas que no se estén usando
+            docker image prune -f
