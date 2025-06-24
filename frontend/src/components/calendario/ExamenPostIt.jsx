@@ -38,6 +38,8 @@ export default function ExamenPostIt({
   onReservaStateChange,
   ...props
 }) {
+  console.log('Datos del examen que llegan al PostIt:', examen);
+
   const dispatch = useDispatch();
   const [moduloscountState, setModuloscountState] = useState(
     moduloscount ||
@@ -634,6 +636,9 @@ export default function ExamenPostIt({
                 {examen.NOMBRE_CARRERA && <div>{examen.NOMBRE_CARRERA}</div>}
                 {examen.NOMBRE_SECCION && (
                   <div>Sección: {examen.NOMBRE_SECCION}</div>
+                )}
+                {examen.NOMBRE_DOCENTE && (
+                  <div>Docente: {examen.NOMBRE_DOCENTE}</div>
                 )}
               </div>
             </div>

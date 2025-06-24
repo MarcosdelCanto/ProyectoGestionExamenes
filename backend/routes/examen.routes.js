@@ -28,7 +28,7 @@ router.get('/para-selector', authMiddleware, getAllExamenesForSelect); // Para e
 router.get(
   '/',
   authMiddleware,
-  checkPermission(['VIEW_EXAMENES']), // ID_PERMISO: 33
+  checkPermission(['CREATE_RESERVAS_EXAMEN']), // ID_PERMISO: 33
   getAllExamenes
 );
 

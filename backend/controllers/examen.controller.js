@@ -31,7 +31,15 @@ export const getAllExamenes = async (_req, res) => {
     connection = await getConnection();
     const result = await connection.execute(
       `SELECT e.id_examen, e.nombre_examen, e.inscritos_examen, e.tipo_procesamiento_examen, e.plataforma_prose_examen,
-              e.situacion_evaluativa_examen, e.cantidad_modulos_examen, s.nombre_seccion, a.nombre_asignatura, es.nombre_estado
+              e.situacion_evaluativa_examen, e.cantidad_modulos_examen, s.nombre_seccion, a.nombre_asignatura, es.nombre_estado,
+              -- INICIO DE LA CORRECCIÓN --
+              (SELECT LISTAGG(U.NOMBRE_USUARIO, ', ') WITHIN GROUP (ORDER BY U.NOMBRE_USUARIO)
+                 FROM USUARIOSECCION US
+                 JOIN USUARIO U ON US.USUARIO_ID_USUARIO = U.ID_USUARIO
+                 JOIN ROL R ON U.ROL_ID_ROL = R.ID_ROL
+                 WHERE US.SECCION_ID_SECCION = s.id_seccion AND R.NOMBRE_ROL = 'DOCENTE'  -- <-- SE ASEGURA DE FILTRAR POR DOCENTE
+              ) AS NOMBRE_DOCENTE
+              -- FIN DE LA CORRECIÓN --
        FROM EXAMEN e
        JOIN SECCION s ON e.seccion_id_seccion = s.id_seccion
        JOIN ASIGNATURA a ON s.asignatura_id_asignatura = a.id_asignatura
@@ -291,8 +299,16 @@ export const getAvailableExamsForUser = async (req, res) => {
 
   const baseSelectFields = `
       SELECT ex.ID_EXAMEN, ex.NOMBRE_EXAMEN, ex.INSCRITOS_EXAMEN, ex.CANTIDAD_MODULOS_EXAMEN,
-             sec.ID_SECCION, -- Se incluye el ID de la sección para el frontend
-             sec.NOMBRE_SECCION, asi.NOMBRE_ASIGNATURA
+             sec.ID_SECCION,
+             sec.NOMBRE_SECCION, asi.NOMBRE_ASIGNATURA,
+            -- INICIO DE LA CORRECCIÓN --
+             (SELECT LISTAGG(U.NOMBRE_USUARIO, ', ') WITHIN GROUP (ORDER BY U.NOMBRE_USUARIO)
+                FROM USUARIOSECCION US
+                JOIN USUARIO U ON US.USUARIO_ID_USUARIO = U.ID_USUARIO
+                JOIN ROL R ON U.ROL_ID_ROL = R.ID_ROL
+                WHERE US.SECCION_ID_SECCION = sec.ID_SECCION AND R.NOMBRE_ROL = 'DOCENTE'  -- <-- SE ASEGURA DE FILTRAR POR DOCENTE
+             ) AS NOMBRE_DOCENTE
+             -- FIN DE LA CORRECIÓN --
       FROM EXAMEN ex
       JOIN ESTADO est ON ex.ESTADO_ID_ESTADO = est.ID_ESTADO
       JOIN SECCION sec ON ex.SECCION_ID_SECCION = sec.ID_SECCION
