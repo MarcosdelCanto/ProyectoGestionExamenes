@@ -425,7 +425,17 @@ export default function ExamenPostIt({
             </span>
           </div>
         );
-
+      case 'REQUIERE_REVISION':
+        return (
+          <div className="action-buttons">
+            <span
+              className="status-indicator requiere-revision"
+              title="Requiere revisión por parte del docente"
+            >
+              🔍 Requiere Revisión
+            </span>
+          </div>
+        );
       default:
         return (
           <div className="action-buttons">
