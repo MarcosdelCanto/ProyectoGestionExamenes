@@ -642,19 +642,6 @@ export default function ExamenPostIt({
             {/* <div className="action-container">{getActionButtons()}</div> */}
           </div>
 
-          {/* Información de módulos */}
-          <div className="modulos-info mt-2">
-            <small className="text-muted">
-              Módulos: {moduloscountState}
-              {fecha && moduloInicial && (
-                <span>
-                  {' '}
-                  | {fecha} - Módulo {moduloInicial}
-                </span>
-              )}
-            </small>
-          </div>
-
           {/* **SECCIÓN EXPANSIVA: Solo para 2+ módulos** */}
           {moduloscountState > 1 && (
             <div className="postit-expandable-section">
@@ -718,25 +705,6 @@ export default function ExamenPostIt({
                       />
                     </div>
                   )}
-
-                <div className="postit-module-info">
-                  <small>
-                    Módulos: {moduloscountState}
-                    {fecha && moduloInicial && (
-                      <span>
-                        {' '}
-                        | {fecha} - Módulo {moduloInicial}
-                      </span>
-                    )}
-                    {/* **MOSTRAR DOCENTE ASIGNADO** */}
-                    {selectedDocenteId && (
-                      <span className="docente-asignado">
-                        {' '}
-                        | 👨‍🏫 {selectedDocenteId.label}
-                      </span>
-                    )}
-                  </small>
-                </div>
               </div>
             </div>
           )}
