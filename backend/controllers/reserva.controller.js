@@ -1539,7 +1539,7 @@ export const enviarReservaADocente = async (req, res) => {
         `SELECT COUNT(*) as CONFLICTOS
          FROM RESERVAMODULO rm
          JOIN RESERVA r ON rm.RESERVA_ID_RESERVA = r.ID_RESERVA
-         WHERE rm.MODULO_ID_MODULO IN (${nuevosModulosIds.map(() => ':modulo_id').join(',')})
+         WHERE rm.MODULO_ID_MODULO IN (${nuevosModulosIds.map((_, index) => `:modulo_id_${index}`).join(',')})
          AND r.FECHA_RESERVA = :fecha_reserva
          AND r.SALA_ID_SALA = :sala_id
          AND r.ID_RESERVA != :reserva_id
