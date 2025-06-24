@@ -42,25 +42,68 @@ export default function Layout({ children }) {
   const NavItem = ({ to, icon, text, isBold = false, id }) => {
     const isHovered = hoveredItem === id;
 
-    return isSidebarMinimized ? (
-      <OverlayTrigger
-        placement="right"
-        overlay={<Tooltip id={`tooltip-${id}`}>{text}</Tooltip>}
-      >
-        <Link
-          to={to}
-          className={`nav-link ${isBold ? 'fw-bold' : ''} text-dark d-flex align-items-center`}
-          style={{ ...navLinkStyle, ...getNavLinkHoverStyle(isHovered) }}
-          onMouseEnter={() => setHoveredItem(id)}
-          onMouseLeave={() => setHoveredItem(null)}
+    const tooltip = (
+      <Tooltip id={`tooltip-${id}`} className="custom-tooltip">
+        {text}
+      </Tooltip>
+    );
+    const iconElement = (
+      <div className="sidebar-icon-container">
+        <i className={`bi ${icon}`}></i>
+      </div>
+    );
+
+    if (isSidebarMinimized) {
+      return (
+        <OverlayTrigger
+          placement="right"
+          delay={{ show: 300, hide: 0 }} // Aumentar el delay para mostrar y eliminar el delay para ocultar
+          trigger={['hover', 'focus']}
+          rootClose={true} // Cerrar al hacer clic fuera
+          overlay={tooltip}
+          container={document.body} // Añadir esta línea para fijar el contenedor
+          popperConfig={{
+            modifiers: [
+              {
+                name: 'preventOverflow',
+                options: {
+                  boundary: document.body,
+                  padding: 8,
+                },
+              },
+              {
+                name: 'offset',
+                options: {
+                  offset: [0, 8], // Añadir un pequeño offset para separar del elemento
+                },
+              },
+              {
+                name: 'flip',
+                enabled: false, // Deshabilitar flip para mantener siempre a la derecha
+              },
+              {
+                name: 'computeStyles',
+                options: {
+                  gpuAcceleration: false, // Mejorar la estabilidad del posicionamiento
+                },
+              },
+            ],
+            strategy: 'fixed', // Cambiar a posición fija para evitar problemas de layout
+          }}
         >
-          <div className="sidebar-icon-container">
-            <i className={`bi ${icon}`}></i>
-          </div>
-          <span className="sidebar-link-text">{text}</span>
-        </Link>
-      </OverlayTrigger>
-    ) : (
+          <Link
+            to={to}
+            className={`nav-link ${isBold ? 'fw-bold' : ''} text-dark d-flex align-items-center justify-content-center`}
+            style={{ ...navLinkStyle, ...getNavLinkHoverStyle(isHovered) }}
+            onMouseEnter={() => setHoveredItem(id)}
+            onMouseLeave={() => setHoveredItem(null)}
+          >
+            {iconElement}
+          </Link>
+        </OverlayTrigger>
+      );
+    }
+    return (
       <Link
         to={to}
         className={`nav-link ${isBold ? 'fw-bold' : ''} text-dark d-flex align-items-center`}
@@ -68,9 +111,7 @@ export default function Layout({ children }) {
         onMouseEnter={() => setHoveredItem(id)}
         onMouseLeave={() => setHoveredItem(null)}
       >
-        <div className="sidebar-icon-container">
-          <i className={`bi ${icon}`}></i>
-        </div>
+        {iconElement}
         <span className="sidebar-link-text">{text}</span>
       </Link>
     );
@@ -154,6 +195,30 @@ export default function Layout({ children }) {
       document.body.style.overflow = '';
     };
   }, [isSidebarMinimized]);
+
+  // Estilo global para tooltips
+  useEffect(() => {
+    // Crear un estilo global para los tooltips
+    const styleElement = document.createElement('style');
+    styleElement.textContent = `
+      .tooltip {
+        position: fixed !important;
+        pointer-events: none !important;
+        z-index: 9999 !important;
+      }
+      .tooltip-inner {
+        max-width: 200px;
+        padding: 0.25rem 0.5rem;
+        background-color: #000;
+        border-radius: 0.25rem;
+      }
+    `;
+    document.head.appendChild(styleElement);
+
+    return () => {
+      document.head.removeChild(styleElement);
+    };
+  }, []);
 
   if (loading) {
     return (
@@ -323,7 +388,39 @@ export default function Layout({ children }) {
             {isSidebarMinimized ? (
               <OverlayTrigger
                 placement="right"
+                delay={{ show: 300, hide: 0 }}
+                trigger={['hover', 'focus']}
+                rootClose={true}
+                container={document.body} // Añadir esta línea
                 overlay={<Tooltip id="tooltip-logout">Cerrar sesión</Tooltip>}
+                popperConfig={{
+                  modifiers: [
+                    {
+                      name: 'preventOverflow',
+                      options: {
+                        boundary: document.body,
+                        padding: 8,
+                      },
+                    },
+                    {
+                      name: 'offset',
+                      options: {
+                        offset: [0, 8],
+                      },
+                    },
+                    {
+                      name: 'flip',
+                      enabled: false, // Deshabilitar flip
+                    },
+                    {
+                      name: 'computeStyles',
+                      options: {
+                        gpuAcceleration: false, // Mejorar estabilidad
+                      },
+                    },
+                  ],
+                  strategy: 'fixed', // Usar posición fija
+                }}
               >
                 <button
                   className="btn btn-danger w-100 d-flex align-items-center justify-content-center"
