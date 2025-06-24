@@ -1,5 +1,12 @@
 import React, { useState, useEffect } from 'react';
-import { Badge, Modal, Button, Form, Spinner } from 'react-bootstrap';
+import {
+  Badge,
+  Modal,
+  Button,
+  Form,
+  Spinner,
+  ListGroup,
+} from 'react-bootstrap';
 import {
   FaPlus,
   FaMinus,
@@ -127,8 +134,13 @@ export default function ExamenPostIt({
     setIsSearchingDocentes(true);
     try {
       const results = await searchDocentes(term);
+      // Mapeamos para incluir las secciones que vienen del backend
       setDocenteSearchResults(
-        results.map((d) => ({ value: d.ID_USUARIO, label: d.NOMBRE_USUARIO }))
+        results.map((d) => ({
+          value: d.ID_USUARIO,
+          label: d.NOMBRE_USUARIO,
+          secciones: d.SECCIONES, // <-- Usamos SECCIONES en lugar de email
+        }))
       );
     } catch (error) {
       console.error('Error buscando docentes', error);
@@ -509,39 +521,50 @@ export default function ExamenPostIt({
               autoFocus
             />
           </Form.Group>
-          <div
-            className="docente-search-results border rounded p-2"
-            style={{
-              minHeight: '150px',
-              maxHeight: '250px',
-              overflowY: 'auto',
-            }}
+          <ListGroup
+            className="docente-search-results"
+            style={{ height: '250px', overflowY: 'auto' }} // <-- ¡Este es el cambio!
           >
             {isSearchingDocentes ? (
-              <div className="text-center">
-                <Spinner animation="border" size="sm" />
-              </div>
+              <ListGroup.Item className="text-center text-muted d-flex align-items-center justify-content-center h-100">
+                <div>
+                  <Spinner animation="border" size="sm" />
+                  <span className="ms-2">Buscando...</span>
+                </div>
+              </ListGroup.Item>
             ) : docenteSearchResults.length > 0 ? (
               docenteSearchResults.map((docente) => (
-                <Form.Check
-                  type="radio"
+                <ListGroup.Item
                   key={docente.value}
-                  id={`docente-modal-${docente.value}`}
-                  label={docente.label}
-                  name="docenteSelection"
-                  checked={tempSelectedDocente?.value === docente.value}
-                  onChange={() => setTempSelectedDocente(docente)}
-                  className="p-2"
-                />
+                  action
+                  active={tempSelectedDocente?.value === docente.value}
+                  onClick={() => setTempSelectedDocente(docente)}
+                  className="d-flex justify-content-between align-items-start"
+                >
+                  <div className="ms-2 me-auto">
+                    <div className="fw-bold">{docente.label}</div>
+                    {docente.secciones && (
+                      <small className="text-muted">
+                        Secciones: {docente.secciones}
+                      </small>
+                    )}
+                  </div>
+                  {tempSelectedDocente?.value === docente.value && (
+                    <Badge bg="primary" pill>
+                      ✓
+                    </Badge>
+                  )}
+                </ListGroup.Item>
               ))
             ) : (
-              <p className="text-muted text-center m-3">
+              // También centramos verticalmente los mensajes de feedback
+              <ListGroup.Item className="text-center text-muted d-flex align-items-center justify-content-center h-100">
                 {docenteSearchTerm.length < 2
-                  ? 'Ingrese al menos 2 caracteres.'
+                  ? 'Ingresa al menos 2 caracteres para buscar.'
                   : 'No se encontraron docentes.'}
-              </p>
+              </ListGroup.Item>
             )}
-          </div>
+          </ListGroup>
         </Modal.Body>
         <Modal.Footer>
           <Button
