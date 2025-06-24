@@ -6,7 +6,7 @@ services:
       context: ./backend
       platforms:
         - "linux/amd64"
-    image: micobo/proyectogestionexamenes-backend:1.0
+    image: micobo/proyectogestionexamenes-backend:latest
     env_file:
       - .env
     environment:
@@ -24,7 +24,7 @@ services:
       context: ./frontend
       platforms:
         - "linux/amd64" # <-- Instrucción clave para compatibilidad
-    image: micobo/proyectogestionexamenes-frontend:1.0
+    image: micobo/proyectogestionexamenes-frontend:latest
     ports:
       - "8080:80"
     depends_on:
