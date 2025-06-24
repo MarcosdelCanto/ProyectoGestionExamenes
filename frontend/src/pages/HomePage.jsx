@@ -10,12 +10,16 @@ import Layout from '../components/Layout';
 import { FaUserCircle } from 'react-icons/fa';
 import { SummaryDashboard } from '../components/SummaryDashboard/';
 import DashboardConGraficos from '../components/dashboard/DashboardConGraficos'; // Importar el componente de gráficos
+import { usePermission } from '../hooks/usePermission'; // <-- 1. Importar el hook de permisos
+import Avatar from '../components/Avatar';
+import { Button } from 'react-bootstrap';
 
 export default function HomePage() {
   const { status, updaterId } = useSelector((state) => state.status);
   const dispatch = useDispatch();
   const [perfil, setPerfil] = useState(null);
   const navigate = useNavigate();
+  const { hasPermission, loading: permissionsLoading } = usePermission(); // <-- 2. Usar el hook
 
   useEffect(() => {
     api('/usuarios/profile')
@@ -56,7 +60,8 @@ export default function HomePage() {
     });
   };
 
-  if (!perfil) {
+  if (!perfil || permissionsLoading) {
+    // <-- Mostrar carga mientras los permisos se verifican
     return (
       <Layout>
         <div className="loading-container">
@@ -69,43 +74,39 @@ export default function HomePage() {
   return (
     <Layout>
       <div className="w-full">
-        <div className="profile-card ">
-          {/* Sección del Ícono/Imagen (Izquierda) */}
-          <div className="profile-card-icon-section">
-            <FaUserCircle className="profile-icon" />
-            <p className="profile-role">
-              {perfil.NOMBRE_ROL || `Rol ID: ${perfil.ROL_ID_ROL}`}
-            </p>
+        <div className="profile-card-compact">
+          <div className="profile-main-info">
+            <Avatar name={perfil.NOMBRE_USUARIO} size={60} />
+            <div className="profile-identity">
+              <h2 className="profile-name-compact">{perfil.NOMBRE_USUARIO}</h2>
+              <span className="badge bg-primary">{perfil.NOMBRE_ROL}</span>
+            </div>
           </div>
-
-          {/* Sección de la Información (Derecha) */}
-          <div className="profile-card-info-section">
-            <h1 className="profile-name">{perfil.NOMBRE_USUARIO}</h1>
-            <p className="profile-email">{perfil.EMAIL_USUARIO}</p>
-
-            <div className="profile-details">
-              <div className="profile-detail-row">
-                <strong className="profile-detail-label">Rol:</strong>
-                <span className="profile-detail-value">
-                  {perfil.NOMBRE_ROL || perfil.ROL_ID_ROL}
-                </span>
-              </div>
-              <div className="profile-detail-row">
-                <strong className="profile-detail-label">
-                  Registrado desde:
-                </strong>
-                <span className="profile-detail-value">
-                  {formatDate(perfil.FECHA_CREACION)}
-                </span>
-              </div>
+          <div className="profile-secondary-info">
+            <div className="profile-detail-item-compact">
+              <i className="bi bi-envelope me-2"></i>
+              <span>{perfil.EMAIL_USUARIO}</span>
+            </div>
+            <div className="profile-detail-item-compact">
+              <i className="bi bi-calendar-check me-2"></i>
+              <span>Miembro desde: {formatDate(perfil.FECHA_CREACION)}</span>
             </div>
           </div>
         </div>
         <hr></hr> {/* Asegura que este contenedor pueda usar el ancho */}
-        <div className="text-center my-4">
-          <SummaryDashboard />
-          <DashboardConGraficos /> {/* Añadir el componente de gráficos aquí */}
-        </div>
+        {hasPermission('VIEW_DASHBOARD') ? (
+          <div className="text-center my-4">
+            <SummaryDashboard />
+            <DashboardConGraficos />{' '}
+            {/* Añadir el componente de gráficos aquí */}
+          </div>
+        ) : (
+          <div className="text-center my-4 p-4 bg-light rounded">
+            <p className="lead">
+              Bienvenido al sistema de gestión de exámenes.
+            </p>
+          </div>
+        )}
       </div>
       {/* Sección de estado y botón */}
       <div className="status-section">

@@ -1,105 +1,3 @@
-/* Estilos generales del contenedor de la página */
-.profile-page-container {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  min-height: 100vh;
-  background-color: #f3f4f6;
-  padding: 1rem;
-}
-
-/* Contenedor principal de la tarjeta de perfil */
-.profile-card {
-  background-color: #ffffff;
-  border-radius: 0.75rem;
-  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
-  width: 100%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  flex-direction: column;
-  /*overflow: hidden;*/
-}
-
-/* Sección izquierda con el ícono y el gradiente */
-.profile-card-icon-section {
-  background-image: linear-gradient(to bottom right, #001b35, #04417c);
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  padding: 1.5rem;
-  color: white;
-  text-align: center;
-}
-
-/* Estilo del ícono de usuario con fondo blanco */
-.profile-icon {
-  font-size: 5rem; /* Ajustamos el tamaño del ícono interno */
-  color: #fff;
-  background-color: #1f2937;
-  /* Aquí está la magia: */
-  border-radius: 50%; /* Para que el fondo sea un círculo perfecto */
-  width: 8rem; /* Ancho fijo para el círculo */
-  height: 8rem; /* Alto fijo para el círculo */
-
-  /* Usamos flexbox para centrar perfectamente el ícono dentro del círculo */
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  margin-bottom: 0.75rem;
-}
-
-.profile-role {
-  font-size: 0.875rem;
-  font-weight: 500;
-}
-
-/* Sección derecha con la información del usuario */
-.profile-card-info-section {
-  padding: 1.5rem;
-  color: #374151;
-  flex-grow: 1;
-}
-
-.profile-name {
-  font-size: 1.875rem;
-  font-weight: bold;
-  color: #1f2937;
-  text-align: center;
-}
-
-.profile-email {
-  font-size: 1rem;
-  color: #2563eb;
-  margin-top: 0.25rem;
-  text-align: center;
-}
-
-/* Contenedor de los detalles (Rol, Miembro desde) */
-.profile-details {
-  border-top: 1px solid #d1d5db;
-  padding-top: 1rem;
-  margin-top: 1rem;
-}
-
-.profile-detail-row {
-  display: flex;
-  align-items: center;
-  margin-top: 0.5rem;
-}
-
-.profile-detail-label {
-  width: 130px;
-  font-size: 0.875rem;
-  font-weight: bold;
-}
-
-.profile-detail-value {
-  font-size: 0.875rem;
-}
-
 /* Sección de estado y botones */
 .status-section {
   margin-top: 2rem;
@@ -127,31 +25,77 @@
   background-color: red;
 }
 
-/* --- RESPONSIVIDAD PARA ESCRITORIO --- */
-/* Se aplica en pantallas de 768px o más anchas */
-@media (min-width: 768px) {
-  .profile-card {
-    flex-direction: row;
-    align-items: stretch;
-  }
-
-  .profile-card-icon-section {
-    width: 33.33%;
-    border-top-left-radius: 0.75rem;
-    border-bottom-left-radius: 0.75rem;
-    border-top-right-radius: 0;
-  }
-
-  .profile-name,
-  .profile-email {
-    text-align: left;
-  }
-}
-
 /* Contenedor de carga */
 .loading-container {
   display: flex;
   align-items: center;
   justify-content: center;
   min-height: 100vh;
+}
+
+/* Estilos para la nueva tarjeta de perfil compacta */
+.profile-card-compact {
+  background-color: #fff;
+  border-radius: 0.75rem;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+  padding: 1.25rem;
+  width: 100%;
+  max-width: 600px;
+  margin: 1.5rem auto;
+  border: 1px solid #e5e7eb;
+}
+
+.profile-main-info {
+  display: flex;
+  align-items: center;
+  gap: 1rem; /* Espacio entre el avatar y el texto */
+  padding-bottom: 1rem;
+  border-bottom: 1px solid #f3f4f6;
+}
+
+.profile-identity {
+  display: flex;
+  flex-direction: column;
+}
+
+.profile-name-compact {
+  font-size: 1.5rem;
+  font-weight: 600;
+  color: #1f2937;
+  margin: 0;
+  line-height: 1.3;
+}
+
+.profile-identity .badge {
+  align-self: flex-start; /* Alinea la insignia a la izquierda */
+  margin-top: 0.25rem;
+}
+
+.profile-secondary-info {
+  padding-top: 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.profile-detail-item-compact {
+  display: flex;
+  align-items: center;
+  font-size: 0.9rem;
+  color: #4b5563;
+}
+
+.profile-detail-item-compact i {
+  color: #9ca3af;
+}
+
+/* Ajuste responsivo simple */
+@media (max-width: 480px) {
+  .profile-main-info {
+    flex-direction: column;
+    text-align: center;
+  }
+  .profile-identity {
+    align-items: center;
+  }
 }

@@ -9,8 +9,11 @@ import {
 } from '../controllers/dashboard.controller.js';
 // Aquí podrías añadir middlewares de autenticación/autorización si son necesarios
 // import { authRequired } from '../middlewares/auth.middleware.js';
+import { authMiddleware } from '../middlewares/auth.middleware.js'; // <-- 1. Importar middleware de autenticación
+import { checkPermission } from '../middlewares/permission.middleware.js'; // <-- 2. Importar middleware de permisos
 
 const router = Router();
+router.use(authMiddleware, checkPermission(['VIEW_DASHBOARD']));
 
 router.get('/summary', getDashboardSummary); // authRequired,
 router.get('/charts/examenes-por-carrera', getExamenesPorCarreraChartData);

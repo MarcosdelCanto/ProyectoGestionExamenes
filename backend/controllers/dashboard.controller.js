@@ -9,39 +9,85 @@ export const getDashboardSummary = async (req, res) => {
   let connection;
   try {
     connection = await getConnection();
-    const queries = [
-      connection.execute(`SELECT COUNT(*) AS TOTAL FROM SEDE`),
-      connection.execute(`SELECT COUNT(*) AS TOTAL FROM ESCUELA`),
-      connection.execute(`SELECT COUNT(*) AS TOTAL FROM CARRERA`),
-      connection.execute(`SELECT COUNT(*) AS TOTAL FROM ASIGNATURA`),
-      connection.execute(`SELECT COUNT(*) AS TOTAL FROM USUARIO`),
-      connection.execute(
-        `SELECT COUNT(U.ID_USUARIO) AS TOTAL
-         FROM USUARIO U
-         JOIN ROL R ON U.ROL_ID_ROL = R.ID_ROL
-         WHERE R.NOMBRE_ROL = :rolNombre`, // Asumiendo que tienes un rol 'Docente'
-        { rolNombre: 'DOCENTE' } // es con mayusculas
-      ),
-      connection.execute(
-        `SELECT COUNT(E.ID_EXAMEN) AS TOTAL
-         FROM EXAMEN E
-         JOIN ESTADO ES ON E.ESTADO_ID_ESTADO = ES.ID_ESTADO
-         WHERE ES.NOMBRE_ESTADO = :nombreEstado`, // Asumiendo que tienes un estado 'Activo'
-        { nombreEstado: 'ACTIVO' } // es con mayusculas
-      ),
-    ];
+    const { rol_id_rol: userRoleId, id_usuario: userId } = req.user;
+    const ID_ROL_ADMIN = 1; // Asumiendo que el ID del rol de Administrador es 1
 
-    const results = await Promise.all(queries);
+    let summary = {};
 
-    const summary = {
-      totalSedes: results[0].rows[0].TOTAL || 0,
-      totalEscuelas: results[1].rows[0].TOTAL || 0,
-      totalCarreras: results[2].rows[0].TOTAL || 0,
-      totalAsignaturas: results[3].rows[0].TOTAL || 0,
-      totalUsuarios: results[4].rows[0].TOTAL || 0,
-      totalDocentes: results[5].rows[0].TOTAL || 0,
-      examenesActivos: results[6].rows[0].TOTAL || 0,
-    };
+    if (userRoleId === ID_ROL_ADMIN) {
+      // --- Lógica para Administrador (sin cambios, ve todo) ---
+      const queries = [
+        connection.execute(`SELECT COUNT(*) AS TOTAL FROM SEDE`),
+        connection.execute(`SELECT COUNT(*) AS TOTAL FROM ESCUELA`),
+        connection.execute(`SELECT COUNT(*) AS TOTAL FROM CARRERA`),
+        connection.execute(`SELECT COUNT(*) AS TOTAL FROM ASIGNATURA`),
+        connection.execute(`SELECT COUNT(*) AS TOTAL FROM USUARIO`),
+        connection.execute(
+          `SELECT COUNT(*) AS TOTAL FROM USUARIO WHERE ROL_ID_ROL = 2`
+        ), // Rol Docente
+        connection.execute(
+          `SELECT COUNT(*) AS TOTAL FROM EXAMEN WHERE ESTADO_ID_ESTADO = 1`
+        ), // Estado Activo
+      ];
+      const results = await Promise.all(queries);
+      summary = {
+        totalSedes: results[0].rows[0].TOTAL || 0,
+        totalEscuelas: results[1].rows[0].TOTAL || 0,
+        totalCarreras: results[2].rows[0].TOTAL || 0,
+        totalAsignaturas: results[3].rows[0].TOTAL || 0,
+        totalUsuarios: results[4].rows[0].TOTAL || 0,
+        totalDocentes: results[5].rows[0].TOTAL || 0,
+        examenesActivos: results[6].rows[0].TOTAL || 0,
+      };
+    } else {
+      // --- Lógica para Roles Restringidos (Jefe de Carrera, Coordinadores) ---
+      const baseJoin = `FROM USUARIOCARRERA uc WHERE uc.USUARIO_ID_USUARIO = :userId`;
+      const params = { userId };
+
+      const queries = [
+        // Total de Carreras asociadas al usuario
+        connection.execute(
+          `SELECT COUNT(DISTINCT uc.CARRERA_ID_CARRERA) AS TOTAL ${baseJoin}`,
+          params
+        ),
+        // Total de Asignaturas de esas carreras
+        connection.execute(
+          `SELECT COUNT(DISTINCT a.ID_ASIGNATURA) AS TOTAL FROM ASIGNATURA a JOIN USUARIOCARRERA uc ON a.CARRERA_ID_CARRERA = uc.CARRERA_ID_CARRERA WHERE uc.USUARIO_ID_USUARIO = :userId`,
+          params
+        ),
+        // Total de Escuelas de esas carreras
+        connection.execute(
+          `SELECT COUNT(DISTINCT c.ESCUELA_ID_ESCUELA) AS TOTAL FROM CARRERA c JOIN USUARIOCARRERA uc ON c.ID_CARRERA = uc.CARRERA_ID_CARRERA WHERE uc.USUARIO_ID_USUARIO = :userId`,
+          params
+        ),
+        // Total de Sedes de esas escuelas
+        connection.execute(
+          `SELECT COUNT(DISTINCT e.SEDE_ID_SEDE) AS TOTAL FROM ESCUELA e JOIN CARRERA c ON e.ID_ESCUELA = c.ESCUELA_ID_ESCUELA JOIN USUARIOCARRERA uc ON c.ID_CARRERA = uc.CARRERA_ID_CARRERA WHERE uc.USUARIO_ID_USUARIO = :userId`,
+          params
+        ),
+        // Exámenes Activos de esas carreras
+        connection.execute(
+          `SELECT COUNT(DISTINCT ex.ID_EXAMEN) AS TOTAL FROM EXAMEN ex JOIN SECCION s ON ex.SECCION_ID_SECCION = s.ID_SECCION JOIN ASIGNATURA a ON s.ASIGNATURA_ID_ASIGNATURA = a.ID_ASIGNATURA JOIN USUARIOCARRERA uc ON a.CARRERA_ID_CARRERA = uc.CARRERA_ID_CARRERA WHERE ex.ESTADO_ID_ESTADO = 1 AND uc.USUARIO_ID_USUARIO = :userId`,
+          params
+        ),
+        // Docentes y Usuarios totales no se filtran por carrera, se mantienen globales
+        connection.execute(`SELECT COUNT(*) AS TOTAL FROM USUARIO`),
+        connection.execute(
+          `SELECT COUNT(*) AS TOTAL FROM USUARIO WHERE ROL_ID_ROL = 2`
+        ),
+      ];
+
+      const results = await Promise.all(queries);
+      summary = {
+        totalCarreras: results[0].rows[0].TOTAL || 0,
+        totalAsignaturas: results[1].rows[0].TOTAL || 0,
+        totalEscuelas: results[2].rows[0].TOTAL || 0,
+        totalSedes: results[3].rows[0].TOTAL || 0,
+        examenesActivos: results[4].rows[0].TOTAL || 0,
+        totalUsuarios: results[5].rows[0].TOTAL || 0,
+        totalDocentes: results[6].rows[0].TOTAL || 0,
+      };
+    }
 
     res.json(summary);
   } catch (error) {
@@ -60,6 +106,9 @@ export const getDashboardSummary = async (req, res) => {
 export const getExamenesPorCarreraChartData = async (req, res) => {
   let connection;
   const { sedeId, escuelaId, carreraId, fechaDesde, fechaHasta } = req.query;
+  const { rol_id_rol: userRoleId, id_usuario: userId } = req.user; // <-- OBTENER DATOS DEL USUARIO
+  const ID_ROL_ADMIN = 1;
+
   try {
     connection = await getConnection();
     let params = {};
@@ -72,10 +121,20 @@ export const getExamenesPorCarreraChartData = async (req, res) => {
        JOIN ESCUELA ESC ON CRR.ESCUELA_ID_ESCUELA = ESC.ID_ESCUELA
        JOIN SEDE SED ON ESC.SEDE_ID_SEDE = SED.ID_SEDE
     `;
-
-    let whereClauses = [];
     let joins = [];
+    let whereClauses = [];
 
+    // --- NUEVA LÓGICA DE FILTRADO POR ROL ---
+    if (userRoleId !== ID_ROL_ADMIN) {
+      joins.push(
+        `JOIN USUARIOCARRERA UC ON CRR.ID_CARRERA = UC.CARRERA_ID_CARRERA`
+      );
+      whereClauses.push(`UC.USUARIO_ID_USUARIO = :userId`);
+      params.userId = userId;
+    }
+    // --- FIN DE LA NUEVA LÓGICA ---
+
+    // El resto de los filtros se mantiene igual
     if (sedeId) {
       whereClauses.push(`SED.ID_SEDE = :sedeId`);
       params.sedeId = parseInt(sedeId);
@@ -104,29 +163,27 @@ export const getExamenesPorCarreraChartData = async (req, res) => {
       }
     }
 
-    let finalSql = baseSql + joins.join(' ');
+    let finalSql = baseSql + ' ' + joins.join(' ');
     if (whereClauses.length > 0) {
       finalSql += ` WHERE ` + whereClauses.join(' AND ');
     }
     finalSql += ` GROUP BY CRR.NOMBRE_CARRERA ORDER BY "value" DESC`;
+
     const result = await connection.execute(finalSql, params);
     res.json(result.rows);
   } catch (error) {
     handleError(res, error, 'Error al obtener datos de exámenes por carrera');
   } finally {
-    if (connection) {
-      try {
-        await connection.close();
-      } catch (err) {
-        console.error('Error al cerrar la conexión:', err);
-      }
-    }
+    if (connection) await connection.close().catch((e) => console.error(e));
   }
 };
 
 export const getModulosAgendadosChartData = async (req, res) => {
   let connection;
   const { jornadaId, fechaDesde, fechaHasta, estadoModuloId } = req.query;
+  const { rol_id_rol: userRoleId, id_usuario: userId } = req.user; // <-- OBTENER DATOS DEL USUARIO
+  const ID_ROL_ADMIN = 1;
+
   try {
     connection = await getConnection();
     let params = {};
@@ -135,13 +192,27 @@ export const getModulosAgendadosChartData = async (req, res) => {
        FROM RESERVAMODULO RM
        JOIN MODULO M ON RM.MODULO_ID_MODULO = M.ID_MODULO
     `;
+    let joins = [`JOIN RESERVA R ON RM.RESERVA_ID_RESERVA = R.ID_RESERVA`];
     let whereClauses = [];
-    let joins = [`JOIN RESERVA R ON RM.RESERVA_ID_RESERVA = R.ID_RESERVA`]; // Necesario para fecha y potencialmente jornada
+
+    // --- NUEVA LÓGICA DE FILTRADO POR ROL ---
+    if (userRoleId !== ID_ROL_ADMIN) {
+      joins.push(`
+        JOIN EXAMEN EX_FILTER ON R.EXAMEN_ID_EXAMEN = EX_FILTER.ID_EXAMEN
+        JOIN SECCION S_FILTER ON EX_FILTER.SECCION_ID_SECCION = S_FILTER.ID_SECCION
+        JOIN ASIGNATURA A_FILTER ON S_FILTER.ASIGNATURA_ID_ASIGNATURA = A_FILTER.ID_ASIGNATURA
+        JOIN USUARIOCARRERA UC ON A_FILTER.CARRERA_ID_CARRERA = UC.CARRERA_ID_CARRERA
+      `);
+      whereClauses.push(`UC.USUARIO_ID_USUARIO = :userId`);
+      params.userId = userId;
+    }
+    // --- FIN DE LA NUEVA LÓGICA ---
 
     if (jornadaId) {
-      // Asumiendo que la jornada se puede inferir a través de la sección del examen de la reserva
-      joins.push(`JOIN EXAMEN EX ON R.EXAMEN_ID_EXAMEN = EX.ID_EXAMEN`);
-      joins.push(`JOIN SECCION S ON EX.SECCION_ID_SECCION = S.ID_SECCION`);
+      if (!joins.some((j) => j.includes('JOIN SECCION S ON'))) {
+        joins.push(`JOIN EXAMEN EX ON R.EXAMEN_ID_EXAMEN = EX.ID_EXAMEN`);
+        joins.push(`JOIN SECCION S ON EX.SECCION_ID_SECCION = S.ID_SECCION`);
+      }
       whereClauses.push(`S.JORNADA_ID_JORNADA = :jornadaId`);
       params.jornadaId = parseInt(jornadaId);
     }
@@ -161,8 +232,10 @@ export const getModulosAgendadosChartData = async (req, res) => {
       whereClauses.push(`M.ESTADO_ID_ESTADO = :estadoModuloId`);
       params.estadoModuloId = parseInt(estadoModuloId);
     }
+
     let finalSql =
       baseSql +
+      ' ' +
       joins.join(' ') +
       (whereClauses.length > 0 ? ` WHERE ` + whereClauses.join(' AND ') : '') +
       ` GROUP BY M.NOMBRE_MODULO, M.ORDEN ORDER BY M.ORDEN`;
@@ -172,13 +245,7 @@ export const getModulosAgendadosChartData = async (req, res) => {
   } catch (error) {
     handleError(res, error, 'Error al obtener datos de módulos agendados');
   } finally {
-    if (connection) {
-      try {
-        await connection.close();
-      } catch (err) {
-        console.error('Error al cerrar la conexión:', err);
-      }
-    }
+    if (connection) await connection.close().catch((e) => console.error(e));
   }
 };
 
@@ -249,6 +316,7 @@ export const getUsoSalasChartData = async (req, res) => {
 
 export const getExamenesPorDiaChartData = async (req, res) => {
   let connection;
+  // Filtros que vienen desde el frontend
   const {
     sedeId,
     escuelaId,
@@ -257,13 +325,18 @@ export const getExamenesPorDiaChartData = async (req, res) => {
     jornadaId,
     fechaDesde,
     fechaHasta,
-    estadoReservaId, // Nuevo filtro para el estado de la reserva
+    estadoReservaId,
   } = req.query;
+
+  // 1. OBTENER DATOS DEL USUARIO LOGUEADO
+  const { rol_id_rol: userRoleId, id_usuario: userId } = req.user;
+  const ID_ROL_ADMIN = 1;
+
   try {
     connection = await getConnection();
-    // Asegúrate que NLS_DATE_LANGUAGE esté configurado para español en tu sesión/DB
-    // o ajusta los nombres de los días ('MON', 'TUE', etc.)
     let params = {};
+
+    // La consulta base se mantiene igual
     let baseSql = `SELECT
            TO_CHAR(R.FECHA_RESERVA, 'YYYY-MM-DD') as "fecha_completa",
            CASE TO_CHAR(R.FECHA_RESERVA, 'DY', 'NLS_DATE_LANGUAGE=SPANISH')
@@ -280,15 +353,28 @@ export const getExamenesPorDiaChartData = async (req, res) => {
            COUNT(E.ID_EXAMEN) as "cantidad_examenes"
        FROM EXAMEN E
         JOIN RESERVA R ON E.ID_EXAMEN = R.EXAMEN_ID_EXAMEN
-        JOIN ESTADO ES_EX ON E.ESTADO_ID_ESTADO = ES_EX.ID_ESTADO -- Estado del Examen
+        JOIN ESTADO ES_EX ON E.ESTADO_ID_ESTADO = ES_EX.ID_ESTADO
         JOIN SECCION S ON E.SECCION_ID_SECCION = S.ID_SECCION
         JOIN ASIGNATURA A ON S.ASIGNATURA_ID_ASIGNATURA = A.ID_ASIGNATURA
         JOIN CARRERA CRR ON A.CARRERA_ID_CARRERA = CRR.ID_CARRERA
         JOIN ESCUELA ESC ON CRR.ESCUELA_ID_ESCUELA = ESC.ID_ESCUELA
         JOIN SEDE SED ON ESC.SEDE_ID_SEDE = SED.ID_SEDE
     `;
+    let joins = [];
     let whereClauses = [];
 
+    // 2. AÑADIR FILTRADO POR ROL SI NO ES ADMIN
+    if (userRoleId !== ID_ROL_ADMIN) {
+      // Unimos la cadena de tablas hasta USUARIOCARRERA
+      joins.push(
+        `JOIN USUARIOCARRERA UC ON CRR.ID_CARRERA = UC.CARRERA_ID_CARRERA`
+      );
+      // Y añadimos la condición para que solo traiga datos de las carreras asociadas a este usuario
+      whereClauses.push(`UC.USUARIO_ID_USUARIO = :userId`);
+      params.userId = userId;
+    }
+
+    // 3. APLICAR EL RESTO DE LOS FILTROS (sin cambios aquí)
     if (sedeId) {
       whereClauses.push(`SED.ID_SEDE = :sedeId`);
       params.sedeId = parseInt(sedeId);
@@ -321,18 +407,17 @@ export const getExamenesPorDiaChartData = async (req, res) => {
       );
       params.fechaHasta = fechaHasta;
     } else if (!fechaDesde) {
-      // Default to current week if no date range specified
       whereClauses.push(
         `R.FECHA_RESERVA BETWEEN TRUNC(SYSDATE, 'IW') AND TRUNC(SYSDATE, 'IW') + 6`
       );
     }
     if (estadoReservaId) {
-      // Cambiado para filtrar por el estado del EXAMEN (tabla E)
       whereClauses.push(`E.ESTADO_ID_ESTADO = :estadoReservaId`);
       params.estadoReservaId = parseInt(estadoReservaId);
     }
 
-    let finalSql = baseSql;
+    // 4. CONSTRUIR Y EJECUTAR LA CONSULTA FINAL (sin cambios aquí)
+    let finalSql = baseSql + ' ' + joins.join(' ');
     if (whereClauses.length > 0) {
       finalSql += ` WHERE ` + whereClauses.join(' AND ');
     }
