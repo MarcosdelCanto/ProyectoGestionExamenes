@@ -135,7 +135,7 @@ export default function CalendarioReservas() {
   return (
     <div className="agenda-semanal" style={containerStyle} ref={calendarRef}>
       <div className="d-flex justify-content-between align-items-center m-2 mt-0">
-        <h3 className="display-6">Mi Calendario de Exámenes</h3>
+        <h3 className="display-7">Mi Calendario de Exámenes</h3>
         <div className="d-flex align-items-center gap-1">
           {/* Contenedor para agrupar input de fecha y botones */}
           <div className="input-group input-group-sm w-auto">
