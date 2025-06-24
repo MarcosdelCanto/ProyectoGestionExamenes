@@ -1,21 +1,63 @@
-import React, { useRef } from 'react'; // Importar useRef
-import { Spinner } from 'react-bootstrap';
-import { format, isValid } from 'date-fns'; // Importar isValid para validación de fechas
-import html2pdf from 'html2pdf.js'; // Importar html2pdf
+// src/components/calendario/CalendarioReservas.jsx
 
+import React, { useRef, useEffect, useState } from 'react';
+import { Spinner, Alert, Button } from 'react-bootstrap';
+import { format, isValid } from 'date-fns';
+import html2pdf from 'html2pdf.js';
+
+// --- IMPORTACIONES DE REDUX CORREGIDAS ---
+import { useDispatch, useSelector } from 'react-redux';
+// 1. Importamos la acción correcta desde el NUEVO archivo de la slice
+import { cargarReservasConfirmadas } from '../../store/reservasConfirmadasSlice';
+
+// --- IMPORTACIONES DE SERVICIOS Y HOOKS ---
 import { useDateManagement } from '../../hooks/useDateManagement';
-import { useUserReservations } from '../../hooks/useUserReservations';
-
+import { fetchAllModulos } from '../../services/moduloService';
 import CalendarHeader from './CalendarHeader';
-import ReservaPostIt from './ReservaPostIt'; // <-- 1. Usar el nuevo componente de solo lectura
+import ReservaPostIt from './ReservaPostIt';
 
-import './styles/AgendaSemanal.css'; // Reutilizamos estilos
+// --- IMPORTACIÓN DE ESTILOS ---
+import './styles/AgendaSemanal.css';
 
 export default function CalendarioReservas() {
-  // Se utiliza el hook dedicado para encapsular toda la lógica de obtención de datos.
-  const { reservas, modulos, isLoading, error } = useUserReservations();
-  // Referencia para el elemento del DOM que queremos imprimir
+  const dispatch = useDispatch();
   const calendarRef = useRef(null);
+
+  // --- OBTENER DATOS DESDE LA SLICE CORRECTA ---
+  // 2. Apuntamos useSelector a 'state.reservasConfirmadas'
+  const {
+    lista: reservas,
+    estadoCarga,
+    error,
+  } = useSelector((state) => state.reservasConfirmadas);
+
+  // --- ESTADO LOCAL PARA MÓDULOS (sin cambios) ---
+  const [modulos, setModulos] = useState([]);
+  const [loadingModulos, setLoadingModulos] = useState(true);
+  const [errorModulos, setErrorModulos] = useState(null);
+
+  // --- LÓGICA DE CARGA DE DATOS (useEffect MODIFICADO) ---
+  useEffect(() => {
+    // 3. Despachamos la acción correcta para cargar las reservas confirmadas
+    if (estadoCarga === 'idle') {
+      dispatch(cargarReservasConfirmadas());
+    }
+
+    const cargarModulos = async () => {
+      try {
+        setLoadingModulos(true);
+        const modulosData = await fetchAllModulos();
+        setModulos(modulosData || []);
+      } catch (err) {
+        setErrorModulos('No se pudieron cargar los horarios del calendario.');
+        console.error('Error cargando módulos:', err);
+      } finally {
+        setLoadingModulos(false);
+      }
+    };
+
+    cargarModulos();
+  }, [estadoCarga, dispatch]);
 
   const {
     fechas,
@@ -24,6 +66,9 @@ export default function CalendarioReservas() {
     goToToday,
     weekStartDate,
   } = useDateManagement();
+
+  const isLoading = estadoCarga === 'loading' || loadingModulos;
+  const finalError = error || errorModulos; // Combinar ambos posibles errores
 
   if (isLoading) {
     return (
@@ -34,102 +79,67 @@ export default function CalendarioReservas() {
     );
   }
 
-  if (error) {
+  if (finalError) {
     return (
       <div className="alert alert-danger text-center p-4">
-        <p>No se pudieron cargar sus reservas. Por favor, intente más tarde.</p>
+        <p>{finalError}</p>
       </div>
     );
   }
 
-  // Filtrar reservas para la semana actual
-  // Se corrige la lógica para evitar problemas de zona horaria.
-  // En lugar de comparar objetos Date, se compara el string de la fecha (YYYY-MM-DD).
   const reservasSemanales = reservas.filter((reserva) => {
-    // Extrae la parte de la fecha del string ISO (ej: "2025-06-24")
+    if (!reserva || !reserva.FECHA_RESERVA) return false;
     const fechaReservaString = reserva.FECHA_RESERVA.split('T')[0];
-    // Comprueba si esta fecha está presente en los días de la semana que se están mostrando.
     return fechas.some((f) => f.fecha === fechaReservaString);
   });
 
-  // Función para generar el PDF
   const handlePrintPdf = () => {
     const element = calendarRef.current;
-    if (!element) {
-      console.error('No se encontró el elemento del calendario para imprimir.');
-      return;
-    }
-
-    // Se busca el contenedor de la tabla para modificar sus estilos temporalmente
+    if (!element) return;
     const scrollableContainer = element.querySelector(
       '.table-wrapper-readonly'
     );
-    if (!scrollableContainer) {
-      console.error('No se encontró el contenedor de la tabla para imprimir.');
-      return;
-    }
-
-    // Determinar la fecha a usar para el nombre del archivo.
-    // Se prefiere weekStartDate, pero si es inválida, se usa fechaSeleccionada como fallback.
+    if (!scrollableContainer) return;
     const dateForFilename = isValid(weekStartDate)
       ? weekStartDate
       : fechaSeleccionada;
-
-    // Si ninguna de las fechas es válida, se muestra un error y se detiene la impresión.
     if (!isValid(dateForFilename)) {
-      console.error(
-        'Error al imprimir: No se pudo obtener una fecha válida para el nombre del archivo PDF.',
-        { weekStartDate, fechaSeleccionada } // Loguear ambas para depuración
-      );
-      alert(
-        'No se puede generar el PDF porque la fecha actual o seleccionada es inválida. ' +
-          'Por favor, asegúrese de que la fecha en el calendario sea correcta.'
-      );
+      alert('Fecha inválida para generar PDF.');
       return;
     }
-
-    // Se añade una clase para anular los estilos de scroll y poder medir el contenido completo
     scrollableContainer.classList.add('printing-pdf');
-
-    // Se calculan las dimensiones del contenido y del área de impresión del PDF
     const contentWidth = element.scrollWidth;
     const contentHeight = element.scrollHeight;
-    const printableWidth = (11 - 0.5 * 2) * 192; // 10 pulgadas * 192 dpi
-    const printableHeight = (8.5 - 0.5 * 2) * 192; // 7.5 pulgadas * 192 dpi
-
-    // Se calcula la escala necesaria para que el contenido quepa tanto en ancho como en alto
+    const printableWidth = (11 - 1) * 192;
+    const printableHeight = (8.5 - 1) * 192;
     const scaleX = printableWidth / contentWidth;
     const scaleY = printableHeight / contentHeight;
-    const finalScale = Math.min(scaleX, scaleY) * 0.72; // Reducido un 20% adicional (0.9 * 0.8 = 0.72)
-
+    const finalScale = Math.min(scaleX, scaleY) * 0.72;
     const opt = {
-      margin: 0.5, // Margen en pulgadas
-      filename: `reservas_semanales_${format(dateForFilename, 'yyyy-MM-dd')}.pdf`, // Usar la fecha válida determinada
+      margin: 0.5,
+      filename: `reservas_semanales_${format(dateForFilename, 'yyyy-MM-dd')}.pdf`,
       image: { type: 'jpeg', quality: 0.98 },
       html2canvas: {
-        scale: finalScale, // Usar la escala calculada dinámicamente con un margen más amplio
+        scale: finalScale,
         logging: true,
         dpi: 192,
         letterRendering: true,
       },
-      jsPDF: { unit: 'in', format: 'letter', orientation: 'landscape' }, // Orientación horizontal
-      pagebreak: { mode: 'avoid-all' }, // Evita que los elementos se corten entre páginas
+      jsPDF: { unit: 'in', format: 'letter', orientation: 'landscape' },
+      pagebreak: { mode: 'avoid-all' },
     };
-
     html2pdf()
       .set(opt)
       .from(element)
       .save()
       .finally(() => {
-        // Se elimina la clase para restaurar los estilos de scroll después de imprimir
         scrollableContainer.classList.remove('printing-pdf');
       });
   };
 
-  // Estilos para el contenedor principal, asegurando que esté centrado y con margen.
   const containerStyle = {
     maxWidth: '1200px',
-    margin: '1rem auto', // '2rem' para margen vertical, 'auto' para centrado horizontal.
+    margin: '1rem auto',
   };
 
   return (
@@ -137,7 +147,6 @@ export default function CalendarioReservas() {
       <div className="d-flex justify-content-between align-items-center m-2 mt-0">
         <h3 className="display-7">Mi Calendario de Exámenes</h3>
         <div className="d-flex align-items-center gap-1">
-          {/* Contenedor para agrupar input de fecha y botones */}
           <div className="input-group input-group-sm w-auto">
             <input
               type="date"
@@ -148,32 +157,29 @@ export default function CalendarioReservas() {
                   : ''
               }
               onChange={(e) => {
-                const dateString = e.target.value;
-                // Se añade T00:00:00 para evitar problemas de zona horaria y se valida
-                // que el string no esté vacío antes de crear la fecha.
-                if (dateString)
-                  handleDateChange(new Date(`${dateString}T00:00:00`));
+                if (e.target.value)
+                  handleDateChange(new Date(`${e.target.value}T00:00:00`));
               }}
             />
-            <button className="btn btn-outline-secondary" onClick={goToToday}>
+            <Button variant="outline-secondary" onClick={goToToday}>
               Hoy
-            </button>
+            </Button>
           </div>
-          <button
-            className="btn btn-outline-secondary btn-sm"
+          <Button
+            variant="outline-secondary"
+            size="sm"
             onClick={handlePrintPdf}
             title="Imprimir en PDF"
           >
-            <i className="bi bi-printer"></i> {/* Icono de impresora */}
-          </button>
+            <i className="bi bi-printer"></i>
+          </Button>
         </div>
       </div>
-
       <div className="table-wrapper-readonly m-2">
         <table className="calendar-table">
           <CalendarHeader fechas={fechas} />
           <tbody>
-            {modulos.map((modulo) => (
+            {(modulos || []).map((modulo) => (
               <tr key={modulo.ID_MODULO}>
                 <td className="orden-col">{modulo.ORDEN}</td>
                 <td className="horario-col p-1">
@@ -181,41 +187,59 @@ export default function CalendarioReservas() {
                 </td>
                 {fechas.map(({ fecha }) => {
                   const reservaEnCelda = reservasSemanales.find((r) => {
-                    // Se corrige la comparación para evitar problemas de zona horaria.
-                    // Se compara directamente la parte de la fecha del string.
+                    if (!r || !r.FECHA_RESERVA) return false;
                     const esMismaFecha =
                       r.FECHA_RESERVA.split('T')[0] === fecha;
-                    // La API devuelve los IDs de los módulos como un string separado por comas.
-                    // Se convierte a un array de números para poder buscar.
-                    const modulosDeReserva = r.MODULOS_IDS
-                      ? r.MODULOS_IDS.split(',').map(Number)
-                      : [];
+                    const modulosDeReserva =
+                      r.MODULOS?.map((m) => m.ID_MODULO) ||
+                      (r.MODULOS_IDS
+                        ? r.MODULOS_IDS.split(',').map(Number)
+                        : []);
                     return (
                       esMismaFecha &&
                       modulosDeReserva.includes(modulo.ID_MODULO)
                     );
                   });
 
-                  if (reservaEnCelda) {
-                    // Para dibujar el post-it solo una vez, se obtiene el ID del primer módulo de la reserva.
-                    const primerModuloId = reservaEnCelda.MODULOS_IDS
-                      ? Number(reservaEnCelda.MODULOS_IDS.split(',')[0])
-                      : null;
+                  let primerModuloId = null;
+                  let modulosCount = 0;
 
-                    // Si el módulo actual no es el primero de la reserva, se renderiza una celda vacía.
-                    if (modulo.ID_MODULO !== primerModuloId)
-                      return (
-                        <td
-                          key={fecha}
-                          className="calendar-cell part-of-examen"
-                        ></td>
-                      );
+                  if (reservaEnCelda) {
+                    const modulosDeReserva = reservaEnCelda.MODULOS
+                      ? [...reservaEnCelda.MODULOS].sort(
+                          (a, b) => a.ORDEN - b.ORDEN
+                        )
+                      : [];
+                    modulosCount =
+                      modulosDeReserva.length ||
+                      (reservaEnCelda.MODULOS_IDS
+                        ? reservaEnCelda.MODULOS_IDS.split(',').length
+                        : 1);
+
+                    if (modulosDeReserva.length > 0) {
+                      primerModuloId = modulosDeReserva[0].ID_MODULO;
+                    } else if (reservaEnCelda.MODULOS_IDS) {
+                      const ordenes = modulos
+                        .filter((m) =>
+                          reservaEnCelda.MODULOS_IDS.split(',')
+                            .map(Number)
+                            .includes(m.ID_MODULO)
+                        )
+                        .sort((a, b) => a.ORDEN - b.ORDEN);
+                      if (ordenes.length > 0) {
+                        primerModuloId = ordenes[0].ID_MODULO;
+                      }
+                    }
                   }
 
-                  // Se calcula la cantidad de módulos para determinar la altura del post-it.
-                  const modulosCount = reservaEnCelda?.MODULOS_IDS
-                    ? reservaEnCelda.MODULOS_IDS.split(',').length
-                    : 0;
+                  if (reservaEnCelda && modulo.ID_MODULO !== primerModuloId) {
+                    return (
+                      <td
+                        key={fecha}
+                        className="calendar-cell part-of-examen"
+                      ></td>
+                    );
+                  }
 
                   return (
                     <td
@@ -223,8 +247,9 @@ export default function CalendarioReservas() {
                       className={`calendar-cell ${reservaEnCelda ? 'reservado con-examen' : ''}`}
                     >
                       {reservaEnCelda && (
-                        <ReservaPostIt // <-- 2. Renderizar el nuevo componente
+                        <ReservaPostIt
                           reserva={reservaEnCelda}
+                          modulosCount={modulosCount}
                           style={{
                             position: 'absolute',
                             width: '100%',

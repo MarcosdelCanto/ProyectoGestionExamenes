@@ -332,3 +332,14 @@ export const crearReservaEnCursoService = async (payload) => {
     throw error.response?.data || error;
   }
 };
+
+export const fetchMisReservasConfirmadas = async () => {
+  try {
+    // Llama al nuevo endpoint que filtra las reservas confirmadas para el usuario
+    const response = await api.get('/reserva/mis-confirmadas');
+    return response.data;
+  } catch (error) {
+    console.error('Error al obtener mis reservas confirmadas:', error);
+    throw error;
+  }
+};
