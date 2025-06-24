@@ -5,7 +5,7 @@
   border: 1px solid #d0d0d0;
   border-radius: 4px;
   box-shadow: 1px 1px 4px rgba(0, 0, 0, 0.2);
-  font-size: 0.75rem;
+  font-size: 0.6rem;
   display: flex;
   flex-direction: column;
   overflow: hidden;
@@ -248,4 +248,63 @@
 .examen-post-it.drag-overlay.is-animating {
   animation: floatAnimation 1.5s ease-in-out infinite;
   /* Los estilos de width, height, opacity, etc., vendrán de dragOverlayStyle en CalendarioPage.jsx */
+}
+
+/* === CONTROLES ANCLADOS - AGREGAR AL FINAL === */
+
+/* Contenedor de controles fijo en la parte superior */
+.controls-anchor {
+  position: absolute;
+  top: 2px;
+  right: 4px;
+  z-index: 200;
+
+  /* Fondo semi-transparente para que se vea bien */
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: 3px;
+  padding: 2px;
+
+  /* Sombra sutil para destacar */
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  width: 100%;
+  display: flex;
+  justify-content: center; /* Alinear los botones a la derecha */
+  translate: 4px -2px;
+}
+
+/* Asegurar que los controles no interfieran con el contenido */
+.examen-content {
+  padding-top: 30px; /* Espacio para los controles anclados */
+}
+
+/* Para PostIts de 1 módulo, ajustar el padding */
+.examen-post-it[data-modulos='1'] .examen-content {
+  padding-top: 25px; /* Menos espacio para aprovechar mejor */
+}
+
+.examen-post-it[data-modulos='1'] .controls-anchor {
+  top: 1px;
+  right: 2px;
+  padding: 1px;
+}
+
+/* Hacer los botones un poco más pequeños para que quepan mejor */
+.controls-anchor .action-btn {
+  min-width: 18px !important;
+  min-height: 18px !important;
+  font-size: 10px !important;
+}
+
+.controls-anchor .status-badge {
+  font-size: 8px !important;
+  padding: 1px 3px !important;
+}
+
+/* En pantallas muy pequeñas, hacer los controles aún más compactos */
+@media (max-width: 768px) {
+  .controls-anchor .action-btn {
+    min-width: 16px !important;
+    min-height: 16px !important;
+    font-size: 9px !important;
+  }
 }

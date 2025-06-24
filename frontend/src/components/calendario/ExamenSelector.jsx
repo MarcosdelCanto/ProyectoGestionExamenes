@@ -203,9 +203,9 @@ export default function ExamenSelector({
     <div className="examen-selector-container">
       <div className="examen-search-container">
         <div className="input-group input-group-sm">
-          <span className="input-group-text bg-light">
+          {/* <span className="input-group-text bg-light">
             <FaSearch />
-          </span>
+          </span> */}
           <input
             type="search"
             className="form-control"
@@ -214,13 +214,13 @@ export default function ExamenSelector({
             onChange={handleSearchExamenes}
           />
         </div>
-        <button
+        {/* <button
           className="btn btn-light btn-sm"
           onClick={() => setShowFilterModal(true)}
           title="Más filtros"
         >
           <FaFilter />
-        </button>
+        </button> */}
       </div>
 
       {tieneExamenesParaMostrar ? (

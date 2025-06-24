@@ -516,8 +516,13 @@ export default function ExamenPostIt({
           isDragOverlay ? 'drag-overlay is-animating' : ''
         }`}
         data-estado={getEstadoConfirmacion()}
+        data-modulos={moduloscountState} // ← AGREGAR ESTA LÍNEA
         {...props}
       >
+        {/* **CONTROLES ANCLADOS ARRIBA** */}
+        <div className="controls-anchor">{getActionButtons()}</div>
+
+        {/* **CONTENIDO ORIGINAL** */}
         <div className="examen-content">
           <div className="examen-header d-flex justify-content-between align-items-start">
             <div className="examen-info flex-grow-1">
@@ -534,8 +539,8 @@ export default function ExamenPostIt({
               </div>
             </div>
 
-            {/* Botones de acción según el estado */}
-            <div className="action-container">{getActionButtons()}</div>
+            {/* **REMOVER LOS CONTROLES DE AQUÍ** */}
+            {/* <div className="action-container">{getActionButtons()}</div> */}
           </div>
 
           {/* Información de módulos */}
