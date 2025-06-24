@@ -308,3 +308,54 @@
     font-size: 9px !important;
   }
 }
+
+/* === SELECTOR DE DOCENTE EN POSTIT === */
+.postit-docente-section {
+  margin: 4px 0;
+  padding: 2px 0;
+  border-top: 1px solid rgba(0, 0, 0, 0.1);
+}
+
+.docente-label {
+  font-size: 7px;
+  color: #666;
+  margin-bottom: 2px;
+  font-weight: 500;
+}
+
+.docente-asignado {
+  color: #28a745;
+  font-weight: 500;
+}
+
+/* Estilos específicos para el AsyncSelect compacto */
+.postit-docente-section .react-select__control {
+  border: 1px solid #ccc !important;
+  border-radius: 2px !important;
+  background: white !important;
+}
+
+.postit-docente-section .react-select__control:hover {
+  border-color: #007bff !important;
+}
+
+.postit-docente-section .react-select__control--is-focused {
+  border-color: #007bff !important;
+  box-shadow: 0 0 0 1px rgba(0, 123, 255, 0.25) !important;
+}
+
+.postit-docente-section .react-select__placeholder {
+  color: #999 !important;
+  font-size: 8px !important;
+}
+
+.postit-docente-section .react-select__single-value {
+  color: #333 !important;
+  font-size: 8px !important;
+}
+
+/* Para PostIts de 1 módulo, mostrar el selector en la información compacta */
+.postit-reorganized.modulos-1 .postit-compact-details .docente-info {
+  color: #28a745;
+  font-weight: 500;
+}
