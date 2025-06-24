@@ -100,7 +100,7 @@ export default function CalendarioReservas() {
     // Se calcula la escala necesaria para que el contenido quepa tanto en ancho como en alto
     const scaleX = printableWidth / contentWidth;
     const scaleY = printableHeight / contentHeight;
-    const finalScale = Math.min(scaleX, scaleY) * 0.9; // Usar la escala más pequeña con un margen de seguridad más amplio
+    const finalScale = Math.min(scaleX, scaleY) * 0.72; // Reducido un 20% adicional (0.9 * 0.8 = 0.72)
 
     const opt = {
       margin: 0.5, // Margen en pulgadas
@@ -129,15 +129,14 @@ export default function CalendarioReservas() {
   // Estilos para el contenedor principal, asegurando que esté centrado y con margen.
   const containerStyle = {
     maxWidth: '1200px',
-    margin: '2rem auto', // '2rem' para margen vertical, 'auto' para centrado horizontal.
+    margin: '1rem auto', // '2rem' para margen vertical, 'auto' para centrado horizontal.
   };
 
   return (
     <div className="agenda-semanal" style={containerStyle} ref={calendarRef}>
-      <div className="d-flex justify-content-between align-items-center mb-2">
-        <h5 className="mb-0">Mi Calendario de Exámenes</h5>
-        <div className="d-flex align-items-center gap-2">
-          {' '}
+      <div className="d-flex justify-content-between align-items-center m-2 mt-0">
+        <h3 className="display-6">Mi Calendario de Exámenes</h3>
+        <div className="d-flex align-items-center gap-1">
           {/* Contenedor para agrupar input de fecha y botones */}
           <div className="input-group input-group-sm w-auto">
             <input
@@ -170,14 +169,14 @@ export default function CalendarioReservas() {
         </div>
       </div>
 
-      <div className="table-wrapper-readonly">
+      <div className="table-wrapper-readonly m-2">
         <table className="calendar-table">
           <CalendarHeader fechas={fechas} />
           <tbody>
             {modulos.map((modulo) => (
               <tr key={modulo.ID_MODULO}>
                 <td className="orden-col">{modulo.ORDEN}</td>
-                <td className="horario-col">
+                <td className="horario-col p-1">
                   {modulo.INICIO_MODULO} - {modulo.FIN_MODULO}
                 </td>
                 {fechas.map(({ fecha }) => {

@@ -89,7 +89,7 @@ export default function HomePage() {
     <Layout>
       <div className="w-full">
         {/* Tarjeta de Perfil del Usuario (sin cambios) */}
-        <div className="profile-card-compact">
+        <div className="profile-card-compact m-2">
           <div className="profile-main-info">
             <Avatar name={perfil.NOMBRE_USUARIO} size={60} />
             <div className="profile-identity">

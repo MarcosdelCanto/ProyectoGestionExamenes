@@ -33,24 +33,23 @@
   min-height: 100vh;
 }
 
-/* Estilos para la nueva tarjeta de perfil compacta */
+/* HomePage.css */
 .profile-card-compact {
-  background-color: #fff;
-  border-radius: 0.75rem;
+  background-color: #ffffff;
+  border-radius: 12px;
+  padding: 1.5rem;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
-  padding: 1.25rem;
-  width: 100%;
-  max-width: 600px;
-  margin: 1.5rem auto;
-  border: 1px solid #e5e7eb;
+  display: flex;
+  flex-direction: row; /* Cambiado a fila para diseño horizontal */
+  justify-content: space-between; /* Espacio entre los dos bloques */
+  align-items: center; /* Centrado vertical */
+  gap: 2rem; /* Espacio entre los bloques */
 }
 
 .profile-main-info {
   display: flex;
   align-items: center;
-  gap: 1rem; /* Espacio entre el avatar y el texto */
-  padding-bottom: 1rem;
-  border-bottom: 1px solid #f3f4f6;
+  gap: 1rem;
 }
 
 .profile-identity {
@@ -61,32 +60,21 @@
 .profile-name-compact {
   font-size: 1.5rem;
   font-weight: 600;
-  color: #1f2937;
   margin: 0;
-  line-height: 1.3;
-}
-
-.profile-identity .badge {
-  align-self: flex-start; /* Alinea la insignia a la izquierda */
-  margin-top: 0.25rem;
 }
 
 .profile-secondary-info {
-  padding-top: 1rem;
   display: flex;
   flex-direction: column;
   gap: 0.5rem;
+  align-items: flex-end; /* Alinea los detalles a la derecha */
 }
 
 .profile-detail-item-compact {
   display: flex;
   align-items: center;
   font-size: 0.9rem;
-  color: #4b5563;
-}
-
-.profile-detail-item-compact i {
-  color: #9ca3af;
+  color: #495057;
 }
 
 /* Ajuste responsivo simple */
