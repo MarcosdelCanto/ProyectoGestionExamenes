@@ -88,12 +88,19 @@ export const getAllReservas = async (req, res) => {
   let conn;
   try {
     conn = await getConnection();
+    // --- INICIO DE LA MODIFICACIÓN ---
+    // Se añade la subconsulta para obtener el nombre del docente asignado
     const result = await conn.execute(
       `SELECT r.ID_RESERVA, r.FECHA_RESERVA,
               e.ID_EXAMEN, e.NOMBRE_EXAMEN,
               s.ID_SALA, s.NOMBRE_SALA,
               est.ID_ESTADO, est.NOMBRE_ESTADO AS ESTADO_RESERVA,
-              r.ESTADO_CONFIRMACION_DOCENTE, r.OBSERVACIONES_DOCENTE
+              r.ESTADO_CONFIRMACION_DOCENTE, r.OBSERVACIONES_DOCENTE,
+              (SELECT u.NOMBRE_USUARIO
+               FROM RESERVA_DOCENTES rd
+               JOIN USUARIO u ON rd.USUARIO_ID_USUARIO = u.ID_USUARIO
+               WHERE rd.RESERVA_ID_RESERVA = r.ID_RESERVA AND ROWNUM = 1
+              ) AS NOMBRE_DOCENTE_ASIGNADO
        FROM RESERVA r
        JOIN EXAMEN e ON r.EXAMEN_ID_EXAMEN = e.ID_EXAMEN
        JOIN SALA s ON r.SALA_ID_SALA = s.ID_SALA
@@ -102,6 +109,7 @@ export const getAllReservas = async (req, res) => {
       [],
       { outFormat: oracledb.OUT_FORMAT_OBJECT }
     );
+    // --- FIN DE LA MODIFICACIÓN ---
     res.json(result.rows);
   } catch (err) {
     handleError(res, err, 'Error al obtener reservas');
@@ -1551,7 +1559,7 @@ export const enviarReservaADocente = async (req, res) => {
         `SELECT COUNT(*) as CONFLICTOS
          FROM RESERVAMODULO rm
          JOIN RESERVA r ON rm.RESERVA_ID_RESERVA = r.ID_RESERVA
-         WHERE rm.MODULO_ID_MODULO IN (${nuevosModulosIds.map(() => ':modulo_id').join(',')})
+         WHERE rm.MODULO_ID_MODULO IN (${nuevosModulosIds.map((_, index) => `:modulo_id_${index}`).join(',')})
          AND r.FECHA_RESERVA = :fecha_reserva
          AND r.SALA_ID_SALA = :sala_id
          AND r.ID_RESERVA != :reserva_id
