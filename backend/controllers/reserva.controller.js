@@ -14,6 +14,7 @@ const handleError = (res, error, message, statusCode = 500) => {
 };
 
 // Función helper para obtener una reserva completa por ID y emitirla por socket
+// Función helper para obtener una reserva completa por ID y emitirla por socket
 const emitReservaActualizada = async (
   req,
   connection,
@@ -21,9 +22,15 @@ const emitReservaActualizada = async (
   actionOrigin = 'unknown'
 ) => {
   if (req.app.get('io') && reservaIdNum) {
+    // --- INICIO DE LA MODIFICACIÓN ---
     const result = await connection.execute(
       `SELECT r.*,
-              e.ID_EXAMEN, e.NOMBRE_EXAMEN, e.CANTIDAD_MODULOS_EXAMEN, e.INSCRITOS_EXAMEN, e.TIPO_PROCESAMIENTO_EXAMEN, e.PLATAFORMA_PROSE_EXAMEN, e.SITUACION_EVALUATIVA_EXAMEN, s.ID_SALA, s.NOMBRE_SALA, est.NOMBRE_ESTADO AS ESTADO_RESERVA
+              e.ID_EXAMEN, e.NOMBRE_EXAMEN, e.CANTIDAD_MODULOS_EXAMEN, e.INSCRITOS_EXAMEN, e.TIPO_PROCESAMIENTO_EXAMEN, e.PLATAFORMA_PROSE_EXAMEN, e.SITUACION_EVALUATIVA_EXAMEN, s.ID_SALA, s.NOMBRE_SALA, est.NOMBRE_ESTADO AS ESTADO_RESERVA,
+              (SELECT u.NOMBRE_USUARIO
+               FROM RESERVA_DOCENTES rd
+               JOIN USUARIO u ON rd.USUARIO_ID_USUARIO = u.ID_USUARIO
+               WHERE rd.RESERVA_ID_RESERVA = r.ID_RESERVA AND ROWNUM = 1
+              ) AS NOMBRE_DOCENTE_ASIGNADO
        FROM RESERVA r
        JOIN EXAMEN e ON r.EXAMEN_ID_EXAMEN = e.ID_EXAMEN
        JOIN SALA s ON r.SALA_ID_SALA = s.ID_SALA
@@ -32,9 +39,11 @@ const emitReservaActualizada = async (
       { id_param: reservaIdNum },
       { outFormat: oracledb.OUT_FORMAT_OBJECT }
     );
+    // --- FIN DE LA MODIFICACIÓN ---
+
     if (result.rows.length > 0) {
       const reservaParaEmitir = result.rows[0];
-      // Añadir MODULOS a la reservaParaEmitir
+      // ... (el resto de la función para añadir módulos se mantiene igual)
       const modulosResult = await connection.execute(
         `SELECT m.ID_MODULO, m.NOMBRE_MODULO, m.INICIO_MODULO, m.FIN_MODULO, m.ORDEN
          FROM RESERVAMODULO rm
@@ -45,10 +54,6 @@ const emitReservaActualizada = async (
         { outFormat: oracledb.OUT_FORMAT_OBJECT }
       );
       reservaParaEmitir.MODULOS = modulosResult.rows;
-      console.log(
-        `[Backend Ctrl: emitReservaActualizada] Emitiendo para reserva ${reservaIdNum}. Datos:`,
-        JSON.stringify(reservaParaEmitir, null, 2)
-      );
       req.app
         .get('io')
         .emit('reservaActualizadaDesdeServidor', reservaParaEmitir);

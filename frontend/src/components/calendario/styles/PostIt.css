@@ -323,9 +323,28 @@
   font-weight: 500;
 }
 
+.docente-inicial {
+  color: #0d6efd !important; /* Azul para docente inicial/sugerido */
+}
+
 .docente-asignado {
-  color: #28a745;
-  font-weight: 500;
+  color: #28a745 !important; /* Verde para docente confirmado */
+}
+
+.docente-default {
+  color: #6c757d !important; /* Gris para docente del examen (no seleccionado) */
+}
+
+.docente-info {
+  font-weight: 500 !important;
+}
+
+.postit-docente-info {
+  margin: 2px 0;
+  padding: 2px 4px;
+  background-color: rgba(255, 255, 255, 0.7);
+  border-radius: 2px;
+  border-left: 2px solid currentColor;
 }
 
 /* Estilos específicos para el AsyncSelect compacto */
@@ -358,4 +377,14 @@
 .postit-reorganized.modulos-1 .postit-compact-details .docente-info {
   color: #28a745;
   font-weight: 500;
+}
+.modulos-controls {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0 1px;
+}
+
+.modulos-count {
+  padding: 0 5px;
 }
