@@ -32,17 +32,17 @@ export const getAllExamenes = async (_req, res) => {
     const result = await connection.execute(
       `SELECT e.id_examen, e.nombre_examen, e.inscritos_examen, e.tipo_procesamiento_examen, e.plataforma_prose_examen,
               e.situacion_evaluativa_examen, e.cantidad_modulos_examen, s.nombre_seccion, a.nombre_asignatura, es.nombre_estado,
-              -- INICIO DE LA CORRECCIÓN --
+              c.NOMBRE_CARRERA,
               (SELECT LISTAGG(U.NOMBRE_USUARIO, ', ') WITHIN GROUP (ORDER BY U.NOMBRE_USUARIO)
                  FROM USUARIOSECCION US
                  JOIN USUARIO U ON US.USUARIO_ID_USUARIO = U.ID_USUARIO
                  JOIN ROL R ON U.ROL_ID_ROL = R.ID_ROL
-                 WHERE US.SECCION_ID_SECCION = s.id_seccion AND R.NOMBRE_ROL = 'DOCENTE'  -- <-- SE ASEGURA DE FILTRAR POR DOCENTE
+                 WHERE US.SECCION_ID_SECCION = s.id_seccion AND R.NOMBRE_ROL = 'DOCENTE'
               ) AS NOMBRE_DOCENTE
-              -- FIN DE LA CORRECIÓN --
        FROM EXAMEN e
        JOIN SECCION s ON e.seccion_id_seccion = s.id_seccion
        JOIN ASIGNATURA a ON s.asignatura_id_asignatura = a.id_asignatura
+       JOIN CARRERA c ON a.carrera_id_carrera = c.id_carrera
        JOIN ESTADO es ON e.estado_id_estado = es.id_estado
        ORDER BY e.id_examen DESC`,
       {},

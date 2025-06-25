@@ -5,6 +5,7 @@ import {
   getCurrentUser,
   refreshCurrentUserPermissions,
 } from '../services/authService';
+import { listCarrerasByUsuario } from '../services/usuarioCarreraService';
 
 export function usePermission() {
   // Inicializa currentUser desde localStorage. getCurrentUser() debería devolver el objeto
@@ -27,8 +28,6 @@ export function usePermission() {
         '[usePermission] Error durante forceReloadUserData:',
         error
       );
-      // En caso de error, podríamos decidir mantener el currentUser anterior o limpiarlo
-      // Por ahora, lo mantenemos para no perder el estado si la API falla temporalmente
       setCurrentUser(getCurrentUser()); // Reintentar leer de localStorage por si acaso
     } finally {
       setLoading(false);
@@ -36,50 +35,86 @@ export function usePermission() {
   }, []);
 
   useEffect(() => {
-    // Al montar, simplemente establecemos el usuario que ya está en localStorage.
-    // Se asume que authService.login() ya cargó los permisos y los guardó.
-    const userFromStorage = getCurrentUser();
-    setCurrentUser(userFromStorage);
-    setLoading(false);
+    const loadAndEnrichUser = async () => {
+      setLoading(true);
+      let user = getCurrentUser(); // Lee el usuario desde localStorage
 
-    // Opcional: Escuchar un evento si quieres sincronizar entre pestañas o si localStorage cambia externamente
-    // const handleStorageChange = (event) => {
-    //   if (event.key === 'user') {
-    //     console.log('[usePermission] localStorage "user" cambió, actualizando currentUser.');
-    //     setCurrentUser(getCurrentUser());
-    //   }
-    // };
-    // window.addEventListener('storage', handleStorageChange);
-    // return () => window.removeEventListener('storage', handleStorageChange);
-  }, []); // Se ejecuta solo una vez al montar para obtener el estado inicial de localStorage
+      // Roles que deberían tener carreras asociadas
+      const rolesConCarreras = [
+        'JEFE CARRERA',
+        'COORDINADOR CARRERA',
+        'COORDINADOR DOCENTE',
+      ];
 
+      // Condición: Si el usuario está autenticado, tiene un rol relevante
+      // Y (muy importante) la propiedad `carrerasAsociadas` no existe en su objeto.
+      if (
+        user.isAuthenticated &&
+        rolesConCarreras.includes(user.nombre_rol) &&
+        (!user.carrerasAsociadas || user.carrerasAsociadas.length === 0)
+      ) {
+        console.log(
+          '[usePermission] Datos de carrera faltantes o vacíos. Obteniendo desde la API...'
+        );
+        try {
+          const carreras = await listCarrerasByUsuario(user.id_usuario);
+          user.carrerasAsociadas = carreras || [];
+          localStorage.setItem('user', JSON.stringify(user));
+          console.log(
+            '[usePermission] Usuario enriquecido y guardado en localStorage:',
+            user
+          );
+        } catch (error) {
+          console.error(
+            'Error al obtener carreras asociadas en el hook:',
+            error
+          );
+          user.carrerasAsociadas = [];
+        }
+      }
+
+      // Actualiza el estado del hook con el usuario (posiblemente enriquecido)
+      setCurrentUser(user);
+      console.log('[usePermission] Estado del usuario actualizado:', user);
+      setLoading(false);
+    };
+
+    loadAndEnrichUser();
+  }, []); // Este array vacío asegura que se ejecute solo una vez cuando el hook se monta
   const hasPermission = (permissionName) => {
     if (loading || !currentUser || !currentUser.isAuthenticated) {
-      // console.log(`[usePermission] Verificando '${permissionName}': Cargando o no autenticado. Acceso denegado.`);
       return false;
     }
-
-    // Asumimos que currentUser.rol tiene el NOMBRE_ROL (ej: "ADMINISTRADOR")
-    // o que currentUser.NOMBRE_ROL existe si 'rol' es un alias.
-    // Es importante que el objeto 'user' en localStorage tenga esta propiedad consistentemente.
     if (
       currentUser.rol === 'ADMINISTRADOR' ||
       currentUser.NOMBRE_ROL === 'ADMINISTRADOR'
     ) {
-      // console.log(`[usePermission] Verificando '${permissionName}': Usuario es ADMIN. Acceso concedido.`);
       return true;
     }
 
-    // Asumimos que currentUser.permisos es un array de objetos: [{NOMBRE_PERMISO: '...'}, ...]
-    // según tu implementación original. Si fetchPermisosByRol y el login ahora devuelven
-    // un array de strings, esta lógica debe cambiar a: currentUser.permisos?.includes(permissionName)
     const permissionFound =
       currentUser.permisos?.some(
         (permission) => permission.NOMBRE_PERMISO === permissionName
       ) || false;
-
-    // console.log(`[usePermission] Verificando '${permissionName}': Permisos del usuario:`, currentUser.permisos, `Resultado: ${permissionFound}`);
     return permissionFound;
+  };
+  const hasCareerPermission = (careerId) => {
+    if (loading || !currentUser || !currentUser.isAuthenticated) {
+      return false;
+    }
+    // El administrador siempre tiene permiso
+    if (currentUser.NOMBRE_ROL === 'ADMINISTRADOR') {
+      return true;
+    }
+    // Si el usuario no tiene carreras asociadas, no tiene permiso
+    if (
+      !currentUser.carrerasAsociadas ||
+      currentUser.carrerasAsociadas.length === 0
+    ) {
+      return false;
+    }
+    // Verificar si el ID de la carrera del examen está en la lista de carreras del usuario
+    return currentUser.carrerasAsociadas.some((c) => c.ID_CARRERA === careerId);
   };
 
   // Funciones helper (están bien como las tienes)
@@ -93,6 +128,7 @@ export function usePermission() {
   return {
     currentUser, // Exponer el usuario actual puede ser útil para la UI
     hasPermission,
+    hasCareerPermission, // Permite verificar permisos por carrera
     loading,
     forceReloadUserData, // Renombrada para mayor claridad, refresca todo el usuario
     // userPermissions: currentUser?.permisos || [], // Si necesitas la lista cruda de permisos

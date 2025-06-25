@@ -23,6 +23,7 @@ import { useDispatch } from 'react-redux';
 import { actualizarModulosReservaLocalmente } from '../../store/reservasSlice';
 import AsyncSelect from 'react-select/async';
 import './styles/PostIt.css';
+import { usePermission } from '../../hooks/usePermission';
 
 export default function ExamenPostIt({
   examen,
@@ -43,6 +44,15 @@ export default function ExamenPostIt({
   ...props
 }) {
   const dispatch = useDispatch();
+  console.log(
+    `[ExamenPostIt] Renderizando Post-it para examen: "${examen?.NOMBRE_ASIGNATURA || 'Desconocido'}"`,
+    {
+      "Prop 'examen' (datos base):": examen,
+      "Prop 'examenAsignadoCompleto' (datos de reserva):":
+        examenAsignadoCompleto,
+    }
+  );
+  const { hasCareerPermission } = usePermission();
   const [moduloscountState, setModuloscountState] = useState(
     moduloscount ||
       examen?.MODULOS?.length ||
@@ -327,6 +337,15 @@ export default function ExamenPostIt({
   };
   const getActionButtons = () => {
     if (isPreview || isDragOverlay) return null;
+    const carreraDelExamenId = examenAsignadoCompleto?.ID_CARRERA;
+
+    // Verificamos si el usuario tiene permiso sobre esa carrera
+    const puedeGestionar = hasCareerPermission(carreraDelExamenId);
+
+    // Si no tiene permiso, no se renderiza ningún botón
+    if (!puedeGestionar) {
+      return null;
+    }
     const estadoConfirmacion = getEstadoConfirmacion();
 
     switch (estadoConfirmacion) {

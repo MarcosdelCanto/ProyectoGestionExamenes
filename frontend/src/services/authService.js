@@ -1,8 +1,6 @@
 // src/services/authService.js
 import { fetchPermisosByRol } from './permisoService';
-
-// --- CAMBIO CLAVE AQUÍ ---
-// Usamos una ruta relativa. Nginx en producción se encargará de redirigirla.
+import { listCarrerasByUsuario } from './usuarioCarreraService';
 const baseURL = '/api';
 
 // El resto de las funciones ahora usarán esta baseURL correcta.
@@ -35,9 +33,20 @@ export async function login(email_usuario, password_usuario) {
     try {
       const permisos = await fetchPermisosByRol(usuario.ROL_ID_ROL);
       userToStore.permisos = permisos || [];
+      const rolesConCarreras = [
+        'JEFE CARRERA',
+        'COORDINADOR CARRERA',
+        'COORDINADOR DOCENTE',
+      ];
+      if (rolesConCarreras.includes(userToStore.NOMBRE_ROL)) {
+        const carreras = await listCarrerasByUsuario(USUARIO_ID_USUARIO);
+        userToStore.carrerasAsociadas = carreras || [];
+      } else {
+        userToStore.carrerasAsociadas = []; // Asignar un array vacío para otros roles
+      }
     } catch (error) {
       console.error(
-        '[AuthService] Error al cargar permisos durante login:',
+        '[AuthService] Error al cargar permisos o carreras durante login:',
         error
       );
       userToStore.permisos = [];
@@ -85,20 +94,41 @@ export function getCurrentUser() {
 export async function refreshCurrentUserPermissions() {
   const currentUserData = getCurrentUser();
 
-  if (currentUserData.isAuthenticated && currentUserData.ROL_ID_ROL) {
+  if (currentUserData.isAuthenticated && currentUserData.rol_id_rol) {
     try {
-      const permisos = await fetchPermisosByRol(currentUserData.ROL_ID_ROL);
+      // Obtenemos tanto permisos como carreras en paralelo
+      const [permisos, carreras] = await Promise.all([
+        fetchPermisosByRol(currentUserData.rol_id_rol),
+        listCarrerasByUsuario(currentUserData.id_usuario), // Usamos id_usuario en minúsculas
+      ]);
+
       const updatedUser = {
         ...currentUserData,
         permisos: permisos || [],
+        carrerasAsociadas: carreras || [], // Actualizamos también las carreras
       };
+
       localStorage.setItem('user', JSON.stringify(updatedUser));
       return updatedUser;
     } catch (error) {
-      return { ...currentUserData, permisos: currentUserData.permisos || [] };
+      console.error(
+        '[AuthService] Error al refrescar datos del usuario:',
+        error
+      );
+      // En caso de error, devolvemos los datos que ya teníamos para no romper la sesión
+      return {
+        ...currentUserData,
+        permisos: currentUserData.permisos || [],
+        carrerasAsociadas: currentUserData.carrerasAsociadas || [],
+      };
     }
   }
   return currentUserData.isAuthenticated
     ? currentUserData
-    : { isAuthenticated: false, rol: null, permisos: [] };
+    : {
+        isAuthenticated: false,
+        rol: null,
+        permisos: [],
+        carrerasAsociadas: [],
+      };
 }
