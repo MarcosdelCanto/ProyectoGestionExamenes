@@ -36,13 +36,21 @@ export function useAgendaData() {
         );
         if (examenOriginal) {
           examenCompletoAnidado = { ...examenOriginal };
+          if (reservaPlana.NOMBRE_DOCENTE_ASIGNADO) {
+            examenCompletoAnidado.NOMBRE_DOCENTE =
+              reservaPlana.NOMBRE_DOCENTE_ASIGNADO;
+          } else if (reservaPlana.NOMBRE_DOCENTE_PRINCIPAL) {
+            // Fallback por consistencia
+            examenCompletoAnidado.NOMBRE_DOCENTE =
+              reservaPlana.NOMBRE_DOCENTE_PRINCIPAL;
+          }
         } else {
           examenCompletoAnidado = {
             ID_EXAMEN: procesada.ID_EXAMEN,
             NOMBRE_EXAMEN: procesada.NOMBRE_EXAMEN,
             CANTIDAD_MODULOS_EXAMEN: procesada.CANTIDAD_MODULOS_EXAMEN,
             NOMBRE_ASIGNATURA: procesada.NOMBRE_ASIGNATURA,
-            NOMBRE_DOCENTE: procesada.NOMBRE_DOCENTE, // Asegurarse de pasarlo si existe
+            NOMBRE_DOCENTE: procesada.NOMBRE_DOCENTE_ASIGNADO, // Asegurarse de pasarlo si existe
           };
         }
       }

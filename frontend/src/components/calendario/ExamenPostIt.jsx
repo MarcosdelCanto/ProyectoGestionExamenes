@@ -73,10 +73,11 @@ export default function ExamenPostIt({
 
   const nombreDocenteMostrado =
     selectedDocente?.label || // 1. Prioridad: El docente recién seleccionado en el modal
-    examenAsignadoCompleto?.reservaCompleta?.NOMBRE_DOCENTE_ASIGNADO || // 2. El docente de la reserva (viene del socket)
-    examenAsignadoCompleto?.NOMBRE_DOCENTE_ASIGNADO || // Fallback por si la estructura cambia
-    examen.NOMBRE_DOCENTE || // 3. El docente original sugerido por el examen
-    'No asignado'; // 4. Valor por defecto
+    examenAsignadoCompleto?.reservaCompleta?.NOMBRE_DOCENTE_ASIGNADO || // 2. El docente asignado a la RESERVA (desde getMisAsignaciones o socket)
+    examenAsignadoCompleto?.reservaCompleta?.NOMBRE_DOCENTE_PRINCIPAL || // 3. Alias alternativo del docente de la RESERVA
+    examenAsignadoCompleto?.reservaCompleta?.NOMBRE_DOCENTE || // 4. Otro alias alternativo del docente de la RESERVA
+    examen.NOMBRE_DOCENTE || // 5. Fallback: El docente original sugerido por el EXAMEN
+    'No asignado'; // 6. Valor por defecto si no hay ninguno.
 
   useEffect(() => {
     const nuevaCantidad =
