@@ -1,41 +1,65 @@
-import React from 'react';
-import './styles/PostIt.css'; // Reutilizar los mismos estilos
+// src/components/calendario/ReservaPostIt.jsx
 
-/**
- * Un componente de "post-it" simplificado y de solo lectura,
- * diseñado específicamente para visualizar una reserva confirmada.
- */
-export default function ReservaPostIt({ reserva, style }) {
+import React from 'react';
+import './styles/PostIt.css';
+
+// --- INICIO: Mapa de Colores por Escuela ---
+// Se han usado los nombres exactos que proporcionaste desde tu base de datos.
+const ESCUELA_COLOR_MAP = {
+  // Escuelas Principales con colores vivos
+  'Administración y Negocios': { bg: '#f5d6fd', border: '#ac4fc6' },
+  'Ingeniería, Medio Ambiente y Recursos Naturales': {
+    bg: '#e1f7de',
+    border: '#3aad2a',
+  },
+  'Informática y Telecomunicaciones': { bg: '#d1e5fe', border: '#307fe2' },
+  'Salud y Bienestar': { bg: '#dcf3fb', border: '#5bc2e7' },
+  'Turismo y Hospitalidad': { bg: '#dcf6f5', border: '#00a499' },
+  Construccion: { bg: '#ffe4cf', border: '#e87722' },
+  Gastronoía: { bg: '#fee5e6', border: '#ff585d' },
+
+  // Programas Transversales con colores distintivos
+  'Programa de Formación Cristiana': { bg: '#fdebe1', border: '#f7bca0' }, // Salmón
+  'Programa de Lenguaje y Comunicación': { bg: '#fef7e0', border: '#fde79c' }, // Amarillo Maíz
+  'Programa de Matemáticas': { bg: '#f1f8e9', border: '#c5e1a5' }, // Verde Lima
+  'Programa de Inglés': { bg: '#e3f2fd', border: '#90caf9' }, // Azul Cielo
+  'Programa de Etica': { bg: '#ede7f6', border: '#b39ddb' }, // Lavanda
+  'Programa de Emprendimiento': { bg: '#e0f2f1', border: '#80cbc4' }, // Turquesa
+
+  // Deportes y casos especiales
+  'Programa de Deportes': { bg: '#ffecb3', border: '#ffca28' }, // Ámbar
+  'Extracurricular Deportes Ancla': { bg: '#ffecb3', border: '#ffca28' }, // Mismo color que Deportes
+  'Docente Asistente SD - C. de Informática': {
+    bg: '#eef2ff',
+    border: '#c8d3ff',
+  }, // Mismo que Informática
+};
+// --- FIN: Mapa de Colores por Escuela ---
+
+export default function ReservaPostIt({ reserva, modulosCount = 1, style }) {
+  console.log('Datos de la reserva recibidos en ReservaPostIt:', reserva);
+
   if (!reserva) return null;
 
-  // Función para determinar el color del post-it y su borde basado en el nombre de la asignatura
   const getPostItColor = () => {
-    if (!reserva.NOMBRE_ASIGNATURA) return { bg: '#f8f9fa', border: '#6c757d' }; // Color gris por defecto
-    const hash = reserva.NOMBRE_ASIGNATURA.split('').reduce(
-      (acc, char) => acc + char.charCodeAt(0),
-      0
-    );
-    // Paleta de colores pastel más suaves y consistentes
-    const colors = [
-      { bg: '#e9f7ef', border: '#a3d9b8' }, // Menta
-      { bg: '#fff4e5', border: '#ffdcb2' }, // Durazno
-      { bg: '#eef2ff', border: '#c8d3ff' }, // Lavanda
-      { bg: '#fce8e6', border: '#f7b9b3' }, // Rosa
-      { bg: '#e6f4ea', border: '#a0d7b1' }, // Verde mar
-      { bg: '#fef7e0', border: '#fde79c' }, // Amarillo
-    ];
-    return colors[hash % colors.length] || { bg: '#f8f9fa', border: '#6c757d' };
+    const defaultColor = { bg: '#e9ecef', border: '#adb5bd' }; // Gris por defecto
+
+    if (!reserva.NOMBRE_ESCUELA) {
+      return defaultColor;
+    }
+
+    // Busca el nombre de la escuela en tu mapa. Si no lo encuentra, usa el color por defecto.
+    return ESCUELA_COLOR_MAP[reserva.NOMBRE_ESCUELA] || defaultColor;
   };
 
-  const modulosCount = reserva.MODULOS_IDS
-    ? reserva.MODULOS_IDS.split(',').length
-    : 1;
+  // El conteo de módulos es más fiable si viene del array de módulos de la reserva.
+  const finalModulosCount = reserva.MODULOS?.length || modulosCount || 1;
 
   const { bg, border } = getPostItColor();
 
   const postItStyle = {
     backgroundColor: bg,
-    height: `${40 * modulosCount}px`,
+    height: `${40 * finalModulosCount}px`,
     borderLeft: `4px solid ${border}`,
     display: 'flex',
     flexDirection: 'column',
@@ -57,32 +81,38 @@ export default function ReservaPostIt({ reserva, style }) {
                 reserva.NOMBRE_EXAMEN ||
                 'Sin nombre'}
             </div>
+            {/*
             <div className="examen-details text-muted small mt-1 fw-bold">
+              {reserva.NOMBRE_ESCUELA && (
+                <div className="d-flex align-items-center fw-semibold">
+                  <i className="bi bi-building me-1"></i>
+                  <span>{reserva.NOMBRE_ESCUELA}</span>
+                </div>
+              )}
               {reserva.NOMBRE_CARRERA && (
                 <div className="d-flex align-items-center">
                   <i className="bi bi-mortarboard me-1"></i>
                   <span>{reserva.NOMBRE_CARRERA}</span>
                 </div>
-              )}
-              {reserva.NOMBRE_SECCION && (
-                <div className="d-flex align-items-center">
-                  <i className="bi bi-diagram-3 me-1"></i>
-                  <span>{reserva.NOMBRE_SECCION}</span>
-                </div>
-              )}
-              {reserva.NOMBRE_DOCENTE && (
-                <div className="d-flex align-items-center">
-                  <i className="bi bi-person me-1"></i>
-                  <span>{reserva.NOMBRE_DOCENTE}</span>
-                </div>
-              )}
-              {reserva.NOMBRE_SALA && (
-                <div className="d-flex align-items-center">
-                  <i className="bi bi-door-open me-1"></i>
-                  <span>{reserva.NOMBRE_SALA}</span>
-                </div>
-              )}
-            </div>
+              )} */}
+            {reserva.NOMBRE_SECCION && (
+              <div className="d-flex align-items-center">
+                <i className="bi bi-diagram-3 me-1"></i>
+                <span>{reserva.NOMBRE_SECCION}</span>
+              </div>
+            )}
+            {reserva.NOMBRE_DOCENTE && (
+              <div className="d-flex align-items-center">
+                <i className="bi bi-person me-1"></i>
+                <span>{reserva.NOMBRE_DOCENTE}</span>
+              </div>
+            )}
+            {reserva.NOMBRE_SALA && (
+              <div className="d-flex align-items-center">
+                <i className="bi bi-door-open me-1"></i>
+                <span>{reserva.NOMBRE_SALA}</span>
+              </div>
+            )}
           </div>
         </div>
       </div>
