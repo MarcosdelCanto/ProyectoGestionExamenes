@@ -343,9 +343,9 @@ export default function ExamenPostIt({
     const puedeGestionar = hasCareerPermission(carreraDelExamenId);
 
     // Si no tiene permiso, no se renderiza ningún botón
-    if (!puedeGestionar) {
-      return null;
-    }
+    // if (!puedeGestionar) {
+    //   return null;
+    // }
     const estadoConfirmacion = getEstadoConfirmacion();
 
     switch (estadoConfirmacion) {
