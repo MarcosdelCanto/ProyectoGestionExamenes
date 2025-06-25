@@ -32,9 +32,10 @@ const emitReservaActualizada = async (
         s.ID_SALA, s.NOMBRE_SALA,
         est.NOMBRE_ESTADO AS ESTADO_RESERVA,
         sec.NOMBRE_SECCION,
-        a.NOMBRE_ASIGNATURA, -- <--- CAMPO CLAVE QUE FALTABA
+        a.NOMBRE_ASIGNATURA,
         c.NOMBRE_CARRERA,
-        esc.NOMBRE_ESCUELA, -- <-- CAMPO CLAVE AÑADIDO
+        esc.NOMBRE_ESCUELA,
+        c.NOMBRE_CARRERA, c.ID_CARRERA,
         (SELECT LISTAGG(u.NOMBRE_USUARIO, ', ') WITHIN GROUP (ORDER BY u.NOMBRE_USUARIO)
            FROM RESERVA_DOCENTES rd
            JOIN USUARIO u ON rd.USUARIO_ID_USUARIO = u.ID_USUARIO
@@ -98,6 +99,7 @@ export const getAllReservas = async (req, res) => {
               s.ID_SALA, s.NOMBRE_SALA,
               est.ID_ESTADO, est.NOMBRE_ESTADO AS ESTADO_RESERVA,
               r.ESTADO_CONFIRMACION_DOCENTE, r.OBSERVACIONES_DOCENTE,
+              c.ID_CARRERA, c.NOMBRE_CARRERA,
               (SELECT u.NOMBRE_USUARIO
                FROM RESERVA_DOCENTES rd
                JOIN USUARIO u ON rd.USUARIO_ID_USUARIO = u.ID_USUARIO
@@ -107,6 +109,9 @@ export const getAllReservas = async (req, res) => {
        JOIN EXAMEN e ON r.EXAMEN_ID_EXAMEN = e.ID_EXAMEN
        JOIN SALA s ON r.SALA_ID_SALA = s.ID_SALA
        JOIN ESTADO est ON r.ESTADO_ID_ESTADO = est.ID_ESTADO
+       JOIN SECCION sec ON e.SECCION_ID_SECCION = sec.ID_SECCION
+       JOIN ASIGNATURA a ON sec.ASIGNATURA_ID_ASIGNATURA = a.ID_ASIGNATURA
+       JOIN CARRERA c ON a.CARRERA_ID_CARRERA = c.ID_CARRERA
        ORDER BY r.FECHA_RESERVA DESC, r.ID_RESERVA DESC`,
       [],
       { outFormat: oracledb.OUT_FORMAT_OBJECT }
@@ -141,15 +146,19 @@ export const getReservaById = async (req, res) => {
               s.ID_SALA, s.NOMBRE_SALA,
               est.ID_ESTADO, est.NOMBRE_ESTADO AS ESTADO_RESERVA,
               r.ESTADO_CONFIRMACION_DOCENTE, r.OBSERVACIONES_DOCENTE, r.FECHA_CONFIRMACION_DOCENTE,
+              c.ID_CARRERA, c.NOMBRE_CARRERA,
               (SELECT u.NOMBRE_USUARIO
                  FROM RESERVA_DOCENTES rd
                  JOIN USUARIO u ON rd.USUARIO_ID_USUARIO = u.ID_USUARIO
                  WHERE rd.RESERVA_ID_RESERVA = r.ID_RESERVA AND ROWNUM = 1
-              ) AS NOMBRE_DOCENTE_ASIGNADO -- <-- CAMPO AÑADIDO
+              ) AS NOMBRE_DOCENTE_ASIGNADO
        FROM RESERVA r
        JOIN EXAMEN e ON r.EXAMEN_ID_EXAMEN = e.ID_EXAMEN
        JOIN SALA s ON r.SALA_ID_SALA = s.ID_SALA
        JOIN ESTADO est ON r.ESTADO_ID_ESTADO = est.ID_ESTADO
+       JOIN SECCION sec ON e.SECCION_ID_SECCION = sec.ID_SECCION
+       JOIN ASIGNATURA a ON sec.ASIGNATURA_ID_ASIGNATURA = a.ID_ASIGNATURA
+       JOIN CARRERA c ON a.CARRERA_ID_CARRERA = c.ID_CARRERA
        WHERE r.ID_RESERVA = :id_param`,
       { id_param: reservaIdNum },
       { outFormat: oracledb.OUT_FORMAT_OBJECT }
@@ -803,7 +812,7 @@ export const getMisAsignacionesDeReservas = async (req, res) => {
       SELECT DISTINCT
         R.ID_RESERVA, R.FECHA_RESERVA,
         R.ESTADO_CONFIRMACION_DOCENTE, R.OBSERVACIONES_DOCENTE, R.FECHA_CONFIRMACION_DOCENTE,
-        E.ID_EXAMEN, E.NOMBRE_EXAMEN, E.CANTIDAD_MODULOS_EXAMEN, /* <-- Añadido para el formulario de edición */
+        E.ID_EXAMEN, E.NOMBRE_EXAMEN, E.CANTIDAD_MODULOS_EXAMEN,
         SEC.ID_SECCION, SEC.NOMBRE_SECCION,
         A.ID_ASIGNATURA, A.NOMBRE_ASIGNATURA,
         C.ID_CARRERA, C.NOMBRE_CARRERA,
