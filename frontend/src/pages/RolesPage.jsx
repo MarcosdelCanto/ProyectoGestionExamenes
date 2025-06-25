@@ -402,7 +402,7 @@ function RolesPage() {
               </p>
             ) : (
               <p>
-                ¿Está seguro de que desea eliminar los{' '}
+                ¿Está seguro de que desea eliminar los
                 <strong>{modalState.data.length}</strong> roles seleccionados?
               </p>
             )}

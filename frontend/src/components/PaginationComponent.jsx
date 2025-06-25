@@ -52,7 +52,7 @@ function PaginationComponent({
           onClick={() => paginate(1)}
           disabled={currentPage === 1}
         >
-          <i className="bi bi-chevron-double-left"></i>{' '}
+          <i className="bi bi-chevron-double-left"></i>
           {/* Ejemplo con Bootstrap Icons */}
         </Pagination.First>
         <Pagination.Prev

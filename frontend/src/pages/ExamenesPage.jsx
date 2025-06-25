@@ -699,7 +699,7 @@ export default function ExamenesPage() {
               </p>
             ) : (
               <p>
-                ¿Está seguro de que desea eliminar los{' '}
+                ¿Está seguro de que desea eliminar los
                 <strong>{modal.data?.length}</strong> exámenes seleccionados?
               </p>
             )}

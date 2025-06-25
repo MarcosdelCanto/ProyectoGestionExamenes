@@ -1,4 +1,4 @@
-import api from './api';
+import api from './api.js';
 
 /**
  * Obtiene todas las carreras.
@@ -109,6 +109,28 @@ export const fetchCarrerasByEscuela = async (escuelaId) => {
   }
 };
 
-// Las funciones AddCarrera, EditCarrera, DeleteCarrera eran redundantes
-// y las versiones más cortas de create/update/deleteCarrera no tenían manejo de errores explícito.
-// Se han unificado para mayor claridad y consistencia.
+/**
+ * Envía los datos JSON procesados del archivo al backend para actualizar carreras y sus planes de estudio.
+ * @param {Array<Object>} datos - Array de objetos con 'Identificador Carrera Actual', 'Nuevo Nombre Carrera', 'Planes de Estudio'.
+ * @returns {Promise<Object>}
+ */
+export const updateCarrerasByPlanEstudio = async (data) => {
+  try {
+    const response = await api.post('/carrera/bulk-update-plans', data); // Nueva ruta en el backend
+    return response.data;
+  } catch (error) {
+    console.error('Error updating carreras by plan estudio (bulk):', error);
+    // Propaga el error para que el componente que llama lo pueda manejar
+    throw error.response?.data || error.message || error;
+  }
+};
+
+export default {
+  fetchAllCarreras,
+  fetchCarreraById, // Añadido al export default
+  createCarrera,
+  updateCarrera,
+  deleteCarrera,
+  fetchCarrerasByEscuela, // Añadido al export default
+  updateCarrerasByPlanEstudio,
+};

@@ -1,74 +1,48 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useCallback, useRef } from 'react';
+import { Modal, Button, Form, Alert, Spinner, Table } from 'react-bootstrap';
 import * as XLSX from 'xlsx';
-import { Card, Button, Form, Alert, Spinner, Table } from 'react-bootstrap';
-import cargaService from '../../services/cargaService';
-import { fetchAllSedes } from '../../services/sedeService';
+import carreraService from '../../services/carreraService';
 
 const VALID_FILE_EXTENSIONS = ['.xlsx', '.xls'];
 const MAX_PREVIEW_ROWS = 5;
 
-// Definimos TODOS los encabezados esperados para la plantilla de descarga.
-// 'Plan Estudio' es crucial para el nombre inicial de la carrera.
-const ALL_EXPECTED_HEADERS = [
-  'Escuela',
-  'Jornada',
-  'CodJornada',
-  'Cod.Gene.', // Puede estar presente en la planilla original, pero no se usa para el nombre de carrera
-  'Nom. Asignatura',
-  'Seccion',
-  'Rut Docente',
-  'Instruct.(den.)',
-  'Mail Duoc',
-  'Nombre Seccion',
-  'Cant. ins.',
-  'Tipo de Procesamiento',
-  'Plataforma de Procesamiento',
-  'Situación Evaluativa',
-  'ID evento',
-  'Plan Estudio', // Crucial para el nombre de la carrera inicial y sus planes
+// Encabezados OBLIGATORIOS para este tipo de carga (actualización de carrera y planes)
+const MANDATORY_HEADERS_UPDATE_CARRERA = [
+  'Nombre Carrera', // El nombre real de la carrera (el que está en la DB)
+  'Plan Estudio', // Los planes de estudio numéricos asociados (ej. "2020" o "2020 2021")
 ];
 
-// Definimos solo los encabezados OBLIGATORIOS para la validación en el frontend.
-const MANDATORY_HEADERS_FOR_VALIDATION = [
-  'Escuela',
-  'Jornada',
-  // 'Cod.Gene.', // Ya no es obligatorio para el nombre de la carrera
-  'Nom. Asignatura',
-  'Seccion',
-  'Rut Docente',
-  'Nombre Seccion',
-  'Plan Estudio', // Ahora es obligatorio, ya que de aquí se saca el nombre de la carrera
-];
+// Todos los encabezados esperados para la plantilla de descarga de esta carga
+const ALL_EXPECTED_HEADERS_UPDATE_CARRERA = ['Nombre Carrera', 'Plan Estudio'];
 
-function BulkUpload({ onUploadComplete }) {
+function UpdateCarreraPlanModal({ show, handleClose, onUpdateComplete }) {
   const [selectedFile, setSelectedFile] = useState(null);
   const [fileName, setFileName] = useState('');
   const [jsonData, setJsonData] = useState(null);
   const [dataForUpload, setDataForUpload] = useState(null);
 
-  const [sedes, setSedes] = useState([]);
-  const [selectedSede, setSelectedSede] = useState('');
-
   const [isLoading, setIsLoading] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
   const [error, setError] = useState('');
   const [successMessage, setSuccessMessage] = useState('');
+  const fileInputRef = useRef(null);
 
-  useEffect(() => {
-    const loadSedes = async () => {
-      try {
-        const sedesData = await fetchAllSedes();
-        setSedes(sedesData || []);
-      } catch (err) {
-        console.error('Error al cargar sedes en BulkUpload:', err);
-        setError(
-          'No se pudieron cargar las sedes. Por favor, recargue la página.'
-        );
-        setSedes([]);
-      }
-    };
-    loadSedes();
-  }, []);
+  const clearSelection = () => {
+    setSelectedFile(null);
+    setFileName('');
+    setJsonData(null);
+    setDataForUpload(null);
+    setError('');
+    setSuccessMessage('');
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
+  };
+
+  const handleModalClose = () => {
+    clearSelection();
+    handleClose();
+  };
 
   const handleFileChange = (event) => {
     const file = event.target.files[0];
@@ -95,24 +69,9 @@ function BulkUpload({ onUploadComplete }) {
     }
   };
 
-  const clearSelection = () => {
-    setSelectedFile(null);
-    setFileName('');
-    setJsonData(null);
-    setDataForUpload(null);
-    setError('');
-    setSuccessMessage('');
-    const fileInput = document.getElementById('bulk-upload-file-input');
-    if (fileInput) fileInput.value = '';
-  };
-
   const processFile = useCallback(() => {
     if (!selectedFile) {
       setError('Por favor, selecciona un archivo primero.');
-      return;
-    }
-    if (!selectedSede) {
-      setError('Por favor, selecciona una sede antes de procesar.');
       return;
     }
 
@@ -143,7 +102,7 @@ function BulkUpload({ onUploadComplete }) {
         );
 
         // --- VALIDACIÓN DE ENCABEZADOS OBLIGATORIOS ---
-        const missingMandatoryHeaders = MANDATORY_HEADERS_FOR_VALIDATION.filter(
+        const missingMandatoryHeaders = MANDATORY_HEADERS_UPDATE_CARRERA.filter(
           (mh) => !headers.includes(mh)
         );
         if (missingMandatoryHeaders.length > 0) {
@@ -153,7 +112,7 @@ function BulkUpload({ onUploadComplete }) {
           setIsLoading(false);
           return;
         }
-        // --- FIN VALIDACIÓN DE ENCABEZADOS OBLIGATORIOS ---
+        // --- FIN VALIDACIÓN ---
 
         const rows = parsedData
           .slice(1)
@@ -169,7 +128,6 @@ function BulkUpload({ onUploadComplete }) {
 
         const formattedData = rows.map((row) => {
           const rowData = {};
-          // Asegurarse de mapear solo los encabezados presentes en el archivo
           headers.forEach((header, index) => {
             rowData[header] = row[index];
           });
@@ -194,22 +152,15 @@ function BulkUpload({ onUploadComplete }) {
       setIsLoading(false);
     };
     reader.readAsArrayBuffer(selectedFile);
-  }, [selectedFile, selectedSede]);
+  }, [selectedFile]);
 
   const handleConfirmUpload = async () => {
-    if (!selectedSede) {
-      const noSedeMsg = 'Por favor, selecciona una sede.';
-      setError(noSedeMsg);
-      if (typeof onUploadComplete === 'function')
-        onUploadComplete({ success: false, message: noSedeMsg });
-      return;
-    }
     if (!dataForUpload || dataForUpload.length === 0) {
       const noDataMsg =
         'No hay datos procesados para cargar. Por favor, procesa un archivo primero.';
       setError(noDataMsg);
-      if (typeof onUploadComplete === 'function')
-        onUploadComplete({ success: false, message: noDataMsg });
+      if (typeof onUpdateComplete === 'function')
+        onUpdateComplete({ success: false, message: noDataMsg });
       return;
     }
 
@@ -217,31 +168,29 @@ function BulkUpload({ onUploadComplete }) {
     setError('');
     setSuccessMessage('');
     try {
-      const response = await cargaService.subirDatosCargaMasiva(
-        dataForUpload,
-        selectedSede
-      );
+      const response =
+        await carreraService.updateCarrerasByPlanEstudio(dataForUpload);
       const successMsg =
-        response.message || 'Datos cargados exitosamente al servidor.';
+        response.message || 'Carreras actualizadas exitosamente.';
       setSuccessMessage(successMsg);
-      if (typeof onUploadComplete === 'function') {
-        onUploadComplete({
+      if (typeof onUpdateComplete === 'function') {
+        onUpdateComplete({
           success: true,
           message: successMsg,
           details: response.summary,
           errors: response.specificErrors,
         });
       }
-      clearSelection();
+      handleModalClose();
     } catch (err) {
       const errorMessage =
         err.error ||
         err.details ||
         err.message ||
-        'Ocurrió un error al cargar los datos al servidor.';
+        'Ocurrió un error al actualizar las carreras.';
       setError(errorMessage);
-      if (typeof onUploadComplete === 'function') {
-        onUploadComplete({
+      if (typeof onUpdateComplete === 'function') {
+        onUpdateComplete({
           success: false,
           message: errorMessage,
           errorDetails: err,
@@ -253,95 +202,73 @@ function BulkUpload({ onUploadComplete }) {
   };
 
   const handleDownloadSample = () => {
-    // La plantilla de descarga usa TODOS los encabezados esperados.
     const sampleData = [
-      ALL_EXPECTED_HEADERS,
+      ALL_EXPECTED_HEADERS_UPDATE_CARRERA,
       [
-        // Ejemplo de fila de datos
-        'Administración y Negocios',
-        'Diurno',
-        'DI',
-        'ADM_CA',
-        'Contabilidad Básica',
-        'ADM_CA_CB_D1',
-        '11111111-1',
-        'Juan Pérez',
-        'juan.perez@profesor.duoc.cl',
-        'Contabilidad Básica D1',
-        '30',
-        'Escrito',
-        'LMS',
-        'Certamen',
-        '1001',
-        '2020', // Plan Estudio como el nombre inicial
+        // Ejemplo 1: El nombre real de la carrera en la BD
+        'Programa de Formación Cristiana',
+        '1111211,1116316,1116415,1111212', // Los planes de estudio numéricos asociados a esa carrera
       ],
       [
-        // Otro ejemplo con multiples planes
-        'Ingeniería, Medio Ambiente y Recursos Naturales',
-        'Vespertino',
-        'VE',
-        'ING_GA',
-        'Gestión Ambiental',
-        'ING_GA_GA_V1',
-        '22222222-2',
-        'María López',
-        'maria.lopez@profesor.duoc.cl',
-        'Gestión Ambiental V1',
-        '35',
-        'Online',
-        'Plataforma PROSE',
-        'Examen Final',
-        '1019',
-        '1111211,1116316,1116415,1111212', // Ejemplo de planes concatenados
+        // Ejemplo 2: Otro caso
+        'Ingeniería en Informática',
+        '2020 2021',
+      ],
+      [
+        // Ejemplo 3: Plan de estudio único
+        'Contabilidad y Auditoría',
+        '2019',
       ],
     ];
 
     const ws = XLSX.utils.aoa_to_sheet(sampleData);
     const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, ws, 'Plantilla Carga Masiva');
-    XLSX.writeFile(wb, 'plantilla_carga_masiva.xlsx');
+    XLSX.utils.book_append_sheet(wb, ws, 'Plantilla Actualizar Carreras');
+    XLSX.writeFile(wb, 'plantilla_actualizar_carreras.xlsx');
   };
 
   return (
-    <Card className="my-4">
-      <Card.Header as="h5">Carga Masiva de Datos por Sede</Card.Header>
-      <Card.Body>
+    <Modal
+      show={show}
+      onHide={handleModalClose}
+      size="lg"
+      backdrop="static"
+      keyboard={false}
+    >
+      <Modal.Header closeButton className="mb-0">
+        <Modal.Title>Actualizar Planes de Estudio de Carreras</Modal.Title>
+      </Modal.Header>
+      <Modal.Body>
+        <Alert
+          variant="info"
+          style={{ fontSize: '0.85em' }}
+          className="mt-0 mb-3"
+        >
+          Este módulo permite asociar y actualizar Planes de Estudio de
+          Carreras.
+          <br />
+          La columna "Nombre Carrera" debe **coincidir exactamente** con el
+          nombre actual en el sistema.
+          <br />
+          La columna "Plan Estudio" debe contener uno o más códigos (ej. "2020"
+          o "2020 2021"), separados por espacios o comas.
+          <br />
+          **Validación:** La actualización procede si el nombre de la carrera en
+          la BD *contiene al menos uno* de los planes indicados en esta
+          planilla, confirmando la carrera correcta.
+        </Alert>
         <Form>
-          <Form.Group className="mb-3">
+          <Form.Group controlId="update-carrera-file-input" className="mb-3">
             <Form.Label>
-              1. Selecciona una Sede <span className="text-danger">*</span>
-            </Form.Label>
-            <Form.Select
-              value={selectedSede}
-              onChange={(e) => setSelectedSede(e.target.value)}
-              disabled={!!fileName || isLoading || isUploading}
-              aria-label="Selector de Sede"
-            >
-              <option value="">-- Elige una sede --</option>
-              {Array.isArray(sedes) &&
-                sedes.map((sede) => (
-                  <option key={sede.ID_SEDE} value={sede.ID_SEDE}>
-                    {sede.NOMBRE_SEDE}
-                  </option>
-                ))}
-            </Form.Select>
-            {sedes.length === 0 && !isLoading && (
-              <Form.Text className="text-muted">
-                No hay sedes cargadas.
-              </Form.Text>
-            )}
-          </Form.Group>
-
-          <Form.Group controlId="bulk-upload-file-input" className="mb-3">
-            <Form.Label>
-              2. Selecciona un archivo (.xlsx, .xls)
+              1. Selecciona un archivo (.xlsx, .xls)
               <span className="text-danger">*</span>
             </Form.Label>
             <Form.Control
               type="file"
               accept=".xlsx, .xls"
+              ref={fileInputRef}
               onChange={handleFileChange}
-              disabled={isLoading || isUploading || !selectedSede}
+              disabled={isLoading || isUploading}
             />
           </Form.Group>
 
@@ -354,9 +281,7 @@ function BulkUpload({ onUploadComplete }) {
           <div className="d-flex flex-wrap gap-2 mb-3">
             <Button
               onClick={processFile}
-              disabled={
-                !selectedFile || isLoading || isUploading || !selectedSede
-              }
+              disabled={!selectedFile || isLoading || isUploading}
               variant="primary"
             >
               {isLoading ? (
@@ -393,7 +318,7 @@ function BulkUpload({ onUploadComplete }) {
                     <span className="ms-1">Cargando...</span>
                   </>
                 ) : (
-                  'Confirmar y Cargar a BD'
+                  'Confirmar y Actualizar BD'
                 )}
               </Button>
             )}
@@ -412,7 +337,7 @@ function BulkUpload({ onUploadComplete }) {
               variant="info"
               onClick={handleDownloadSample}
               disabled={isLoading || isUploading}
-              title="Descargar plantilla con encabezados requeridos"
+              title="Descargar plantilla para actualización de carreras"
             >
               <i className="bi bi-download me-2"></i> Descargar Plantilla
             </Button>
@@ -474,8 +399,9 @@ function BulkUpload({ onUploadComplete }) {
             </div>
           )}
         </Form>
-      </Card.Body>
-    </Card>
+      </Modal.Body>
+    </Modal>
   );
 }
-export default BulkUpload;
+
+export default UpdateCarreraPlanModal;

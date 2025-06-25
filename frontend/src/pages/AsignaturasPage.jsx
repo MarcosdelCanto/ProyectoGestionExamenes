@@ -1299,7 +1299,6 @@ export default function AsignaturasPage() {
           </Modal>
         )}
       </div>
-      {/* Cierre del <div className="container-fluid pt-4"> */}
     </Layout>
   );
 }

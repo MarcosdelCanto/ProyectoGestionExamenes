@@ -9,6 +9,215 @@ const handleError = (res, error, message) => {
 };
 
 /**
+ * Elimina un usuario por su ID, incluyendo sus asociaciones en USUARIOCARRERA, USUARIOSECCION y RESERVA_DOCENTES.
+ * @param {object} req - Objeto de solicitud con parámetros de ruta (id del usuario).
+ * @param {object} res - Objeto de respuesta.
+ */
+export const deleteUser = async (req, res) => {
+  const { id } = req.params; // ID del usuario a eliminar
+  let conn;
+
+  try {
+    conn = await getConnection();
+
+    // 1. Eliminar asociaciones en ADMIN.USUARIOCARRERA
+    console.log(
+      `Intentando eliminar asociaciones de ADMIN.USUARIOCARRERA para el usuario ID: ${id}`
+    );
+    await conn.execute(
+      `DELETE FROM ADMIN.USUARIOCARRERA WHERE USUARIO_ID_USUARIO = :userId`,
+      { userId: id },
+      { autoCommit: false }
+    );
+
+    // 2. Eliminar asociaciones en ADMIN.USUARIOSECCION
+    console.log(
+      `Intentando eliminar asociaciones de ADMIN.USUARIOSECCION para el usuario ID: ${id}`
+    );
+    await conn.execute(
+      `DELETE FROM ADMIN.USUARIOSECCION WHERE USUARIO_ID_USUARIO = :userId`,
+      { userId: id },
+      { autoCommit: false }
+    );
+
+    // 3. ¡NUEVO! Eliminar asociaciones en ADMIN.RESERVA_DOCENTES
+    console.log(
+      `Intentando eliminar asociaciones de ADMIN.RESERVA_DOCENTES para el usuario ID: ${id}`
+    );
+    await conn.execute(
+      `DELETE FROM ADMIN.RESERVA_DOCENTES WHERE USUARIO_ID_USUARIO = :userId`, // Asume que la FK se llama USUARIO_ID_USUARIO
+      { userId: id },
+      { autoCommit: false }
+    );
+
+    // 4. Eliminar el usuario de la tabla ADMIN.USUARIO
+    console.log(`Intentando eliminar el USUARIO con ID: ${id}`);
+    const deleteUserResult = await conn.execute(
+      `DELETE FROM ADMIN.USUARIO WHERE ID_USUARIO = :userId`,
+      { userId: id },
+      { autoCommit: false }
+    );
+
+    if (deleteUserResult.rowsAffected === 0) {
+      await conn.rollback();
+      return res
+        .status(404)
+        .json({ error: 'Usuario no encontrado para eliminar.' });
+    }
+
+    await conn.commit();
+    console.log(
+      `Usuario ID: ${id} y sus asociaciones eliminadas exitosamente.`
+    );
+    res
+      .status(200)
+      .json({ message: 'Usuario y sus asociaciones eliminadas exitosamente.' });
+  } catch (err) {
+    if (conn) {
+      try {
+        await conn.rollback();
+        console.log('Rollback exitoso.');
+      } catch (rollbackErr) {
+        console.error('Error durante el rollback:', rollbackErr);
+      }
+    }
+    console.error('Error al eliminar usuario y sus asociaciones:', err);
+    res
+      .status(500)
+      .json({
+        error:
+          'Error interno del servidor al eliminar usuario y sus asociaciones.',
+        details: err.message,
+      });
+  } finally {
+    if (conn) {
+      try {
+        await conn.close();
+      } catch (closeErr) {
+        console.error('Error cerrando conexión:', closeErr);
+      }
+    }
+  }
+};
+
+/**
+ * Elimina múltiples usuarios por sus IDs, incluyendo sus asociaciones.
+ * Espera un array de IDs de usuario en el cuerpo de la solicitud (req.body.ids).
+ * Realiza la operación dentro de una única transacción.
+ * @param {object} req - Objeto de solicitud con el cuerpo (ej. { ids: [1, 2, 3] }).
+ * @param {object} res - Objeto de respuesta.
+ */
+export const deleteMultipleUsers = async (req, res) => {
+  const { ids } = req.body;
+  let conn;
+  let deletedCount = 0;
+  let failedDeletions = [];
+
+  if (!Array.isArray(ids) || ids.length === 0) {
+    return res
+      .status(400)
+      .json({
+        error:
+          'Se requiere un array de IDs de usuario para la eliminación masiva.',
+      });
+  }
+
+  try {
+    conn = await getConnection();
+
+    for (const id of ids) {
+      try {
+        // Eliminar asociaciones en USUARIOCARRERA
+        await conn.execute(
+          `DELETE FROM ADMIN.USUARIOCARRERA WHERE USUARIO_ID_USUARIO = :userId`,
+          { userId: id },
+          { autoCommit: false }
+        );
+
+        // Eliminar asociaciones en USUARIOSECCION
+        await conn.execute(
+          `DELETE FROM ADMIN.USUARIOSECCION WHERE USUARIO_ID_USUARIO = :userId`,
+          { userId: id },
+          { autoCommit: false }
+        );
+
+        // ¡NUEVO! Eliminar asociaciones en ADMIN.RESERVA_DOCENTES
+        await conn.execute(
+          `DELETE FROM ADMIN.RESERVA_DOCENTES WHERE USUARIO_ID_USUARIO = :userId`, // Asume que la FK se llama USUARIO_ID_USUARIO
+          { userId: id },
+          { autoCommit: false }
+        );
+
+        // Eliminar el usuario
+        const deleteUserResult = await conn.execute(
+          `DELETE FROM ADMIN.USUARIO WHERE ID_USUARIO = :userId`,
+          { userId: id },
+          { autoCommit: false }
+        );
+
+        if (deleteUserResult.rowsAffected > 0) {
+          deletedCount++;
+          console.log(`Usuario ID: ${id} y sus asociaciones eliminadas.`);
+        } else {
+          failedDeletions.push({ id, reason: 'No encontrado.' });
+          console.log(`Usuario ID: ${id} no encontrado para eliminar.`);
+        }
+      } catch (innerErr) {
+        failedDeletions.push({ id, reason: innerErr.message });
+        console.error(`Error al eliminar usuario ID: ${id}:`, innerErr);
+      }
+    }
+
+    await conn.commit();
+
+    if (failedDeletions.length === ids.length) {
+      return res.status(500).json({
+        message: 'No se pudo eliminar ningún usuario de la selección.',
+        details: failedDeletions,
+      });
+    } else if (failedDeletions.length > 0) {
+      return res.status(200).json({
+        message: `Operación de eliminación masiva completada. ${deletedCount} usuarios eliminados, ${failedDeletions.length} fallaron.`,
+        details: failedDeletions,
+      });
+    } else {
+      return res.status(200).json({
+        message: `${deletedCount} usuarios eliminados exitosamente.`,
+      });
+    }
+  } catch (err) {
+    if (conn) {
+      try {
+        await conn.rollback();
+        console.log('Rollback exitoso para la eliminación masiva.');
+      } catch (rollbackErr) {
+        console.error(
+          'Error durante el rollback de eliminación masiva:',
+          rollbackErr
+        );
+      }
+    }
+    console.error('Error general en la eliminación masiva de usuarios:', err);
+    return res.status(500).json({
+      error:
+        'Error interno del servidor durante la eliminación masiva de usuarios.',
+      details: err.message,
+    });
+  } finally {
+    if (conn) {
+      try {
+        await conn.close();
+      } catch (closeErr) {
+        console.error(
+          'Error cerrando conexión en eliminación masiva:',
+          closeErr
+        );
+      }
+    }
+  }
+};
+
+/**
  * Importa o actualiza usuarios desde un array de filas:
  * - Si ID_DOCENTE ya existe, actualiza EMAIL_USUARIO y fecha_actu_usuario.
  * - Si no existe, inserta un nuevo registro con PASSWORD_USUARIO = ID_DOCENTE y ROL_ID_ROL = 2.
