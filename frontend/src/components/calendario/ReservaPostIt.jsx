@@ -8,7 +8,7 @@ import './styles/PostIt.css';
 const ESCUELA_COLOR_MAP = {
   // Escuelas Principales con colores vivos
   'Administración y Negocios': { bg: '#f5d6fd', border: '#ac4fc6' },
-  'Ingeniería, Medio Ambiente y Recursos Naturales': {
+  'Ingeniería Medio Ambiente y Recursos Naturales': {
     bg: '#e1f7de',
     border: '#3aad2a',
   },

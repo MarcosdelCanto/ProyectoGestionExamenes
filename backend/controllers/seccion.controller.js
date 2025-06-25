@@ -105,21 +105,96 @@ export const updateSeccion = async (req, res) => {
 export const deleteSeccion = async (req, res) => {
   const { id } = req.params;
   let conn;
+
   try {
     conn = await getConnection();
+
+    // Iniciar transacción (autoCommit: false es el default del pool, pero es bueno ser explícito)
+
+    // 1. Encontrar todos los exámenes asociados a la sección que se va a eliminar
+    const examenesResult = await conn.execute(
+      `SELECT ID_EXAMEN FROM EXAMEN WHERE SECCION_ID_SECCION = :id`,
+      [id],
+      { outFormat: oracledb.OUT_FORMAT_OBJECT }
+    );
+    const examenIds = examenesResult.rows.map((ex) => ex.ID_EXAMEN);
+
+    // 2. Si hay exámenes, eliminar sus dependencias (reservas)
+    if (examenIds.length > 0) {
+      const examenBinds = examenIds.map((examenId) => ({ id: examenId }));
+
+      // Eliminar de RESERVA_DOCENTES
+      await conn.executeMany(
+        `DELETE FROM RESERVA_DOCENTES WHERE RESERVA_ID_RESERVA IN (SELECT ID_RESERVA FROM RESERVA WHERE EXAMEN_ID_EXAMEN = :id)`,
+        examenBinds
+      );
+
+      // Eliminar de RESERVAMODULO
+      await conn.executeMany(
+        `DELETE FROM RESERVAMODULO WHERE RESERVA_ID_RESERVA IN (SELECT ID_RESERVA FROM RESERVA WHERE EXAMEN_ID_EXAMEN = :id)`,
+        examenBinds
+      );
+
+      // Eliminar de RESERVA
+      await conn.executeMany(
+        `DELETE FROM RESERVA WHERE EXAMEN_ID_EXAMEN = :id`,
+        examenBinds
+      );
+    }
+
+    // 3. Eliminar los exámenes asociados a la sección
+    await conn.execute(`DELETE FROM EXAMEN WHERE SECCION_ID_SECCION = :id`, [
+      id,
+    ]);
+
+    // 4. Eliminar las asociaciones en la tabla hija (USUARIOSECCION)
+    await conn.execute(
+      `DELETE FROM USUARIOSECCION WHERE SECCION_ID_SECCION = :id`,
+      [id]
+    );
+
+    // 5. Finalmente, eliminar la sección
     const result = await conn.execute(
       `DELETE FROM SECCION WHERE id_seccion = :id`,
       [id]
     );
-    if (result.rowsAffected === 0)
+
+    if (result.rowsAffected === 0) {
+      // Si la sección no existía, revertir los cambios anteriores (aunque no debería haber ninguno)
+      await conn.rollback();
       return res.status(404).json({ error: 'Seccion no encontrada' });
+    }
+
+    // Si todo fue exitoso, confirmar la transacción completa
     await conn.commit();
-    res.status(200).json({ message: 'Seccion eliminada' });
+
+    res
+      .status(200)
+      .json({
+        message:
+          'Sección y todos sus registros asociados eliminados correctamente.',
+      });
   } catch (err) {
-    console.error('Error al eliminar seccion:', err);
-    res.status(500).json({ error: 'Error al eliminar seccion' });
+    console.error('Error al eliminar seccion y sus dependencias:', err);
+    if (conn) {
+      try {
+        await conn.rollback(); // Revertir en caso de cualquier error
+      } catch (rollbackErr) {
+        console.error('Error en rollback:', rollbackErr);
+      }
+    }
+    // Devolver un error genérico 500
+    res
+      .status(500)
+      .json({ error: 'Error al eliminar la sección y sus dependencias.' });
   } finally {
-    if (conn) await conn.close();
+    if (conn) {
+      try {
+        await conn.close();
+      } catch (closeErr) {
+        console.error('Error al cerrar la conexión:', closeErr);
+      }
+    }
   }
 };
 

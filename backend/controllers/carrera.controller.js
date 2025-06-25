@@ -196,22 +196,119 @@ export const deleteCarrera = async (req, res) => {
   let conn;
   try {
     conn = await getConnection();
-    const result = await conn.execute(
-      `DELETE FROM ADMIN.CARRERA WHERE id_carrera = :id`,
+
+    // Iniciar transacción
+    // Obtener todas las asignaturas de la carrera
+    const asignaturasResult = await conn.execute(
+      `SELECT ID_ASIGNATURA FROM ASIGNATURA WHERE CARRERA_ID_CARRERA = :id`,
+      [id],
+      { outFormat: oracledb.OUT_FORMAT_OBJECT }
+    );
+    const asignaturasIds = asignaturasResult.rows.map(
+      (asig) => asig.ID_ASIGNATURA
+    );
+
+    if (asignaturasIds.length > 0) {
+      // Para cada asignatura, obtener sus secciones
+      const seccionesResult = await conn.execute(
+        `SELECT ID_SECCION FROM SECCION WHERE ASIGNATURA_ID_ASIGNATURA IN (${asignaturasIds.join(',')})`,
+        [],
+        { outFormat: oracledb.OUT_FORMAT_OBJECT }
+      );
+      const seccionesIds = seccionesResult.rows.map((sec) => sec.ID_SECCION);
+
+      if (seccionesIds.length > 0) {
+        // Para cada sección, obtener sus exámenes
+        const examenesResult = await conn.execute(
+          `SELECT ID_EXAMEN FROM EXAMEN WHERE SECCION_ID_SECCION IN (${seccionesIds.join(',')})`,
+          [],
+          { outFormat: oracledb.OUT_FORMAT_OBJECT }
+        );
+        const examenIds = examenesResult.rows.map((ex) => ex.ID_EXAMEN);
+
+        if (examenIds.length > 0) {
+          const examenBinds = examenIds.map((examenId) => ({ id: examenId }));
+          // Eliminar dependencias de los exámenes
+          await conn.executeMany(
+            `DELETE FROM RESERVA_DOCENTES WHERE RESERVA_ID_RESERVA IN (SELECT ID_RESERVA FROM RESERVA WHERE EXAMEN_ID_EXAMEN = :id)`,
+            examenBinds
+          );
+          await conn.executeMany(
+            `DELETE FROM RESERVAMODULO WHERE RESERVA_ID_RESERVA IN (SELECT ID_RESERVA FROM RESERVA WHERE EXAMEN_ID_EXAMEN = :id)`,
+            examenBinds
+          );
+          await conn.executeMany(
+            `DELETE FROM RESERVA WHERE EXAMEN_ID_EXAMEN = :id`,
+            examenBinds
+          );
+        }
+
+        // Eliminar exámenes
+        await conn.execute(
+          `DELETE FROM EXAMEN WHERE SECCION_ID_SECCION IN (${seccionesIds.join(',')})`
+        );
+        // Eliminar asociaciones de usuarios a secciones
+        await conn.execute(
+          `DELETE FROM USUARIOSECCION WHERE SECCION_ID_SECCION IN (${seccionesIds.join(',')})`
+        );
+      }
+      // Eliminar secciones
+      await conn.execute(
+        `DELETE FROM SECCION WHERE ASIGNATURA_ID_ASIGNATURA IN (${asignaturasIds.join(',')})`
+      );
+    }
+
+    // Eliminar asignaturas
+    await conn.execute(
+      `DELETE FROM ASIGNATURA WHERE CARRERA_ID_CARRERA = :id`,
       [id]
     );
-    if (result.rowsAffected === 0)
+    // Eliminar asociaciones de usuarios a carreras
+    await conn.execute(
+      `DELETE FROM USUARIOCARRERA WHERE CARRERA_ID_CARRERA = :id`,
+      [id]
+    );
+
+    // Finalmente, eliminar la carrera
+    const result = await conn.execute(
+      `DELETE FROM CARRERA WHERE id_carrera = :id`,
+      [id]
+    );
+
+    if (result.rowsAffected === 0) {
+      await conn.rollback();
       return res.status(404).json({ error: 'Carrera no encontrada' });
+    }
+
     await conn.commit();
-    res.status(200).json({ message: 'Carrera eliminada' });
+    res
+      .status(200)
+      .json({
+        message:
+          'Carrera y todos sus registros asociados eliminados correctamente.',
+      });
   } catch (err) {
+    if (conn) {
+      try {
+        await conn.rollback();
+      } catch (rbErr) {
+        console.error('Error en rollback:', rbErr);
+      }
+    }
     console.error('Error al eliminar carrera:', err);
-    res.status(500).json({ error: 'Error al eliminar carrera' });
+    res
+      .status(500)
+      .json({ error: 'Error al eliminar carrera y sus dependencias.' });
   } finally {
-    if (conn) await conn.close();
+    if (conn) {
+      try {
+        await conn.close();
+      } catch (closeErr) {
+        console.error('Error cerrando conexión:', closeErr);
+      }
+    }
   }
 };
-
 /**
  * Obtiene todas las carreras asociadas a una escuela específica.
  * @param {object} req - Objeto de solicitud con parámetros de ruta.

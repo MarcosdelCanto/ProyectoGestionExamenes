@@ -58,7 +58,10 @@ function Modal({ title, children, onClose }) {
   return (
     <div
       className="modal show"
-      style={{ display: 'block', backgroundColor: 'rgba(0,0,0,0.5)' }}
+      style={{
+        display: 'block',
+        backgroundColor: 'rgba(0,0,0,0.5)',
+      }}
     >
       <div className="modal-dialog">
         <div className="modal-content">
@@ -976,21 +979,49 @@ export default function AsignaturasPage() {
             {modal.type === 'delete' ? (
               <div>
                 <p>
-                  ¿Está seguro de que desea eliminar
+                  ¿Está seguro de que desea eliminar{' '}
                   {selectedSecciones.length === 1
                     ? 'la sección seleccionada'
                     : `las ${selectedSecciones.length} secciones seleccionadas`}
                   ?
                 </p>
+                {/* Lista de secciones a eliminar si son varias */}
                 {selectedSecciones.length > 1 && (
-                  <ul>
+                  <ul className="list-unstyled my-3 p-3 border bg-light rounded">
                     {selectedSecciones.map((s) => (
                       <li key={s.ID_SECCION}>
+                        <i className="bi bi-list-task me-2"></i>
                         {s.NOMBRE_SECCION || s.ID_SECCION}
                       </li>
                     ))}
                   </ul>
                 )}
+                <Alert variant="danger" className="mt-3">
+                  <Alert.Heading>
+                    <i className="bi bi-exclamation-triangle-fill me-2"></i>
+                    ¡Atención! Esta acción es irreversible.
+                  </Alert.Heading>
+                  <p className="mb-0">
+                    Al eliminar esta(s) sección(es), también se eliminarán de
+                    forma permanente todos los datos asociados, incluyendo:
+                  </p>
+                  <hr />
+                  <ul>
+                    <li>
+                      <strong>Todos los Exámenes</strong> creados para esta(s)
+                      sección(es).
+                    </li>
+                    <li>
+                      <strong>Todas las Reservas</strong> de salas y horarios
+                      asociadas a esos exámenes.
+                    </li>
+                    <li>
+                      Las <strong>asignaciones de docentes y alumnos</strong> a
+                      esta(s) sección(es).
+                    </li>
+                  </ul>
+                </Alert>
+
                 <div className="modal-footer">
                   <button className="btn btn-secondary" onClick={closeModal}>
                     Cancelar
@@ -999,7 +1030,7 @@ export default function AsignaturasPage() {
                     className="btn btn-danger"
                     onClick={handleDeleteSeccion}
                   >
-                    Eliminar
+                    Sí, entiendo las consecuencias, eliminar
                   </button>
                 </div>
               </div>
@@ -1155,6 +1186,7 @@ export default function AsignaturasPage() {
         )}
         {modal.type && modal.entity === 'carrera' && (
           <Modal
+            style={{ width: '600px' }}
             title={
               modal.type === 'add'
                 ? 'Agregar Carrera'
@@ -1166,22 +1198,56 @@ export default function AsignaturasPage() {
           >
             {modal.type === 'delete' ? (
               <div>
+                {/* --- INICIO DE LA MODIFICACIÓN --- */}
                 <p>
-                  ¿Está seguro de que desea eliminar
+                  ¿Está seguro de que desea eliminar{' '}
                   {selectedCarreras.length === 1
                     ? 'la carrera seleccionada'
                     : `las ${selectedCarreras.length} carreras seleccionadas`}
                   ?
                 </p>
+
                 {selectedCarreras.length > 1 && (
-                  <ul>
+                  <ul className="list-unstyled my-3 p-3 border bg-light rounded">
                     {selectedCarreras.map((c) => (
                       <li key={c.ID_CARRERA}>
+                        <i className="bi bi-mortarboard-fill me-2"></i>
                         {c.NOMBRE_CARRERA || c.ID_CARRERA}
                       </li>
                     ))}
                   </ul>
                 )}
+
+                <Alert variant="danger" className="mt-3">
+                  <Alert.Heading>
+                    <i className="bi bi-exclamation-triangle-fill me-2"></i>
+                    ¡Atención! Esta es una acción destructiva e irreversible.
+                  </Alert.Heading>
+                  <p className="mb-0">
+                    Al eliminar esta(s) carrera(s), se eliminarán de forma
+                    permanente **TODOS** los datos asociados, incluyendo:
+                  </p>
+                  <hr />
+                  <ul>
+                    <li>
+                      <strong>Todas las Asignaturas</strong> de esta(s)
+                      carrera(s).
+                    </li>
+                    <li>
+                      <strong>Todas las Secciones</strong> de esas asignaturas.
+                    </li>
+                    <li>
+                      <strong>Todos los Exámenes</strong> y{' '}
+                      <strong>Reservas</strong> asociadas a esas secciones.
+                    </li>
+                    <li>
+                      Todas las <strong>asociaciones de usuarios</strong>{' '}
+                      (alumnos, docentes, coordinadores) a esta(s) carrera(s) y
+                      sus secciones.
+                    </li>
+                  </ul>
+                </Alert>
+
                 <div className="modal-footer">
                   <button className="btn btn-secondary" onClick={closeModal}>
                     Cancelar
@@ -1190,9 +1256,10 @@ export default function AsignaturasPage() {
                     className="btn btn-danger"
                     onClick={handleDeleteCarrera}
                   >
-                    Eliminar
+                    Sí, entiendo las consecuencias, eliminar
                   </button>
                 </div>
+                {/* --- FIN DE LA MODIFICACIÓN --- */}
               </div>
             ) : (
               <CarreraForm
@@ -1201,7 +1268,7 @@ export default function AsignaturasPage() {
                   modal.type === 'add' ? handleAddCarrera : handleEditCarrera
                 }
                 onCancel={closeModal}
-                escuelas={escuelas} // Pasar escuelas al formulario
+                escuelas={escuelas}
               />
             )}
           </Modal>
