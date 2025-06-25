@@ -39,7 +39,6 @@ import './index.css'; // Si tus estilos globales principales están referenciado
 function App() {
   return (
     <>
-      {' '}
       {/* Envuelve todo en un Fragment o un div si prefieres */}
       <DndProvider backend={HTML5Backend}>
         <Routes>

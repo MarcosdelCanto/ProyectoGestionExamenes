@@ -1,33 +1,35 @@
 // No olvides importar useState y el componente Modal
 import React, { useState } from 'react';
 import { Button, Modal } from 'react-bootstrap';
-import UserBulkUploadModal from '../cargaMasiva/UserBulkUploadModal';
+import UserBulkUploadModal from '../cargaMasiva/UserBulkUploadModal'; // Asegúrate de que la ruta sea correcta
 
 function UsuarioActions({
   onAdd,
   onEdit,
-  onDelete,
+  onDelete, // onDelete ahora espera recibir los usuarios a eliminar (selectedUsuarios)
   selectedUsuarios,
-  isLoadingList,
-  isProcessingAction,
-  onBulkUploadComplete,
-  onUploadResult,
+  isLoadingList, // Prop para deshabilitar botones si la lista está cargando
+  isProcessingAction, // Prop para deshabilitar si ya hay una acción en progreso
+  onBulkUploadComplete, // Callback para cuando la carga masiva de usuarios finaliza
+  onUploadResult, // Prop para pasar resultados de la carga masiva al padre
 }) {
-  // --- 1. Estado para controlar la visibilidad del modal ---
+  // Estado para controlar la visibilidad del modal de confirmación de eliminación
   const [showConfirmModal, setShowConfirmModal] = useState(false);
 
+  // Determinar si los botones deben estar deshabilitados
   const isDisabled = isLoadingList || isProcessingAction;
-  const canEdit = selectedUsuarios.length === 1;
-  const canDelete = selectedUsuarios.length > 0;
+  const canEdit = selectedUsuarios.length === 1; // Solo se puede editar si hay un único usuario seleccionado
+  const canDelete = selectedUsuarios.length > 0; // Se puede eliminar si hay al menos un usuario seleccionado
 
-  // --- 2. Funciones para manejar el modal ---
+  // Funciones para manejar la visibilidad del modal de confirmación
   const handleShowModal = () => setShowConfirmModal(true);
   const handleCloseModal = () => setShowConfirmModal(false);
 
+  // Función que se ejecuta al confirmar la eliminación en el modal
   const handleConfirmDelete = () => {
-    // Llama a la función de eliminar que viene del padre
-    onDelete();
-    // Y luego cierra el modal
+    // Llama a la función 'onDelete' que viene del padre, pasándole los usuarios seleccionados
+    onDelete(selectedUsuarios);
+    // Luego cierra el modal de confirmación
     handleCloseModal();
   };
 
@@ -57,10 +59,10 @@ function UsuarioActions({
             <span className="btn-responsive-text ms-2">Modificar</span>
           </Button>
 
-          {/* --- 3. El botón Eliminar ahora abre el modal --- */}
+          {/* El botón Eliminar ahora abre el modal de confirmación */}
           <Button
             variant="danger"
-            onClick={handleShowModal} // En lugar de llamar a onDelete, llama a handleShowModal
+            onClick={handleShowModal} // Llama a handleShowModal para abrir la confirmación
             disabled={isDisabled || !canDelete}
             className="btn-icon-only-candidate me-2 mb-2"
             title="Eliminar Selección"
@@ -69,6 +71,7 @@ function UsuarioActions({
             <span className="btn-responsive-text ms-2">Eliminar</span>
           </Button>
 
+          {/* Componente para la carga masiva de usuarios */}
           <div className="me-2 mb-2">
             <UserBulkUploadModal
               onSuccess={onBulkUploadComplete}
@@ -78,15 +81,17 @@ function UsuarioActions({
           </div>
         </div>
       </div>
-      {/* --- 4. Aquí va el componente del Modal de Confirmación --- */}
+
+      {/* Componente del Modal de Confirmación de Eliminación */}
       <Modal show={showConfirmModal} onHide={handleCloseModal} centered>
         <Modal.Header closeButton>
           <Modal.Title>Confirmar Eliminación</Modal.Title>
         </Modal.Header>
         <Modal.Body>
-          {/* Hacemos el mensaje un poco más dinámico */}
-          ¿Estás seguro de que deseas eliminar {selectedUsuarios.length}
-          usuario(s)? Esta acción no se puede deshacer.
+          {/* Mensaje dinámico según la cantidad de usuarios seleccionados */}
+          ¿Estás seguro de que deseas eliminar {selectedUsuarios.length}{' '}
+          {selectedUsuarios.length === 1 ? 'usuario' : 'usuarios'}{' '}
+          seleccionado(s)? Esta acción no se puede deshacer.
         </Modal.Body>
         <Modal.Footer>
           <Button variant="secondary" onClick={handleCloseModal}>

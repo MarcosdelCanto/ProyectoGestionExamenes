@@ -38,6 +38,44 @@ export const deleteUsuario = (id) =>
       throw err;
     });
 
+/**
+ * Elimina un usuario por su ID.
+ * Esta es la función preferida para eliminar usuarios individualmente.
+ * @param {string|number} id - El ID del usuario a eliminar.
+ * @returns {Promise<Object>} - La respuesta del servidor.
+ */
+export const deleteUser = async (id) => {
+  try {
+    const response = await api.delete(`/usuarios/${id}`); // Ruta para eliminación individual
+    return response.data;
+  } catch (error) {
+    console.error(
+      `Error al eliminar usuario ${id}:`,
+      error.response?.data || error.message
+    );
+    throw error;
+  }
+};
+
+/**
+ * Elimina múltiples usuarios por sus IDs.
+ * Envía un array de IDs al backend para eliminación masiva.
+ * @param {Array<string|number>} ids - Un array de IDs de usuarios a eliminar.
+ * @returns {Promise<Object>} - La respuesta del servidor, incluyendo un resumen de la operación.
+ */
+export const deleteMultipleUsers = async (ids) => {
+  try {
+    const response = await api.post('/usuarios/bulk-delete', { ids }); // Nueva ruta y cuerpo con array de IDs
+    return response.data;
+  } catch (error) {
+    console.error(
+      `Error al eliminar múltiples usuarios:`,
+      error.response?.data || error.message
+    );
+    throw error;
+  }
+};
+
 export const importUsuarios = (rows) =>
   api
     .post(`${BASE}/import`, rows)

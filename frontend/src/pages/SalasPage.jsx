@@ -783,7 +783,7 @@ export default function SalasPage() {
             <div>
               {modal.data && modal.data.length === 1 ? (
                 <p>
-                  ¿Está seguro de que desea eliminar{' '}
+                  ¿Está seguro de que desea eliminar
                   {modal.entity === 'sede' ? 'la' : 'el'} {modal.entity} "
                   <strong>
                     {modal.data[0]?.NOMBRE_SALA ||
@@ -795,8 +795,8 @@ export default function SalasPage() {
                 </p>
               ) : (
                 <p>
-                  ¿Está seguro de que desea eliminar los{' '}
-                  <strong>{modal.data?.length}</strong>{' '}
+                  ¿Está seguro de que desea eliminar los
+                  <strong>{modal.data?.length}</strong>
                   {modal.entity === 'sala'
                     ? 'salas seleccionadas'
                     : modal.entity === 'edificio'

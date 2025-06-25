@@ -1,64 +1,87 @@
-// src/hooks/usePermission.js
 import { useState, useEffect, useCallback } from 'react';
 // Asumimos que refreshCurrentUserPermissions actualiza localStorage y devuelve el usuario actualizado
 import {
-  getCurrentUser,
-  refreshCurrentUserPermissions,
+  getCurrentUser, // Función para leer el usuario del localStorage
+  refreshCurrentUserPermissions, // Función para refrescar los permisos desde el backend y actualizar localStorage
 } from '../services/authService';
-import { listCarrerasByUsuario } from '../services/usuarioCarreraService';
+import { listCarrerasByUsuario } from '../services/usuarioCarreraService'; // Servicio para obtener carreras asociadas a un usuario
 
+/**
+ * Hook personalizado para gestionar los permisos y el estado del usuario actual.
+ * Proporciona el objeto de usuario, funciones para verificar permisos específicos
+ * y para recargar los datos del usuario.
+ */
 export function usePermission() {
   // Inicializa currentUser desde localStorage. getCurrentUser() debería devolver el objeto
-  // completo con isAuthenticated, rol, permisos, etc.
+  // completo con isAuthenticated, rol, permisos, etc., o un objeto de usuario predeterminado si no hay sesión.
   const [currentUser, setCurrentUser] = useState(() => getCurrentUser());
-  const [loading, setLoading] = useState(true); // Inicia como true hasta que se cargue el usuario inicial
+  // Estado para indicar si los datos del usuario y sus permisos están siendo cargados o refrescados.
+  const [loading, setLoading] = useState(true);
 
-  // Función para permitir que los componentes fuercen una recarga de permisos
-  // y del estado del usuario en este hook.
+  /**
+   * Función para forzar una recarga completa de los datos del usuario y sus permisos
+   * desde el backend, actualizando el estado del hook y el localStorage.
+   * Utiliza useCallback para memoizar la función y evitar recreaciones innecesarias.
+   */
   const forceReloadUserData = useCallback(async () => {
     console.log(
       '[usePermission] Forzando recarga de datos del usuario y permisos...'
     );
-    setLoading(true);
+    setLoading(true); // Inicia el estado de carga
     try {
-      const updatedUser = await refreshCurrentUserPermissions(); // Llama al servicio que actualiza localStorage
-      setCurrentUser(updatedUser); // Actualiza el estado local del hook con el usuario refrescado
+      // Llama al servicio para actualizar los permisos del usuario en el backend y localStorage.
+      const updatedUser = await refreshCurrentUserPermissions();
+      setCurrentUser(updatedUser); // Actualiza el estado local del hook con el usuario refrescado.
+      console.log('[usePermission] Datos del usuario recargados:', updatedUser);
     } catch (error) {
       console.error(
         '[usePermission] Error durante forceReloadUserData:',
         error
       );
-      setCurrentUser(getCurrentUser()); // Reintentar leer de localStorage por si acaso
+      // En caso de error, intenta leer de localStorage por si había algo válido previamente.
+      setCurrentUser(getCurrentUser());
     } finally {
-      setLoading(false);
+      setLoading(false); // Finaliza el estado de carga
     }
-  }, []);
+  }, []); // Dependencias vacías, ya que no depende de ningún valor del scope que pueda cambiar.
 
+  /**
+   * useEffect para la carga inicial de los datos del usuario y para enriquecer
+   * el objeto de usuario con las carreras asociadas, si es necesario.
+   * Se ejecuta solo una vez al montar el componente.
+   */
   useEffect(() => {
     const loadAndEnrichUser = async () => {
-      setLoading(true);
+      setLoading(true); // Inicia el estado de carga
       let user = getCurrentUser(); // Lee el usuario desde localStorage
 
-      // Roles que deberían tener carreras asociadas
+      // Define los roles que deberían tener carreras asociadas.
+      // Si tu backend maneja esto de forma diferente (ej. un campo `has_carreras` en el rol),
+      // adapta esta lógica.
       const rolesConCarreras = [
         'JEFE CARRERA',
         'COORDINADOR CARRERA',
         'COORDINADOR DOCENTE',
       ];
 
-      // Condición: Si el usuario está autenticado, tiene un rol relevante
-      // Y (muy importante) la propiedad `carrerasAsociadas` no existe en su objeto.
+      // Condición para obtener carreras:
+      // 1. El usuario está autenticado.
+      // 2. Su rol está entre los que tienen carreras asociadas.
+      // 3. La propiedad `carrerasAsociadas` no existe o está vacía en su objeto local.
       if (
         user.isAuthenticated &&
+        user.nombre_rol && // Asegurarse de que nombre_rol no sea undefined
         rolesConCarreras.includes(user.nombre_rol) &&
         (!user.carrerasAsociadas || user.carrerasAsociadas.length === 0)
       ) {
         console.log(
-          '[usePermission] Datos de carrera faltantes o vacíos. Obteniendo desde la API...'
+          '[usePermission] Datos de carrera faltantes o vacíos para rol relevante. Obteniendo desde la API...'
         );
         try {
           const carreras = await listCarrerasByUsuario(user.id_usuario);
+          // Asigna las carreras obtenidas o un array vacío si no hay.
           user.carrerasAsociadas = carreras || [];
+          // Guarda el objeto de usuario enriquecido en localStorage para futuras lecturas.
           localStorage.setItem('user', JSON.stringify(user));
           console.log(
             '[usePermission] Usuario enriquecido y guardado en localStorage:',
@@ -66,75 +89,118 @@ export function usePermission() {
           );
         } catch (error) {
           console.error(
-            'Error al obtener carreras asociadas en el hook:',
+            'Error al obtener carreras asociadas para el usuario:',
             error
           );
-          user.carrerasAsociadas = [];
+          user.carrerasAsociadas = []; // En caso de error, asegúrate de que sea un array vacío.
         }
       }
 
-      // Actualiza el estado del hook con el usuario (posiblemente enriquecido)
+      // Actualiza el estado del hook con el usuario (posiblemente enriquecido).
       setCurrentUser(user);
-      console.log('[usePermission] Estado del usuario actualizado:', user);
-      setLoading(false);
+      console.log(
+        '[usePermission] Estado inicial del usuario actualizado:',
+        user
+      );
+      setLoading(false); // Finaliza el estado de carga
     };
 
     loadAndEnrichUser();
-  }, []); // Este array vacío asegura que se ejecute solo una vez cuando el hook se monta
-  const hasPermission = (permissionName) => {
-    if (loading || !currentUser || !currentUser.isAuthenticated) {
-      return false;
-    }
-    if (
-      currentUser.rol === 'ADMINISTRADOR' ||
-      currentUser.NOMBRE_ROL === 'ADMINISTRADOR'
-    ) {
-      return true;
-    }
+  }, []); // El array de dependencias vacío asegura que se ejecute solo una vez al montar el hook.
 
-    const permissionFound =
-      currentUser.permisos?.some(
-        (permission) => permission.NOMBRE_PERMISO === permissionName
-      ) || false;
-    return permissionFound;
-  };
-  const hasCareerPermission = (careerId) => {
-    if (loading || !currentUser || !currentUser.isAuthenticated) {
-      return false;
-    }
-    // El administrador siempre tiene permiso
-    if (currentUser.NOMBRE_ROL === 'ADMINISTRADOR') {
-      return true;
-    }
-    // Si el usuario no tiene carreras asociadas, no tiene permiso
-    if (
-      !currentUser.carrerasAsociadas ||
-      currentUser.carrerasAsociadas.length === 0
-    ) {
-      return false;
-    }
-    // Verificar si el ID de la carrera del examen está en la lista de carreras del usuario
-    return currentUser.carrerasAsociadas.some((c) => c.ID_CARRERA === careerId);
-  };
+  /**
+   * Verifica si el usuario actual tiene un permiso específico.
+   * @param {string} permissionName - El nombre del permiso a verificar (ej. 'VIEW_USUARIOS').
+   * @returns {boolean} - True si el usuario tiene el permiso, false en caso contrario.
+   */
+  const hasPermission = useCallback(
+    (permissionName) => {
+      // Si todavía estamos cargando o el usuario no está autenticado, no tiene permisos.
+      if (loading || !currentUser || !currentUser.isAuthenticated) {
+        return false;
+      }
 
-  // Funciones helper (están bien como las tienes)
-  const canView = (resource) => hasPermission(`VIEW_${resource.toUpperCase()}`);
-  const canCreate = (resource) =>
-    hasPermission(`CREATE_${resource.toUpperCase()}`);
-  const canEdit = (resource) => hasPermission(`EDIT_${resource.toUpperCase()}`);
-  const canDelete = (resource) =>
-    hasPermission(`DELETE_${resource.toUpperCase()}`);
+      // El administrador (o cualquier rol con control total) siempre tiene todos los permisos.
+      // Se asume 'ADMINISTRADOR' es el nombre del rol con todos los privilegios.
+      if (currentUser.NOMBRE_ROL === 'ADMINISTRADOR') {
+        return true;
+      }
 
+      // Busca si el permiso específico existe en la lista de permisos del usuario.
+      // `currentUser.permisos` debería ser un array de objetos con una propiedad `NOMBRE_PERMISO`.
+      const permissionFound =
+        currentUser.permisos?.some(
+          (permission) => permission.NOMBRE_PERMISO === permissionName
+        ) || false; // Asegura que siempre devuelva un booleano.
+      return permissionFound;
+    },
+    [loading, currentUser]
+  ); // Depende de loading y currentUser para reevaluarse.
+
+  /**
+   * Verifica si el usuario actual tiene permiso sobre una carrera específica.
+   * Esto es relevante para roles que tienen acceso restringido por carrera (ej. Jefes de Carrera).
+   * @param {number|string} careerId - El ID de la carrera a verificar.
+   * @returns {boolean} - True si el usuario tiene permiso sobre la carrera, false en caso contrario.
+   */
+  const hasCareerPermission = useCallback(
+    (careerId) => {
+      // Si estamos cargando o el usuario no está autenticado, no tiene permiso.
+      if (loading || !currentUser || !currentUser.isAuthenticated) {
+        return false;
+      }
+
+      // El administrador siempre tiene permiso sobre todas las carreras.
+      if (currentUser.NOMBRE_ROL === 'ADMINISTRADOR') {
+        return true;
+      }
+
+      // Si el usuario no tiene una lista de carreras asociadas o está vacía, no tiene permiso.
+      if (
+        !currentUser.carrerasAsociadas ||
+        currentUser.carrerasAsociadas.length === 0
+      ) {
+        return false;
+      }
+
+      // Verifica si el ID de la carrera está incluido en la lista de carreras asociadas al usuario.
+      return currentUser.carrerasAsociadas.some(
+        (carrera) => carrera.ID_CARRERA === careerId
+      );
+    },
+    [loading, currentUser]
+  ); // Depende de loading y currentUser para reevaluarse.
+
+  // Funciones helper para verificar acciones comunes sobre recursos (ej. 'USUARIOS', 'CARRERAS')
+  // Estas funciones construyen el nombre del permiso en el formato "ACCIÓN_RECURSO_EN_MAYÚSCULAS"
+  // para que coincida con tus permisos de backend (ej. 'VIEW_CARRERAS', 'CREATE_USUARIOS').
+  const canView = useCallback(
+    (resource) => hasPermission(`VIEW_${resource.toUpperCase()}`),
+    [hasPermission]
+  );
+  const canCreate = useCallback(
+    (resource) => hasPermission(`CREATE_${resource.toUpperCase()}`),
+    [hasPermission]
+  );
+  const canEdit = useCallback(
+    (resource) => hasPermission(`EDIT_${resource.toUpperCase()}`),
+    [hasPermission]
+  );
+  const canDelete = useCallback(
+    (resource) => hasPermission(`DELETE_${resource.toUpperCase()}`),
+    [hasPermission]
+  );
+
+  // Retorna el estado y las funciones del hook para ser utilizadas por los componentes.
   return {
-    currentUser, // Exponer el usuario actual puede ser útil para la UI
-    hasPermission,
-    hasCareerPermission, // Permite verificar permisos por carrera
-    loading,
-    forceReloadUserData, // Renombrada para mayor claridad, refresca todo el usuario
-    // userPermissions: currentUser?.permisos || [], // Si necesitas la lista cruda de permisos
-    canView,
-    canCreate,
-    canEdit,
-    canDelete,
+    currentUser, // Objeto de usuario actual (puede estar enriquecido con carreras)
+    loading, // Estado de carga
+    hasPermission, // Función para verificar permisos generales
+    hasCareerPermission, // Función para verificar permisos sobre carreras específicas
+    forceReloadUserData, // Función para forzar una recarga de datos del usuario
+    canView, // Helper para verificar permiso de vista
+    canCreate, // Helper para verificar permiso de creación
+    canEdit, // Helper para verificar permiso de edición
+    canDelete, // Helper para verificar permiso de eliminación
   };
 }

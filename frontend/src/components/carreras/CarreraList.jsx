@@ -3,9 +3,9 @@ import { Table } from 'react-bootstrap';
 
 function CarreraList({
   carreras,
-  selectedCarreras, // Cambiado de selectedCarrera a selectedCarreras (array)
-  onToggleCarreraSelection, // Nueva función para manejar la selección individual
-  onToggleSelectAll, // Nueva función para seleccionar/deseleccionar todo
+  selectedCarreras,
+  onToggleCarreraSelection,
+  onToggleSelectAll,
   loading,
 }) {
   if (loading) {
@@ -39,8 +39,8 @@ function CarreraList({
               />
             </th>
             <th className="align-middle">ID</th>
-            <th className="align-middle">Código</th>
-            <th className="align-middle">Nombre</th>
+            <th className="align-middle">Planes de Estudio</th>
+            <th className="align-middle">Nombre Carrera</th>
             <th className="align-middle">Escuela</th>
           </tr>
         </thead>
@@ -72,8 +72,9 @@ function CarreraList({
                   aria-label={`Seleccionar carrera ${c.NOMBRE_CARRERA || c.ID_CARRERA}`}
                 />
               </td>
+              {/* Eliminar espacios en blanco o saltos de línea entre <td> tags */}
               <td>{c.ID_CARRERA}</td>
-              <td>{c.CODIGO_CARRERA}</td>
+              <td>{c.PLANES_ESTUDIO_ASOCIADOS || 'N/A'}</td>
               <td>{c.NOMBRE_CARRERA}</td>
               <td>{c.NOMBRE_ESCUELA || c.ESCUELA_ID_ESCUELA}</td>
             </tr>

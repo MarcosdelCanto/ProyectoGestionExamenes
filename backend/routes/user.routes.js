@@ -1,30 +1,77 @@
-// routes/user.routes.js
-import express from 'express'; // Importar express por defecto
-const { Router } = express; // Extraer Router del objeto express
-import { authMiddleware } from '../middlewares/auth.middleware.js';
-import { getProfile, importUsuarios } from '../controllers/user.controller.js';
-import { getUsuarios } from '../controllers/user.controller.js'; // Asume que tienes este controlador
-import { getDocentes } from '../controllers/user.controller.js';
-import { searchDocentes } from '../controllers/user.controller.js'; // Asegúrate de que este controlador exista
+import express from 'express';
+const { Router } = express;
+import { authMiddleware } from '../middlewares/auth.middleware.js'; // CAMBIO: Importar authMiddleware
+import { checkPermission } from '../middlewares/permission.middleware.js';
+import {
+  getProfile,
+  importUsuarios,
+  getUsuarios,
+  getDocentes,
+  searchDocentes,
+  deleteUser, // Importar la función para eliminar un solo usuario
+  deleteMultipleUsers, // Importar la nueva función para eliminar múltiples usuarios
+} from '../controllers/user.controller.js';
+
 const router = Router();
 
 // GET /api/usuarios/profile
-// Ruta protegida: solo accesible con JWT válido
-router.get('/profile', authMiddleware, getProfile);
+router.get(
+  '/profile',
+  authMiddleware,
+  checkPermission(['VIEW_USUARIOS']),
+  getProfile
+); // CAMBIO: Usar authMiddleware
 
 // POST /api/usuarios/import
-// Protegemos la importación de usuarios
-router.post('/import', authMiddleware, importUsuarios);
+router.post(
+  '/import',
+  authMiddleware,
+  checkPermission(['CREATE_USUARIOS']),
+  importUsuarios
+); // CAMBIO: Usar authMiddleware
 
 // Ruta para obtener usuarios docentes
 // GET /api/usuarios/docentes
-router.get('/docentes', authMiddleware, getDocentes);
+router.get(
+  '/docentes',
+  authMiddleware,
+  checkPermission(['VIEW_USUARIOS']),
+  getDocentes
+); // CAMBIO: Usar authMiddleware
 
-// Ruta protegida: solo accesible con JWT válido
-
-// GET /api/usuarios  o /api/usuarios?rolId=X
-router.get('/', authMiddleware, getUsuarios);
+// GET /api/usuarios
+router.get(
+  '/',
+  authMiddleware,
+  checkPermission(['VIEW_USUARIOS']),
+  getUsuarios
+); // CAMBIO: Usar authMiddleware
 
 // NUEVA RUTA PROTEGIDA PARA BÚSQUEDA
-router.get('/docentes/search', authMiddleware, searchDocentes);
+router.get(
+  '/docentes/search',
+  authMiddleware,
+  checkPermission(['VIEW_USUARIOS']),
+  searchDocentes
+); // CAMBIO: Usar authMiddleware
+
+// Ruta para eliminar un SOLO usuario (ya existente)
+// DELETE /api/usuarios/:id
+router.delete(
+  '/:id',
+  authMiddleware,
+  checkPermission(['DELETE_USUARIOS']),
+  deleteUser
+); // CAMBIO: Usar authMiddleware
+
+// --- NUEVA RUTA para eliminar MÚLTIPLES usuarios ---
+// POST /api/usuarios/bulk-delete
+router.post(
+  '/bulk-delete',
+  authMiddleware,
+  checkPermission(['DELETE_USUARIOS']),
+  deleteMultipleUsers
+); // CAMBIO: Usar authMiddleware
+// --- FIN NUEVA RUTA ---
+
 export default router;

@@ -135,12 +135,12 @@ function UsuarioCarreraModal({
                     </span>
                     <br />
                     <span>
-                      <strong>Email:</strong>{' '}
+                      <strong>Email:</strong>
                       {editingUser.EMAIL_USUARIO || 'N/A'}
                     </span>
                     <br />
                     <span>
-                      <strong>Rol:</strong>{' '}
+                      <strong>Rol:</strong>
                       {allRoles.find((r) => r.ID_ROL === editingUser.ROL_ID_ROL)
                         ?.NOMBRE_ROL || 'N/A'}
                     </span>
