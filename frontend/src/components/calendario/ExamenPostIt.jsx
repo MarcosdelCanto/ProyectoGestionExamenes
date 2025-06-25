@@ -52,7 +52,7 @@ export default function ExamenPostIt({
         examenAsignadoCompleto,
     }
   );
-  const { hasCareerPermission } = usePermission();
+  const { hasCareerPermission, currentUser: user } = usePermission();
   const [moduloscountState, setModuloscountState] = useState(
     moduloscount ||
       examen?.MODULOS?.length ||
@@ -337,15 +337,19 @@ export default function ExamenPostIt({
   };
   const getActionButtons = () => {
     if (isPreview || isDragOverlay) return null;
-    const carreraDelExamenId = examenAsignadoCompleto?.ID_CARRERA;
+    if (user?.nombre_rol !== 'ADMINISTRADOR') {
+      const carreraDelExamenId =
+        examenAsignadoCompleto?.reservaCompleta?.ID_CARRERA || // Busca en la reserva completa
+        examenAsignadoCompleto?.ID_CARRERA || // Fallback por si está en el nivel superior
+        examen?.ID_CARRERA;
 
-    // Verificamos si el usuario tiene permiso sobre esa carrera
-    const puedeGestionar = hasCareerPermission(carreraDelExamenId);
+      const puedeGestionar = hasCareerPermission(carreraDelExamenId);
 
-    // Si no tiene permiso, no se renderiza ningún botón
-    // if (!puedeGestionar) {
-    //   return null;
-    // }
+      // Si no tiene permiso, no se renderiza ningún botón
+      if (!puedeGestionar) {
+        return null;
+      }
+    }
     const estadoConfirmacion = getEstadoConfirmacion();
 
     switch (estadoConfirmacion) {
