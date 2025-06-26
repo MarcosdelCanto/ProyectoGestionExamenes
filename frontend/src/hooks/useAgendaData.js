@@ -1,3 +1,5 @@
+// frontend/src/hooks/useAgendaData.js
+
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { fetchReservaById } from '../services/reservaService';
 import { useDispatch, useSelector } from 'react-redux';
@@ -158,8 +160,6 @@ export function useAgendaData() {
 
         // Función para procesar cada examen y añadirle los colores de su escuela
         const processExamAndAddColors = (exam) => {
-          // Asumimos que el objeto 'exam' ya tiene 'NOMBRE_ESCUELA' por JOINS en el backend.
-          // Si no, se necesitaría una lógica para inferir el nombre de la escuela a partir de sus IDs de carrera/asignatura/sección.
           return enrichObjectWithSchoolColors(exam, schoolsWithColors);
         };
 

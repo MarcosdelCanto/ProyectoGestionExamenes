@@ -21,7 +21,6 @@ import { toast } from 'react-toastify';
 import { searchDocentes } from '../../services/usuarioService';
 import { useDispatch } from 'react-redux';
 import { actualizarModulosReservaLocalmente } from '../../store/reservasSlice';
-import AsyncSelect from 'react-select/async';
 import './styles/PostIt.css';
 import { usePermission } from '../../hooks/usePermission';
 
@@ -39,19 +38,19 @@ export default function ExamenPostIt({
   isBeingDragged,
   fecha,
   moduloInicial,
-  examenAsignadoCompleto,
+  examenAsignadoCompleto, // Contiene datos completos de la reserva si es un examen arrastrado a la agenda
   onReservaStateChange,
   ...props
 }) {
   const dispatch = useDispatch();
-  console.log(
-    `[ExamenPostIt] Renderizando Post-it para examen: "${examen?.NOMBRE_ASIGNATURA || 'Desconocido'}"`,
-    {
-      "Prop 'examen' (datos base):": examen,
-      "Prop 'examenAsignadoCompleto' (datos de reserva):":
-        examenAsignadoCompleto,
-    }
-  );
+  // console.log( // Descomenta para depurar los datos de la reserva/examen
+  //   `[ExamenPostIt] Renderizando Post-it para examen: "${examen?.NOMBRE_ASIGNATURA || 'Desconocido'}"`,
+  //   {
+  //     "Prop 'examen' (datos base):": examen,
+  //     "Prop 'examenAsignadoCompleto' (datos de reserva):": examenAsignadoCompleto,
+  //   }
+  // );
+
   const { hasCareerPermission, currentUser: user } = usePermission();
   const [moduloscountState, setModuloscountState] = useState(
     moduloscount ||
@@ -61,11 +60,9 @@ export default function ExamenPostIt({
   );
   const [isProcessingAction, setIsProcessingAction] = useState(false);
 
-  // Estados para selección de docente
-  const [selectedDocente, setSelectedDocente] = useState(null); // Almacena el objeto { value, label }
+  const [selectedDocente, setSelectedDocente] = useState(null);
   const [showCancelModal, setShowCancelModal] = useState(false);
 
-  // --- NUEVOS ESTADOS PARA EL MODAL DE DOCENTE ---
   const [showDocenteModal, setShowDocenteModal] = useState(false);
   const [docenteSearchTerm, setDocenteSearchTerm] = useState('');
   const [docenteSearchResults, setDocenteSearchResults] = useState([]);
@@ -82,12 +79,17 @@ export default function ExamenPostIt({
   };
 
   const nombreDocenteMostrado =
-    selectedDocente?.label || // 1. Prioridad: El docente recién seleccionado en el modal
-    examenAsignadoCompleto?.reservaCompleta?.NOMBRE_DOCENTE_ASIGNADO || // 2. El docente asignado a la RESERVA (desde getMisAsignaciones o socket)
-    examenAsignadoCompleto?.reservaCompleta?.NOMBRE_DOCENTE_PRINCIPAL || // 3. Alias alternativo del docente de la RESERVA
-    examenAsignadoCompleto?.reservaCompleta?.NOMBRE_DOCENTE || // 4. Otro alias alternativo del docente de la RESERVA
-    examen.NOMBRE_DOCENTE || // 5. Fallback: El docente original sugerido por el EXAMEN
-    'No asignado'; // 6. Valor por defecto si no hay ninguno.
+    selectedDocente?.label ||
+    examenAsignadoCompleto?.reservaCompleta?.NOMBRE_DOCENTE_ASIGNADO ||
+    examenAsignadoCompleto?.reservaCompleta?.NOMBRE_DOCENTE_PRINCIPAL ||
+    examenAsignadoCompleto?.reservaCompleta?.NOMBRE_DOCENTE ||
+    examen.NOMBRE_DOCENTE ||
+    'No asignado';
+
+  // Obtener el nombre de la sala si está en la reserva completa
+  const nombreSalaMostrada =
+    examenAsignadoCompleto?.reservaCompleta?.NOMBRE_SALA ||
+    examenAsignadoCompleto?.NOMBRE_SALA; // Por si viene directo en examenAsignadoCompleto sin anidamiento
 
   useEffect(() => {
     const nuevaCantidad =
@@ -104,7 +106,27 @@ export default function ExamenPostIt({
 
   useEffect(() => {
     const cargarDocenteInicial = async () => {
-      if (examen?.NOMBRE_DOCENTE) {
+      // Prioridad: docente ya asignado a la reserva (si existe examenAsignadoCompleto)
+      if (examenAsignadoCompleto?.reservaCompleta?.NOMBRE_DOCENTE_ASIGNADO) {
+        try {
+          const nombreDocente =
+            examenAsignadoCompleto.reservaCompleta.NOMBRE_DOCENTE_ASIGNADO;
+          const resultadoBusqueda = await searchDocentes(nombreDocente);
+          if (resultadoBusqueda.length > 0) {
+            const docenteEncontrado =
+              resultadoBusqueda.find(
+                (d) => d.NOMBRE_USUARIO === nombreDocente
+              ) || resultadoBusqueda[0];
+            setSelectedDocente({
+              value: docenteEncontrado.ID_USUARIO,
+              label: docenteEncontrado.NOMBRE_USUARIO,
+            });
+          }
+        } catch (error) {
+          console.error('Error buscando docente inicial de reserva:', error);
+        }
+      } else if (examen?.NOMBRE_DOCENTE) {
+        // Si no, intentar con el docente original del examen
         try {
           const resultadoBusqueda = await searchDocentes(examen.NOMBRE_DOCENTE);
           if (resultadoBusqueda.length > 0) {
@@ -118,14 +140,14 @@ export default function ExamenPostIt({
             });
           }
         } catch (error) {
-          console.error('Error buscando docente inicial:', error);
+          console.error('Error buscando docente inicial de examen:', error);
         }
       }
     };
     if (!isPreview && !isDragOverlay) {
       cargarDocenteInicial();
     }
-  }, [examen, isPreview, isDragOverlay]);
+  }, [examen, isPreview, isDragOverlay, examenAsignadoCompleto]);
 
   const handleOpenDocenteModal = (e) => {
     e.stopPropagation();
@@ -145,12 +167,11 @@ export default function ExamenPostIt({
     setIsSearchingDocentes(true);
     try {
       const results = await searchDocentes(term);
-      // Mapeamos para incluir las secciones que vienen del backend
       setDocenteSearchResults(
         results.map((d) => ({
           value: d.ID_USUARIO,
           label: d.NOMBRE_USUARIO,
-          secciones: d.SECCIONES, // <-- Usamos SECCIONES en lugar de email
+          secciones: d.SECCIONES,
         }))
       );
     } catch (error) {
@@ -205,7 +226,6 @@ export default function ExamenPostIt({
     }
   };
 
-  // (Las demás funciones como handleAumentarModulo, handleDisminuirModulo, etc., se mantienen sin cambios)
   const handleAumentarModulo = (e) => {
     e.stopPropagation();
     e.preventDefault();
@@ -221,7 +241,6 @@ export default function ExamenPostIt({
 
     const nuevaCantidad = moduloscountState + 1;
 
-    // Verificación de conflictos
     if (fecha && moduloInicial && onCheckConflict) {
       try {
         const hasConflict = onCheckConflict({
@@ -244,7 +263,6 @@ export default function ExamenPostIt({
       }
     }
 
-    // Ejecutar el cambio
     if (reservaId) {
       setModuloscountState(nuevaCantidad);
 
@@ -301,12 +319,13 @@ export default function ExamenPostIt({
       );
     }
   };
+
   const handleConfirmarCancelacion = async () => {
     if (isProcessingAction) return;
 
     try {
       setIsProcessingAction(true);
-      setShowCancelModal(false); // Cerrar modal
+      setShowCancelModal(false);
 
       const reservaId =
         examenAsignadoCompleto?.reservaCompleta?.ID_RESERVA ||
@@ -335,17 +354,17 @@ export default function ExamenPostIt({
       setIsProcessingAction(false);
     }
   };
+
   const getActionButtons = () => {
     if (isPreview || isDragOverlay) return null;
     if (user?.nombre_rol !== 'ADMINISTRADOR') {
       const carreraDelExamenId =
-        examenAsignadoCompleto?.reservaCompleta?.ID_CARRERA || // Busca en la reserva completa
-        examenAsignadoCompleto?.ID_CARRERA || // Fallback por si está en el nivel superior
+        examenAsignadoCompleto?.reservaCompleta?.ID_CARRERA ||
+        examenAsignadoCompleto?.ID_CARRERA ||
         examen?.ID_CARRERA;
 
       const puedeGestionar = hasCareerPermission(carreraDelExamenId);
 
-      // Si no tiene permiso, no se renderiza ningún botón
       if (!puedeGestionar) {
         return null;
       }
@@ -356,7 +375,6 @@ export default function ExamenPostIt({
       case 'EN_CURSO':
         return (
           <div className="action-buttons">
-            {/* -- NUEVO BOTÓN PARA ABRIR EL MODAL DE DOCENTE -- */}
             <button
               className={`btn btn-sm btn-outline-primary action-btn docente-btn ${selectedDocente ? 'docente-asignado' : ''}`}
               onClick={handleOpenDocenteModal}
@@ -413,7 +431,6 @@ export default function ExamenPostIt({
             </button>
           </div>
         );
-      //... otros cases se mantienen igual
       case 'PENDIENTE':
         return (
           <div className="action-buttons">
@@ -472,8 +489,14 @@ export default function ExamenPostIt({
   };
 
   const getPostItColor = () => {
-    if (!examen) return '#fffacd';
-    const hash = examen.NOMBRE_ASIGNATURA?.split('').reduce(
+    // Si el objeto 'examen' ya contiene las propiedades de color de fondo y borde, las usamos directamente.
+    // Esto es posible porque el hook 'useAgendaData' se encarga de enriquecer el objeto 'examen' con estos colores.
+    if (examen?.COLOR_BACKGROUND && examen?.COLOR_BORDER) {
+      return { bg: examen.COLOR_BACKGROUND, border: examen.COLOR_BORDER };
+    }
+
+    // Fallback a un color por defecto o basado en hash si los colores específicos no están presentes.
+    const hash = examen?.NOMBRE_ASIGNATURA?.split('').reduce(
       (acc, char) => acc + char.charCodeAt(0),
       0
     );
@@ -486,16 +509,21 @@ export default function ExamenPostIt({
       '#ccccff',
       '#ffccff',
     ];
-    return colors[hash % colors.length] || '#fffacd';
+    // Se añade un color de borde por defecto para el fallback consistente
+    return { bg: colors[hash % colors.length] || '#fffacd', border: '#ccc' };
   };
 
-  const getStyles = () => ({
-    backgroundColor: getPostItColor(),
-    height: isPreview ? '100%' : `${40 * moduloscountState}px`, // Tomar 100% de la altura del padre en preview
-    width: isPreview ? '100%' : '100%', // Tomar 100% del ancho del padre en preview
-    zIndex: isPreview ? 1 : 50, // zIndex ya no depende de isResizing
-    ...style,
-  });
+  const getStyles = () => {
+    const { bg, border } = getPostItColor();
+    return {
+      backgroundColor: bg,
+      height: isPreview ? '100%' : `${40 * moduloscountState}px`,
+      width: isPreview ? '100%' : '100%',
+      zIndex: isPreview ? 1 : 50,
+      borderLeft: `4px solid ${border}`,
+      ...style,
+    };
+  };
 
   if (!examen) return null;
 
@@ -515,19 +543,32 @@ export default function ExamenPostIt({
         <div className="examen-content">
           <div className="examen-header d-flex justify-content-between align-items-start">
             <div className="examen-info flex-grow-1">
-              <div className="examen-title">
+              {/* Título principal con ícono de libro */}
+              <div className="examen-title fw-bold">
+                <i className="bi bi-book me-2"></i>
                 {examen.NOMBRE_ASIGNATURA ||
                   examen.NOMBRE_EXAMEN ||
                   'Sin nombre'}
               </div>
-              <div className="examen-details text-muted small">
-                {examen.NOMBRE_CARRERA && <div>{examen.NOMBRE_CARRERA}</div>}
-                {examen.NOMBRE_SECCION && (
-                  <div>Sección: {examen.NOMBRE_SECCION}</div>
+              <div className="examen-details align-items-start text-muted small">
+                {/* Nombre de carrera (sin ícono, como en ReservaPostIt original) */}
+                {examen.NOMBRE_CARRERA && (
+                  <div className="d-flex fw-semibold">
+                    <i className="bi bi-mortarboard me-1"></i>
+                    <span>{examen.NOMBRE_CARRERA}</span>
+                  </div>
                 )}
-                {/* Mostrar docente seleccionado o el inicial */}
-                <div className="docente-info">
-                  Docente:{nombreDocenteMostrado}
+                {/* Sección con ícono de diagrama */}
+                {examen.NOMBRE_SECCION && (
+                  <div className="d-flex">
+                    <i className="bi bi-diagram-3 me-1"></i>
+                    <span>{examen.NOMBRE_SECCION}</span>
+                  </div>
+                )}
+                {/* Docente con ícono de persona */}
+                <div className="docente-info d-flex">
+                  <i className="bi bi-person me-1"></i>
+                  <span>{nombreDocenteMostrado}</span>
                 </div>
               </div>
             </div>
@@ -535,7 +576,7 @@ export default function ExamenPostIt({
         </div>
       </div>
 
-      {/* --- MODAL PARA SELECCIONAR DOCENTE --- */}
+      {/* MODAL PARA SELECCIONAR DOCENTE */}
       <Modal
         show={showDocenteModal}
         onHide={() => setShowDocenteModal(false)}
@@ -557,7 +598,7 @@ export default function ExamenPostIt({
           </Form.Group>
           <ListGroup
             className="docente-search-results"
-            style={{ height: '250px', overflowY: 'auto' }} // <-- ¡Este es el cambio!
+            style={{ height: '250px', overflowY: 'auto' }}
           >
             {isSearchingDocentes ? (
               <ListGroup.Item className="text-center text-muted d-flex align-items-center justify-content-center h-100">
@@ -591,7 +632,6 @@ export default function ExamenPostIt({
                 </ListGroup.Item>
               ))
             ) : (
-              // También centramos verticalmente los mensajes de feedback
               <ListGroup.Item className="text-center text-muted d-flex align-items-center justify-content-center h-100">
                 {docenteSearchTerm.length < 2
                   ? 'Ingresa al menos 2 caracteres para buscar.'
@@ -617,7 +657,7 @@ export default function ExamenPostIt({
         </Modal.Footer>
       </Modal>
 
-      {/* Modal de Cancelación (se mantiene igual) */}
+      {/* Modal de Cancelación */}
       <Modal
         show={showCancelModal}
         onHide={() => setShowCancelModal(false)}
