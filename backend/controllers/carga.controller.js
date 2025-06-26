@@ -2,13 +2,8 @@ import { getConnection } from '../db.js';
 import oracledb from 'oracledb';
 import bcrypt from 'bcrypt';
 
-const ROL_DOCENTE_ID = 2; // Asegúrate de que este sea el ID de tu rol DOCENTE
+const ROL_DOCENTE_ID = 2;
 
-/**
- * Función auxiliar para buscar un ID o insertar el registro si no existe.
- * Devuelve tanto el ID como un indicador de si fue creado.
- * @returns {Promise<{id: number, creado: boolean}>} Un objeto con el ID del registro y un booleano.
- */
 async function obtenerOInsertar(
   connection,
   sqlSelect,
@@ -48,9 +43,6 @@ async function obtenerOInsertar(
   );
 }
 
-/**
- * Controlador para gestionar la carga masiva de datos desde un archivo.
- */
 export const handleCargaMasiva = async (req, res) => {
   const idSedeParaEstaCarga = Number(req.params.sedeId);
   const datosParaCargar = req.body;
@@ -88,10 +80,8 @@ export const handleCargaMasiva = async (req, res) => {
       const fila = datosParaCargar[i];
       const filaNum = i + 1;
 
-      // --- 1. Procesar Escuela ---
       const nombreEscuelaOriginal = String(fila.Escuela ?? '').trim();
       let idEscuela = null;
-
       if (!nombreEscuelaOriginal) {
         ignoredCount.fila_total++;
         errorsDetallados.push({
@@ -100,7 +90,6 @@ export const handleCargaMasiva = async (req, res) => {
         });
         continue;
       }
-
       try {
         const resultadoEscuela = await obtenerOInsertar(
           conn,
@@ -120,12 +109,10 @@ export const handleCargaMasiva = async (req, res) => {
         continue;
       }
 
-      // --- 2. Procesar Jornada ---
       const nombreJornadaOriginal = String(fila['Jornada'] ?? '').trim();
       let codJornadaInput = String(fila['CodJornada'] ?? '').trim();
       let idJornada = null;
       let codJornadaParaOperaciones = '';
-
       if (codJornadaInput) {
         codJornadaParaOperaciones = codJornadaInput
           .substring(0, 2)
@@ -135,7 +122,6 @@ export const handleCargaMasiva = async (req, res) => {
           .substring(0, 2)
           .toUpperCase();
       }
-
       if (codJornadaParaOperaciones) {
         try {
           const resultadoJornada = await obtenerOInsertar(
@@ -167,12 +153,10 @@ export const handleCargaMasiva = async (req, res) => {
         continue;
       }
 
-      // --- 3. Procesar Carrera y Planes de Estudio (LÓGICA CORREGIDA) ---
       const planesEstudioStringCSV = String(fila['Plan Estudio'] ?? '').trim();
       const planesIndividualesParsed = planesEstudioStringCSV
         .split(/\s+|,/)
         .filter((p) => p.length > 0);
-
       if (planesIndividualesParsed.length === 0) {
         errorsDetallados.push({
           fila: filaNum,
@@ -181,35 +165,24 @@ export const handleCargaMasiva = async (req, res) => {
         ignoredCount.fila_total++;
         continue;
       }
-
       let idCarrera = null;
       let carreraEncontrada = false;
-
-      // **INICIO DE LA VALIDACIÓN CLAVE**
-      // Buscamos si ALGUNO de los planes de estudio de la fila ya está asociado a una carrera existente.
       for (const planNombre of planesIndividualesParsed) {
         const carreraExistente = await conn.execute(
-          `SELECT cpe.CARRERA_ID_CARRERA FROM ADMIN.CARRERA_PLAN_ESTUDIO cpe
-           JOIN ADMIN.PLAN_ESTUDIO pe ON cpe.PLAN_ESTUDIO_ID_PLAN_ESTUDIO = pe.ID_PLAN_ESTUDIO
-           WHERE pe.NOMBRE_PLAN_ESTUDIO = :planNombre`,
+          `SELECT cpe.CARRERA_ID_CARRERA FROM ADMIN.CARRERA_PLAN_ESTUDIO cpe JOIN ADMIN.PLAN_ESTUDIO pe ON cpe.PLAN_ESTUDIO_ID_PLAN_ESTUDIO = pe.ID_PLAN_ESTUDIO WHERE pe.NOMBRE_PLAN_ESTUDIO = :planNombre`,
           { planNombre },
           { outFormat: oracledb.OUT_FORMAT_ARRAY }
         );
-
         if (carreraExistente.rows.length > 0) {
-          idCarrera = carreraExistente.rows[0][0]; // Usamos el ID de la carrera encontrada
+          idCarrera = carreraExistente.rows[0][0];
           carreraEncontrada = true;
-          break; // Si encontramos una, no necesitamos buscar más
+          break;
         }
       }
-
       try {
         if (carreraEncontrada) {
-          // Si la carrera ya existe (sin importar su nombre actual), la reutilizamos.
           ignoredCount.carrera_existente++;
         } else {
-          // Si no se encontró ninguna carrera asociada a los planes, creamos una nueva.
-          // Usamos la concatenación de planes como nombre temporal.
           const nombreCarreraInicial = planesIndividualesParsed.join(',');
           const resultadoCarrera = await obtenerOInsertar(
             conn,
@@ -219,13 +192,8 @@ export const handleCargaMasiva = async (req, res) => {
             { nombre: nombreCarreraInicial, idEscuela }
           );
           idCarrera = resultadoCarrera.id;
-          if (resultadoCarrera.creado) {
-            insertedCount.carrera++;
-          }
+          if (resultadoCarrera.creado) insertedCount.carrera++;
         }
-        // **FIN DE LA VALIDACIÓN CLAVE**
-
-        // Ahora, con el idCarrera correcto (sea existente o nuevo), procesamos los planes y asociaciones.
         for (const planNombre of planesIndividualesParsed) {
           const resultadoPlan = await obtenerOInsertar(
             conn,
@@ -236,8 +204,6 @@ export const handleCargaMasiva = async (req, res) => {
           );
           const idPlanEstudio = resultadoPlan.id;
           if (resultadoPlan.creado) insertedCount.plan_estudio++;
-
-          // Asociamos el plan a la carrera si la asociación no existe
           const checkAssocPlan = await conn.execute(
             `SELECT COUNT(*) FROM ADMIN.CARRERA_PLAN_ESTUDIO WHERE CARRERA_ID_CARRERA = :idCarrera AND PLAN_ESTUDIO_ID_PLAN_ESTUDIO = :idPlanEstudio`,
             { idCarrera, idPlanEstudio },
@@ -261,13 +227,10 @@ export const handleCargaMasiva = async (req, res) => {
         continue;
       }
 
-      // ... El resto del código para Asignatura, Sección, Docente y Examen sigue igual ...
-      // --- 4. Procesar Asignatura ---
       const nombreAsignaturaOriginal = String(
         fila['Nom. Asignatura'] ?? ''
       ).trim();
       let idAsignatura = null;
-
       if (!nombreAsignaturaOriginal) {
         errorsDetallados.push({
           fila: filaNum,
@@ -276,7 +239,6 @@ export const handleCargaMasiva = async (req, res) => {
         ignoredCount.fila_total++;
         continue;
       }
-
       try {
         const resultadoAsignatura = await obtenerOInsertar(
           conn,
@@ -296,10 +258,8 @@ export const handleCargaMasiva = async (req, res) => {
         continue;
       }
 
-      // --- 5. Procesar Sección ---
       const nombreSeccionOriginal = String(fila.Seccion ?? '').trim();
       let idSeccion = null;
-
       if (!nombreSeccionOriginal) {
         errorsDetallados.push({
           fila: filaNum,
@@ -308,7 +268,6 @@ export const handleCargaMasiva = async (req, res) => {
         ignoredCount.fila_total++;
         continue;
       }
-
       try {
         const resultadoSeccion = await obtenerOInsertar(
           conn,
@@ -328,70 +287,39 @@ export const handleCargaMasiva = async (req, res) => {
         continue;
       }
 
-      // --- 6. Procesar Usuario (Docente) ---
-      const rutDocente = String(fila['Rut Docente'] ?? '').trim();
-      const nombreCompletoDocente = String(
-        fila['Instruct.(den.)'] ?? ''
-      ).trim();
-      const emailDocente = String(fila['Mail Duoc'] ?? '').trim();
-      let idUsuarioDocente = null;
-
-      if (!rutDocente) {
-        // Si no hay rut, simplemente no procesamos el docente y continuamos con el examen.
-      } else {
+      const rutDocenteRaw = String(fila['Rut Docente'] ?? '').trim();
+      if (rutDocenteRaw) {
         try {
-          const selDocente = await conn.execute(
-            'SELECT ID_USUARIO FROM ADMIN.USUARIO WHERE ID_DOCENTE = :rutDocente',
-            { rutDocente },
-            { outFormat: oracledb.OUT_FORMAT_OBJECT, autoCommit: false }
-          );
-          if (selDocente.rows.length > 0) {
-            idUsuarioDocente = selDocente.rows[0].ID_USUARIO;
-            ignoredCount.docente_existente++;
-          } else {
-            if (!emailDocente) {
-              errorsDetallados.push({
-                fila: filaNum,
-                rut: rutDocente,
-                error:
-                  'Email de Docente vacío para nuevo usuario. Inserción ignorada.',
-              });
-            } else {
-              const emailConflictGlobal = await conn.execute(
-                `SELECT ID_USUARIO FROM ADMIN.USUARIO WHERE LOWER(EMAIL_USUARIO) = LOWER(:email)`,
-                { email: emailDocente },
-                { outFormat: oracledb.OUT_FORMAT_OBJECT, autoCommit: false }
-              );
-              if (emailConflictGlobal.rows.length > 0) {
-                errorsDetallados.push({
-                  fila: filaNum,
-                  rut: rutDocente,
-                  error: `Email '${emailDocente}' ya está en uso. Inserción de docente ignorada.`,
-                });
-                ignoredCount.email_docente_en_uso++;
-              } else {
-                const saltRounds = 10;
-                const hashedPassword = await bcrypt.hash(
-                  rutDocente,
-                  saltRounds
-                );
-                const insertDocenteRes = await conn.execute(
-                  `INSERT INTO ADMIN.USUARIO (ID_USUARIO, NOMBRE_USUARIO, EMAIL_USUARIO, PASSWORD_USUARIO, FECHA_CREA_USUARIO, FECHA_ACTU_USUARIO, ROL_ID_ROL, ID_DOCENTE) VALUES (SEQ_USUARIO.NEXTVAL, :nombre, LOWER(:email), :password, SYSTIMESTAMP, SYSTIMESTAMP, :rol, :idDocente) RETURNING ID_USUARIO INTO :newId`,
-                  {
-                    nombre: nombreCompletoDocente,
-                    email: emailDocente,
-                    password: hashedPassword,
-                    rol: ROL_DOCENTE_ID,
-                    idDocente: rutDocente,
-                    newId: { dir: oracledb.BIND_OUT, type: oracledb.NUMBER },
-                  },
-                  { autoCommit: false }
-                );
-                idUsuarioDocente = insertDocenteRes.outBinds.newId[0];
-                insertedCount.docente++;
-              }
+          const nombreCompletoDocente = String(
+            fila['Instruct.(den.)'] ?? ''
+          ).trim();
+          const rutLimpioParaDB = rutDocenteRaw
+            .replace(/\./g, '')
+            .replace('-', '');
+          const emailDocente = `${rutLimpioParaDB}@profesor.duoc.cl`;
+          let idUsuarioDocente = null;
+
+          const resultadoDocente = await obtenerOInsertar(
+            conn,
+            `SELECT ID_USUARIO FROM ADMIN.USUARIO WHERE ID_DOCENTE = :rut`,
+            `INSERT INTO ADMIN.USUARIO (ID_USUARIO, NOMBRE_USUARIO, EMAIL_USUARIO, PASSWORD_USUARIO, FECHA_CREA_USUARIO, ROL_ID_ROL, ID_DOCENTE) VALUES (SEQ_USUARIO.NEXTVAL, :nombre, :email, :password, SYSTIMESTAMP, :rol, :rut) RETURNING ID_USUARIO INTO :newId`,
+            { rut: rutLimpioParaDB },
+            {
+              nombre: nombreCompletoDocente,
+              email: emailDocente,
+              password: await bcrypt.hash(rutDocenteRaw, 10),
+              rol: ROL_DOCENTE_ID,
+              rut: rutLimpioParaDB,
             }
+          );
+          idUsuarioDocente = resultadoDocente.id;
+
+          if (resultadoDocente.creado) {
+            insertedCount.docente++;
+          } else {
+            ignoredCount.docente_existente++;
           }
+
           if (idUsuarioDocente && idSeccion) {
             const checkAssoc = await conn.execute(
               `SELECT COUNT(*) FROM ADMIN.USUARIOSECCION WHERE USUARIO_ID_USUARIO = :idUsuario AND SECCION_ID_SECCION = :idSeccion`,
@@ -408,68 +336,80 @@ export const handleCargaMasiva = async (req, res) => {
             }
           }
         } catch (err) {
+          console.error(
+            `[Carga Masiva] Fila ${filaNum}: *** ERROR en bloque DOCENTE ***`,
+            err
+          );
           errorsDetallados.push({
             fila: filaNum,
-            rut: rutDocente,
-            error: `Error procesando Docente o Asociación: ${err.message}`,
+            error: `Error procesando Docente: ${err.message}`,
           });
+          ignoredCount.fila_total++;
         }
       }
 
-      // --- 8. Procesar Examen ---
-      const nombreExamen = String(fila['Nombre Seccion'] ?? '').trim();
-      if (idSeccion && nombreExamen) {
+      // --- 8. Procesar Examen (LÓGICA CORREGIDA) ---
+      const codigoSeccion = String(fila.Seccion ?? '').trim();
+      if (idSeccion && codigoSeccion && nombreAsignaturaOriginal) {
+        // **INICIO DE LA CORRECCIÓN CLAVE**
+        // Se construye el nombre del examen como lo solicitaste.
+        const nombreExamen = `${codigoSeccion} - ${nombreAsignaturaOriginal}`;
+        // **FIN DE LA CORRECCIÓN CLAVE**
+
         try {
-          const examenExists = await conn.execute(
+          const tipoProcesamiento =
+            String(fila['Tipo de Procesamiento'] ?? '').trim() ||
+            'No Informado';
+          const plataformaProse =
+            String(fila['Plataforma de Procesamiento'] ?? '').trim() ||
+            'No Informado';
+          const situacionEvaluativa =
+            String(fila['Situación Evaluativa'] ?? '').trim() || 'No Informado';
+          const inscritosExamen =
+            fila['Cant. ins.'] != null && !isNaN(Number(fila['Cant. ins.']))
+              ? Number(fila['Cant. ins.'])
+              : null;
+          const cantidadModulos = 3;
+          const idEvento =
+            fila['ID evento'] != null && !isNaN(Number(fila['ID evento']))
+              ? Number(fila['ID evento'])
+              : null;
+
+          const resultadoExamen = await obtenerOInsertar(
+            conn,
             `SELECT ID_EXAMEN FROM ADMIN.EXAMEN WHERE NOMBRE_EXAMEN = :nombre AND SECCION_ID_SECCION = :idSeccion`,
+            `INSERT INTO ADMIN.EXAMEN (ID_EXAMEN, NOMBRE_EXAMEN, INSCRITOS_EXAMEN, TIPO_PROCESAMIENTO_EXAMEN, PLATAFORMA_PROSE_EXAMEN, SITUACION_EVALUATIVA_EXAMEN, CANTIDAD_MODULOS_EXAMEN, SECCION_ID_SECCION, ESTADO_ID_ESTADO, ID_EVENTO) VALUES (SEQ_EXAMEN.NEXTVAL, :nombre, :inscritos, :tipoProc, :plataforma, :situacion, :modulos, :idSeccion, 1, :idEvento) RETURNING ID_EXAMEN INTO :newId`,
             { nombre: nombreExamen, idSeccion },
-            { outFormat: oracledb.OUT_FORMAT_OBJECT, autoCommit: false }
+            {
+              nombre: nombreExamen,
+              inscritos: inscritosExamen,
+              tipoProc: tipoProcesamiento,
+              plataforma: plataformaProse,
+              situacion: situacionEvaluativa,
+              modulos: cantidadModulos,
+              idSeccion: idSeccion,
+              idEvento: idEvento,
+            }
           );
-          if (examenExists.rows.length === 0) {
-            const inscritosExamen =
-              fila['Cant. ins.'] != null && !isNaN(Number(fila['Cant. ins.']))
-                ? Number(fila['Cant. ins.'])
-                : null;
-            const tipoProcesamiento = String(
-              fila['Tipo de Procesamiento'] ?? ''
-            ).trim();
-            const plataformaProse = String(
-              fila['Plataforma de Procesamiento'] ?? ''
-            ).trim();
-            const situacionEvaluativa = String(
-              fila['Situación Evaluativa'] ?? ''
-            ).trim();
-            const cantidadModulos = 3;
-            const idEvento =
-              fila['ID evento'] != null && !isNaN(Number(fila['ID evento']))
-                ? Number(fila['ID evento'])
-                : null;
-            await conn.execute(
-              `INSERT INTO ADMIN.EXAMEN (ID_EXAMEN, NOMBRE_EXAMEN, INSCRITOS_EXAMEN, TIPO_PROCESAMIENTO_EXAMEN, PLATAFORMA_PROSE_EXAMEN, SITUACION_EVALUATIVA_EXAMEN, CANTIDAD_MODULOS_EXAMEN, SECCION_ID_SECCION, ESTADO_ID_ESTADO, ID_EVENTO) VALUES (SEQ_EXAMEN.NEXTVAL, :nombre, :inscritos, :tipoProc, :plataforma, :situacion, :modulos, :idSeccion, 1, :idEvento)`,
-              {
-                nombre: nombreExamen,
-                inscritos: inscritosExamen,
-                tipoProc: tipoProcesamiento,
-                plataforma: plataformaProse,
-                situacion: situacionEvaluativa,
-                modulos: cantidadModulos,
-                idSeccion: idSeccion,
-                idEvento: idEvento,
-              },
-              { autoCommit: false }
-            );
+
+          if (resultadoExamen.creado) {
             insertedCount.examen++;
           } else {
             ignoredCount.examen_existente++;
           }
         } catch (err) {
+          console.error(
+            `[Carga Masiva] Fila ${filaNum}: *** ERROR en bloque EXAMEN ***`,
+            err
+          );
           errorsDetallados.push({
             fila: filaNum,
-            error: `Error procesando Examen '${nombreExamen}': ${err.message}`,
+            error: `Error procesando Examen: ${err.message}`,
           });
+          ignoredCount.fila_total++;
         }
       }
-    } // Fin del bucle for
+    }
 
     await conn.commit();
 
@@ -499,6 +439,12 @@ export const handleCargaMasiva = async (req, res) => {
       specificErrors: errorsDetallados,
     });
   } finally {
-    if (conn) await conn.close();
+    if (conn) {
+      try {
+        await conn.close();
+      } catch (closeErr) {
+        console.error('Error cerrando conexión:', closeErr);
+      }
+    }
   }
 };

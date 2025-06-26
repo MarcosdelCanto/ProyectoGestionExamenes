@@ -812,19 +812,22 @@ export default function AsignaturasPage() {
 
     let itemsToDelete = modal.data;
     let itemName = '';
-    let itemKeyPrefix = '';
-    let nameProperty = '';
     let deleteHandler;
     let consequences = null;
     let icon = 'bi bi-trash';
 
+    // **INICIO DE LA CORRECCIÓN**
+    // Se extraen la propiedad del nombre y la clave única de forma explícita
+    let itemsToList = [];
     switch (modal.entity) {
       case 'escuela':
         itemName = itemsToDelete.length > 1 ? 'escuelas' : 'escuela';
-        itemKeyPrefix = 'esc-';
-        nameProperty = 'NOMBRE_ESCUELA';
         deleteHandler = handleDeleteEscuela;
         icon = 'bi bi-building';
+        itemsToList = itemsToDelete.map((item) => ({
+          key: item.ID_ESCUELA,
+          name: item.NOMBRE_ESCUELA,
+        }));
         consequences = (
           <ul>
             <li>
@@ -840,10 +843,12 @@ export default function AsignaturasPage() {
         break;
       case 'carrera':
         itemName = itemsToDelete.length > 1 ? 'carreras' : 'carrera';
-        itemKeyPrefix = 'car-';
-        nameProperty = 'NOMBRE_CARRERA';
         deleteHandler = handleDeleteCarrera;
         icon = 'bi bi-mortarboard-fill';
+        itemsToList = itemsToDelete.map((item) => ({
+          key: item.ID_CARRERA,
+          name: item.NOMBRE_CARRERA,
+        }));
         consequences = (
           <ul>
             <li>
@@ -861,10 +866,12 @@ export default function AsignaturasPage() {
         break;
       case 'asignatura':
         itemName = itemsToDelete.length > 1 ? 'asignaturas' : 'asignatura';
-        itemKeyPrefix = 'asig-';
-        nameProperty = 'NOMBRE_ASIGNATURA';
         deleteHandler = handleDeleteAsignatura;
         icon = 'bi bi-book';
+        itemsToList = itemsToDelete.map((item) => ({
+          key: item.ID_ASIGNATURA,
+          name: item.NOMBRE_ASIGNATURA,
+        }));
         consequences = (
           <ul>
             <li>
@@ -879,10 +886,12 @@ export default function AsignaturasPage() {
         break;
       case 'seccion':
         itemName = itemsToDelete.length > 1 ? 'secciones' : 'sección';
-        itemKeyPrefix = 'sec-';
-        nameProperty = 'NOMBRE_SECCION';
         deleteHandler = handleDeleteSeccion;
         icon = 'bi bi-list-task';
+        itemsToList = itemsToDelete.map((item) => ({
+          key: item.ID_SECCION,
+          name: item.NOMBRE_SECCION,
+        }));
         consequences = (
           <ul>
             <li>
@@ -899,6 +908,7 @@ export default function AsignaturasPage() {
       default:
         return <p>Error: Entidad desconocida.</p>;
     }
+    // **FIN DE LA CORRECCIÓN**
 
     return (
       <div>
@@ -907,10 +917,10 @@ export default function AsignaturasPage() {
         </p>
 
         <ul className="list-unstyled my-3 p-3 border bg-light rounded">
-          {itemsToDelete.map((item, index) => (
-            <li key={`${itemKeyPrefix}${index}`}>
+          {itemsToList.map((item) => (
+            <li key={item.key}>
               <i className={`${icon} me-2`}></i>
-              {item[nameProperty] || `Elemento sin nombre (ID: ${item.ID})`}
+              {item.name || `Elemento sin nombre`}
             </li>
           ))}
         </ul>
