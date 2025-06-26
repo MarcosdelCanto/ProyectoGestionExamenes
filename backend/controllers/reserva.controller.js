@@ -5,18 +5,11 @@ import oracledb from 'oracledb';
 const handleError = (res, error, message, statusCode = 500) => {
   console.error(message, ':', error);
   const details =
-    error && error.message // Si hay un objeto error con mensaje
-      ? error.message
-      : error // Si hay un objeto error pero sin mensaje (raro, pero por si acaso)
-        ? String(error)
-        : message; // Si no hay objeto error, el 'message' principal es el detalle.
-  res.status(statusCode).json({ error: message, details }); // 'details' ahora puede ser igual a 'message'
+    error && error.message ? error.message : error ? String(error) : message;
+  res.status(statusCode).json({ error: message, details });
 };
 
 // Función helper para obtener una reserva completa por ID y emitirla por socket
-// Función helper para obtener una reserva completa por ID y emitirla por socket
-// --- INICIO DE LA CORRECCIÓN ---
-// Esta función ahora es mucho más robusta y trae todos los datos necesarios.
 const emitReservaActualizada = async (
   req,
   connection,
@@ -24,7 +17,6 @@ const emitReservaActualizada = async (
   actionOrigin = 'unknown'
 ) => {
   if (req.app.get('io') && reservaIdNum) {
-    // Consulta SQL enriquecida que trae toda la información necesaria para el frontend.
     const sql = `
       SELECT
         r.ID_RESERVA, r.FECHA_RESERVA, r.ESTADO_CONFIRMACION_DOCENTE, r.OBSERVACIONES_DOCENTE, r.FECHA_CONFIRMACION_DOCENTE,
@@ -33,9 +25,9 @@ const emitReservaActualizada = async (
         est.NOMBRE_ESTADO AS ESTADO_RESERVA,
         sec.NOMBRE_SECCION,
         a.NOMBRE_ASIGNATURA,
-        c.NOMBRE_CARRERA,
-        esc.NOMBRE_ESCUELA,
-        c.NOMBRE_CARRERA, c.ID_CARRERA,
+        c.ID_CARRERA, c.NOMBRE_CARRERA,
+        esc.ID_ESCUELA, esc.NOMBRE_ESCUELA,
+        esc.COLOR_BACKGROUND, esc.COLOR_BORDER,
         (SELECT LISTAGG(u.NOMBRE_USUARIO, ', ') WITHIN GROUP (ORDER BY u.NOMBRE_USUARIO)
            FROM RESERVA_DOCENTES rd
            JOIN USUARIO u ON rd.USUARIO_ID_USUARIO = u.ID_USUARIO
@@ -47,7 +39,7 @@ const emitReservaActualizada = async (
       JOIN SECCION sec ON e.SECCION_ID_SECCION = sec.ID_SECCION
       JOIN ASIGNATURA a ON sec.ASIGNATURA_ID_ASIGNATURA = a.ID_ASIGNATURA
       JOIN CARRERA c ON a.CARRERA_ID_CARRERA = c.ID_CARRERA
-      JOIN ESCUELA esc ON c.ESCUELA_ID_ESCUELA = esc.ID_ESCUELA -- <-- JOIN AÑADIDO
+      JOIN ESCUELA esc ON c.ESCUELA_ID_ESCUELA = esc.ID_ESCUELA
       WHERE r.ID_RESERVA = :id_param
     `;
 
@@ -71,7 +63,6 @@ const emitReservaActualizada = async (
       );
 
       reservaParaEmitir.MODULOS = modulosResult.rows;
-      // Añadimos MODULOS_IDS para consistencia con otras partes de la app
       reservaParaEmitir.MODULOS_IDS = modulosResult.rows
         .map((m) => m.ID_MODULO)
         .join(',');
@@ -85,14 +76,11 @@ const emitReservaActualizada = async (
     }
   }
 };
-// --- FIN DE LA CORRECCIÓN ---
 
 export const getAllReservas = async (req, res) => {
   let conn;
   try {
     conn = await getConnection();
-    // --- INICIO DE LA MODIFICACIÓN ---
-    // Se añade la subconsulta para obtener el nombre del docente asignado
     const result = await conn.execute(
       `SELECT r.ID_RESERVA, r.FECHA_RESERVA,
               e.ID_EXAMEN, e.NOMBRE_EXAMEN,
@@ -100,6 +88,8 @@ export const getAllReservas = async (req, res) => {
               est.ID_ESTADO, est.NOMBRE_ESTADO AS ESTADO_RESERVA,
               r.ESTADO_CONFIRMACION_DOCENTE, r.OBSERVACIONES_DOCENTE,
               c.ID_CARRERA, c.NOMBRE_CARRERA,
+              esc.ID_ESCUELA, esc.NOMBRE_ESCUELA,
+              esc.COLOR_BACKGROUND, esc.COLOR_BORDER,
               (SELECT u.NOMBRE_USUARIO
                FROM RESERVA_DOCENTES rd
                JOIN USUARIO u ON rd.USUARIO_ID_USUARIO = u.ID_USUARIO
@@ -112,11 +102,11 @@ export const getAllReservas = async (req, res) => {
        JOIN SECCION sec ON e.SECCION_ID_SECCION = sec.ID_SECCION
        JOIN ASIGNATURA a ON sec.ASIGNATURA_ID_ASIGNATURA = a.ID_ASIGNATURA
        JOIN CARRERA c ON a.CARRERA_ID_CARRERA = c.ID_CARRERA
+       JOIN ESCUELA esc ON c.ESCUELA_ID_ESCUELA = esc.ID_ESCUELA
        ORDER BY r.FECHA_RESERVA DESC, r.ID_RESERVA DESC`,
       [],
       { outFormat: oracledb.OUT_FORMAT_OBJECT }
     );
-    // --- FIN DE LA MODIFICACIÓN ---
     res.json(result.rows);
   } catch (err) {
     handleError(res, err, 'Error al obtener reservas');
@@ -147,6 +137,8 @@ export const getReservaById = async (req, res) => {
               est.ID_ESTADO, est.NOMBRE_ESTADO AS ESTADO_RESERVA,
               r.ESTADO_CONFIRMACION_DOCENTE, r.OBSERVACIONES_DOCENTE, r.FECHA_CONFIRMACION_DOCENTE,
               c.ID_CARRERA, c.NOMBRE_CARRERA,
+              esc.ID_ESCUELA, esc.NOMBRE_ESCUELA,
+              esc.COLOR_BACKGROUND, esc.COLOR_BORDER,
               (SELECT u.NOMBRE_USUARIO
                  FROM RESERVA_DOCENTES rd
                  JOIN USUARIO u ON rd.USUARIO_ID_USUARIO = u.ID_USUARIO
@@ -159,6 +151,7 @@ export const getReservaById = async (req, res) => {
        JOIN SECCION sec ON e.SECCION_ID_SECCION = sec.ID_SECCION
        JOIN ASIGNATURA a ON sec.ASIGNATURA_ID_ASIGNATURA = a.ID_ASIGNATURA
        JOIN CARRERA c ON a.CARRERA_ID_CARRERA = c.ID_CARRERA
+       JOIN ESCUELA esc ON c.ESCUELA_ID_ESCUELA = esc.ID_ESCUELA
        WHERE r.ID_RESERVA = :id_param`,
       { id_param: reservaIdNum },
       { outFormat: oracledb.OUT_FORMAT_OBJECT }
@@ -203,16 +196,15 @@ export const crearReservaParaExamenExistente = async (req, res) => {
       docente_ids,
     } = req.body;
 
-    // 1. Validación de campos obligatorios (se mantiene igual)
     if (
       !examen_id_examen ||
       !fecha_reserva ||
       !sala_id_sala ||
       !modulos_ids ||
-      !Array.isArray(modulos_ids) || // CORREGIDO: Agregado operador lógico || que faltaba
+      !Array.isArray(modulos_ids) ||
       modulos_ids.length === 0 ||
       !docente_ids ||
-      !Array.isArray(docente_ids) || // CORREGIDO: Agregado operador lógico || que faltaba
+      !Array.isArray(docente_ids) ||
       docente_ids.length === 0
     ) {
       return handleError(
@@ -225,7 +217,6 @@ export const crearReservaParaExamenExistente = async (req, res) => {
 
     connection = await getConnection();
 
-    // 2. Obtener el ID del estado 'PROGRAMADO' (se mantiene igual)
     const estadoResult = await connection.execute(
       `SELECT ID_ESTADO FROM ESTADO WHERE NOMBRE_ESTADO = 'PROGRAMADO'`,
       {},
@@ -241,9 +232,6 @@ export const crearReservaParaExamenExistente = async (req, res) => {
       );
     }
 
-    // --- Inicia la transacción ---
-
-    // 3. Insertar en RESERVA (se mantiene igual)
     const fechaReservaCompleta = `${fecha_reserva} 00:00:00`;
     const reservaSql = `
       INSERT INTO RESERVA (ID_RESERVA, FECHA_RESERVA, SALA_ID_SALA, EXAMEN_ID_EXAMEN, ESTADO_ID_ESTADO, ESTADO_CONFIRMACION_DOCENTE)
@@ -261,7 +249,6 @@ export const crearReservaParaExamenExistente = async (req, res) => {
     if (!generatedReservaId)
       throw new Error('No se pudo generar el ID de la reserva.');
 
-    // 4. Insertar en RESERVAMODULO (se mantiene igual)
     const reservamoduloSql = `INSERT INTO RESERVAMODULO (MODULO_ID_MODULO, RESERVA_ID_RESERVA) VALUES (:modulo_id, :reserva_id)`;
     await connection.executeMany(
       reservamoduloSql,
@@ -271,7 +258,6 @@ export const crearReservaParaExamenExistente = async (req, res) => {
       }))
     );
 
-    // 5. Insertar en RESERVA_DOCENTES , se mantiene igual)
     const reservaDocentesSql = `INSERT INTO RESERVA_DOCENTES (RESERVA_ID_RESERVA, USUARIO_ID_USUARIO) VALUES (:reserva_id, :docente_id)`;
     await connection.executeMany(
       reservaDocentesSql,
@@ -281,7 +267,6 @@ export const crearReservaParaExamenExistente = async (req, res) => {
       }))
     );
 
-    // --- 6. (AÑADIDO) ACTUALIZAR EL ESTADO DEL EXAMEN A 'PROGRAMADO' ---
     console.log(
       `[reservaController] Actualizando estado del examen ${examen_id_examen} a PROGRAMADO.`
     );
@@ -291,15 +276,12 @@ export const crearReservaParaExamenExistente = async (req, res) => {
         WHERE ID_EXAMEN = :examenId
     `;
     await connection.execute(updateExamenSql, {
-      estadoId: idEstadoProgramado, // Reutilizamos el ID que ya obtuvimos
+      estadoId: idEstadoProgramado,
       examenId: parseInt(examen_id_examen),
     });
-    // --- FIN DEL BLOQUE AÑADIDO ---
 
-    // 7. Confirmar toda la transacción
     await connection.commit();
 
-    // Emitir evento de socket después del commit
     await emitReservaActualizada(
       req,
       connection,
@@ -334,8 +316,7 @@ export const createReserva = async (req, res) => {
   } = req.body;
   let conn;
   try {
-    // --- VALIDACIÓN: Verificar si el examen ya tiene una reserva ---
-    conn = await getConnection(); // Obtener conexión antes de la validación
+    conn = await getConnection();
     const checkReservaExistenteSql = `
       SELECT COUNT(*) AS count FROM RESERVA WHERE EXAMEN_ID_EXAMEN = :examen_id_param
     `;
@@ -353,7 +334,6 @@ export const createReserva = async (req, res) => {
         400
       );
     }
-    // --- FIN VALIDACIÓN ---
     conn = await getConnection();
     const resultReserva = await conn.execute(
       `INSERT INTO RESERVA (ID_RESERVA, FECHA_RESERVA, EXAMEN_ID_EXAMEN, SALA_ID_SALA, ESTADO_ID_ESTADO, ESTADO_CONFIRMACION_DOCENTE)
@@ -383,7 +363,6 @@ export const createReserva = async (req, res) => {
       });
     }
     await conn.commit();
-    // Emitir evento de socket después del commit
     await emitReservaActualizada(req, conn, newReservaId, 'createReserva');
     res.status(201).json({
       message: 'Reserva (original) creada con éxito',
@@ -480,14 +459,16 @@ export const getMisReservasPendientes = async (req, res) => {
     const sql = `
       SELECT
           R.ID_RESERVA, R.FECHA_RESERVA, R.ESTADO_CONFIRMACION_DOCENTE, R.OBSERVACIONES_DOCENTE,
-          R.FECHA_CONFIRMACION_DOCENTE, /* Añadido por si es útil en el frontend */
+          R.FECHA_CONFIRMACION_DOCENTE,
           E.ID_EXAMEN, E.NOMBRE_EXAMEN,
           SEC.ID_SECCION, SEC.NOMBRE_SECCION,
           A.ID_ASIGNATURA, A.NOMBRE_ASIGNATURA,
-          J.NOMBRE_JORNADA,
-          SL.NOMBRE_SALA,
+          J.ID_JORNADA, J.NOMBRE_JORNADA,
+          SL.ID_SALA, SL.NOMBRE_SALA,
           ED.NOMBRE_EDIFICIO,
-          SED.NOMBRE_SEDE,
+          SE.ID_SEDE, SE.NOMBRE_SEDE,
+          ESC.ID_ESCUELA, ESC.NOMBRE_ESCUELA,
+          ESC.COLOR_BACKGROUND, ESC.COLOR_BORDER, -- ¡AÑADIDO! Campos de color
           (SELECT MIN(M.INICIO_MODULO) FROM RESERVAMODULO RM JOIN MODULO M ON RM.MODULO_ID_MODULO = M.ID_MODULO WHERE RM.RESERVA_ID_RESERVA = R.ID_RESERVA) AS HORA_INICIO,
           (SELECT MAX(M.FIN_MODULO) FROM RESERVAMODULO RM JOIN MODULO M ON RM.MODULO_ID_MODULO = M.ID_MODULO WHERE RM.RESERVA_ID_RESERVA = R.ID_RESERVA) AS HORA_FIN,
           EST_RES.NOMBRE_ESTADO AS ESTADO_GENERAL_RESERVA
@@ -500,7 +481,9 @@ export const getMisReservasPendientes = async (req, res) => {
       JOIN USUARIO U ON US.USUARIO_ID_USUARIO = U.ID_USUARIO
       JOIN SALA SL ON R.SALA_ID_SALA = SL.ID_SALA
       JOIN EDIFICIO ED ON SL.EDIFICIO_ID_EDIFICIO = ED.ID_EDIFICIO
-      JOIN SEDE SED ON ED.SEDE_ID_SEDE = SED.ID_SEDE
+      JOIN SEDE SE ON ED.SEDE_ID_SEDE = SE.ID_SEDE
+      JOIN CARRERA C ON A.CARRERA_ID_CARRERA = C.ID_CARRERA -- Necesario para el JOIN a ESCUELA
+      JOIN ESCUELA ESC ON C.ESCUELA_ID_ESCUELA = ESC.ID_ESCUELA -- ¡JOIN corregido a ESCUELA!
       JOIN ESTADO EST_RES ON R.ESTADO_ID_ESTADO = EST_RES.ID_ESTADO
       WHERE US.USUARIO_ID_USUARIO = :idDocenteAutenticado_param
         AND U.ROL_ID_ROL = :rolDocente_param
@@ -559,10 +542,9 @@ export const actualizarConfirmacionDocente = async (req, res) => {
     );
 
     const idDocenteAutenticado = req.user.id_usuario;
-    const nombreDocenteAutenticado = req.user.nombre_usuario; // Asumir que req.user tiene nombre_usuario
-    const ROL_ID_DOCENTE = 2; // Asegúrate que este ID de rol sea el correcto
+    const nombreDocenteAutenticado = req.user.nombre_usuario;
+    const ROL_ID_DOCENTE = 2;
 
-    // CORRECCIÓN: Quitar espacios extra en los strings de estado
     if (!['CONFIRMADO', 'REQUIERE_REVISION'].includes(nuevoEstado.trim())) {
       return handleError(
         res,
@@ -585,7 +567,6 @@ export const actualizarConfirmacionDocente = async (req, res) => {
 
     console.log('[actualizarConfirmacionDocente] Obteniendo conexión a BD...');
     connection = await getConnection();
-    // No es necesario BEGIN explícito
     console.log(
       '[actualizarConfirmacionDocente] Conexión obtenida. Ejecutando checkSql...'
     );
@@ -617,7 +598,6 @@ export const actualizarConfirmacionDocente = async (req, res) => {
       );
     }
 
-    // Obtener observaciones existentes para construir el historial
     console.log(
       '[actualizarConfirmacionDocente] Obteniendo observaciones existentes...'
     );
@@ -630,13 +610,12 @@ export const actualizarConfirmacionDocente = async (req, res) => {
       '[actualizarConfirmacionDocente] Resultado de observaciones existentes:',
       reservaActualResult.rows
     );
-    let observacionesExistentes = // Cambiado a let para poder modificarlo
+    let observacionesExistentes =
       reservaActualResult.rows[0]?.OBSERVACIONES_DOCENTE || '';
 
     let observacionesParaGuardar = observacionesExistentes;
     if (nuevaObservacion && nuevaObservacion.trim() !== '') {
       const fechaActual = new Date().toLocaleString('es-CL', {
-        // Formato de fecha localizado
         year: 'numeric',
         month: '2-digit',
         day: '2-digit',
@@ -648,7 +627,7 @@ export const actualizarConfirmacionDocente = async (req, res) => {
         nombreDocenteAutenticado || `Docente ID ${idDocenteAutenticado}`;
       const entradaHistorial = `[${fechaActual} - ${autorObservacion}]: ${nuevaObservacion.trim()}`;
       observacionesParaGuardar = observacionesExistentes
-        ? `${entradaHistorial}\n${observacionesExistentes}` // Nueva observación al principio para fácil lectura
+        ? `${entradaHistorial}\n${observacionesExistentes}`
         : entradaHistorial;
     }
     console.log(
@@ -658,12 +637,11 @@ export const actualizarConfirmacionDocente = async (req, res) => {
 
     let idEstadoGeneralReservaParaUpdate = null;
     if (nuevoEstado.trim() === 'CONFIRMADO') {
-      // Usar trim()
       console.log(
         "[actualizarConfirmacionDocente] nuevoEstado es CONFIRMADO, buscando ID de estado general 'CONFIRMADO'..."
       );
       const estadoConfirmadoGeneralResult = await connection.execute(
-        `SELECT ID_ESTADO FROM ESTADO WHERE NOMBRE_ESTADO = 'CONFIRMADO'`, // O 'CONFIRMADA'
+        `SELECT ID_ESTADO FROM ESTADO WHERE NOMBRE_ESTADO = 'CONFIRMADO'`,
         {},
         { outFormat: oracledb.OUT_FORMAT_OBJECT }
       );
@@ -682,8 +660,8 @@ export const actualizarConfirmacionDocente = async (req, res) => {
 
     let setClauseEstadoGeneral = '';
     const updateParams = {
-      nuevoEstado_param: nuevoEstado.trim(), // Usar trim()
-      observaciones_param: observacionesParaGuardar, // Guardar el historial concatenado
+      nuevoEstado_param: nuevoEstado.trim(),
+      observaciones_param: observacionesParaGuardar,
       idReserva_param: reservaIdNum,
     };
 
@@ -715,7 +693,6 @@ export const actualizarConfirmacionDocente = async (req, res) => {
       console.log(
         '[actualizarConfirmacionDocente] Error: No se afectaron filas en el UPDATE.'
       );
-      // No se necesita rollback aquí si no hubo otras DML en esta transacción antes que esta falle
       return handleError(
         res,
         null,
@@ -730,9 +707,6 @@ export const actualizarConfirmacionDocente = async (req, res) => {
       '[actualizarConfirmacionDocente] Commit exitoso. Enviando respuesta JSON...'
     );
 
-    // Emitir evento de Socket.IO a todos los clientes
-    // La llamada a emitReservaActualizada ya estaba correctamente aquí en el código proporcionado.
-    // Solo me aseguro de que esté después del commit y antes de la respuesta.
     await emitReservaActualizada(
       req,
       connection,
@@ -788,9 +762,8 @@ export const getMisAsignacionesDeReservas = async (req, res) => {
   let connection;
   try {
     const userId = req.user.id_usuario;
-    const userRolId = req.user.rol_id_rol; // Se usa el ID del rol desde el token
+    const userRolId = req.user.rol_id_rol;
 
-    // Definición de los IDs de los roles
     const ID_ROL_ALUMNO = 3;
     const ID_ROL_DOCENTE = 2;
     const ID_ROL_COORDINADOR_CARRERA = 17;
@@ -807,7 +780,6 @@ export const getMisAsignacionesDeReservas = async (req, res) => {
     let sqlQuery;
     const params = { userId_param: userId };
 
-    // --- Consulta Base Enriquecida ---
     let baseSelect = `
       SELECT DISTINCT
         R.ID_RESERVA, R.FECHA_RESERVA,
@@ -817,6 +789,7 @@ export const getMisAsignacionesDeReservas = async (req, res) => {
         A.ID_ASIGNATURA, A.NOMBRE_ASIGNATURA,
         C.ID_CARRERA, C.NOMBRE_CARRERA,
         ESC.ID_ESCUELA, ESC.NOMBRE_ESCUELA,
+        ESC.COLOR_BACKGROUND, ESC.COLOR_BORDER,
         SE.ID_SEDE, SE.NOMBRE_SEDE,
         J.ID_JORNADA, J.NOMBRE_JORNADA,
         SL.ID_SALA, SL.NOMBRE_SALA,
@@ -831,7 +804,7 @@ export const getMisAsignacionesDeReservas = async (req, res) => {
            WITHIN GROUP (ORDER BY M.ORDEN)
          FROM RESERVAMODULO RM_DET
          JOIN MODULO M ON RM_DET.MODULO_ID_MODULO = M.ID_MODULO
-         WHERE RM_DET.RESERVA_ID_RESERVA = R.ID_RESERVA) AS MODULOS_DETALLES_STRING /* <-- Añadido para nombres y horarios de módulos */
+         WHERE RM_DET.RESERVA_ID_RESERVA = R.ID_RESERVA) AS MODULOS_DETALLES_STRING
       FROM RESERVA R
       JOIN EXAMEN E ON R.EXAMEN_ID_EXAMEN = E.ID_EXAMEN
       JOIN SECCION SEC ON E.SECCION_ID_SECCION = SEC.ID_SECCION
@@ -845,23 +818,21 @@ export const getMisAsignacionesDeReservas = async (req, res) => {
       JOIN ESTADO EST_R ON R.ESTADO_ID_ESTADO = EST_R.ID_ESTADO
     `;
 
-    // Lógica de filtrado por rol
     if (userRolId === ID_ROL_ALUMNO) {
       sqlQuery = `
         ${baseSelect}
         JOIN USUARIOSECCION US ON SEC.ID_SECCION = US.SECCION_ID_SECCION
         WHERE US.USUARIO_ID_USUARIO = :userId_param
           AND R.ESTADO_CONFIRMACION_DOCENTE = 'CONFIRMADO'
-              AND EST_R.NOMBRE_ESTADO != 'DESCARTADO'
+          AND EST_R.NOMBRE_ESTADO != 'DESCARTADO'
           AND EST_R.NOMBRE_ESTADO IN ('PROGRAMADO', 'CONFIRMADO')
         ORDER BY R.FECHA_RESERVA DESC, HORA_INICIO ASC
       `;
     } else if (userRolId === ID_ROL_DOCENTE) {
-      // Se une con RESERVA_DOCENTES para asegurar que el docente esté asignado a la reserva
       sqlQuery = `
         ${baseSelect}
-        JOIN RESERVA_DOCENTES RD ON R.ID_RESERVA = RD.RESERVA_ID_RESERVA
-        WHERE RD.USUARIO_ID_USUARIO = :userId_param
+        JOIN RESERVA_DOCENTES RD ON R.ID_RESERVA = RD.RESERVA_ID_RESERVA -- <-- ¡CAMBIO CLAVE!
+        WHERE RD.USUARIO_ID_USUARIO = :userId_param -- <-- ¡CAMBIO CLAVE!
             AND EST_R.NOMBRE_ESTADO != 'DESCARTADO'
         ORDER BY R.FECHA_RESERVA DESC, HORA_INICIO ASC
       `;
@@ -875,9 +846,9 @@ export const getMisAsignacionesDeReservas = async (req, res) => {
       `;
     } else if (userRolId === ID_ROL_ADMIN) {
       sqlQuery = `${baseSelect} WHERE EST_R.NOMBRE_ESTADO != 'DESCARTADO' ORDER BY R.FECHA_RESERVA DESC, HORA_INICIO ASC`;
-      delete params.userId_param; // Admin ve todo
+      delete params.userId_param;
     } else {
-      return res.json([]); // Otros roles no ven nada
+      return res.json([]);
     }
 
     connection = await getConnection();
@@ -885,13 +856,12 @@ export const getMisAsignacionesDeReservas = async (req, res) => {
       outFormat: oracledb.OUT_FORMAT_OBJECT,
     });
 
-    // Procesar las filas para convertir MODULOS_IDS_STRING y MODULOS_DETALLES_STRING
     const reservasConDetalles = result.rows.map((row) => ({
       ...row,
       MODULOS_IDS_ARRAY: row.MODULOS_IDS_STRING
         ? row.MODULOS_IDS_STRING.split(',').map(Number)
         : [],
-      MODULOS_NOMBRES_ARRAY: row.MODULOS_DETALLES_STRING // Para el frontend MisReservasAsignadasPage
+      MODULOS_NOMBRES_ARRAY: row.MODULOS_DETALLES_STRING
         ? row.MODULOS_DETALLES_STRING.split('; ')
         : [],
     }));
@@ -912,47 +882,33 @@ export const getMisAsignacionesDeReservas = async (req, res) => {
     }
   }
 };
-/**
- * Actualiza una reserva existente.
- * Primero elimina las asociaciones de módulos antiguos y luego inserta los nuevos.
- */
+
 export const updateReserva = async (req, res) => {
-  const { id } = req.params; // El ID de la reserva a editar
+  const { id } = req.params;
 
   console.log(
     `[Backend updateReserva] Received update request for reserva ID: ${id}`
   );
   console.log('[Backend updateReserva] Request body:', req.body);
 
-  const reservaIdNum = parseInt(id, 10); // Convertir a número aquí
+  const reservaIdNum = parseInt(id, 10);
 
-  // Datos que vienen del formulario
   const { fecha_reserva, sala_id_sala, modulos_ids, docente_ids } = req.body;
-  if (isNaN(reservaIdNum)) {
-    // Usar reservaIdNum para la validación
-    return handleError(
-      res,
-      new Error('ID de reserva no válido'),
-      'ID de reserva inválido',
-      400
-    );
-  }
-
-  // Validaciones
   if (
+    isNaN(reservaIdNum) ||
     !fecha_reserva ||
     !sala_id_sala ||
     !modulos_ids ||
-    !Array.isArray(modulos_ids) || // CORREGIDO: Agregado operador lógico || que faltaba
+    !Array.isArray(modulos_ids) ||
     modulos_ids.length === 0 ||
-    !docente_ids || // Check if docente_ids is provided
-    !Array.isArray(docente_ids) || // CORREGIDO: Agregado operador lógico || que faltaba
+    !docente_ids ||
+    !Array.isArray(docente_ids) ||
     docente_ids.length === 0
   ) {
     return handleError(
       res,
-      new Error('Datos incompletos'),
-      'Faltan campos obligatorios: fecha, sala, módulos o docente.', // Corrected message
+      new Error('Datos incompletos o ID de reserva inválido'),
+      'Faltan campos obligatorios: fecha, sala, módulos o docente.',
       400
     );
   }
@@ -961,31 +917,26 @@ export const updateReserva = async (req, res) => {
   try {
     connection = await getConnection();
 
-    // --- Inicia la transacción ---
-
-    // 1. Actualiza la tabla principal RESERVA con la nueva fecha y sala
     const updateReservaSql = `
       UPDATE RESERVA SET
         FECHA_RESERVA = TO_DATE(:fecha_reserva, 'YYYY-MM-DD'),
         SALA_ID_SALA = :sala_id_sala,
-        ESTADO_CONFIRMACION_DOCENTE = 'PENDIENTE', -- Resetear estado para revisión del docente. Las observaciones del docente se mantienen.
-        FECHA_CONFIRMACION_DOCENTE = NULL -- Limpiar fecha de confirmación previa
+        ESTADO_CONFIRMACION_DOCENTE = 'PENDIENTE',
+        FECHA_CONFIRMACION_DOCENTE = NULL
       WHERE ID_RESERVA = :reservaId
     `;
     await connection.execute(updateReservaSql, {
       fecha_reserva: fecha_reserva,
       sala_id_sala: parseInt(sala_id_sala),
-      reservaId: reservaIdNum, // Usar el ID numérico
+      reservaId: reservaIdNum,
     });
 
-    // 2. Libera/Borra TODOS los módulos asociados anteriormente a esta reserva
     console.log(
       `[updateReserva] Liberando módulos antiguos para la reserva #${reservaIdNum}`
     );
     const deleteModulosSql = `DELETE FROM RESERVAMODULO WHERE RESERVA_ID_RESERVA = :reservaId`;
-    await connection.execute(deleteModulosSql, { reservaId: reservaIdNum }); // Usar el ID numérico
+    await connection.execute(deleteModulosSql, { reservaId: reservaIdNum });
 
-    // 3. Inserta las NUEVAS asociaciones de módulos
     console.log(
       `[updateReserva] Insertando ${modulos_ids.length} nuevos módulos para la reserva #${reservaIdNum}`
     );
@@ -994,32 +945,28 @@ export const updateReserva = async (req, res) => {
       VALUES (:modulo_id, :reserva_id)
     `;
     const binds = modulos_ids.map((moduloId) => ({
-      modulo_id: parseInt(moduloId), // Asegurar que el ID del módulo también sea número
-      reserva_id: reservaIdNum, // Usar el ID numérico de la reserva
+      modulo_id: parseInt(moduloId),
+      reserva_id: reservaIdNum,
     }));
 
     if (binds.length > 0) {
       await connection.executeMany(insertModulosSql, binds);
     }
-    // --- AÑADE ESTA LÓGICA PARA ACTUALIZAR EL DOCENTE ---
-    // 1. Borra la asociación de docente(s) anterior(es)
+
     await connection.execute(
       `DELETE FROM RESERVA_DOCENTES WHERE RESERVA_ID_RESERVA = :reservaId`,
-      { reservaId: reservaIdNum } // Usar el ID numérico
+      { reservaId: reservaIdNum }
     );
-    // 2. Inserta la nueva asociación de docente
+
     if (docente_ids && docente_ids.length > 0) {
       await connection.execute(
         `INSERT INTO RESERVA_DOCENTES (RESERVA_ID_RESERVA, USUARIO_ID_USUARIO) VALUES (:reservaId, :docenteId)`,
-        { reservaId: reservaIdNum, docenteId: parseInt(docente_ids[0]) } // Usar ID numérico y parsear docenteId
+        { reservaId: reservaIdNum, docenteId: parseInt(docente_ids[0]) }
       );
     }
-    // --- FIN DE LA LÓGICA DE DOCENTE ---
 
-    // 4. Confirma toda la transacción
     await connection.commit();
 
-    // Emitir evento de socket después del commit
     await emitReservaActualizada(
       req,
       connection,
@@ -1040,6 +987,7 @@ export const updateReserva = async (req, res) => {
     }
   }
 };
+
 export const descartarReserva = async (req, res) => {
   const { idReserva } = req.params;
   const reservaIdNum = parseInt(idReserva, 10);
@@ -1056,7 +1004,6 @@ export const descartarReserva = async (req, res) => {
   try {
     connection = await getConnection();
 
-    // 1. Obtener información de la reserva y su examen asociado
     const reservaInfo = await connection.execute(
       `SELECT
         R.ID_RESERVA,
@@ -1082,7 +1029,6 @@ export const descartarReserva = async (req, res) => {
       `[descartarReserva] Examen asociado: ${examenId}, Estado actual: ${reservaInfo.rows[0].ESTADO_CONFIRMACION_DOCENTE}`
     );
 
-    // 2. Obtener IDs de estados necesarios
     const estadoDescartadoResult = await connection.execute(
       `SELECT ID_ESTADO FROM ESTADO WHERE NOMBRE_ESTADO = 'DESCARTADO'`,
       {},
@@ -1106,18 +1052,15 @@ export const descartarReserva = async (req, res) => {
       );
     }
 
-    // 3. Iniciar transacción
     console.log(
       `[descartarReserva] Eliminando módulos asociados a la reserva ${reservaIdNum}`
     );
 
-    // 3.1. Eliminar registros en RESERVAMODULO
     await connection.execute(
       `DELETE FROM RESERVAMODULO WHERE RESERVA_ID_RESERVA = :reservaId`,
       { reservaId: reservaIdNum }
     );
 
-    // 3.2. Actualizar la reserva a DESCARTADO (AMBOS campos)
     console.log(
       `[descartarReserva] Actualizando RESERVA ${reservaIdNum} a estado DESCARTADO`
     );
@@ -1129,7 +1072,6 @@ export const descartarReserva = async (req, res) => {
       { idEstadoDescartado, reservaId: reservaIdNum }
     );
 
-    // 3.3. IMPORTANTE: Actualizar el examen a ACTIVO
     console.log(
       `[descartarReserva] Actualizando EXAMEN ${examenId} a estado ACTIVO (${idEstadoActivo})`
     );
@@ -1140,26 +1082,25 @@ export const descartarReserva = async (req, res) => {
       { idEstadoActivo, examenId }
     );
 
-    // 4. Confirmar transacción
     await connection.commit();
 
-    // Emitir evento de socket después del commit
-    await emitReservaActualizada(
-      req,
-      connection,
-      reservaIdNum,
-      'descartarReserva'
-    );
+    if (req.app.get('io')) {
+      req.app
+        .get('io')
+        .emit('reservaEliminadaDesdeServidor', { id_reserva: reservaIdNum });
+      console.log(
+        `[Socket.IO] Evento 'reservaEliminadaDesdeServidor' emitido para reserva #${reservaIdNum}.`
+      );
+    }
+
     console.log(
-      `[descartarReserva] Reserva ${reservaIdNum} descartada y examen ${examenId} reactivado exitosamente`
+      `[descartarReserva] Reserva ${reservaIdNum} descartada y examen ${examenId} reactivado`
     );
 
-    // 5. Responder con éxito y datos útiles
-    res.json({
+    res.status(200).json({
       message: 'Reserva descartada y examen reactivado exitosamente.',
       reserva_id: reservaIdNum,
       examen_id: examenId,
-      estado_reserva: 'DESCARTADO',
       estado_examen: 'ACTIVO',
     });
   } catch (error) {
@@ -1183,13 +1124,6 @@ export const descartarReserva = async (req, res) => {
   }
 };
 
-/**
- * Crea una reserva completa (Reserva + ReservaModulos + ReservaDocentes) para un examen existente
- * con estado inicial 'PROGRAMADO' y ESTADO_CONFIRMACION_DOCENTE = 'EN_CURSO'.
- * Este flujo está centrado en el estado de confirmación docente como indicador principal.
- * @param {Object} req - Request object con { examen_id_examen, fecha_reserva, sala_id_sala, modulos_ids, docente_ids }
- * @param {Object} res - Response object
- */
 export const crearReservaEnCurso = async (req, res) => {
   let connection;
   try {
@@ -1203,7 +1137,6 @@ export const crearReservaEnCurso = async (req, res) => {
 
     console.log(`[crearReservaEnCurso] Creando reserva con flujo EN_CURSO`);
 
-    // 1. Validación de campos obligatorios
     if (
       !examen_id_examen ||
       !fecha_reserva ||
@@ -1223,7 +1156,6 @@ export const crearReservaEnCurso = async (req, res) => {
 
     connection = await getConnection();
 
-    // 2. Obtener el ID del estado 'PROGRAMADO' para la reserva y el examen
     const estadoResult = await connection.execute(
       `SELECT ID_ESTADO FROM ESTADO WHERE NOMBRE_ESTADO = 'PROGRAMADO'`,
       {},
@@ -1244,7 +1176,6 @@ export const crearReservaEnCurso = async (req, res) => {
       `[crearReservaEnCurso] ID del estado PROGRAMADO: ${idEstadoProgramado}`
     );
 
-    // 3. Verificar que el examen no tenga ya una reserva activa
     const reservaExistenteResult = await connection.execute(
       `SELECT COUNT(*) AS COUNT
        FROM RESERVA R
@@ -1264,9 +1195,6 @@ export const crearReservaEnCurso = async (req, res) => {
       );
     }
 
-    // --- Inicia la transacción ---
-
-    // 4. Insertar en RESERVA con estado PROGRAMADO y confirmación EN_CURSO
     const fechaReservaCompleta = `${fecha_reserva} 00:00:00`;
     const reservaSql = `
       INSERT INTO RESERVA (
@@ -1308,7 +1236,6 @@ export const crearReservaEnCurso = async (req, res) => {
       `[crearReservaEnCurso] Estado reserva: PROGRAMADO, Confirmación docente: EN_CURSO`
     );
 
-    // 5. Insertar módulos en RESERVAMODULO
     const reservamoduloSql = `
       INSERT INTO RESERVAMODULO (MODULO_ID_MODULO, RESERVA_ID_RESERVA)
       VALUES (:modulo_id, :reserva_id)
@@ -1325,7 +1252,6 @@ export const crearReservaEnCurso = async (req, res) => {
       `[crearReservaEnCurso] ${modulos_ids.length} módulos insertados`
     );
 
-    // 6. Insertar docentes en RESERVA_DOCENTES
     const reservaDocentesSql = `
       INSERT INTO RESERVA_DOCENTES (RESERVA_ID_RESERVA, USUARIO_ID_USUARIO)
       VALUES (:reserva_id, :docente_id)
@@ -1342,7 +1268,6 @@ export const crearReservaEnCurso = async (req, res) => {
       `[crearReservaEnCurso] ${docente_ids.length} docentes asignados`
     );
 
-    // 7. Actualizar estado del examen a PROGRAMADO
     const updateExamenSql = `
       UPDATE EXAMEN
       SET ESTADO_ID_ESTADO = :estadoId
@@ -1357,11 +1282,9 @@ export const crearReservaEnCurso = async (req, res) => {
       `[crearReservaEnCurso] Estado del examen actualizado a PROGRAMADO`
     );
 
-    // 8. Confirmar transacción
     await connection.commit();
 
     console.log(`[crearReservaEnCurso] Transacción completada exitosamente`);
-    // Emitir evento de socket después del commit
     await emitReservaActualizada(
       req,
       connection,
@@ -1415,7 +1338,7 @@ export const enviarReservaADocente = async (req, res) => {
   let connection;
   try {
     const { idReserva } = req.params;
-    const { nuevaCantidadModulos, docente_id } = req.body; // ← AGREGAR docente_id
+    const { nuevaCantidadModulos, docente_id } = req.body;
 
     console.log(
       `[Backend Ctrl: enviarReservaADocente] Solicitud para reserva ${idReserva}. Payload: módulos=${nuevaCantidadModulos}, docente=${docente_id}`
@@ -1433,7 +1356,6 @@ export const enviarReservaADocente = async (req, res) => {
 
     connection = await getConnection();
 
-    // Verificar que la reserva existe y está en estado EN_CURSO
     const reservaActualResult = await connection.execute(
       `SELECT r.ESTADO_CONFIRMACION_DOCENTE, r.EXAMEN_ID_EXAMEN, COUNT(rm.MODULO_ID_MODULO) AS MODULOS_ACTUALES
        FROM RESERVA r
@@ -1461,19 +1383,16 @@ export const enviarReservaADocente = async (req, res) => {
       );
     }
 
-    // **NUEVA LÓGICA: Actualizar docente asignado**
     if (docente_id) {
       console.log(
         `[enviarReservaADocente] Asignando docente ${docente_id} a reserva ${reservaIdNum}`
       );
 
-      // 1. Eliminar docente anterior (si existe)
       await connection.execute(
         `DELETE FROM RESERVA_DOCENTES WHERE RESERVA_ID_RESERVA = :reserva_id`,
         { reserva_id: reservaIdNum }
       );
 
-      // 2. Insertar nuevo docente
       await connection.execute(
         `INSERT INTO RESERVA_DOCENTES (RESERVA_ID_RESERVA, USUARIO_ID_USUARIO) VALUES (:reserva_id, :docente_id)`,
         {
@@ -1487,7 +1406,6 @@ export const enviarReservaADocente = async (req, res) => {
       );
     }
 
-    // **LÓGICA EXISTENTE DE ACTUALIZACIÓN DE MÓDULOS - RESTAURADA COMPLETA**
     if (
       nuevaCantidadModulos !== undefined &&
       nuevaCantidadModulos !== modulosActualesCount
@@ -1496,7 +1414,6 @@ export const enviarReservaADocente = async (req, res) => {
         `[enviarReservaADocente] Actualizando módulos de ${modulosActualesCount} a ${nuevaCantidadModulos}`
       );
 
-      // Validar que la nueva cantidad sea válida
       if (nuevaCantidadModulos < 1 || nuevaCantidadModulos > 12) {
         return handleError(
           res,
@@ -1506,7 +1423,6 @@ export const enviarReservaADocente = async (req, res) => {
         );
       }
 
-      // Obtener información de la reserva para generar la nueva secuencia de módulos
       const infoReservaResult = await connection.execute(
         `SELECT r.FECHA_RESERVA, r.SALA_ID_SALA,
                 MIN(rm.MODULO_ID_MODULO) as PRIMER_MODULO_ID
@@ -1530,7 +1446,6 @@ export const enviarReservaADocente = async (req, res) => {
       const { FECHA_RESERVA, SALA_ID_SALA, PRIMER_MODULO_ID } =
         infoReservaResult.rows[0];
 
-      // Obtener el orden del primer módulo actual
       const ordenPrimerModuloResult = await connection.execute(
         `SELECT ORDEN FROM MODULO WHERE ID_MODULO = :modulo_id`,
         { modulo_id: PRIMER_MODULO_ID },
@@ -1543,7 +1458,6 @@ export const enviarReservaADocente = async (req, res) => {
 
       const ordenInicial = ordenPrimerModuloResult.rows[0].ORDEN;
 
-      // Generar IDs de los nuevos módulos
       const nuevosModulosResult = await connection.execute(
         `SELECT ID_MODULO, ORDEN, NOMBRE_MODULO
          FROM MODULO
@@ -1570,7 +1484,6 @@ export const enviarReservaADocente = async (req, res) => {
         (row) => row.ID_MODULO
       );
 
-      // Verificar conflictos con otras reservas
       const conflictosResult = await connection.execute(
         `SELECT COUNT(*) as CONFLICTOS
          FROM RESERVAMODULO rm
@@ -1601,13 +1514,11 @@ export const enviarReservaADocente = async (req, res) => {
         );
       }
 
-      // Eliminar módulos actuales
       await connection.execute(
         `DELETE FROM RESERVAMODULO WHERE RESERVA_ID_RESERVA = :reserva_id`,
         { reserva_id: reservaIdNum }
       );
 
-      // Insertar nuevos módulos
       const insertModulosSql = `
         INSERT INTO RESERVAMODULO (MODULO_ID_MODULO, RESERVA_ID_RESERVA)
         VALUES (:modulo_id, :reserva_id)
@@ -1625,7 +1536,6 @@ export const enviarReservaADocente = async (req, res) => {
       );
     }
 
-    // Actualizar estado a PENDIENTE
     const updateSql = `
       UPDATE RESERVA
       SET ESTADO_CONFIRMACION_DOCENTE = 'PENDIENTE'
@@ -1646,7 +1556,6 @@ export const enviarReservaADocente = async (req, res) => {
       `[enviarReservaADocente] Reserva ${reservaIdNum} enviada a docente exitosamente`
     );
 
-    // Emitir evento de socket después del commit
     await emitReservaActualizada(
       req,
       connection,
@@ -1724,7 +1633,6 @@ export const cancelarReservaCompleta = async (req, res) => {
       return handleError(res, null, "Estado 'ACTIVO' no configurado.", 500);
     }
 
-    // --- Inicia la transacción ---
     await connection.execute(
       `DELETE FROM RESERVAMODULO WHERE RESERVA_ID_RESERVA = :reserva_id`,
       { reserva_id: reservaIdNum }
@@ -1747,8 +1655,6 @@ export const cancelarReservaCompleta = async (req, res) => {
 
     await connection.commit();
 
-    // --- INICIO DE LA CORRECCIÓN CLAVE ---
-    // Después de confirmar la transacción, emitimos un evento de Socket.IO
     if (req.app.get('io')) {
       req.app
         .get('io')
@@ -1757,7 +1663,6 @@ export const cancelarReservaCompleta = async (req, res) => {
         `[Socket.IO] Evento 'reservaEliminadaDesdeServidor' emitido para reserva #${reservaIdNum}.`
       );
     }
-    // --- FIN DE LA CORRECCIÓN CLAVE ---
 
     console.log(
       `[cancelarReservaCompleta] Reserva ${reservaIdNum} cancelada y examen ${examenId} reactivado`
@@ -1783,7 +1688,7 @@ export const cancelarReservaCompleta = async (req, res) => {
       try {
         await connection.close();
       } catch (err) {
-        console.error('Error cerrando la conexión:', err);
+        console.error('Error cerrando conexión:', err);
       }
     }
   }
@@ -1791,36 +1696,39 @@ export const cancelarReservaCompleta = async (req, res) => {
 
 export const getMisReservasConfirmadas = async (req, res) => {
   let connection;
-  const { id_usuario: userId } = req.user;
+  const { id_usuario: userId } = req.user; // Obtiene el ID del usuario logueado
 
   try {
     connection = await getConnection();
     const sql = `
-      SELECT
+      SELECT DISTINCT
         R.ID_RESERVA, R.FECHA_RESERVA,
         S.ID_SALA, S.NOMBRE_SALA,
-        EX.ID_EXAMEN, EX.NOMBRE_EXAMEN,
+        EX.ID_EXAMEN, EX.NOMBRE_EXAMEN, EX.CANTIDAD_MODULOS_EXAMEN,
         SEC.ID_SECCION, SEC.NOMBRE_SECCION,
-        A.NOMBRE_ASIGNATURA,
-        ESC.NOMBRE_ESCUELA, -- <-- CAMPO CLAVE AÑADIDO
-        C.NOMBRE_CARRERA,
-        (SELECT LISTAGG(U.NOMBRE_USUARIO, ', ') WITHIN GROUP (ORDER BY U.NOMBRE_USUARIO)
-           FROM USUARIOSECCION US_DOC
-           JOIN USUARIO U ON US_DOC.USUARIO_ID_USUARIO = U.ID_USUARIO
-           JOIN ROL RL ON U.ROL_ID_ROL = RL.ID_ROL
-           WHERE US_DOC.SECCION_ID_SECCION = SEC.ID_SECCION AND RL.NOMBRE_ROL = 'DOCENTE'
+        A.ID_ASIGNATURA, A.NOMBRE_ASIGNATURA,
+        ESC.ID_ESCUELA, ESC.NOMBRE_ESCUELA,
+        ESC.COLOR_BACKGROUND, ESC.COLOR_BORDER, -- ¡AÑADIDO! Campos de color
+        C.ID_CARRERA, C.NOMBRE_CARRERA,
+        -- Ahora obtenemos el nombre del docente asignado a ESTA RESERVA, no de la sección del examen
+        (SELECT LISTAGG(U_RD.NOMBRE_USUARIO, ', ') WITHIN GROUP (ORDER BY U_RD.NOMBRE_USUARIO)
+           FROM RESERVA_DOCENTES RD_SUB
+           JOIN USUARIO U_RD ON RD_SUB.USUARIO_ID_USUARIO = U_RD.ID_USUARIO
+           WHERE RD_SUB.RESERVA_ID_RESERVA = R.ID_RESERVA
         ) AS NOMBRE_DOCENTE,
-        (SELECT LISTAGG(M.ID_MODULO, ',') WITHIN GROUP (ORDER BY M.ORDEN) FROM RESERVAMODULO RM JOIN MODULO M ON RM.MODULO_ID_MODULO = M.ID_MODULO WHERE RM.RESERVA_ID_RESERVA = R.ID_RESERVA) AS MODULOS_IDS
+        (SELECT MIN(M.INICIO_MODULO) FROM RESERVAMODULO RM_MIN JOIN MODULO M ON RM_MIN.MODULO_ID_MODULO = M.ID_MODULO WHERE RM_MIN.RESERVA_ID_RESERVA = R.ID_RESERVA) AS HORA_INICIO, -- Añadido
+        (SELECT MAX(M.FIN_MODULO) FROM RESERVAMODULO RM_MAX JOIN MODULO M ON RM_MAX.MODULO_ID_MODULO = M.ID_MODULO WHERE RM_MAX.RESERVA_ID_RESERVA = R.ID_RESERVA) AS HORA_FIN,     -- Añadido
+        (SELECT LISTAGG(M.ID_MODULO, ',') WITHIN GROUP (ORDER BY M.ORDEN) FROM RESERVAMODULO RM JOIN MODULO M ON RM.MODULO_ID_MODULO = M.ID_MODULO WHERE RM.RESERVA_ID_RESERVA = R.ID_RESERVA) AS MODULOS_IDS -- Añadido
       FROM RESERVA R
       JOIN EXAMEN EX ON R.EXAMEN_ID_EXAMEN = EX.ID_EXAMEN
       JOIN SECCION SEC ON EX.SECCION_ID_SECCION = SEC.ID_SECCION
       JOIN ASIGNATURA A ON SEC.ASIGNATURA_ID_ASIGNATURA = A.ID_ASIGNATURA
       JOIN CARRERA C ON A.CARRERA_ID_CARRERA = C.ID_CARRERA
-      JOIN ESCUELA ESC ON C.ESCUELA_ID_ESCUELA = ESC.ID_ESCUELA -- <-- JOIN AÑADIDO
+      JOIN ESCUELA ESC ON C.ESCUELA_ID_ESCUELA = ESC.ID_ESCUELA
       JOIN SALA S ON R.SALA_ID_SALA = S.ID_SALA
-      JOIN USUARIOSECCION US ON SEC.ID_SECCION = US.SECCION_ID_SECCION -- Unimos con las secciones del usuario
-      WHERE R.ESTADO_CONFIRMACION_DOCENTE = 'CONFIRMADO' -- Solo las confirmadas
-      AND US.USUARIO_ID_USUARIO = :userId -- Solo las del usuario logueado
+      JOIN RESERVA_DOCENTES RD ON R.ID_RESERVA = RD.RESERVA_ID_RESERVA -- <-- ¡CAMBIO CLAVE! Unimos con la tabla que asigna docentes a reservas
+      WHERE R.ESTADO_CONFIRMACION_DOCENTE = 'CONFIRMADO'
+      AND RD.USUARIO_ID_USUARIO = :userId -- <-- ¡CAMBIO CLAVE! Filtramos por el docente asignado a la reserva
       ORDER BY R.FECHA_RESERVA
     `;
 
@@ -1832,9 +1740,32 @@ export const getMisReservasConfirmadas = async (req, res) => {
       }
     );
 
-    // Usamos un Set para obtener resultados únicos por ID_RESERVA
+    // Procesar los resultados para incluir los módulos correctamente
+    const reservasConDetalles = await Promise.all(
+      result.rows.map(async (row) => {
+        const modulosResult = await connection.execute(
+          `SELECT m.ID_MODULO, m.NOMBRE_MODULO, m.INICIO_MODULO, m.FIN_MODULO, m.ORDEN
+         FROM RESERVAMODULO rm
+         JOIN MODULO m ON rm.MODULO_ID_MODULO = m.ID_MODULO
+         WHERE rm.RESERVA_ID_RESERVA = :reservaId_param
+         ORDER BY m.ORDEN`,
+          { reservaId_param: row.ID_RESERVA },
+          { outFormat: oracledb.OUT_FORMAT_OBJECT }
+        );
+        return {
+          ...row,
+          MODULOS: modulosResult.rows, // Añadimos la lista de objetos de módulo
+        };
+      })
+    );
+
+    // Usamos un Set para obtener resultados únicos por ID_RESERVA (aunque el DISTINCT en SQL ya debería ayudar)
+    // El Promise.all hace que esto sea un array, por lo que el Map no es estrictamente necesario si la consulta es DISTINCT.
+    // Lo mantengo para robustez.
     const uniqueReservas = [
-      ...new Map(result.rows.map((item) => [item.ID_RESERVA, item])).values(),
+      ...new Map(
+        reservasConDetalles.map((item) => [item.ID_RESERVA, item])
+      ).values(),
     ];
 
     res.json(uniqueReservas);

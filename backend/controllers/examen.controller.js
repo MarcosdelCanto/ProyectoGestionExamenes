@@ -31,8 +31,12 @@ export const getAllExamenes = async (_req, res) => {
     connection = await getConnection();
     const result = await connection.execute(
       `SELECT e.id_examen, e.nombre_examen, e.inscritos_examen, e.tipo_procesamiento_examen, e.plataforma_prose_examen,
-              e.situacion_evaluativa_examen, e.cantidad_modulos_examen, s.nombre_seccion, a.nombre_asignatura, es.nombre_estado,
-              c.NOMBRE_CARRERA,
+              e.situacion_evaluativa_examen, e.cantidad_modulos_examen,
+              s.ID_SECCION, s.nombre_seccion, -- Incluido ID_SECCION
+              a.ID_ASIGNATURA, a.nombre_asignatura, -- Incluido ID_ASIGNATURA
+              es.ID_ESTADO, es.nombre_estado, -- Incluido ID_ESTADO
+              c.ID_CARRERA, c.NOMBRE_CARRERA, -- Incluido ID y Nombre de Carrera
+              esc.ID_ESCUELA, esc.NOMBRE_ESCUELA, -- <-- ¡AÑADIDO! ID y Nombre de Escuela
               (SELECT LISTAGG(U.NOMBRE_USUARIO, ', ') WITHIN GROUP (ORDER BY U.NOMBRE_USUARIO)
                  FROM USUARIOSECCION US
                  JOIN USUARIO U ON US.USUARIO_ID_USUARIO = U.ID_USUARIO
@@ -43,6 +47,7 @@ export const getAllExamenes = async (_req, res) => {
        JOIN SECCION s ON e.seccion_id_seccion = s.id_seccion
        JOIN ASIGNATURA a ON s.asignatura_id_asignatura = a.id_asignatura
        JOIN CARRERA c ON a.carrera_id_carrera = c.id_carrera
+       JOIN ESCUELA esc ON c.escuela_id_escuela = esc.id_escuela -- <-- ¡AÑADIDO! JOIN a ESCUELA
        JOIN ESTADO es ON e.estado_id_estado = es.id_estado
        ORDER BY e.id_examen DESC`,
       {},
@@ -78,10 +83,17 @@ export const getExamenById = async (req, res) => {
   try {
     connection = await getConnection();
     const result = await connection.execute(
-      `SELECT e.*, s.nombre_seccion, a.nombre_asignatura, es.nombre_estado
+      `SELECT e.*,
+              s.ID_SECCION, s.nombre_seccion, -- Incluido ID_SECCION
+              a.ID_ASIGNATURA, a.nombre_asignatura, -- Incluido ID_ASIGNATURA
+              es.ID_ESTADO, es.nombre_estado, -- Incluido ID_ESTADO
+              c.ID_CARRERA, c.NOMBRE_CARRERA, -- Incluido ID y Nombre de Carrera
+              esc.ID_ESCUELA, esc.NOMBRE_ESCUELA -- <-- ¡AÑADIDO! ID y Nombre de Escuela
        FROM EXAMEN e
        JOIN SECCION s ON e.seccion_id_seccion = s.id_seccion
        JOIN ASIGNATURA a ON s.asignatura_id_asignatura = a.id_asignatura
+       JOIN CARRERA c ON a.carrera_id_carrera = c.id_carrera -- <-- ¡AÑADIDO! JOIN a CARRERA
+       JOIN ESCUELA esc ON c.escuela_id_escuela = esc.id_escuela -- <-- ¡AÑADIDO! JOIN a ESCUELA
        JOIN ESTADO es ON e.estado_id_estado = es.id_estado
        WHERE e.id_examen = :id`,
       { id: examenId },
@@ -242,10 +254,14 @@ export const getAllExamenesForSelect = async (_req, res) => {
     connection = await getConnection();
     const sql = `
       SELECT
-        E.ID_EXAMEN, E.NOMBRE_EXAMEN, S.NOMBRE_SECCION, A.NOMBRE_ASIGNATURA
+        E.ID_EXAMEN, E.NOMBRE_EXAMEN, S.NOMBRE_SECCION, A.NOMBRE_ASIGNATURA,
+        C.ID_CARRERA, C.NOMBRE_CARRERA, -- Añadido ID y Nombre de Carrera
+        ESC.ID_ESCUELA, ESC.NOMBRE_ESCUELA -- <-- ¡AÑADIDO! ID y Nombre de Escuela
       FROM EXAMEN E
       JOIN SECCION S ON E.SECCION_ID_SECCION = S.ID_SECCION
       JOIN ASIGNATURA A ON S.ASIGNATURA_ID_ASIGNATURA = A.ID_ASIGNATURA
+      JOIN CARRERA C ON A.CARRERA_ID_CARRERA = C.ID_CARRERA -- <-- ¡AÑADIDO! JOIN a CARRERA
+      JOIN ESCUELA ESC ON C.ESCUELA_ID_ESCUELA = ESC.ID_ESCUELA -- <-- ¡AÑADIDO! JOIN a ESCUELA
       ORDER BY E.NOMBRE_EXAMEN, S.NOMBRE_SECCION
     `;
     const result = await connection.execute(
@@ -274,7 +290,6 @@ export const getAllExamenesForSelect = async (_req, res) => {
 export const getAvailableExamsForUser = async (req, res) => {
   console.log('[getAvailableExamsForUser] Iniciando. req.user:', req.user);
 
-  // Se comprueba 'id_usuario' que viene del token JWT.
   if (!req.user || !req.user.id_usuario) {
     return handleError(
       res,
@@ -287,11 +302,10 @@ export const getAvailableExamsForUser = async (req, res) => {
   const userId = req.user.id_usuario;
   const userRolId = req.user.rol_id_rol;
 
-  // Definición de IDs de roles (ajusta según tu base de datos si es necesario)
   const ID_ROL_ADMIN = 1;
   const ID_ROL_DOCENTE = 2;
-  const ID_ROL_ALUMNO = 3; // Añadido para Alumno
-  const ROLES_POR_CARRERA = [16, 17, 18]; // Jefe Carrera, Coordinador Carrera, Coordinador Docente
+  const ID_ROL_ALUMNO = 3;
+  const ROLES_POR_CARRERA = [16, 17, 18];
 
   let connection;
   let sql;
@@ -299,27 +313,27 @@ export const getAvailableExamsForUser = async (req, res) => {
 
   const baseSelectFields = `
       SELECT ex.ID_EXAMEN, ex.NOMBRE_EXAMEN, ex.INSCRITOS_EXAMEN, ex.CANTIDAD_MODULOS_EXAMEN,
-             sec.ID_SECCION,
-             sec.NOMBRE_SECCION, asi.NOMBRE_ASIGNATURA,
-            -- INICIO DE LA CORRECCIÓN --
+             sec.ID_SECCION, sec.NOMBRE_SECCION,
+             asi.ID_ASIGNATURA, asi.NOMBRE_ASIGNATURA,
+             car.ID_CARRERA, car.NOMBRE_CARRERA,
+             esc.ID_ESCUELA, esc.NOMBRE_ESCUELA, -- <-- ¡AÑADIDO! ID y Nombre de Escuela
              (SELECT LISTAGG(U.NOMBRE_USUARIO, ', ') WITHIN GROUP (ORDER BY U.NOMBRE_USUARIO)
-                FROM USUARIOSECCION US
-                JOIN USUARIO U ON US.USUARIO_ID_USUARIO = U.ID_USUARIO
+                FROM USUARIOSECCION US_DOC
+                JOIN USUARIO U ON US_DOC.USUARIO_ID_USUARIO = U.ID_USUARIO
                 JOIN ROL R ON U.ROL_ID_ROL = R.ID_ROL
-                WHERE US.SECCION_ID_SECCION = sec.ID_SECCION AND R.NOMBRE_ROL = 'DOCENTE'  -- <-- SE ASEGURA DE FILTRAR POR DOCENTE
+                WHERE US_DOC.SECCION_ID_SECCION = sec.ID_SECCION AND R.NOMBRE_ROL = 'DOCENTE'
              ) AS NOMBRE_DOCENTE
-             -- FIN DE LA CORRECIÓN --
       FROM EXAMEN ex
       JOIN ESTADO est ON ex.ESTADO_ID_ESTADO = est.ID_ESTADO
       JOIN SECCION sec ON ex.SECCION_ID_SECCION = sec.ID_SECCION
       JOIN ASIGNATURA asi ON sec.ASIGNATURA_ID_ASIGNATURA = asi.ID_ASIGNATURA
+      JOIN CARRERA car ON asi.CARRERA_ID_CARRERA = car.ID_CARRERA -- <-- ¡AÑADIDO! JOIN a CARRERA
+      JOIN ESCUELA esc ON car.ESCUELA_ID_ESCUELA = esc.ID_ESCUELA -- <-- ¡AÑADIDO! JOIN a ESCUELA
   `;
 
   if (userRolId === ID_ROL_ADMIN) {
     sql = `${baseSelectFields} WHERE est.NOMBRE_ESTADO = 'ACTIVO' ORDER BY ex.NOMBRE_EXAMEN`;
-    // No se necesita userId para el admin en este caso
   } else if (userRolId === ID_ROL_DOCENTE || userRolId === ID_ROL_ALUMNO) {
-    // Docente y Alumno ven exámenes de sus secciones
     sql = `
       ${baseSelectFields}
       JOIN USUARIOSECCION us ON sec.ID_SECCION = us.SECCION_ID_SECCION
@@ -330,7 +344,6 @@ export const getAvailableExamsForUser = async (req, res) => {
   } else if (ROLES_POR_CARRERA.includes(userRolId)) {
     sql = `
       ${baseSelectFields}
-      JOIN CARRERA car ON asi.CARRERA_ID_CARRERA = car.ID_CARRERA
       JOIN USUARIOCARRERA uc ON car.ID_CARRERA = uc.CARRERA_ID_CARRERA
       WHERE uc.USUARIO_ID_USUARIO = :userId AND est.NOMBRE_ESTADO = 'ACTIVO'
       ORDER BY ex.NOMBRE_EXAMEN
@@ -340,13 +353,13 @@ export const getAvailableExamsForUser = async (req, res) => {
     console.log(
       `[getAvailableExamsForUser] Rol ID ${userRolId} no tiene lógica definida para listar exámenes disponibles.`
     );
-    return res.json([]); // Rol no configurado para esta acción, devuelve lista vacía.
+    return res.json([]);
   }
 
   try {
     connection = await getConnection();
     console.log('[getAvailableExamsForUser] SQL a ejecutar:', sql);
-    console.log('[getAvailableExamsForUser] Params:', params);
+    console.log('[getAvailableExamenesForUser] Params:', params);
 
     const result = await connection.execute(sql, params, {
       outFormat: oracledb.OUT_FORMAT_OBJECT,
