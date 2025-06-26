@@ -1,17 +1,23 @@
 import React, { useState, useEffect } from 'react';
 import { getRoles } from '../../services/usuarioService';
 import Select from 'react-select'; // Importar react-select
+import { Spinner } from 'react-bootstrap'; // Importar Spinner para el botón de Guardar
+// NO importes Modal o Button de react-bootstrap aquí, ya que el padre los maneja en el Modal.Footer.
 
-export default function UsuarioForm({ initial, onSave, onClose }) {
+export default function UsuarioForm({
+  initial,
+  onSave,
+  onClose,
+  isProcessing,
+}) {
   const [nombre, setNombre] = useState('');
   const [email, setEmail] = useState('');
   const [rolId, setRolId] = useState('');
   const [password, setPassword] = useState('');
   const [roles, setRoles] = useState([]);
   const [loadingRoles, setLoadingRoles] = useState(false);
-  const [formAttempted, setFormAttempted] = useState(false); // Nuevo estado para rastrear el intento de envío
+  const [formAttempted, setFormAttempted] = useState(false);
 
-  // Helper para convertir roles a formato de opciones para react-select
   const toRoleSelectOptions = (rolesData) => {
     if (!Array.isArray(rolesData)) return [];
     return rolesData.map((role) => ({
@@ -25,7 +31,6 @@ export default function UsuarioForm({ initial, onSave, onClose }) {
     roleOptions.find((option) => option.value === rolId) || null;
 
   useEffect(() => {
-    // Cargar roles cuando el componente se monta
     setLoadingRoles(true);
     getRoles()
       .then((data) => {
@@ -33,148 +38,148 @@ export default function UsuarioForm({ initial, onSave, onClose }) {
           setRoles(data);
         } else {
           console.error(
-            'Error: getRoles en UsuarioForm no devolvió un array. Recibido:',
+            'Error: getRoles en UsuarioForm no devolvió un array:',
             data
           );
-          setRoles([]); // Asegurar que roles sea un array
+          setRoles([]);
         }
       })
       .catch((error) => {
         console.error('Error al cargar roles en UsuarioForm:', error);
-        setRoles([]); // En caso de error, establecer roles a un array vacío
+        setRoles([]);
       })
       .finally(() => {
         setLoadingRoles(false);
       });
-  }, []); // Se ejecuta solo una vez cuando el componente se monta
+  }, []);
 
   useEffect(() => {
-    // Sincronizar el estado del formulario con `initial`
     if (initial) {
       setNombre(initial.NOMBRE_USUARIO || '');
       setEmail(initial.EMAIL_USUARIO || '');
       setRolId(initial.ROL_ID_ROL || '');
-      setPassword(''); // Limpiar campo de contraseña para edición, se ingresa solo si se quiere cambiar
+      setPassword('');
     } else {
-      // Es un formulario para nuevo usuario, asegurar campos limpios
       setNombre('');
       setEmail('');
       setRolId('');
       setPassword('');
     }
-  }, [initial]); // Se ejecuta cuando `initial` cambia (y al montar si initial está presente)
+  }, [initial]);
 
   const submit = (e) => {
     e.preventDefault();
-    setFormAttempted(true); // Marcar que se intentó enviar el formulario
+    setFormAttempted(true);
 
-    // Validar que el rol esté seleccionado
     if (!rolId) {
-      // El mensaje visual se mostrará debido a formAttempted y !rolId
       return;
     }
 
     if (!initial && !password.trim()) {
+      // Esta alerta de window.alert debería ser reemplazada por una modal de alerta del padre (UsuariosPage)
+      // para mantener la consistencia. Por ahora, la mantengo aquí como un fallback.
       alert('La contraseña es requerida para nuevos usuarios.');
       return;
     }
     onSave({ nombre, email, rolId, password: password.trim() || undefined });
   };
+
   return (
-    <div className="modal show d-block" tabIndex="-1">
-      <div className="modal-dialog">
-        <form onSubmit={submit}>
-          <div className="modal-content">
-            <div className="modal-header">
-              <h5 className="modal-title">
-                {initial ? 'Editar Usuario' : 'Nuevo Usuario'}
-              </h5>
-              <button type="button" className="btn-close" onClick={onClose} />
-            </div>
-            <div className="modal-body">
-              <div className="mb-3">
-                <label className="form-label">Nombre</label>
-                <input
-                  type="text"
-                  className="form-control"
-                  value={nombre}
-                  onChange={(e) => setNombre(e.target.value)}
-                  required
-                />
-              </div>
-              <div className="mb-3">
-                <label className="form-label">Email</label>
-                <input
-                  type="email"
-                  className="form-control"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  required
-                />
-              </div>
-              <div className="mb-3">
-                <label className="form-label">Rol</label>
-                <Select
-                  inputId="rol-select"
-                  options={roleOptions}
-                  value={selectedRoleOption}
-                  onChange={(selectedOption) =>
-                    setRolId(selectedOption ? selectedOption.value : '')
-                  }
-                  placeholder="-- Selecciona --"
-                  isLoading={loadingRoles}
-                  isDisabled={loadingRoles}
-                  isClearable
-                  noOptionsMessage={() => 'No hay roles disponibles'}
-                  // `required` no es una prop directa de react-select,
-                  // la validación se maneja en el submit o con el estado rolId
-                />
-                {/* Para la validación 'required', puedes mostrar un mensaje si rolId está vacío al intentar enviar */}
-                {loadingRoles && (
-                  <small className="form-text text-muted">
-                    Cargando roles...
-                  </small>
-                )}
-                {/* Mostrar mensaje de error si el rol no está seleccionado y se intentó enviar */}
-                {formAttempted && !rolId && (
-                  <div className="invalid-feedback d-block">
-                    Seleccione un rol.
-                  </div>
-                )}
-              </div>
-              <div className="mb-3">
-                <label className="form-label">
-                  {initial ? 'Nueva Contraseña (opcional)' : 'Contraseña'}
-                </label>
-                <input
-                  type="password"
-                  className="form-control"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  placeholder={initial ? 'Dejar vacío para no cambiar' : ''}
-                  required={!initial} // Requerido solo si es nuevo usuario
-                />
-              </div>
-            </div>
-            <div className="modal-footer">
-              <button
-                type="button"
-                className="btn btn-secondary"
-                onClick={onClose}
-              >
-                Cancelar
-              </button>
-              <button
-                type="submit"
-                className="btn btn-primary"
-                disabled={loadingRoles}
-              >
-                Guardar
-              </button>
-            </div>
-          </div>
-        </form>
+    // ELIMINADO: <div className="modal show d-block" tabIndex="-1">
+    // ELIMINADO: <div className="modal-dialog">
+    // ELIMINADO: <div className="modal-content">
+    // ELIMINADO: <div className="modal-header">...</div> (esto lo maneja el padre ahora)
+    // El formulario es ahora el elemento raíz que contiene los campos y el footer.
+    <form onSubmit={submit}>
+      <div className="mb-3">
+        <label className="form-label">Nombre</label>
+        <input
+          type="text"
+          className="form-control"
+          value={nombre}
+          onChange={(e) => setNombre(e.target.value)}
+          required
+          disabled={isProcessing}
+        />
       </div>
-    </div>
+      <div className="mb-3">
+        <label className="form-label">Email</label>
+        <input
+          type="email"
+          className="form-control"
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
+          required
+          disabled={isProcessing}
+        />
+      </div>
+      <div className="mb-3">
+        <label className="form-label">Rol</label>
+        <Select
+          inputId="rol-select"
+          options={roleOptions}
+          value={selectedRoleOption}
+          onChange={(selectedOption) =>
+            setRolId(selectedOption ? selectedOption.value : '')
+          }
+          placeholder="-- Selecciona --"
+          isLoading={loadingRoles}
+          isDisabled={loadingRoles || isProcessing}
+          isClearable
+          noOptionsMessage={() => 'No hay roles disponibles'}
+        />
+        {loadingRoles && (
+          <small className="form-text text-muted">Cargando roles...</small>
+        )}
+        {formAttempted && !rolId && (
+          <div className="invalid-feedback d-block">Seleccione un rol.</div>
+        )}
+      </div>
+      <div className="mb-3">
+        <label className="form-label">
+          {initial ? 'Nueva Contraseña (opcional)' : 'Contraseña'}
+        </label>
+        <input
+          type="password"
+          className="form-control"
+          value={password}
+          onChange={(e) => setPassword(e.target.value)}
+          placeholder={initial ? 'Dejar vacío para no cambiar' : ''}
+          required={!initial}
+          disabled={isProcessing}
+        />
+      </div>
+      {/* El modal-footer ahora debe ser un div normal dentro del formulario. */}
+      {/* La apariencia del footer (bordes, background) la gestionará el CSS de tu Modal padre. */}
+      <div className="modal-footer px-0 pb-0 pt-3">
+        {' '}
+        {/* Añadido padding para que no quede pegado al final */}
+        <button
+          type="button"
+          className="btn btn-secondary"
+          onClick={onClose}
+          disabled={isProcessing}
+        >
+          Cancelar
+        </button>
+        <button
+          type="submit"
+          className="btn btn-primary"
+          disabled={loadingRoles || isProcessing}
+        >
+          {isProcessing ? (
+            <Spinner
+              as="span"
+              animation="border"
+              size="sm"
+              role="status"
+              aria-hidden="true"
+            />
+          ) : (
+            'Guardar'
+          )}
+        </button>
+      </div>
+    </form>
   );
 }

@@ -128,7 +128,6 @@ export const getCarrerasByUsuario = async (req, res) => {
       { outFormat: oracledb.OUT_FORMAT_OBJECT }
     );
 
-    // El frontend podría esperar un array de objetos Carrera directamente
     const carreras = result.rows.map((row) => ({
       ID_CARRERA: row.CARRERA_ID_CARRERA,
       NOMBRE_CARRERA: row.NOMBRE_CARRERA,

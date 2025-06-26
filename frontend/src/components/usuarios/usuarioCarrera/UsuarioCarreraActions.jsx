@@ -28,7 +28,16 @@ function UsuarioCarreraActions({
       </Button>
       <Button
         variant="danger"
-        onClick={onBulkDelete}
+        onClick={() => {
+          // Modificación aquí para añadir el console.log
+          console.log(
+            'Botón "Desvincular Todo" clickeado. selectedCount:',
+            selectedCount,
+            'processing:',
+            processing
+          );
+          onBulkDelete(); // Llama a la prop que maneja la lógica de desvinculación
+        }}
         disabled={processing || selectedCount === 0}
       >
         <i className="bi bi-trash3 me-2"></i>Desvincular Todo de Seleccionados

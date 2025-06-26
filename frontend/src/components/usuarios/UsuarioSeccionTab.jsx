@@ -1,56 +1,64 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
-import { Table, Button, Modal, Form, Alert, Spinner } from 'react-bootstrap';
+import { Button, Form, Alert, Spinner, Modal } from 'react-bootstrap';
 import {
   listUsuarioSecciones,
   createUsuarioSeccion,
   deleteUsuarioSeccion,
+  listSeccionesByUsuario,
 } from '../../services/usuarioSeccionService';
 import { fetchAllSecciones } from '../../services/seccionService';
-import { fetchAllAsignaturas } from '../../services/asignaturaService'; // Servicio para obtener asignaturas
+import { fetchAllAsignaturas } from '../../services/asignaturaService';
 
 import UsuarioSeccionActions from './usuarioSeccion/UsuarioSeccionActions.jsx';
 import UsuarioSeccionModal from './usuarioSeccion/UsuarioSeccionModal.jsx';
 import UsuarioSeccionTable from './usuarioSeccion/UsuarioSeccionTable.jsx';
-import UsuarioFilter from '../usuarios/UsuarioFilter'; // Importar el filtro de usuario
-import PaginationComponent from '../PaginationComponent'; // Importar el componente de paginación
+import UsuarioFilter from './UsuarioFilter';
+import PaginationComponent from '../PaginationComponent';
 
 const ALUMNO_ROLE_NAME = 'ALUMNO';
 const DOCENTE_ROLE_NAME = 'DOCENTE';
-const ITEMS_PER_PAGE = 4; // Definir ítems por página
+const ITEMS_PER_PAGE = 4;
 
 function UsuarioSeccionTab({ allUsers, allRoles }) {
   const [associations, setAssociations] = useState([]);
   const [eligibleUsers, setEligibleUsers] = useState([]);
   const [secciones, setSecciones] = useState([]);
-  const [asignaturas, setAsignaturas] = useState([]); // Estado para almacenar asignaturas
+  const [asignaturas, setAsignaturas] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [showModal, setShowModal] = useState(false);
+  const [showFormModal, setShowFormModal] = useState(false);
   const [editingUser, setEditingUser] = useState(null);
 
-  // Estados para la modal
-  const [selectedUsuarioId, setSelectedUsuarioId] = useState('');
-  const [selectedSeccionIds, setSelectedSeccionIds] = useState([]); // Múltiples secciones
+  const [modal, setModal] = useState({
+    type: null,
+    entity: null,
+    data: null,
+    content: [],
+    loadingContent: false,
+  });
   const [processing, setProcessing] = useState(false);
+
+  // --- ESTADOS PARA MODALES PERSONALIZADAS ---
+  const [showAlertModal, setShowAlertModal] = useState(false);
+  const [alertModalMessage, setAlertModalMessage] = useState('');
+  const [showConfirmModal, setShowConfirmModal] = useState(false);
+  const [confirmModalMessage, setConfirmModalMessage] = useState('');
+  const [confirmModalAction, setConfirmModalAction] = useState(null);
+  const [confirmModalTitle, setConfirmModalTitle] = useState('');
+  // --- FIN ESTADOS PARA MODALES PERSONALIZADAS ---
+
+  const [selectedUsuarioId, setSelectedUsuarioId] = useState('');
+  const [selectedSeccionIds, setSelectedSeccionIds] = useState([]);
   const [searchTermUser, setSearchTermUser] = useState('');
   const [filterRoleUser, setFilterRoleUser] = useState('');
-  const [filterAsignaturaSeccion, setFilterAsignaturaSeccion] = useState(''); // Para filtrar secciones
-
-  // Estado para la tabla agrupada
+  const [filterAsignaturaSeccion, setFilterAsignaturaSeccion] = useState('');
   const [groupedAssociations, setGroupedAssociations] = useState({});
-  const [selectedUsersInTab, setSelectedUsersInTab] = useState([]); // Usuarios seleccionados en esta tabla
-
-  // Estados para el modal de visualización de secciones de un usuario
-  const [showViewSeccionesModal, setShowViewSeccionesModal] = useState(false);
-  const [viewingUserSecciones, setViewingUserSecciones] = useState([]);
-  const [viewingUserName, setViewingUserName] = useState('');
-
-  // Estado para los filtros de la tabla principal de UsuarioSeccionTab
+  const [selectedUsersInTab, setSelectedUsersInTab] = useState([]);
   const [usuarioTableFilters, setUsuarioTableFilters] = useState({
     text: '',
     role: '',
   });
-  const [currentPageTable, setCurrentPageTable] = useState(1); // Estado para la paginación de la tabla
+  const [currentPageTable, setCurrentPageTable] = useState(1);
 
   const eligibleRoleIds = useMemo(() => {
     if (!allRoles || allRoles.length === 0) return [];
@@ -75,15 +83,13 @@ function UsuarioSeccionTab({ allUsers, allRoles }) {
 
   const handleUsuarioTableFilterChange = useCallback((changedFilters) => {
     setUsuarioTableFilters((prev) => ({ ...prev, ...changedFilters }));
-    setSelectedUsersInTab([]); // Limpiar selección de la tabla al cambiar filtros
-    setCurrentPageTable(1); // Resetear paginación al cambiar filtros
+    setSelectedUsersInTab([]);
+    setCurrentPageTable(1);
   }, []);
 
-  // Filtrar los usuarios que se mostrarán en la tabla de asociaciones
   const displayableGroupedAssociations = useMemo(() => {
-    if (!usuarioTableFilters.text && !usuarioTableFilters.role) {
+    if (!usuarioTableFilters.text && !usuarioTableFilters.role)
       return groupedAssociations;
-    }
     const filteredResult = {};
     for (const userIdStr in groupedAssociations) {
       const userId = parseInt(userIdStr, 10);
@@ -99,11 +105,9 @@ function UsuarioSeccionTab({ allUsers, allRoles }) {
             user.EMAIL_USUARIO.toLowerCase().includes(
               usuarioTableFilters.text.toLowerCase()
             ));
-
         const matchesRole =
           !usuarioTableFilters.role ||
           String(user.ROL_ID_ROL) === String(usuarioTableFilters.role);
-
         if (matchesText && matchesRole) {
           filteredResult[userIdStr] = groupedAssociations[userIdStr];
         }
@@ -112,14 +116,11 @@ function UsuarioSeccionTab({ allUsers, allRoles }) {
     return filteredResult;
   }, [groupedAssociations, eligibleUsers, usuarioTableFilters]);
 
-  // IDs de usuarios que coinciden con los filtros actuales
-  const displayableUserIds = useMemo(() => {
-    return Object.keys(displayableGroupedAssociations).map((id) =>
-      parseInt(id, 10)
-    );
-  }, [displayableGroupedAssociations]);
-
-  // Paginación de los IDs de usuario
+  const displayableUserIds = useMemo(
+    () =>
+      Object.keys(displayableGroupedAssociations).map((id) => parseInt(id, 10)),
+    [displayableGroupedAssociations]
+  );
   const indexOfLastUserId = currentPageTable * ITEMS_PER_PAGE;
   const indexOfFirstUserId = indexOfLastUserId - ITEMS_PER_PAGE;
   const currentUserIdsOnPage = displayableUserIds.slice(
@@ -127,7 +128,6 @@ function UsuarioSeccionTab({ allUsers, allRoles }) {
     indexOfLastUserId
   );
 
-  // Objeto de asociaciones agrupadas solo para la página actual
   const paginatedGroupedAssociations = useMemo(() => {
     const newPaginated = {};
     currentUserIdsOnPage.forEach((userId) => {
@@ -138,42 +138,17 @@ function UsuarioSeccionTab({ allUsers, allRoles }) {
     return newPaginated;
   }, [currentUserIdsOnPage, displayableGroupedAssociations]);
 
-  useEffect(() => {
-    // Agrupar asociaciones por usuario
-    if (!allUsers || allUsers.length === 0) return;
-    const newGrouped = associations.reduce((acc, assoc) => {
-      acc[assoc.USUARIO_ID_USUARIO] = acc[assoc.USUARIO_ID_USUARIO] || {
-        NOMBRE_USUARIO: assoc.NOMBRE_USUARIO,
-        ROL_USUARIO:
-          allUsers.find((u) => u.ID_USUARIO === assoc.USUARIO_ID_USUARIO)
-            ?.NOMBRE_ROL || 'N/A',
-        EMAIL_USUARIO:
-          allUsers.find((u) => u.ID_USUARIO === assoc.USUARIO_ID_USUARIO)
-            ?.EMAIL_USUARIO || '',
-        secciones: [],
-      };
-      acc[assoc.USUARIO_ID_USUARIO].secciones.push({
-        ID_SECCION: assoc.SECCION_ID_SECCION,
-        NOMBRE_SECCION: assoc.NOMBRE_SECCION,
-      });
-      return acc;
-    }, {});
-    setGroupedAssociations(newGrouped);
-  }, [associations, allUsers]);
-
-  const fetchData = async () => {
+  const fetchData = useCallback(async () => {
     setLoading(true);
     setError(null);
     try {
       const [assocData, seccionesData, asignaturasData] = await Promise.all([
         listUsuarioSecciones(),
         fetchAllSecciones(),
-        fetchAllAsignaturas(), // Cargar asignaturas para el filtro
+        fetchAllAsignaturas(),
       ]);
-
       setSecciones(seccionesData || []);
       setAsignaturas(asignaturasData || []);
-
       const enrichedAssociations = (assocData || [])
         .map((assoc) => {
           const user = allUsers.find(
@@ -185,115 +160,137 @@ function UsuarioSeccionTab({ allUsers, allRoles }) {
           return {
             ...assoc,
             NOMBRE_USUARIO: user
-              ? `${user.NOMBRE_USUARIO} (${user.EMAIL_USUARIO})`
+              ? `${user.NOMBRE_USUARIO}`
               : `Usuario ID: ${assoc.USUARIO_ID_USUARIO}`,
             NOMBRE_SECCION: seccion
               ? seccion.NOMBRE_SECCION ||
                 seccion.CODIGO_SECCION ||
                 `Sección ID: ${assoc.SECCION_ID_SECCION}`
               : `Sección ID: ${assoc.SECCION_ID_SECCION}`,
-            ROL_USUARIO: user && user.NOMBRE_ROL ? user.NOMBRE_ROL : 'N/A',
+            ROL_USUARIO: user?.NOMBRE_ROL || 'N/A',
+            EMAIL_USUARIO: user?.EMAIL_USUARIO || '',
           };
         })
         .filter((assoc) =>
-          userExistsAndIsInRole(
-            assoc.USUARIO_ID_USUARIO,
-            allUsers,
-            eligibleRoleIds
+          eligibleRoleIds.includes(
+            allUsers.find((u) => u.ID_USUARIO === assoc.USUARIO_ID_USUARIO)
+              ?.ROL_ID_ROL
           )
-        ); // Filtrar por si un usuario cambió de rol
-
+        );
       setAssociations(enrichedAssociations);
     } catch (err) {
-      setError(
-        'Error al cargar datos de asociaciones Usuario-Sección. ' +
-          (err.message || '')
-      );
-      console.error(err);
+      setError('Error al cargar datos. ' + (err.message || ''));
     } finally {
       setLoading(false);
     }
-  };
-
-  // Helper function to check if user exists and is in one of the eligible roles
-  const userExistsAndIsInRole = (userId, usersList, roleIdsList) => {
-    const user = usersList.find((u) => u.ID_USUARIO === userId);
-    return user && roleIdsList.includes(user.ROL_ID_ROL);
-  };
+  }, [allUsers, eligibleRoleIds]);
 
   useEffect(() => {
     if (allUsers.length > 0 && allRoles.length > 0) {
       fetchData();
-    } else {
-      setLoading(false);
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [allUsers, allRoles]);
+  }, [allUsers, allRoles, fetchData]);
 
-  // Usuarios que tienen un rol elegible Y NO tienen asociaciones existentes.
-  // Esta lista se usará para el modal cuando se crea una NUEVA asociación.
+  useEffect(() => {
+    if (!associations) return;
+    const newGrouped = associations.reduce((acc, assoc) => {
+      const key = assoc.USUARIO_ID_USUARIO;
+      acc[key] = acc[key] || {
+        NOMBRE_USUARIO: assoc.NOMBRE_USUARIO,
+        ROL_USUARIO: assoc.ROL_USUARIO,
+        EMAIL_USUARIO: assoc.EMAIL_USUARIO,
+        secciones: [],
+      };
+      acc[key].secciones.push({
+        ID_SECCION: assoc.SECCION_ID_SECCION,
+        NOMBRE_SECCION: assoc.NOMBRE_SECCION,
+      });
+      return acc;
+    }, {});
+    setGroupedAssociations(newGrouped);
+  }, [associations]);
+
   const usersAvailableForNewSeccionAssociation = useMemo(() => {
-    // Si eligibleUsers o associations no están listos, o no hay associations, devolver eligibleUsers o un array vacío.
-    if (!eligibleUsers || eligibleUsers.length === 0) return [];
-    if (!associations || associations.length === 0) return eligibleUsers; // Todos los elegibles están disponibles si no hay asociaciones
-
+    if (!eligibleUsers.length) return [];
     const associatedUserIds = new Set(
       associations.map((assoc) => assoc.USUARIO_ID_USUARIO)
     );
     return eligibleUsers.filter(
       (user) => !associatedUserIds.has(user.ID_USUARIO)
     );
-  }, [eligibleUsers, associations]); // Dependencias correctas
+  }, [eligibleUsers, associations]);
 
   const resetModalState = () => {
     setSelectedUsuarioId('');
     setSelectedSeccionIds([]);
-    setSearchTermUser('');
-    setFilterRoleUser('');
-    setFilterAsignaturaSeccion('');
     setEditingUser(null);
-    setProcessing(false); // Asegurar que processing esté desactivado
-    setShowModal(false);
+    setProcessing(false);
+    setShowFormModal(false);
+    // Limpiar estados de las modales personalizadas
+    setShowAlertModal(false);
+    setAlertModalMessage('');
+    setShowConfirmModal(false);
+    setConfirmModalMessage('');
+    setConfirmModalAction(null);
+    setConfirmModalTitle('');
   };
 
-  const handleOpenNewAssociationModal = () => {
-    setEditingUser(null);
-    setSelectedUsuarioId('');
-    setSelectedSeccionIds([]);
-    setSearchTermUser('');
-    setFilterRoleUser('');
-    setFilterAsignaturaSeccion('');
-    setProcessing(false); // Asegurar que processing esté desactivado al abrir para nuevo
-    setError(null); // Limpiar errores previos del modal
-    setShowModal(true);
+  const closeModal = () =>
+    setModal({
+      type: null,
+      entity: null,
+      data: null,
+      content: [],
+      loadingContent: false,
+    });
+
+  const openModal = async (type, entity, data) => {
+    if (type === 'delete-bulk' && selectedUsersInTab.length === 0) {
+      setAlertModalMessage('Seleccione al menos un usuario.');
+      setShowAlertModal(true);
+      return;
+    }
+    if (type === 'showAssociations') {
+      setModal({ type, entity, data, content: [], loadingContent: true });
+      try {
+        const content = await listSeccionesByUsuario(data.ID_USUARIO);
+        setModal((prev) => ({
+          ...prev,
+          content: content || [],
+          loadingContent: false,
+        }));
+      } catch (err) {
+        setError(`No se pudieron cargar las asociaciones.`);
+        setModal((prev) => ({ ...prev, content: [], loadingContent: false }));
+      }
+    } else {
+      setModal({ type, entity, data, content: [], loadingContent: false });
+    }
   };
 
   const handleAddAssociation = async () => {
-    // Determinar el ID de usuario final basado en si estamos editando o creando
     const finalUserId = editingUser
       ? editingUser.ID_USUARIO.toString()
       : selectedUsuarioId;
-
     if (!finalUserId || selectedSeccionIds.length === 0) {
-      setError('Debe seleccionar un usuario y al menos una sección.');
+      setAlertModalMessage(
+        'Debe seleccionar un usuario y al menos una sección.'
+      );
+      setShowAlertModal(true);
       return;
     }
     setProcessing(true);
-    setError(null);
     try {
       if (editingUser) {
-        // Lógica de edición
         const currentSeccionesForUser = associations
           .filter((assoc) => assoc.USUARIO_ID_USUARIO === parseInt(finalUserId))
           .map((assoc) => assoc.SECCION_ID_SECCION);
-
         const seccionesToDelete = currentSeccionesForUser.filter(
           (sId) => !selectedSeccionIds.includes(sId.toString())
         );
         const seccionesToAdd = selectedSeccionIds.filter(
           (sIdStr) => !currentSeccionesForUser.includes(parseInt(sIdStr))
         );
-
         await Promise.all([
           ...seccionesToDelete.map((seccionId) =>
             deleteUsuarioSeccion(parseInt(finalUserId), seccionId)
@@ -306,7 +303,6 @@ function UsuarioSeccionTab({ allUsers, allRoles }) {
           ),
         ]);
       } else {
-        // Lógica de creación
         await Promise.all(
           selectedSeccionIds.map((seccionId) =>
             createUsuarioSeccion({
@@ -319,10 +315,11 @@ function UsuarioSeccionTab({ allUsers, allRoles }) {
       resetModalState();
       fetchData();
     } catch (err) {
-      setError(
-        `Error al ${editingUser ? 'actualizar' : 'crear'} asociación: ` +
-          (err.response?.data?.message || err.message || 'Error desconocido')
+      setAlertModalMessage(
+        `Error: ${err.response?.data?.message || err.message}`
       );
+      setShowAlertModal(true);
+      setError(`Error: ${err.response?.data?.message || err.message}`);
     } finally {
       setProcessing(false);
     }
@@ -330,58 +327,42 @@ function UsuarioSeccionTab({ allUsers, allRoles }) {
 
   const handleEditUserAssociations = (userId) => {
     const userToEdit = allUsers.find((u) => u.ID_USUARIO === userId);
-    if (!userToEdit) return;
-
+    if (!userToEdit) {
+      // Si no encuentra el usuario, la alerta ya la manejaría el caller si la lógica lo requiere.
+      setAlertModalMessage(
+        'No se pudo encontrar el usuario para editar sus asociaciones.'
+      );
+      setShowAlertModal(true);
+      return;
+    }
     setEditingUser(userToEdit);
     setSelectedUsuarioId(userId.toString());
-
     const associatedSecciones = associations
       .filter((assoc) => assoc.USUARIO_ID_USUARIO === userId)
       .map((assoc) => assoc.SECCION_ID_SECCION.toString());
     setSelectedSeccionIds(associatedSecciones);
-
-    setShowModal(true);
-    setSelectedUsersInTab([userToEdit]); // Seleccionar el usuario que se está editando
+    setShowFormModal(true);
   };
 
-  const handleDeleteAssociation = async (usuarioId, seccionId) => {
-    const seccion = secciones.find((s) => s.ID_SECCION === seccionId);
-    const seccionNombre = seccion
-      ? seccion.NOMBRE_SECCION || seccion.CODIGO_SECCION
-      : `ID: ${seccionId}`;
-    if (
-      !window.confirm(
-        `¿Está seguro de que desea desvincular la sección "${seccionNombre}" de este usuario?`
-      )
-    )
-      return;
+  // --- Funciones para ejecutar las acciones de eliminación confirmadas ---
+  const executeDeleteSingleAssociation = async (userId, seccionId) => {
     setProcessing(true);
-    setError(null);
     try {
-      await deleteUsuarioSeccion(usuarioId, seccionId);
+      await deleteUsuarioSeccion(userId, seccionId);
       fetchData();
     } catch (err) {
       setError(
         'Error al eliminar asociación: ' +
-          (err.response?.data?.message || err.message || 'Error desconocido')
+          (err.response?.data?.message || err.message)
       );
     } finally {
       setProcessing(false);
+      setShowConfirmModal(false); // Cierra el modal de confirmación
     }
   };
 
-  const handleDeleteAllUserAssociations = async (userId) => {
-    const user = eligibleUsers.find((u) => u.ID_USUARIO === userId); // Usar eligibleUsers
-    if (!user) return;
-    if (
-      !window.confirm(
-        `¿Está seguro de que desea eliminar TODAS las asociaciones de sección para el usuario ${user.NOMBRE_USUARIO}? Esta acción no eliminará al usuario.`
-      )
-    )
-      return;
-
+  const executeDeleteAllUserAssociations = async (userId) => {
     setProcessing(true);
-    setError(null);
     try {
       const userAssociations = associations.filter(
         (assoc) => assoc.USUARIO_ID_USUARIO === userId
@@ -394,42 +375,108 @@ function UsuarioSeccionTab({ allUsers, allRoles }) {
       fetchData();
     } catch (err) {
       setError(
-        'Error al eliminar todas las asociaciones del usuario: ' +
-          (err.response?.data?.message || err.message || 'Error desconocido')
+        'Error al eliminar todas las asociaciones: ' +
+          (err.response?.data?.message || err.message)
       );
     } finally {
       setProcessing(false);
+      setShowConfirmModal(false); // Cierra el modal de confirmación
     }
   };
 
-  const handleToggleUserSelection = (userToToggle) => {
-    setSelectedUsersInTab((prevSelected) => {
-      const isSelected = prevSelected.find(
-        (u) => u.ID_USUARIO === userToToggle.ID_USUARIO
-      );
-      if (isSelected) {
-        return prevSelected.filter(
-          (u) => u.ID_USUARIO !== userToToggle.ID_USUARIO
+  const executeBulkDeleteAssociations = async (usersToDelete) => {
+    setProcessing(true);
+    try {
+      for (const user of usersToDelete) {
+        const userAssociations = associations.filter(
+          (assoc) => assoc.USUARIO_ID_USUARIO === user.ID_USUARIO
+        );
+        await Promise.all(
+          userAssociations.map((assoc) =>
+            deleteUsuarioSeccion(user.ID_USUARIO, assoc.SECCION_ID_SECCION)
+          )
         );
       }
-      return [...prevSelected, userToToggle];
-    });
+      fetchData();
+      setSelectedUsersInTab([]);
+    } catch (err) {
+      setError(
+        'Error al eliminar asociaciones en lote: ' +
+          (err.response?.data?.message || err.message)
+      );
+    } finally {
+      setProcessing(false);
+      setShowConfirmModal(false); // Cierra el modal de confirmación
+    }
+  };
+  // --- Fin funciones de eliminación confirmadas ---
+
+  const confirmDeleteSingleAssociation = (userId, seccionId) => {
+    const seccion = secciones.find((s) => s.ID_SECCION === seccionId);
+    const seccionNombre = seccion
+      ? seccion.NOMBRE_SECCION || seccion.CODIGO_SECCION
+      : `ID: ${seccionId}`;
+
+    setConfirmModalTitle('Confirmar Eliminación de Asociación');
+    setConfirmModalMessage(
+      `<p>¿Está seguro de que desea desvincular la sección "<strong>${seccionNombre}</strong>" de este usuario?</p>`
+    );
+    setConfirmModalAction(
+      () => () => executeDeleteSingleAssociation(userId, seccionId)
+    );
+    setShowConfirmModal(true);
+  };
+
+  const confirmDeleteAllUserAssociations = (userId, userName) => {
+    setConfirmModalTitle('Confirmar Eliminación de Todas las Asociaciones');
+    setConfirmModalMessage(
+      `<p>¿Está seguro de que desea eliminar <strong>TODAS</strong> las asociaciones de sección para el usuario <strong>${userName}</strong>? Esta acción no eliminará al usuario.</p>`
+    );
+    setConfirmModalAction(() => () => executeDeleteAllUserAssociations(userId));
+    setShowConfirmModal(true);
+  };
+
+  const handleBulkDelete = () => {
+    if (selectedUsersInTab.length === 0) {
+      setAlertModalMessage('Seleccione al menos un usuario para desvincular.');
+      setShowAlertModal(true);
+      return;
+    }
+
+    const itemsToList = selectedUsersInTab.map((item) => ({
+      key: item.ID_USUARIO,
+      name: item.NOMBRE_USUARIO,
+    }));
+
+    setConfirmModalTitle('Confirmar Eliminación de Asociaciones');
+    setConfirmModalMessage(
+      `<div><p>¿Está seguro de que desea eliminar <strong>TODAS</strong> las asociaciones de sección para los <strong>${selectedUsersInTab.length}</strong> usuarios seleccionados? Esta acción no eliminará a los usuarios.</p><ul class="list-unstyled my-3 p-3 border bg-light rounded" style="maxHeight: '150px', overflowY: 'auto'}">${itemsToList.map((item) => `<li><i class="bi bi-person-fill me-2"></i>${item.name || `Usuario sin nombre`}</li>`).join('')}</ul></div>`
+    );
+    setConfirmModalAction(
+      () => () => executeBulkDeleteAssociations(selectedUsersInTab)
+    );
+    setShowConfirmModal(true);
+  };
+
+  const handleToggleUserSelection = (userToToggle) => {
+    setSelectedUsersInTab((prev) =>
+      prev.find((u) => u.ID_USUARIO === userToToggle.ID_USUARIO)
+        ? prev.filter((u) => u.ID_USUARIO !== userToToggle.ID_USUARIO)
+        : [...prev, userToToggle]
+    );
   };
 
   const handleToggleSelectAllUsers = () => {
-    // Usuarios completos en la página actual
     const usersOnCurrentPage = currentUserIdsOnPage
       .map((userId) =>
         eligibleUsers.find((u) => u.ID_USUARIO === parseInt(userId))
       )
       .filter(Boolean);
-
     const allSelectedOnPage =
       usersOnCurrentPage.length > 0 &&
       usersOnCurrentPage.every((u) =>
         selectedUsersInTab.some((selU) => selU.ID_USUARIO === u.ID_USUARIO)
       );
-
     if (allSelectedOnPage) {
       setSelectedUsersInTab((prev) =>
         prev.filter((selU) => !currentUserIdsOnPage.includes(selU.ID_USUARIO))
@@ -445,55 +492,9 @@ function UsuarioSeccionTab({ allUsers, allRoles }) {
     }
   };
 
-  const handleOpenViewSeccionesModal = (userId) => {
-    const userData = groupedAssociations[userId];
-    if (userData) {
-      setViewingUserName(userData.NOMBRE_USUARIO);
-      setViewingUserSecciones(userData.secciones);
-      setShowViewSeccionesModal(true);
-    }
-  };
-
-  const handleBulkDeleteAssociations = async () => {
-    if (selectedUsersInTab.length === 0) {
-      setError('Seleccione al menos un usuario.');
-      return;
-    }
-    if (
-      !window.confirm(
-        `¿Está seguro de que desea eliminar TODAS las asociaciones de sección para los ${selectedUsersInTab.length} usuarios seleccionados? Esta acción no eliminará a los usuarios.`
-      )
-    ) {
-      return;
-    }
-    setProcessing(true);
-    setError(null);
-    try {
-      for (const user of selectedUsersInTab) {
-        const userAssociations = associations.filter(
-          (assoc) => assoc.USUARIO_ID_USUARIO === user.ID_USUARIO
-        );
-        await Promise.all(
-          userAssociations.map((assoc) =>
-            deleteUsuarioSeccion(user.ID_USUARIO, assoc.SECCION_ID_SECCION)
-          )
-        );
-      }
-      fetchData(); // Refrescar datos
-      setSelectedUsersInTab([]); // Limpiar selección
-    } catch (err) {
-      setError(
-        'Error al eliminar asociaciones en lote: ' +
-          (err.response?.data?.message || err.message || 'Error desconocido')
-      );
-    } finally {
-      setProcessing(false);
-    }
-  };
-
   const paginateTable = (pageNumber) => setCurrentPageTable(pageNumber);
 
-  if (loading && !associations.length) {
+  if (loading) {
     return (
       <div className="text-center p-3">
         <Spinner animation="border" variant="primary" />
@@ -501,34 +502,6 @@ function UsuarioSeccionTab({ allUsers, allRoles }) {
       </div>
     );
   }
-
-  const filteredEligibleUsers = eligibleUsers.filter((user) => {
-    const searchTermMatch =
-      searchTermUser === '' ||
-      user.NOMBRE_USUARIO.toLowerCase().includes(
-        searchTermUser.toLowerCase()
-      ) ||
-      user.EMAIL_USUARIO.toLowerCase().includes(searchTermUser.toLowerCase());
-    const roleMatch =
-      filterRoleUser === '' || user.ROL_ID_ROL === parseInt(filterRoleUser);
-    return searchTermMatch && roleMatch;
-  });
-
-  const filteredSecciones = secciones.filter((seccion) => {
-    // Filtrar por asignatura seleccionada
-    return (
-      filterAsignaturaSeccion === '' ||
-      seccion.ASIGNATURA_ID_ASIGNATURA === parseInt(filterAsignaturaSeccion)
-    );
-  });
-
-  const handleSeccionSelection = (seccionId) => {
-    setSelectedSeccionIds((prevSelected) =>
-      prevSelected.includes(seccionId)
-        ? prevSelected.filter((id) => id !== seccionId)
-        : [...prevSelected, seccionId]
-    );
-  };
 
   return (
     <div>
@@ -539,43 +512,33 @@ function UsuarioSeccionTab({ allUsers, allRoles }) {
         </Alert>
       )}
       <UsuarioFilter
-        roles={allRoles.filter((role) => eligibleRoleIds.includes(role.ID_ROL))} // Solo roles elegibles para esta pestaña
+        roles={allRoles.filter((role) => eligibleRoleIds.includes(role.ID_ROL))}
         onFilterChange={handleUsuarioTableFilterChange}
         currentFilters={usuarioTableFilters}
       />
-
       <UsuarioSeccionActions
-        onNewAssociation={handleOpenNewAssociationModal}
+        onNewAssociation={() => setShowFormModal(true)}
         onEditSelected={() => {
           if (selectedUsersInTab.length === 1)
             handleEditUserAssociations(selectedUsersInTab[0].ID_USUARIO);
+          else {
+            setAlertModalMessage(
+              'Seleccione un solo usuario de la tabla para modificar sus asociaciones.'
+            );
+            setShowAlertModal(true);
+          }
         }}
-        onBulkDelete={handleBulkDeleteAssociations}
+        onBulkDelete={handleBulkDelete}
         processing={processing}
         selectedCount={selectedUsersInTab.length}
       />
 
-      {eligibleUsers.length === 0 && (
-        <Alert variant="warning">
-          No hay usuarios con rol "{ALUMNO_ROLE_NAME}" o "{DOCENTE_ROLE_NAME}"
-          disponibles para asociar.
-        </Alert>
-      )}
-      {/* Secciones.length check se maneja dentro de UsuarioSeccionModal y UsuarioSeccionTable */}
-      {/* {secciones.length === 0 && !loading && (
-        <Alert variant="warning">
-          No hay secciones disponibles para asociar.
-        </Alert>
-      )} */}
-
-      {showModal && (
+      {showFormModal && (
         <UsuarioSeccionModal
-          show={showModal}
+          show={showFormModal}
           onHide={resetModalState}
           editingUser={editingUser}
           allRoles={allRoles}
-          // Si estamos editando, pasamos todos los elegibles (el modal maneja la UI)
-          // Si estamos creando una nueva asociación, pasamos solo los que no tienen asociaciones previas
           eligibleUsers={
             editingUser ? eligibleUsers : usersAvailableForNewSeccionAssociation
           }
@@ -584,7 +547,13 @@ function UsuarioSeccionTab({ allUsers, allRoles }) {
           selectedUsuarioId={selectedUsuarioId}
           setSelectedUsuarioId={setSelectedUsuarioId}
           selectedSeccionIds={selectedSeccionIds}
-          handleSeccionSelection={handleSeccionSelection}
+          handleSeccionSelection={(id) =>
+            setSelectedSeccionIds((prev) =>
+              prev.includes(id)
+                ? prev.filter((pId) => pId !== id)
+                : [...prev, id]
+            )
+          }
           handleAddAssociation={handleAddAssociation}
           processing={processing}
           searchTermUser={searchTermUser}
@@ -597,18 +566,31 @@ function UsuarioSeccionTab({ allUsers, allRoles }) {
       )}
 
       <UsuarioSeccionTable
-        groupedAssociations={paginatedGroupedAssociations} // Usar las asociaciones paginadas
+        groupedAssociations={paginatedGroupedAssociations}
         eligibleUsers={eligibleUsers}
         selectedUsersInTab={selectedUsersInTab}
         processing={processing}
         loading={loading}
         onToggleUserSelection={handleToggleUserSelection}
         onToggleSelectAllUsers={handleToggleSelectAllUsers}
-        onOpenViewSeccionesModal={handleOpenViewSeccionesModal}
+        onOpenViewSeccionesModal={(userId) => {
+          const user = eligibleUsers.find((u) => u.ID_USUARIO === userId);
+          if (user) {
+            openModal('showAssociations', 'secciones', user);
+          }
+        }}
         onEditUserAssociations={handleEditUserAssociations}
-        onDeleteAllUserAssociations={handleDeleteAllUserAssociations}
+        onDeleteAllUserAssociations={(userId) => {
+          const user = eligibleUsers.find((u) => u.ID_USUARIO === userId);
+          if (user) {
+            confirmDeleteAllUserAssociations(userId, user.NOMBRE_USUARIO);
+          }
+        }}
+        onDeleteAssociation={(userId, seccionId) =>
+          confirmDeleteSingleAssociation(userId, seccionId)
+        }
       />
-      {/* Componente de Paginación para la tabla */}
+
       {displayableUserIds.length > ITEMS_PER_PAGE && (
         <PaginationComponent
           itemsPerPage={ITEMS_PER_PAGE}
@@ -618,37 +600,98 @@ function UsuarioSeccionTab({ allUsers, allRoles }) {
         />
       )}
 
-      {/* Modal para visualizar secciones de un usuario */}
-      <Modal
-        show={showViewSeccionesModal}
-        onHide={() => setShowViewSeccionesModal(false)}
-        centered
-      >
-        <Modal.Header closeButton>
-          <Modal.Title>Secciones Asociadas a {viewingUserName}</Modal.Title>
-        </Modal.Header>
-        <Modal.Body>
-          {viewingUserSecciones.length > 0 ? (
-            <ul className="list-group">
-              {viewingUserSecciones.map((seccion) => (
-                <li key={seccion.ID_SECCION} className="list-group-item">
-                  {seccion.NOMBRE_SECCION}
-                </li>
-              ))}
-            </ul>
-          ) : (
-            <p>No hay secciones asociadas a este usuario.</p>
-          )}
-        </Modal.Body>
-        <Modal.Footer>
-          <Button
-            variant="secondary"
-            onClick={() => setShowViewSeccionesModal(false)}
-          >
-            Cerrar
-          </Button>
-        </Modal.Footer>
-      </Modal>
+      {/* Modal de confirmación para eliminaciones */}
+      {showConfirmModal && (
+        <Modal
+          show={showConfirmModal}
+          onHide={() => setShowConfirmModal(false)}
+          centered
+        >
+          <Modal.Header closeButton>
+            <Modal.Title>{confirmModalTitle}</Modal.Title>
+          </Modal.Header>
+          <Modal.Body>
+            {/* CORRECCIÓN: Envuelve dangerouslySetInnerHTML en un div */}
+            <Alert variant="warning">
+              <div dangerouslySetInnerHTML={{ __html: confirmModalMessage }} />
+            </Alert>
+          </Modal.Body>
+          <Modal.Footer>
+            <Button
+              variant="secondary"
+              onClick={() => setShowConfirmModal(false)}
+              disabled={processing}
+            >
+              Cancelar
+            </Button>
+            <Button
+              variant="danger"
+              onClick={confirmModalAction}
+              disabled={processing}
+            >
+              {processing ? (
+                <Spinner as="span" size="sm" animation="border" />
+              ) : (
+                'Sí, Eliminar'
+              )}
+            </Button>
+          </Modal.Footer>
+        </Modal>
+      )}
+
+      {/* Modal de alerta genérica */}
+      {showAlertModal && (
+        <Modal
+          show={showAlertModal}
+          onHide={() => setShowAlertModal(false)}
+          centered
+        >
+          <Modal.Header closeButton>
+            <Modal.Title>Alerta</Modal.Title>
+          </Modal.Header>
+          <Modal.Body>
+            <Alert variant="info">{alertModalMessage}</Alert>
+          </Modal.Body>
+          <Modal.Footer>
+            <Button variant="primary" onClick={() => setShowAlertModal(false)}>
+              Cerrar
+            </Button>
+          </Modal.Footer>
+        </Modal>
+      )}
+
+      {/* Modal de visualización de asociaciones (existente en UsuarioSeccionTab) */}
+      {modal.type === 'showAssociations' && (
+        <Modal
+          show={modal.type === 'showAssociations'} // Asegúrate de que show esté bien ligado
+          onHide={closeModal}
+          centered
+        >
+          <Modal.Header closeButton>
+            <Modal.Title>Secciones de {modal.data?.NOMBRE_USUARIO}</Modal.Title>
+          </Modal.Header>
+          <Modal.Body>
+            {modal.loadingContent ? (
+              <div className="text-center">
+                <Spinner animation="border" />
+              </div>
+            ) : modal.content && modal.content.length > 0 ? (
+              <ul className="list-unstyled">
+                {modal.content.map((item) => (
+                  <li key={item.ID_SECCION}>{item.NOMBRE_SECCION}</li>
+                ))}
+              </ul>
+            ) : (
+              <p>No hay secciones asociadas a este usuario.</p>
+            )}
+          </Modal.Body>
+          <Modal.Footer>
+            <Button variant="secondary" onClick={closeModal}>
+              Cerrar
+            </Button>
+          </Modal.Footer>
+        </Modal>
+      )}
     </div>
   );
 }
