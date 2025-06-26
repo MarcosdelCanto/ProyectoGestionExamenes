@@ -3,14 +3,8 @@ import oracledb from 'oracledb';
 
 /**
  * Función auxiliar para buscar un ID o insertar el registro si no existe.
- * Esta función es genérica y se usará para varias entidades (Escuela, Jornada, Carrera, Asignatura, Sección, Usuario, Plan_Estudio).
- * @param {oracledb.Connection} connection - La conexión activa a la base de datos.
- * @param {string} sqlSelect - Consulta SQL para seleccionar el ID de un registro existente.
- * @param {string} sqlInsert - Consulta SQL para insertar un nuevo registro.
- * @param {Object} bindSelect - Parámetros de enlace para la consulta SELECT.
- * @param {Object} bindInsert - Parámetros de enlace para la consulta INSERT (incluyendo ':newId' para el valor de retorno).
- * @returns {Promise<number>} El ID del registro existente o recién insertado.
- * @throws {Error} Si no se puede obtener o insertar el ID.
+ * Devuelve tanto el ID como un indicador de si fue creado.
+ * @returns {Promise<{id: number, creado: boolean}>} Un objeto con el ID del registro y un booleano.
  */
 async function obtenerOInsertar(
   connection,
@@ -30,7 +24,7 @@ async function obtenerOInsertar(
   });
 
   if (selectRes.rows.length > 0) {
-    return selectRes.rows[0][0];
+    return { id: selectRes.rows[0][0], creado: false };
   }
 
   const bindVars = {
@@ -39,12 +33,11 @@ async function obtenerOInsertar(
   };
   const insertRes = await connection.execute(sqlInsert, bindVars, {
     autoCommit: false,
-    outFormat: oracledb.OUT_FORMAT_ARRAY,
   });
 
-  const newId = insertRes.outBinds.newId;
-  if (newId !== undefined && newId !== null) {
-    return Array.isArray(newId) ? newId[0] : newId;
+  const newIdArray = insertRes.outBinds.newId;
+  if (newIdArray && newIdArray.length > 0) {
+    return { id: newIdArray[0], creado: true };
   }
 
   throw new Error(
@@ -52,32 +45,28 @@ async function obtenerOInsertar(
   );
 }
 
-/**
- * Obtiene todas las carreras con su escuela asociada y sus planes de estudio.
- * @param {object} req - Objeto de solicitud.
- * @param {object} res - Objeto de respuesta.
- */
+// --- Las funciones CRUD básicas (getAll, getById, create, update, delete, getByEscuela) permanecen sin cambios ---
+
 export const getAllCarreras = async (req, res) => {
   let conn;
   try {
     conn = await getConnection();
-    // Modificación para incluir los planes de estudio asociados usando LISTAGG
     const result = await conn.execute(
       `SELECT
           c.id_carrera,
           c.nombre_carrera,
           c.escuela_id_escuela,
           e.nombre_escuela,
-          LISTAGG(pe.nombre_plan_estudio, ',') WITHIN GROUP (ORDER BY pe.nombre_plan_estudio) AS PLANES_ESTUDIO_ASOCIADOS
+          LISTAGG(pe.nombre_plan_estudio, ', ') WITHIN GROUP (ORDER BY pe.nombre_plan_estudio) AS PLANES_ESTUDIO_ASOCIADOS
        FROM
           ADMIN.CARRERA c
        JOIN
           ADMIN.ESCUELA e ON c.escuela_id_escuela = e.id_escuela
-       LEFT JOIN -- Usamos LEFT JOIN para incluir carreras que quizás no tengan planes aún
+       LEFT JOIN
           ADMIN.CARRERA_PLAN_ESTUDIO cpe ON c.id_carrera = cpe.carrera_id_carrera
        LEFT JOIN
           ADMIN.PLAN_ESTUDIO pe ON cpe.plan_estudio_id_plan_estudio = pe.id_plan_estudio
-       GROUP BY -- Agrupamos por los campos de carrera y escuela para que LISTAGG funcione
+       GROUP BY
           c.id_carrera, c.nombre_carrera, c.escuela_id_escuela, e.nombre_escuela
        ORDER BY
           c.id_carrera`,
@@ -93,11 +82,6 @@ export const getAllCarreras = async (req, res) => {
   }
 };
 
-/**
- * Obtiene una carrera por su ID.
- * @param {object} req - Objeto de solicitud con parámetros de ruta.
- * @param {object} res - Objeto de respuesta.
- */
 export const getCarreraById = async (req, res) => {
   const { id } = req.params;
   let conn;
@@ -122,11 +106,6 @@ export const getCarreraById = async (req, res) => {
   }
 };
 
-/**
- * Crea una nueva carrera.
- * @param {object} req - Objeto de solicitud con el cuerpo de la solicitud.
- * @param {object} res - Objeto de respuesta.
- */
 export const createCarrera = async (req, res) => {
   const { nombre_carrera, escuela_id_escuela } = req.body;
   let conn;
@@ -152,11 +131,6 @@ export const createCarrera = async (req, res) => {
   }
 };
 
-/**
- * Actualiza una carrera existente.
- * @param {object} req - Objeto de solicitud con parámetros de ruta y cuerpo de la solicitud.
- * @param {object} res - Objeto de respuesta.
- */
 export const updateCarrera = async (req, res) => {
   const { id } = req.params;
   const { nombre_carrera, escuela_id_escuela } = req.body;
@@ -186,19 +160,11 @@ export const updateCarrera = async (req, res) => {
   }
 };
 
-/**
- * Elimina una carrera.
- * @param {object} req - Objeto de solicitud con parámetros de ruta.
- * @param {object} res - Objeto de respuesta.
- */
 export const deleteCarrera = async (req, res) => {
   const { id } = req.params;
   let conn;
   try {
     conn = await getConnection();
-
-    // Iniciar transacción
-    // Obtener todas las asignaturas de la carrera
     const asignaturasResult = await conn.execute(
       `SELECT ID_ASIGNATURA FROM ASIGNATURA WHERE CARRERA_ID_CARRERA = :id`,
       [id],
@@ -207,28 +173,22 @@ export const deleteCarrera = async (req, res) => {
     const asignaturasIds = asignaturasResult.rows.map(
       (asig) => asig.ID_ASIGNATURA
     );
-
     if (asignaturasIds.length > 0) {
-      // Para cada asignatura, obtener sus secciones
       const seccionesResult = await conn.execute(
         `SELECT ID_SECCION FROM SECCION WHERE ASIGNATURA_ID_ASIGNATURA IN (${asignaturasIds.join(',')})`,
         [],
         { outFormat: oracledb.OUT_FORMAT_OBJECT }
       );
       const seccionesIds = seccionesResult.rows.map((sec) => sec.ID_SECCION);
-
       if (seccionesIds.length > 0) {
-        // Para cada sección, obtener sus exámenes
         const examenesResult = await conn.execute(
           `SELECT ID_EXAMEN FROM EXAMEN WHERE SECCION_ID_SECCION IN (${seccionesIds.join(',')})`,
           [],
           { outFormat: oracledb.OUT_FORMAT_OBJECT }
         );
         const examenIds = examenesResult.rows.map((ex) => ex.ID_EXAMEN);
-
         if (examenIds.length > 0) {
           const examenBinds = examenIds.map((examenId) => ({ id: examenId }));
-          // Eliminar dependencias de los exámenes
           await conn.executeMany(
             `DELETE FROM RESERVA_DOCENTES WHERE RESERVA_ID_RESERVA IN (SELECT ID_RESERVA FROM RESERVA WHERE EXAMEN_ID_EXAMEN = :id)`,
             examenBinds
@@ -242,44 +202,33 @@ export const deleteCarrera = async (req, res) => {
             examenBinds
           );
         }
-
-        // Eliminar exámenes
         await conn.execute(
           `DELETE FROM EXAMEN WHERE SECCION_ID_SECCION IN (${seccionesIds.join(',')})`
         );
-        // Eliminar asociaciones de usuarios a secciones
         await conn.execute(
           `DELETE FROM USUARIOSECCION WHERE SECCION_ID_SECCION IN (${seccionesIds.join(',')})`
         );
       }
-      // Eliminar secciones
       await conn.execute(
         `DELETE FROM SECCION WHERE ASIGNATURA_ID_ASIGNATURA IN (${asignaturasIds.join(',')})`
       );
     }
-
-    // Eliminar asignaturas
     await conn.execute(
       `DELETE FROM ASIGNATURA WHERE CARRERA_ID_CARRERA = :id`,
       [id]
     );
-    // Eliminar asociaciones de usuarios a carreras
     await conn.execute(
-      `DELETE FROM USUARIOCARRERA WHERE CARRERA_ID_CARRERA = :id`,
+      `DELETE FROM CARRERA_PLAN_ESTUDIO WHERE CARRERA_ID_CARRERA = :id`,
       [id]
     );
-
-    // Finalmente, eliminar la carrera
     const result = await conn.execute(
       `DELETE FROM CARRERA WHERE id_carrera = :id`,
       [id]
     );
-
     if (result.rowsAffected === 0) {
       await conn.rollback();
       return res.status(404).json({ error: 'Carrera no encontrada' });
     }
-
     await conn.commit();
     res
       .status(200)
@@ -288,54 +237,39 @@ export const deleteCarrera = async (req, res) => {
           'Carrera y todos sus registros asociados eliminados correctamente.',
       });
   } catch (err) {
-    if (conn) {
-      try {
-        await conn.rollback();
-      } catch (rbErr) {
-        console.error('Error en rollback:', rbErr);
-      }
-    }
+    if (conn) await conn.rollback();
     console.error('Error al eliminar carrera:', err);
     res
       .status(500)
       .json({ error: 'Error al eliminar carrera y sus dependencias.' });
   } finally {
-    if (conn) {
-      try {
-        await conn.close();
-      } catch (closeErr) {
-        console.error('Error cerrando conexión:', closeErr);
-      }
-    }
+    if (conn) await conn.close();
   }
 };
-/**
- * Obtiene todas las carreras asociadas a una escuela específica.
- * @param {object} req - Objeto de solicitud con parámetros de ruta.
- * @param {object} res - Objeto de respuesta.
- */
+
 export const getCarrerasByEscuela = async (req, res) => {
-  let conn; // Cambiado a 'conn' para consistencia
+  let conn;
   try {
     conn = await getConnection();
     const { escuelaId } = req.params;
     const sql = `SELECT ID_CARRERA, NOMBRE_CARRERA FROM ADMIN.CARRERA WHERE ESCUELA_ID_ESCUELA = :escuelaId ORDER BY NOMBRE_CARRERA`;
     const result = await conn.execute(sql, [escuelaId], {
-      // Usar conn.execute consistentemente
       outFormat: oracledb.OUT_FORMAT_OBJECT,
     });
     res.json(result.rows);
   } catch (err) {
-    console.error('Error al obtener carreras por escuela:', err); // Mensaje de error más específico
-    res.status(500).json({ error: 'Error al obtener carreras por escuela' }); // Mensaje de error más específico
+    console.error('Error al obtener carreras por escuela:', err);
+    res.status(500).json({ error: 'Error al obtener carreras por escuela' });
   } finally {
     if (conn) await conn.close();
   }
 };
 
-// --- CONTROLADOR para la carga masiva de actualización de carreras por plan de estudio ---
+/**
+ * Actualiza carreras y sus planes de estudio desde una carga masiva (SOLO ACTUALIZACIÓN).
+ */
 export const updateCarrerasFromPlanEstudio = async (req, res) => {
-  const datosParaActualizar = req.body; // Array de objetos con las columnas del CSV/Excel
+  const datosParaActualizar = req.body;
 
   let conn;
   let summary = {
@@ -343,7 +277,6 @@ export const updateCarrerasFromPlanEstudio = async (req, res) => {
     insertedPlans: 0,
     newAssociations: 0,
     ignoredRows: 0,
-    skippedValidation: 0, // Nuevo contador para filas saltadas por validación
   };
   let specificErrors = [];
 
@@ -354,14 +287,10 @@ export const updateCarrerasFromPlanEstudio = async (req, res) => {
       const fila = datosParaActualizar[i];
       const filaNum = i + 1;
 
-      // 'Plan Estudio' de la planilla de actualización (ej. "2020" o "2020,2021" o "1111211,1116316")
-      const planesEstudioStringFromCSV = String(
-        fila['Plan Estudio'] ?? ''
-      ).trim();
-      // 'Nombre Carrera' de la planilla de actualización (ej. "Ingeniería en Informática")
+      const planesEstudioStringCSV = String(fila['Plan Estudio'] ?? '').trim();
       const nuevoNombreCarrera = String(fila['Nombre Carrera'] ?? '').trim();
 
-      if (!planesEstudioStringFromCSV || !nuevoNombreCarrera) {
+      if (!planesEstudioStringCSV || !nuevoNombreCarrera) {
         summary.ignoredRows++;
         specificErrors.push({
           fila: filaNum,
@@ -371,151 +300,119 @@ export const updateCarrerasFromPlanEstudio = async (req, res) => {
         continue;
       }
 
-      // Convertir la cadena de planes de estudio a un array de planes individuales.
-      // Se divide por espacios O comas.
-      const planesIndividualesFromCSV = planesEstudioStringFromCSV
+      const planesIndividualesFromCSV = planesEstudioStringCSV
         .split(/\s+|,/)
         .filter((p) => p.length > 0);
-
       if (planesIndividualesFromCSV.length === 0) {
         summary.ignoredRows++;
         specificErrors.push({
           fila: filaNum,
-          error: `Columna "Plan Estudio" vacía o inválida en la planilla. No se encontraron planes para validar o asociar.`,
+          error: `Columna "Plan Estudio" vacía o inválida.`,
         });
         continue;
       }
 
-      let idCarrera;
-      let currentCarreraNameInDB; // Nombre actual de la carrera en la BD (ej. "1111211,1116316")
+      let idCarrera = null;
+      let carreraExistenteEncontrada = false;
 
-      try {
-        // 1. Encontrar la Carrera existente por su NOMBRE_CARRERA actual (que es el Plan Estudio concatenado de la carga inicial)
-        const resultCarrera = await conn.execute(
-          `SELECT ID_CARRERA, NOMBRE_CARRERA FROM ADMIN.CARRERA WHERE NOMBRE_CARRERA = :nombreActualEnDB`,
-          { nombreActualEnDB: planesEstudioStringFromCSV }, // ¡Buscamos por el contenido de la columna 'Plan Estudio' del CSV!
-          { outFormat: oracledb.OUT_FORMAT_OBJECT, autoCommit: false }
+      for (const plan of planesIndividualesFromCSV) {
+        const carreraRes = await conn.execute(
+          `SELECT cpe.CARRERA_ID_CARRERA
+             FROM ADMIN.CARRERA_PLAN_ESTUDIO cpe
+             JOIN ADMIN.PLAN_ESTUDIO pe ON cpe.PLAN_ESTUDIO_ID_PLAN_ESTUDIO = pe.ID_PLAN_ESTUDIO
+             WHERE pe.NOMBRE_PLAN_ESTUDIO = :planNombre`,
+          { planNombre: plan },
+          { outFormat: oracledb.OUT_FORMAT_ARRAY }
         );
-
-        if (resultCarrera.rows.length === 0) {
-          summary.ignoredRows++;
-          specificErrors.push({
-            fila: filaNum,
-            error: `Carrera no encontrada con el nombre (Plan Estudio concatenado): '${planesEstudioStringFromCSV}'.`,
-          });
-          continue;
+        if (carreraRes.rows.length > 0) {
+          idCarrera = carreraRes.rows[0][0];
+          carreraExistenteEncontrada = true;
+          break;
         }
+      }
 
-        idCarrera = resultCarrera.rows[0].ID_CARRERA;
-        currentCarreraNameInDB = resultCarrera.rows[0].NOMBRE_CARRERA; // Nombre actual de la carrera en la BD
+      if (carreraExistenteEncontrada) {
+        try {
+          // --- RUTA DE ACTUALIZACIÓN ---
+          const carreraDetailsRes = await conn.execute(
+            // **INICIO DE LA CORRECCIÓN: Usamos TRIM para limpiar el nombre de la BD**
+            `SELECT TRIM(nombre_carrera) AS NOMBRE_CARRERA FROM ADMIN.CARRERA WHERE id_carrera = :idCarrera`,
+            // **FIN DE LA CORRECCIÓN**
+            { idCarrera },
+            { outFormat: oracledb.OUT_FORMAT_OBJECT, autoCommit: false }
+          );
+          const currentDBName = carreraDetailsRes.rows[0].NOMBRE_CARRERA;
 
-        // --- INICIO DE VALIDACIÓN CLAVE: El nombre actual de la carrera en la BD debe contener al menos UN plan de estudio del CSV ---
-        // Esto verifica que el NOMBRE_CARRERA actual en la DB (ej. "1111211,1116316,1111212")
-        // contenga AL MENOS UNO de los planes de estudio de la columna 'Plan Estudio' del CSV de actualización.
-        const hasMatchingPlanInCurrentName = planesIndividualesFromCSV.some(
-          (plan) => currentCarreraNameInDB.includes(plan)
-        );
+          if (currentDBName !== nuevoNombreCarrera) {
+            await conn.execute(
+              `UPDATE ADMIN.CARRERA SET NOMBRE_CARRERA = :nuevoNombre WHERE ID_CARRERA = :idCarrera`,
+              { nuevoNombre: nuevoNombreCarrera, idCarrera },
+              { autoCommit: false }
+            );
+            summary.updatedCarreras++;
+          }
 
-        if (!hasMatchingPlanInCurrentName) {
-          summary.skippedValidation++;
-          specificErrors.push({
-            fila: filaNum,
-            error: `Validación fallida: El nombre de la carrera en la BD ('${currentCarreraNameInDB}') no contiene ninguno de los planes de estudio proporcionados ('${planesEstudioStringFromCSV}'). Fila ignorada.`,
-          });
-          continue; // Saltar esta fila si la validación falla
-        }
-        // --- FIN DE VALIDACIÓN CLAVE ---
-
-        // 2. Actualizar el nombre de la carrera en la BD al nombre "limpio"
-        if (currentCarreraNameInDB !== nuevoNombreCarrera) {
           await conn.execute(
-            `UPDATE ADMIN.CARRERA SET NOMBRE_CARRERA = :nuevoNombre WHERE ID_CARRERA = :idCarrera`,
-            { nuevoNombre: nuevoNombreCarrera, idCarrera: idCarrera },
+            `DELETE FROM ADMIN.CARRERA_PLAN_ESTUDIO WHERE CARRERA_ID_CARRERA = :idCarrera`,
+            { idCarrera },
             { autoCommit: false }
           );
-          summary.updatedCarreras++;
-        }
 
-        // 3. Eliminar asociaciones de planes de estudio antiguas para esta carrera
-        await conn.execute(
-          `DELETE FROM ADMIN.CARRERA_PLAN_ESTUDIO WHERE CARRERA_ID_CARRERA = :idCarrera`,
-          { idCarrera: idCarrera },
-          { autoCommit: false }
-        );
-
-        // 4. Procesar y asociar los nuevos Planes de Estudio (numéricos)
-        // Utiliza los planes individuales de la columna 'Plan Estudio' del CSV de actualización.
-        for (const planNombre of planesIndividualesFromCSV) {
-          if (!planNombre) continue;
-
-          let idPlanEstudio;
-          try {
-            idPlanEstudio = await obtenerOInsertar(
+          for (const planNombre of planesIndividualesFromCSV) {
+            const resultadoPlan = await obtenerOInsertar(
               conn,
               'SELECT ID_PLAN_ESTUDIO FROM ADMIN.PLAN_ESTUDIO WHERE UPPER(NOMBRE_PLAN_ESTUDIO) = UPPER(:planNombre)',
               'INSERT INTO ADMIN.PLAN_ESTUDIO (ID_PLAN_ESTUDIO, NOMBRE_PLAN_ESTUDIO) VALUES (ADMIN.SEQ_PLAN_ESTUDIO.NEXTVAL, :planNombre) RETURNING ID_PLAN_ESTUDIO INTO :newId',
-              { planNombre: planNombre },
-              { planNombre: planNombre }
+              { planNombre },
+              { planNombre }
             );
-
-            summary.insertedPlans++;
+            const idPlanEstudio = resultadoPlan.id;
+            if (resultadoPlan.creado) summary.insertedPlans++;
 
             await conn.execute(
               `INSERT INTO ADMIN.CARRERA_PLAN_ESTUDIO (CARRERA_ID_CARRERA, PLAN_ESTUDIO_ID_PLAN_ESTUDIO, FECHA_ASOCIACION) VALUES (:idCarrera, :idPlanEstudio, SYSTIMESTAMP)`,
-              { idCarrera: idCarrera, idPlanEstudio: idPlanEstudio },
+              { idCarrera, idPlanEstudio },
               { autoCommit: false }
             );
             summary.newAssociations++;
-          } catch (err) {
-            specificErrors.push({
-              fila: filaNum,
-              error: `Error procesando Plan de Estudio '${planNombre}' para Carrera '${nuevoNombreCarrera}': ${err.message}`,
-            });
           }
+        } catch (err) {
+          specificErrors.push({
+            fila: filaNum,
+            error: `Error al actualizar la carrera '${nuevoNombreCarrera}': ${err.message}`,
+          });
+          summary.ignoredRows++;
         }
-      } catch (err) {
+      } else {
+        // --- RUTA DE IGNORAR ---
+        summary.ignoredRows++;
         specificErrors.push({
           fila: filaNum,
-          error: `Error crítico al procesar carrera con plan concatenado '${planesEstudioStringFromCSV}': ${err.message}`,
+          error: `Carrera con planes '${planesEstudioStringCSV}' no encontrada. Fila ignorada.`,
         });
-        summary.ignoredRows++;
-        continue;
       }
-    }
+    } // Fin del bucle for
 
     await conn.commit();
 
     return res.status(200).json({
-      message: 'Proceso de actualización de carreras y planes completado.',
+      message: 'Proceso de actualización de carreras completado.',
       summary: summary,
       specificErrors:
         specificErrors.length > 0
           ? specificErrors
-          : 'No se registraron errores detallados por fila.',
+          : 'No se registraron errores detallados.',
     });
   } catch (err) {
-    if (conn) {
-      try {
-        await conn.rollback();
-      } catch (rollbackErr) {
-        console.error('Error durante el rollback:', rollbackErr);
-      }
-    }
+    if (conn) await conn.rollback();
     console.error('Error general en updateCarrerasFromPlanEstudio:', err);
     return res.status(500).json({
-      error:
-        'Error interno del servidor durante la actualización masiva de carreras.',
+      error: 'Error interno del servidor durante la carga masiva de carreras.',
       details: err.message || 'Error desconocido.',
       processedSummary: summary,
       specificErrors: specificErrors,
     });
   } finally {
-    if (conn) {
-      try {
-        await conn.close();
-      } catch (closeErr) {
-        console.error('Error cerrando conexión:', closeErr);
-      }
-    }
+    if (conn) await conn.close();
   }
 };

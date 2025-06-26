@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useMemo } from 'react'; // Añadir useCallback y useMemo
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import Layout from '../components/Layout';
 import EscuelaForm from '../components/escuelas/EscuelaForm';
 import EscuelaList from '../components/escuelas/EscuelaList';
@@ -20,40 +20,34 @@ import AsignaturaFilter from '../components/asignaturas/AsignaturaFilter';
 import SeccionFilter from '../components/secciones/SeccionFilter';
 
 import {
-  fetchAllAsignaturas as fetchAllAsignaturasService, // Renombrar para evitar conflicto
+  fetchAllAsignaturas as fetchAllAsignaturasService,
   createAsignatura as AddAsignatura,
   updateAsignatura as EditAsignatura,
   deleteAsignatura as DeleteAsignatura,
 } from '../services/asignaturaService';
 import {
-  fetchAllSecciones as fetchAllSeccionesService, // Renombrar
-  createSeccion as AddSeccion, // Asumiendo que seccionService exporta createSeccion
-  updateSeccion as EditSeccion, // Asumiendo que seccionService exporta updateSeccion
-  deleteSeccion as DeleteSeccion, // Asumiendo que seccionService exporta deleteSeccion
+  fetchAllSecciones as fetchAllSeccionesService,
+  createSeccion as AddSeccion,
+  updateSeccion as EditSeccion,
+  deleteSeccion as DeleteSeccion,
 } from '../services/seccionService';
 import {
-  createCarrera as AddCarrera, // Asumiendo que carreraService exporta createCarrera
-  updateCarrera as EditCarrera, // Asumiendo que carreraService exporta updateCarrera
-  deleteCarrera as DeleteCarrera, // Asumiendo que carreraService exporta deleteCarrera
-  fetchAllCarreras as fetchAllCarrerasService, // Renombrar
+  createCarrera as AddCarrera,
+  updateCarrera as EditCarrera,
+  deleteCarrera as DeleteCarrera,
+  fetchAllCarreras as fetchAllCarrerasService,
 } from '../services/carreraService';
 import {
   createEscuela as AddEscuela,
   updateEscuela as EditEscuela,
   deleteEscuela as DeleteEscuela,
-  fetchAllEscuelas as fetchAllEscuelasService, // Renombrar
+  fetchAllEscuelas as fetchAllEscuelasService,
 } from '../services/escuelaService';
-import PaginationComponent from '../components/PaginationComponent'; // Importar PaginationComponent
+import PaginationComponent from '../components/PaginationComponent';
 
-// Importar Alert y Spinner de react-bootstrap
 import { Alert, Spinner } from 'react-bootstrap';
 
-const alertStyle = {
-  animation: 'fadeInOut 5s ease-in-out',
-  WebkitAnimation: 'fadeInOut 5s ease-in-out',
-  opacity: 1,
-};
-
+// --- COMPONENTE MODAL ---
 function Modal({ title, children, onClose }) {
   return (
     <div
@@ -81,6 +75,7 @@ function Modal({ title, children, onClose }) {
   );
 }
 
+// --- COMPONENTE PRINCIPAL DE LA PÁGINA ---
 export default function AsignaturasPage() {
   const [secciones, setSecciones] = useState([]);
   const [asignaturas, setAsignaturas] = useState([]);
@@ -88,16 +83,13 @@ export default function AsignaturasPage() {
   const [escuelas, setEscuelas] = useState([]);
   const [selectedAsignaturas, setSelectedAsignaturas] = useState([]);
   const [selectedCarreras, setSelectedCarreras] = useState([]);
-  // const [selectedEscuela, setSelectedEscuela] = useState(null); // REEMPLAZADO
-  const [selectedEscuelas, setSelectedEscuelas] = useState([]); // NUEVO ESTADO
+  const [selectedEscuelas, setSelectedEscuelas] = useState([]);
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState('');
   const [error, setError] = useState('');
   const [modal, setModal] = useState({ type: null, entity: null, data: null });
-  const [activeTab, setActiveTab] = useState('secciones'); // Cambiado a 'secciones' para que sea la primera
+  const [activeTab, setActiveTab] = useState('secciones');
   const [selectedSecciones, setSelectedSecciones] = useState([]);
-
-  // Estados para los filtros
   const [escuelaFilters, setEscuelaFilters] = useState({ nombre: '' });
   const [carreraFilters, setCarreraFilters] = useState({
     nombre: '',
@@ -114,12 +106,11 @@ export default function AsignaturasPage() {
     carrera: '',
     asignatura: '',
   });
-
-  // Estados para datos "enriquecidos" (con IDs de jerarquía superior)
-  // Esto es opcional pero puede simplificar la lógica de filtrado de listas principales
-  // Por ahora, filtraremos directamente, pero considera enriquecer si la lógica se vuelve muy compleja.
-  // const [processedAsignaturas, setProcessedAsignaturas] = useState([]);
-  // const [processedSecciones, setProcessedSecciones] = useState([]);
+  const [itemsPerPage, setItemsPerPage] = useState(6);
+  const [currentPageAsignaturas, setCurrentPageAsignaturas] = useState(1);
+  const [currentPageSecciones, setCurrentPageSecciones] = useState(1);
+  const [currentPageCarreras, setCurrentPageCarreras] = useState(1);
+  const [currentPageEscuelas, setCurrentPageEscuelas] = useState(1);
 
   const displayMessage = (setter, message, duration = 4000) => {
     setter(message);
@@ -127,17 +118,6 @@ export default function AsignaturasPage() {
       setter('');
     }, duration);
   };
-
-  // Estados para paginación
-  const [itemsPerPage, setItemsPerPage] = useState(6); // Cambiado a 6
-  const [currentPageAsignaturas, setCurrentPageAsignaturas] = useState(1);
-  const [currentPageSecciones, setCurrentPageSecciones] = useState(1);
-  const [currentPageCarreras, setCurrentPageCarreras] = useState(1);
-  const [currentPageEscuelas, setCurrentPageEscuelas] = useState(1);
-
-  useEffect(() => {
-    loadData();
-  }, []); // Cargar datos solo una vez al montar
 
   const loadData = useCallback(async () => {
     setLoading(true);
@@ -149,13 +129,10 @@ export default function AsignaturasPage() {
           fetchAllEscuelasService(),
           fetchAllSeccionesService(),
         ]);
-
-      // Los servicios ya devuelven response.data
       setSecciones(seccionesRes || []);
       setAsignaturas(asignaturasRes || []);
       setCarreras(carrerasRes || []);
       setEscuelas(escuelasRes || []);
-
       setCurrentPageAsignaturas(1);
       setCurrentPageSecciones(1);
       setCurrentPageCarreras(1);
@@ -170,6 +147,10 @@ export default function AsignaturasPage() {
       setLoading(false);
     }
   }, []);
+
+  useEffect(() => {
+    loadData();
+  }, [loadData]);
 
   const closeModal = () => setModal({ type: null, entity: null, data: null });
 
@@ -192,10 +173,6 @@ export default function AsignaturasPage() {
             return;
           }
           data = selectedSecciones[0];
-          // console.log(
-          //   'Datos de la SECCIÓN seleccionada para editar (en AsignaturasPage):',
-          //   data
-          // );
           break;
         case 'carrera':
           if (selectedCarreras.length !== 1) {
@@ -226,6 +203,7 @@ export default function AsignaturasPage() {
             setTimeout(() => setError(''), 5000);
             return;
           }
+          data = selectedAsignaturas;
           break;
         case 'seccion':
           if (selectedSecciones.length === 0) {
@@ -235,6 +213,7 @@ export default function AsignaturasPage() {
             setTimeout(() => setError(''), 5000);
             return;
           }
+          data = selectedSecciones;
           break;
         case 'carrera':
           if (selectedCarreras.length === 0) {
@@ -244,6 +223,7 @@ export default function AsignaturasPage() {
             setTimeout(() => setError(''), 5000);
             return;
           }
+          data = selectedCarreras;
           break;
         case 'escuela':
           if (selectedEscuelas.length === 0) {
@@ -253,6 +233,7 @@ export default function AsignaturasPage() {
             setTimeout(() => setError(''), 5000);
             return;
           }
+          data = selectedEscuelas;
           break;
         default:
           break;
@@ -261,7 +242,6 @@ export default function AsignaturasPage() {
     setModal({ type, entity, data });
   };
 
-  // --- Handlers para cambios de Filtros ---
   const handleEscuelaFilterChange = useCallback((changedFilters) => {
     setEscuelaFilters((prev) => ({ ...prev, ...changedFilters }));
     setCurrentPageEscuelas(1);
@@ -276,7 +256,6 @@ export default function AsignaturasPage() {
     setAsignaturaFilters((prev) => {
       const newFilters = { ...prev, ...changedFilters };
       if (changedFilters.escuela !== undefined) {
-        // Si cambia escuela, resetear carrera
         newFilters.carrera = '';
       }
       return newFilters;
@@ -288,11 +267,9 @@ export default function AsignaturasPage() {
     setSeccionFilters((prev) => {
       const newFilters = { ...prev, ...changedFilters };
       if (changedFilters.escuela !== undefined) {
-        // Si cambia escuela, resetear carrera y asignatura
         newFilters.carrera = '';
         newFilters.asignatura = '';
       } else if (changedFilters.carrera !== undefined) {
-        // Si cambia carrera, resetear asignatura
         newFilters.asignatura = '';
       }
       return newFilters;
@@ -300,9 +277,8 @@ export default function AsignaturasPage() {
     setCurrentPageSecciones(1);
   }, []);
 
-  // --- Opciones para Dropdowns de Filtros Dependientes ---
   const carrerasOptionsForAsignaturaFilter = useMemo(() => {
-    if (!asignaturaFilters.escuela) return carreras; // Mostrar todas si no hay escuela seleccionada
+    if (!asignaturaFilters.escuela) return carreras;
     return carreras.filter(
       (c) => String(c.ESCUELA_ID_ESCUELA) === String(asignaturaFilters.escuela)
     );
@@ -322,7 +298,6 @@ export default function AsignaturasPage() {
     );
   }, [seccionFilters.carrera, asignaturas]);
 
-  // --- Listas Filtradas ---
   const filteredEscuelas = useMemo(() => {
     return escuelas.filter(
       (e) =>
@@ -346,7 +321,6 @@ export default function AsignaturasPage() {
   }, [carreras, carreraFilters]);
 
   const filteredAsignaturas = useMemo(() => {
-    // Para filtrar asignatura por escuela, necesitamos el ID de escuela de la carrera de la asignatura
     return asignaturas.filter((a) => {
       const matchesNombre =
         !asignaturaFilters.nombre ||
@@ -356,7 +330,6 @@ export default function AsignaturasPage() {
       const matchesCarrera =
         !asignaturaFilters.carrera ||
         String(a.CARRERA_ID_CARRERA) === String(asignaturaFilters.carrera);
-
       let matchesEscuela = true;
       if (asignaturaFilters.escuela) {
         const carreraDeAsignatura = carreras.find(
@@ -386,10 +359,8 @@ export default function AsignaturasPage() {
         !seccionFilters.asignatura ||
         String(s.ASIGNATURA_ID_ASIGNATURA) ===
           String(seccionFilters.asignatura);
-
       let matchesCarrera = true;
       let matchesEscuela = true;
-
       if (seccionFilters.carrera || seccionFilters.escuela) {
         const asignaturaDeSeccion = asignaturas.find(
           (asig) =>
@@ -401,7 +372,6 @@ export default function AsignaturasPage() {
               String(asignaturaDeSeccion.CARRERA_ID_CARRERA) ===
               String(seccionFilters.carrera);
           if (seccionFilters.escuela && matchesCarrera) {
-            // Solo chequear escuela si la carrera (o el filtro de carrera) coincide
             const carreraDeAsignatura = carreras.find(
               (c) =>
                 String(c.ID_CARRERA) ===
@@ -413,7 +383,6 @@ export default function AsignaturasPage() {
               : false;
           }
         } else {
-          // Si no se encuentra la asignatura, no puede coincidir con filtros de carrera o escuela
           if (seccionFilters.carrera || seccionFilters.escuela) return false;
         }
       }
@@ -423,13 +392,11 @@ export default function AsignaturasPage() {
     });
   }, [secciones, seccionFilters, asignaturas, carreras]);
 
-  // --- Funciones CRUD para Escuela ---
   const handleAddEscuela = async (form) => {
     try {
       await AddEscuela(form);
       loadData();
       closeModal();
-      setSuccess('Escuela agregada con éxito');
       displayMessage(setSuccess, 'Escuela agregada con éxito');
     } catch (error) {
       setError('Error al agregar escuela');
@@ -488,7 +455,6 @@ export default function AsignaturasPage() {
     }
   };
 
-  // --- Funciones de selección para Escuela ---
   const handleToggleEscuelaSelection = (escuelaToToggle) => {
     setSelectedEscuelas((prevSelected) => {
       const isSelected = prevSelected.find(
@@ -504,16 +470,13 @@ export default function AsignaturasPage() {
   };
 
   const handleToggleSelectAllEscuelas = () => {
-    // currentEscuelas son las visibles en la paginación actual
     if (selectedEscuelas.length === paginatedEscuelas.length) {
-      // Usar paginatedEscuelas
       setSelectedEscuelas([]);
     } else {
-      setSelectedEscuelas([...paginatedEscuelas]); // Usar paginatedEscuelas
+      setSelectedEscuelas([...paginatedEscuelas]);
     }
   };
 
-  // --- Funciones CRUD y de selección para Asignatura (ya implementadas) ---
   const handleToggleAsignaturaSelection = (asignaturaToToggle) => {
     setSelectedAsignaturas((prevSelected) => {
       const isSelected = prevSelected.find(
@@ -529,19 +492,16 @@ export default function AsignaturasPage() {
   };
 
   const handleToggleSelectAllAsignaturas = () => {
-    // currentAsignaturas son las visibles en la paginación actual
     if (selectedAsignaturas.length === paginatedAsignaturas.length) {
-      // Usar paginatedAsignaturas
       setSelectedAsignaturas([]);
     } else {
-      setSelectedAsignaturas([...paginatedAsignaturas]); // Usar paginatedAsignaturas
+      setSelectedAsignaturas([...paginatedAsignaturas]);
     }
   };
 
-  // --- Funciones CRUD para Asignatura ---
   const handleAddAsignatura = async (form) => {
     try {
-      await AddAsignatura(form); // AddAsignatura es createAsignatura del servicio
+      await AddAsignatura(form);
       loadData();
       closeModal();
       displayMessage(setSuccess, 'Asignatura agregada con éxito');
@@ -564,11 +524,11 @@ export default function AsignaturasPage() {
         setTimeout(() => setError(''), 5000);
         return;
       }
-      await EditAsignatura(selectedAsignaturas[0].ID_ASIGNATURA, form); // EditAsignatura es updateAsignatura del servicio
+      await EditAsignatura(selectedAsignaturas[0].ID_ASIGNATURA, form);
       loadData();
       closeModal();
       displayMessage(setSuccess, 'Asignatura actualizada con éxito');
-      setSelectedAsignaturas([]); // Limpiar selección
+      setSelectedAsignaturas([]);
     } catch (error) {
       setError(
         'Error al actualizar asignatura: ' +
@@ -588,7 +548,7 @@ export default function AsignaturasPage() {
     }
     try {
       for (const asignatura of selectedAsignaturas) {
-        await DeleteAsignatura(asignatura.ID_ASIGNATURA); // DeleteAsignatura es deleteAsignatura del servicio
+        await DeleteAsignatura(asignatura.ID_ASIGNATURA);
       }
       loadData();
       closeModal();
@@ -596,7 +556,7 @@ export default function AsignaturasPage() {
         setSuccess,
         `${selectedAsignaturas.length} asignatura(s) eliminada(s) con éxito`
       );
-      setSelectedAsignaturas([]); // Limpiar selección
+      setSelectedAsignaturas([]);
     } catch (error) {
       setError(
         'Error al eliminar asignatura(s): ' +
@@ -607,7 +567,6 @@ export default function AsignaturasPage() {
     }
   };
 
-  // --- Funciones CRUD y de selección para Seccion (ya implementadas) ---
   const handleToggleSeccionSelection = (seccionToToggle) => {
     setSelectedSecciones((prevSelected) => {
       const isSelected = prevSelected.find(
@@ -624,10 +583,9 @@ export default function AsignaturasPage() {
 
   const handleToggleSelectAllSecciones = () => {
     if (selectedSecciones.length === paginatedSecciones.length) {
-      // Usar paginatedSecciones
       setSelectedSecciones([]);
     } else {
-      setSelectedSecciones([...paginatedSecciones]); // Usar paginatedSecciones
+      setSelectedSecciones([...paginatedSecciones]);
     }
   };
 
@@ -658,11 +616,11 @@ export default function AsignaturasPage() {
         setTimeout(() => setError(''), 5000);
         return;
       }
-      await EditSeccion(selectedSecciones[0].ID_SECCION, form); // Usar el ID de la sección seleccionada
+      await EditSeccion(selectedSecciones[0].ID_SECCION, form);
       loadData();
       closeModal();
       setSuccess('Sección actualizada con éxito');
-      setSelectedSecciones([]); // Limpiar selección
+      setSelectedSecciones([]);
       setTimeout(() => {
         setSuccess('');
       }, 5000);
@@ -683,11 +641,7 @@ export default function AsignaturasPage() {
       closeModal();
       return;
     }
-
     try {
-      // Asumimos que DeleteSeccion puede tomar un ID.
-      // Si tu backend soporta borrado masivo, puedes enviar todos los IDs.
-      // Por ahora, lo haremos uno por uno.
       for (const seccion of selectedSecciones) {
         await DeleteSeccion(seccion.ID_SECCION);
       }
@@ -696,7 +650,7 @@ export default function AsignaturasPage() {
       setSuccess(
         `${selectedSecciones.length} sección(es) eliminada(s) con éxito`
       );
-      setSelectedSecciones([]); // Limpiar selección
+      setSelectedSecciones([]);
       setTimeout(() => {
         setSuccess('');
       }, 5000);
@@ -710,7 +664,6 @@ export default function AsignaturasPage() {
     }
   };
 
-  // --- Funciones CRUD y de selección para Carrera (ya implementadas) ---
   const handleToggleCarreraSelection = (carreraToToggle) => {
     setSelectedCarreras((prevSelected) => {
       const isSelected = prevSelected.find(
@@ -726,12 +679,10 @@ export default function AsignaturasPage() {
   };
 
   const handleToggleSelectAllCarreras = () => {
-    // currentCarreras son las visibles en la paginación actual
     if (selectedCarreras.length === paginatedCarreras.length) {
-      // Usar paginatedCarreras
       setSelectedCarreras([]);
     } else {
-      setSelectedCarreras([...paginatedCarreras]); // Usar paginatedCarreras
+      setSelectedCarreras([...paginatedCarreras]);
     }
   };
 
@@ -763,7 +714,7 @@ export default function AsignaturasPage() {
       loadData();
       closeModal();
       setSuccess('Carrera actualizada con éxito');
-      setSelectedCarreras([]); // Limpiar selección
+      setSelectedCarreras([]);
       setTimeout(() => setSuccess(''), 5000);
     } catch (error) {
       setError('Error al actualizar carrera');
@@ -789,7 +740,7 @@ export default function AsignaturasPage() {
       setSuccess(
         `${selectedCarreras.length} carrera(s) eliminada(s) con éxito`
       );
-      setSelectedCarreras([]); // Limpiar selección
+      setSelectedCarreras([]);
       setTimeout(() => setSuccess(''), 5000);
     } catch (error) {
       setError('Error al eliminar carrera(s)');
@@ -799,14 +750,12 @@ export default function AsignaturasPage() {
     }
   };
 
-  // Funciones de paginación
   const paginateAsignaturas = (pageNumber) =>
     setCurrentPageAsignaturas(pageNumber);
   const paginateSecciones = (pageNumber) => setCurrentPageSecciones(pageNumber);
   const paginateCarreras = (pageNumber) => setCurrentPageCarreras(pageNumber);
   const paginateEscuelas = (pageNumber) => setCurrentPageEscuelas(pageNumber);
 
-  // Calcular datos para la página actual
   const getPaginatedData = (items, currentPage) => {
     if (!Array.isArray(items)) return [];
     const indexOfLastItem = currentPage * itemsPerPage;
@@ -814,33 +763,30 @@ export default function AsignaturasPage() {
     return items.slice(indexOfFirstItem, indexOfLastItem);
   };
 
-  const indexOfLastAsignatura = currentPageAsignaturas * itemsPerPage;
-  const indexOfFirstAsignatura = indexOfLastAsignatura - itemsPerPage;
   const paginatedAsignaturas = getPaginatedData(
     filteredAsignaturas,
     currentPageAsignaturas
   );
-
-  const indexOfLastSeccion = currentPageSecciones * itemsPerPage;
-  const indexOfFirstSeccion = indexOfLastSeccion - itemsPerPage;
   const paginatedSecciones = getPaginatedData(
     filteredSecciones,
     currentPageSecciones
   );
-
-  const indexOfLastCarrera = currentPageCarreras * itemsPerPage;
-  const indexOfFirstCarrera = indexOfLastCarrera - itemsPerPage;
   const paginatedCarreras = getPaginatedData(
     filteredCarreras,
     currentPageCarreras
   );
-
-  const indexOfLastEscuela = currentPageEscuelas * itemsPerPage;
-  const indexOfFirstEscuela = indexOfLastEscuela - itemsPerPage;
   const paginatedEscuelas = getPaginatedData(
     filteredEscuelas,
     currentPageEscuelas
   );
+
+  const handleSetTab = (tabName) => {
+    setActiveTab(tabName);
+    setSelectedAsignaturas([]);
+    setSelectedSecciones([]);
+    setSelectedCarreras([]);
+    setSelectedEscuelas([]);
+  };
 
   if (
     loading &&
@@ -859,13 +805,139 @@ export default function AsignaturasPage() {
     );
   }
 
-  const handleSetTab = (tabName) => {
-    setActiveTab(tabName);
-    // Opcional: resetear selecciones al cambiar de pestaña
-    setSelectedAsignaturas([]);
-    setSelectedSecciones([]);
-    setSelectedCarreras([]);
-    setSelectedEscuelas([]);
+  // --- FUNCIÓN RESTAURADA Y MEJORADA PARA RENDERIZAR EL CONTENIDO DEL MODAL ---
+  const renderDeleteModalContent = () => {
+    if (!modal.data || modal.data.length === 0)
+      return <p>No hay elementos seleccionados.</p>;
+
+    let itemsToDelete = modal.data;
+    let itemName = '';
+    let itemKeyPrefix = '';
+    let nameProperty = '';
+    let deleteHandler;
+    let consequences = null;
+    let icon = 'bi bi-trash';
+
+    switch (modal.entity) {
+      case 'escuela':
+        itemName = itemsToDelete.length > 1 ? 'escuelas' : 'escuela';
+        itemKeyPrefix = 'esc-';
+        nameProperty = 'NOMBRE_ESCUELA';
+        deleteHandler = handleDeleteEscuela;
+        icon = 'bi bi-building';
+        consequences = (
+          <ul>
+            <li>
+              Todas las <strong>Carreras</strong> pertenecientes a esta(s)
+              escuela(s).
+            </li>
+            <li>
+              Todas las <strong>Asignaturas</strong>, <strong>Secciones</strong>
+              , <strong>Exámenes</strong> y <strong>Reservas</strong> asociadas.
+            </li>
+          </ul>
+        );
+        break;
+      case 'carrera':
+        itemName = itemsToDelete.length > 1 ? 'carreras' : 'carrera';
+        itemKeyPrefix = 'car-';
+        nameProperty = 'NOMBRE_CARRERA';
+        deleteHandler = handleDeleteCarrera;
+        icon = 'bi bi-mortarboard-fill';
+        consequences = (
+          <ul>
+            <li>
+              Todas las <strong>Asignaturas</strong> de esta(s) carrera(s).
+            </li>
+            <li>
+              Todas las <strong>Secciones</strong> de esas asignaturas.
+            </li>
+            <li>
+              Todos los <strong>Exámenes</strong> y <strong>Reservas</strong>{' '}
+              asociadas a esas secciones.
+            </li>
+          </ul>
+        );
+        break;
+      case 'asignatura':
+        itemName = itemsToDelete.length > 1 ? 'asignaturas' : 'asignatura';
+        itemKeyPrefix = 'asig-';
+        nameProperty = 'NOMBRE_ASIGNATURA';
+        deleteHandler = handleDeleteAsignatura;
+        icon = 'bi bi-book';
+        consequences = (
+          <ul>
+            <li>
+              Todas las <strong>Secciones</strong> de esta(s) asignatura(s).
+            </li>
+            <li>
+              Todos los <strong>Exámenes</strong> y <strong>Reservas</strong>{' '}
+              asociadas a esas secciones.
+            </li>
+          </ul>
+        );
+        break;
+      case 'seccion':
+        itemName = itemsToDelete.length > 1 ? 'secciones' : 'sección';
+        itemKeyPrefix = 'sec-';
+        nameProperty = 'NOMBRE_SECCION';
+        deleteHandler = handleDeleteSeccion;
+        icon = 'bi bi-list-task';
+        consequences = (
+          <ul>
+            <li>
+              Todos los <strong>Exámenes</strong> y <strong>Reservas</strong>{' '}
+              creados para esta(s) sección(es).
+            </li>
+            <li>
+              Las <strong>asignaciones de docentes</strong> a esta(s)
+              sección(es).
+            </li>
+          </ul>
+        );
+        break;
+      default:
+        return <p>Error: Entidad desconocida.</p>;
+    }
+
+    return (
+      <div>
+        <p>
+          ¿Está seguro de que desea eliminar {itemsToDelete.length} {itemName}?
+        </p>
+
+        <ul className="list-unstyled my-3 p-3 border bg-light rounded">
+          {itemsToDelete.map((item, index) => (
+            <li key={`${itemKeyPrefix}${index}`}>
+              <i className={`${icon} me-2`}></i>
+              {item[nameProperty] || `Elemento sin nombre (ID: ${item.ID})`}
+            </li>
+          ))}
+        </ul>
+
+        <Alert variant="danger" className="mt-3">
+          <Alert.Heading>
+            <i className="bi bi-exclamation-triangle-fill me-2"></i>
+            ¡Atención! Esta acción es irreversible.
+          </Alert.Heading>
+          <p className="mb-0">
+            Al eliminar, también se borrarán de forma permanente los siguientes
+            datos asociados:
+          </p>
+          <hr />
+          {consequences}
+        </Alert>
+
+        <div className="modal-footer">
+          <button className="btn btn-secondary" onClick={closeModal}>
+            Cancelar
+          </button>
+          <button className="btn btn-danger" onClick={deleteHandler}>
+            Sí, entiendo las consecuencias, eliminar
+          </button>
+        </div>
+      </div>
+    );
   };
 
   return (
@@ -892,7 +964,9 @@ export default function AsignaturasPage() {
         <ul className="nav nav-tabs mb-3">
           <li className="nav-item">
             <button
-              className={`nav-link ${activeTab === 'secciones' ? 'active' : ''}`}
+              className={`nav-link ${
+                activeTab === 'secciones' ? 'active' : ''
+              }`}
               onClick={() => handleSetTab('secciones')}
             >
               Secciones
@@ -900,7 +974,9 @@ export default function AsignaturasPage() {
           </li>
           <li className="nav-item">
             <button
-              className={`nav-link ${activeTab === 'asignaturas' ? 'active' : ''}`}
+              className={`nav-link ${
+                activeTab === 'asignaturas' ? 'active' : ''
+              }`}
               onClick={() => handleSetTab('asignaturas')}
             >
               Asignaturas
@@ -949,12 +1025,10 @@ export default function AsignaturasPage() {
                 selectedSecciones={selectedSecciones}
                 onToggleSeccionSelection={handleToggleSeccionSelection}
                 onToggleSelectAll={handleToggleSelectAllSecciones}
-                // loading={loading} // El loading general se maneja arriba
               />
             )}
             {!loading && filteredSecciones.length > itemsPerPage && (
               <div className="mt-3">
-                {/* Añadido margen superior */}
                 <PaginationComponent
                   itemsPerPage={itemsPerPage}
                   totalItems={filteredSecciones.length}
@@ -964,89 +1038,6 @@ export default function AsignaturasPage() {
               </div>
             )}
           </>
-        )}
-        {modal.type && modal.entity === 'seccion' && (
-          <Modal
-            title={
-              modal.type === 'add'
-                ? 'Agregar Sección'
-                : modal.type === 'edit'
-                  ? 'Editar Sección'
-                  : `Eliminar Sección(es) (${selectedSecciones.length})`
-            }
-            onClose={closeModal}
-          >
-            {modal.type === 'delete' ? (
-              <div>
-                <p>
-                  ¿Está seguro de que desea eliminar{' '}
-                  {selectedSecciones.length === 1
-                    ? 'la sección seleccionada'
-                    : `las ${selectedSecciones.length} secciones seleccionadas`}
-                  ?
-                </p>
-                {/* Lista de secciones a eliminar si son varias */}
-                {selectedSecciones.length > 1 && (
-                  <ul className="list-unstyled my-3 p-3 border bg-light rounded">
-                    {selectedSecciones.map((s) => (
-                      <li key={s.ID_SECCION}>
-                        <i className="bi bi-list-task me-2"></i>
-                        {s.NOMBRE_SECCION || s.ID_SECCION}
-                      </li>
-                    ))}
-                  </ul>
-                )}
-                <Alert variant="danger" className="mt-3">
-                  <Alert.Heading>
-                    <i className="bi bi-exclamation-triangle-fill me-2"></i>
-                    ¡Atención! Esta acción es irreversible.
-                  </Alert.Heading>
-                  <p className="mb-0">
-                    Al eliminar esta(s) sección(es), también se eliminarán de
-                    forma permanente todos los datos asociados, incluyendo:
-                  </p>
-                  <hr />
-                  <ul>
-                    <li>
-                      <strong>Todos los Exámenes</strong> creados para esta(s)
-                      sección(es).
-                    </li>
-                    <li>
-                      <strong>Todas las Reservas</strong> de salas y horarios
-                      asociadas a esos exámenes.
-                    </li>
-                    <li>
-                      Las <strong>asignaciones de docentes y alumnos</strong> a
-                      esta(s) sección(es).
-                    </li>
-                  </ul>
-                </Alert>
-
-                <div className="modal-footer">
-                  <button className="btn btn-secondary" onClick={closeModal}>
-                    Cancelar
-                  </button>
-                  <button
-                    className="btn btn-danger"
-                    onClick={handleDeleteSeccion}
-                  >
-                    Sí, entiendo las consecuencias, eliminar
-                  </button>
-                </div>
-              </div>
-            ) : (
-              <SeccionForm
-                initial={modal.data}
-                onSubmit={
-                  modal.type === 'add' ? handleAddSeccion : handleEditSeccion
-                }
-                onCancel={closeModal}
-                asignaturas={asignaturas} // Pasar lista de asignaturas
-                carreras={carreras} // Pasar lista de carreras
-                // profesores={profesores} // Pasar lista de profesores si es necesario
-              />
-            )}
-          </Modal>
         )}
         {activeTab === 'asignaturas' && (
           <>
@@ -1060,7 +1051,7 @@ export default function AsignaturasPage() {
               onAdd={() => openModal('add', 'asignatura')}
               onEdit={() => openModal('edit', 'asignatura')}
               onDelete={() => openModal('delete', 'asignatura')}
-              selectedAsignaturas={selectedAsignaturas} // Pasar el array
+              selectedAsignaturas={selectedAsignaturas}
             />
             {loading && paginatedAsignaturas.length === 0 ? (
               <div className="text-center">
@@ -1073,12 +1064,10 @@ export default function AsignaturasPage() {
                 selectedAsignaturas={selectedAsignaturas}
                 onToggleAsignaturaSelection={handleToggleAsignaturaSelection}
                 onToggleSelectAll={handleToggleSelectAllAsignaturas}
-                // loading={loading}
               />
             )}
             {!loading && filteredAsignaturas.length > itemsPerPage && (
               <div className="mt-3">
-                {/* Añadido margen superior */}
                 <PaginationComponent
                   itemsPerPage={itemsPerPage}
                   totalItems={filteredAsignaturas.length}
@@ -1088,61 +1077,6 @@ export default function AsignaturasPage() {
               </div>
             )}
           </>
-        )}
-        {modal.type && modal.entity === 'asignatura' && (
-          <Modal
-            title={
-              modal.type === 'add'
-                ? 'Agregar Asignatura'
-                : modal.type === 'edit'
-                  ? 'Editar Asignatura'
-                  : `Eliminar Asignatura(s) (${selectedAsignaturas.length})`
-            }
-            onClose={closeModal}
-          >
-            {modal.type === 'delete' ? (
-              <div>
-                <p>
-                  ¿Está seguro de que desea eliminar
-                  {selectedAsignaturas.length === 1
-                    ? 'la asignatura seleccionada'
-                    : `las ${selectedAsignaturas.length} asignaturas seleccionadas`}
-                  ?
-                </p>
-                {selectedAsignaturas.length > 1 && (
-                  <ul>
-                    {selectedAsignaturas.map((a) => (
-                      <li key={a.ID_ASIGNATURA}>
-                        {a.NOMBRE_ASIGNATURA || a.ID_ASIGNATURA}
-                      </li>
-                    ))}
-                  </ul>
-                )}
-                <div className="modal-footer">
-                  <button className="btn btn-secondary" onClick={closeModal}>
-                    Cancelar
-                  </button>
-                  <button
-                    className="btn btn-danger"
-                    onClick={handleDeleteAsignatura}
-                  >
-                    Eliminar
-                  </button>
-                </div>
-              </div>
-            ) : (
-              <AsignaturaForm
-                initial={modal.data}
-                onSubmit={
-                  modal.type === 'add'
-                    ? handleAddAsignatura
-                    : handleEditAsignatura
-                }
-                onCancel={closeModal}
-                carreras={carreras} // Pasar carreras al formulario
-              />
-            )}
-          </Modal>
         )}
         {activeTab === 'carreras' && (
           <>
@@ -1155,7 +1089,8 @@ export default function AsignaturasPage() {
               onAdd={() => openModal('add', 'carrera')}
               onEdit={() => openModal('edit', 'carrera')}
               onDelete={() => openModal('delete', 'carrera')}
-              selectedCarreras={selectedCarreras} // Pasar el array
+              selectedCarreras={selectedCarreras}
+              onRefetchData={loadData}
             />
             {loading && paginatedCarreras.length === 0 ? (
               <div className="text-center">
@@ -1168,12 +1103,10 @@ export default function AsignaturasPage() {
                 selectedCarreras={selectedCarreras}
                 onToggleCarreraSelection={handleToggleCarreraSelection}
                 onToggleSelectAll={handleToggleSelectAllCarreras}
-                // loading={loading}
               />
             )}
             {!loading && filteredCarreras.length > itemsPerPage && (
               <div className="mt-3">
-                {/* Añadido margen superior */}
                 <PaginationComponent
                   itemsPerPage={itemsPerPage}
                   totalItems={filteredCarreras.length}
@@ -1183,95 +1116,6 @@ export default function AsignaturasPage() {
               </div>
             )}
           </>
-        )}
-        {modal.type && modal.entity === 'carrera' && (
-          <Modal
-            style={{ width: '600px' }}
-            title={
-              modal.type === 'add'
-                ? 'Agregar Carrera'
-                : modal.type === 'edit'
-                  ? 'Editar Carrera'
-                  : `Eliminar Carrera(s) (${selectedCarreras.length})`
-            }
-            onClose={closeModal}
-          >
-            {modal.type === 'delete' ? (
-              <div>
-                {/* --- INICIO DE LA MODIFICACIÓN --- */}
-                <p>
-                  ¿Está seguro de que desea eliminar{' '}
-                  {selectedCarreras.length === 1
-                    ? 'la carrera seleccionada'
-                    : `las ${selectedCarreras.length} carreras seleccionadas`}
-                  ?
-                </p>
-
-                {selectedCarreras.length > 1 && (
-                  <ul className="list-unstyled my-3 p-3 border bg-light rounded">
-                    {selectedCarreras.map((c) => (
-                      <li key={c.ID_CARRERA}>
-                        <i className="bi bi-mortarboard-fill me-2"></i>
-                        {c.NOMBRE_CARRERA || c.ID_CARRERA}
-                      </li>
-                    ))}
-                  </ul>
-                )}
-
-                <Alert variant="danger" className="mt-3">
-                  <Alert.Heading>
-                    <i className="bi bi-exclamation-triangle-fill me-2"></i>
-                    ¡Atención! Esta es una acción destructiva e irreversible.
-                  </Alert.Heading>
-                  <p className="mb-0">
-                    Al eliminar esta(s) carrera(s), se eliminarán de forma
-                    permanente **TODOS** los datos asociados, incluyendo:
-                  </p>
-                  <hr />
-                  <ul>
-                    <li>
-                      <strong>Todas las Asignaturas</strong> de esta(s)
-                      carrera(s).
-                    </li>
-                    <li>
-                      <strong>Todas las Secciones</strong> de esas asignaturas.
-                    </li>
-                    <li>
-                      <strong>Todos los Exámenes</strong> y{' '}
-                      <strong>Reservas</strong> asociadas a esas secciones.
-                    </li>
-                    <li>
-                      Todas las <strong>asociaciones de usuarios</strong>{' '}
-                      (alumnos, docentes, coordinadores) a esta(s) carrera(s) y
-                      sus secciones.
-                    </li>
-                  </ul>
-                </Alert>
-
-                <div className="modal-footer">
-                  <button className="btn btn-secondary" onClick={closeModal}>
-                    Cancelar
-                  </button>
-                  <button
-                    className="btn btn-danger"
-                    onClick={handleDeleteCarrera}
-                  >
-                    Sí, entiendo las consecuencias, eliminar
-                  </button>
-                </div>
-                {/* --- FIN DE LA MODIFICACIÓN --- */}
-              </div>
-            ) : (
-              <CarreraForm
-                initial={modal.data}
-                onSubmit={
-                  modal.type === 'add' ? handleAddCarrera : handleEditCarrera
-                }
-                onCancel={closeModal}
-                escuelas={escuelas}
-              />
-            )}
-          </Modal>
         )}
         {activeTab === 'escuelas' && (
           <>
@@ -1283,7 +1127,7 @@ export default function AsignaturasPage() {
               onAdd={() => openModal('add', 'escuela')}
               onEdit={() => openModal('edit', 'escuela')}
               onDelete={() => openModal('delete', 'escuela')}
-              selectedEscuelas={selectedEscuelas} // Pasar el array
+              selectedEscuelas={selectedEscuelas}
             />
             {loading && paginatedEscuelas.length === 0 ? (
               <div className="text-center">
@@ -1296,12 +1140,10 @@ export default function AsignaturasPage() {
                 selectedEscuelas={selectedEscuelas}
                 onToggleEscuelaSelection={handleToggleEscuelaSelection}
                 onToggleSelectAll={handleToggleSelectAllEscuelas}
-                // loading={loading}
               />
             )}
             {!loading && filteredEscuelas.length > itemsPerPage && (
               <div className="mt-3">
-                {/* Añadido margen superior */}
                 <PaginationComponent
                   itemsPerPage={itemsPerPage}
                   totalItems={filteredEscuelas.length}
@@ -1312,57 +1154,55 @@ export default function AsignaturasPage() {
             )}
           </>
         )}
-        {modal.type && modal.entity === 'escuela' && (
+
+        {modal.type && modal.entity && (
           <Modal
-            title={
-              modal.type === 'add'
-                ? 'Agregar Escuela'
-                : modal.type === 'edit'
-                  ? 'Editar Escuela'
-                  : `Eliminar Escuela(s) (${selectedEscuelas.length})`
-            }
+            title={`${
+              modal.type.charAt(0).toUpperCase() + modal.type.slice(1)
+            } ${modal.entity.charAt(0).toUpperCase() + modal.entity.slice(1)}`}
             onClose={closeModal}
           >
             {modal.type === 'delete' ? (
-              <div>
-                <p>
-                  ¿Está seguro de que desea eliminar
-                  {selectedEscuelas.length === 1
-                    ? 'la escuela seleccionada'
-                    : `las ${selectedEscuelas.length} escuelas seleccionadas`}
-                  ?
-                </p>
-                {selectedEscuelas.length > 1 && (
-                  <ul>
-                    {selectedEscuelas.map((e) => (
-                      <li key={e.ID_ESCUELA}>
-                        {e.NOMBRE_ESCUELA || e.ID_ESCUELA}
-                      </li>
-                    ))}
-                  </ul>
-                )}
-                <div className="modal-footer">
-                  <button className="btn btn-secondary" onClick={closeModal}>
-                    Cancelar
-                  </button>
-                  <button
-                    className="btn btn-danger"
-                    onClick={handleDeleteEscuela}
-                  >
-                    Eliminar
-                  </button>
-                </div>
-              </div>
-            ) : (
+              renderDeleteModalContent()
+            ) : modal.entity === 'seccion' ? (
+              <SeccionForm
+                initial={modal.data}
+                onSubmit={
+                  modal.type === 'add' ? handleAddSeccion : handleEditSeccion
+                }
+                onCancel={closeModal}
+                asignaturas={asignaturas}
+                carreras={carreras}
+              />
+            ) : modal.entity === 'asignatura' ? (
+              <AsignaturaForm
+                initial={modal.data}
+                onSubmit={
+                  modal.type === 'add'
+                    ? handleAddAsignatura
+                    : handleEditAsignatura
+                }
+                onCancel={closeModal}
+                carreras={carreras}
+              />
+            ) : modal.entity === 'carrera' ? (
+              <CarreraForm
+                initial={modal.data}
+                onSubmit={
+                  modal.type === 'add' ? handleAddCarrera : handleEditCarrera
+                }
+                onCancel={closeModal}
+                escuelas={escuelas}
+              />
+            ) : modal.entity === 'escuela' ? (
               <EscuelaForm
                 initial={modal.data}
                 onSubmit={
                   modal.type === 'add' ? handleAddEscuela : handleEditEscuela
                 }
                 onCancel={closeModal}
-                // No se pasan otras listas a EscuelaForm a menos que sea necesario
               />
-            )}
+            ) : null}
           </Modal>
         )}
       </div>

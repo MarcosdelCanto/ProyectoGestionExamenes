@@ -38,7 +38,6 @@ function EscuelaList({
                 aria-label="Seleccionar todas las escuelas"
               />
             </th>
-            <th className="align-middle">ID</th>
             <th className="align-middle">Nombre</th>
             {/* Agrega más encabezados si es necesario */}
           </tr>
@@ -71,7 +70,6 @@ function EscuelaList({
                   aria-label={`Seleccionar escuela ${e.NOMBRE_ESCUELA || e.ID_ESCUELA}`}
                 />
               </td>
-              <td>{e.ID_ESCUELA}</td>
               <td>{e.NOMBRE_ESCUELA}</td>
             </tr>
           ))}

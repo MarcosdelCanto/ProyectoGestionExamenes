@@ -5,11 +5,31 @@ export const getAllSecciones = async (req, res) => {
   try {
     conn = await getConnection();
     const result = await conn.execute(
-      `SELECT s.id_seccion, s.nombre_seccion, s.asignatura_id_asignatura, a.nombre_asignatura, j.nombre_jornada
-      FROM SECCION s
-      JOIN ASIGNATURA a ON s.asignatura_id_asignatura = a.id_asignatura
-      JOIN JORNADA j ON s.jornada_id_jornada = j.id_jornada
-      ORDER BY s.id_seccion`,
+      `SELECT
+          s.id_seccion,
+          s.nombre_seccion,
+          s.asignatura_id_asignatura,
+          a.nombre_asignatura,
+          j.nombre_jornada,
+          c.id_carrera,
+          c.nombre_carrera,
+          (
+            SELECT u.nombre_usuario
+            FROM usuarioseccion us
+            JOIN usuario u ON us.usuario_id_usuario = u.id_usuario
+            WHERE us.seccion_id_seccion = s.id_seccion AND ROWNUM = 1
+          ) AS nombre_profesor,
+          (
+            SELECT u.id_usuario
+            FROM usuarioseccion us
+            JOIN usuario u ON us.usuario_id_usuario = u.id_usuario
+            WHERE us.seccion_id_seccion = s.id_seccion AND ROWNUM = 1
+          ) AS profesor_id_profesor
+       FROM SECCION s
+       JOIN ASIGNATURA a ON s.asignatura_id_asignatura = a.id_asignatura
+       JOIN JORNADA j ON s.jornada_id_jornada = j.id_jornada
+       JOIN CARRERA c ON a.carrera_id_carrera = c.id_carrera
+       ORDER BY s.id_seccion`,
       [],
       { outFormat: oracledb.OUT_FORMAT_OBJECT }
     );
@@ -168,12 +188,10 @@ export const deleteSeccion = async (req, res) => {
     // Si todo fue exitoso, confirmar la transacción completa
     await conn.commit();
 
-    res
-      .status(200)
-      .json({
-        message:
-          'Sección y todos sus registros asociados eliminados correctamente.',
-      });
+    res.status(200).json({
+      message:
+        'Sección y todos sus registros asociados eliminados correctamente.',
+    });
   } catch (err) {
     console.error('Error al eliminar seccion y sus dependencias:', err);
     if (conn) {

@@ -6,8 +6,8 @@ function CarreraActions({
   onAdd,
   onEdit,
   onDelete,
-  selectedCarreras, // Cambiado de selectedCarrera a selectedCarreras
-  onRefetchData, // Añadido para permitir recargar datos después de la carga masiva
+  selectedCarreras,
+  onRefetchData, // Prop para recargar los datos desde la página principal
 }) {
   const [showUpdateModal, setShowUpdateModal] = useState(false);
 
@@ -17,16 +17,21 @@ function CarreraActions({
   const handleOpenUpdateModal = () => setShowUpdateModal(true);
   const handleCloseUpdateModal = () => setShowUpdateModal(false);
 
-  // Función para manejar la finalización de la carga en el modal
+  /**
+   * Esta función se ejecuta cuando el modal de carga masiva termina.
+   * Si la operación fue exitosa, llama a la función para recargar los datos.
+   * @param {object} result - El resultado de la operación de carga.
+   */
   const handleUpdateComplete = (result) => {
     console.log('Carga masiva de actualización de carrera completada:', result);
     if (result.success) {
-      // Si la carga fue exitosa, recargamos los datos de la tabla de carreras
+      // Si la carga fue exitosa, se llama a la función para recargar los datos de la tabla.
       if (typeof onRefetchData === 'function') {
         onRefetchData();
       }
     }
-    handleCloseUpdateModal(); // Cerrar el modal después de la carga, sin importar el resultado
+    // Siempre se cierra el modal al finalizar, sin importar el resultado.
+    handleCloseUpdateModal();
   };
 
   return (
@@ -62,11 +67,11 @@ function CarreraActions({
           <span className="btn-responsive-text ms-2">Eliminar Carrera</span>
         </Button>
 
-        {/* Nuevo botón para la actualización masiva de carreras por plan de estudio */}
+        {/* Botón para la actualización masiva de carreras por plan de estudio */}
         <Button
-          variant="primary" // O el color que prefieras para esta acción
+          variant="primary"
           onClick={handleOpenUpdateModal}
-          className="ms-2 mb-2 btn-icon-only-candidate" // Añadido margen izquierdo y las clases de estilo
+          className="ms-2 mb-2 btn-icon-only-candidate"
           title="Actualizar Nombres y Planes de Carrera por Carga Masiva"
         >
           <i className="bi bi-upload"></i>

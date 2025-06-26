@@ -38,7 +38,6 @@ function AsignaturaList({
                 aria-label="Seleccionar todas las asignaturas"
               />
             </th>
-            <th className="align-middle">ID</th>
             <th className="align-middle">Nombre</th>
             <th className="align-middle">Carrera</th>
           </tr>
@@ -73,7 +72,6 @@ function AsignaturaList({
                   aria-label={`Seleccionar asignatura ${a.NOMBRE_ASIGNATURA || a.ID_ASIGNATURA}`}
                 />
               </td>
-              <td>{a.ID_ASIGNATURA}</td>
               <td>{a.NOMBRE_ASIGNATURA}</td>
               <td>{a.NOMBRE_CARRERA || a.CARRERA_ID_CARRERA}</td>
             </tr>

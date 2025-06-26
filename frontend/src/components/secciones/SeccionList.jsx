@@ -2,9 +2,9 @@ import React from 'react';
 
 function SeccionList({
   secciones,
-  selectedSecciones, // Cambiado de selectedSeccion a selectedSecciones (array)
-  onToggleSeccionSelection, // Nueva función para manejar la selección individual
-  onToggleSelectAll, // Nueva función para seleccionar/deseleccionar todo
+  selectedSecciones,
+  onToggleSeccionSelection,
+  onToggleSelectAll,
   loading,
 }) {
   if (loading) {
@@ -37,18 +37,17 @@ function SeccionList({
                 aria-label="Seleccionar todas las secciones"
               />
             </th>
-            <th className="align-middle">ID</th>
-            <th className="align-middle">Nombre</th>
-            <th className="align-middle">Asignatura ID</th>
-            <th className="align-middle">Profesor ID</th>
-            <th className="align-middle">Carrera ID</th>
+            <th className="align-middle">Nombre Sección</th>
+            <th className="align-middle">Asignatura</th>
+            <th className="align-middle">Profesor Asignado</th>
+            <th className="align-middle">Carrera</th>
           </tr>
         </thead>
         <tbody>
           {secciones.map((s) => (
             <tr
               key={`seccion-${s.ID_SECCION}`}
-              onClick={() => onToggleSeccionSelection(s)} // Llama a la nueva función con la sección completa
+              onClick={() => onToggleSeccionSelection(s)}
               className={`align-middle ${
                 selectedSecciones.find((ss) => ss.ID_SECCION === s.ID_SECCION)
                   ? 'table-primary'
@@ -66,20 +65,16 @@ function SeccionList({
                     )
                   }
                   onChange={(e) => {
-                    e.stopPropagation(); // Evita que el onClick de la fila se dispare también
+                    e.stopPropagation();
                     onToggleSeccionSelection(s);
                   }}
                   aria-label={`Seleccionar sección ${s.NOMBRE_SECCION || s.ID_SECCION}`}
                 />
               </td>
-              <td>{s.ID_SECCION || 'N/A'}</td>
               <td>{s.NOMBRE_SECCION || 'N/A'}</td>
-              {/* Asume que tienes los IDs, si tienes los nombres, úsalos */}
-              <td>
-                {s.ASIGNATURA_ID_ASIGNATURA || s.NOMBRE_ASIGNATURA || 'N/A'}
-              </td>
-              <td>{s.PROFESOR_ID_PROFESOR || s.NOMBRE_PROFESOR || 'N/A'}</td>
-              <td>{s.CARRERA_ID_CARRERA || s.NOMBRE_CARRERA || 'N/A'}</td>
+              <td>{s.NOMBRE_ASIGNATURA || 'N/A'}</td>
+              <td>{s.NOMBRE_PROFESOR || 'No Asignado'}</td>
+              <td>{s.NOMBRE_CARRERA || 'N/A'}</td>
             </tr>
           ))}
         </tbody>

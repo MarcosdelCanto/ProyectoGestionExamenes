@@ -38,7 +38,6 @@ function CarreraList({
                 aria-label="Seleccionar todas las carreras"
               />
             </th>
-            <th className="align-middle">ID</th>
             <th className="align-middle">Planes de Estudio</th>
             <th className="align-middle">Nombre Carrera</th>
             <th className="align-middle">Escuela</th>
@@ -73,7 +72,6 @@ function CarreraList({
                 />
               </td>
               {/* Eliminar espacios en blanco o saltos de línea entre <td> tags */}
-              <td>{c.ID_CARRERA}</td>
               <td>{c.PLANES_ESTUDIO_ASOCIADOS || 'N/A'}</td>
               <td>{c.NOMBRE_CARRERA}</td>
               <td>{c.NOMBRE_ESCUELA || c.ESCUELA_ID_ESCUELA}</td>
