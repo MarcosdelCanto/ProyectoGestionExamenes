@@ -17,6 +17,13 @@ export default defineConfig({
       reportsDirectory: './coverage',
     },
     globals: true,
-    testTimeout: 10000,
+    testTimeout: 15000, // Aumentado para pruebas de integración
+    // Configuración para diferentes tipos de pruebas
+    pool: 'threads',
+    poolOptions: {
+      threads: {
+        singleThread: true, // Para pruebas de BD que requieren orden
+      },
+    },
   },
 });

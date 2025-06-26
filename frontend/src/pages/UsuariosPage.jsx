@@ -357,7 +357,7 @@ export default function UsuariosPage() {
           data: payload,
           title: 'Confirmar Reseteo de Contraseña',
           action: () => handleResetPassword(userIdToReset),
-          data: `¿Está seguro de que desea resetear la contraseña del usuario "${userNameToReset}"?`,
+          message: `¿Está seguro de que desea resetear la contraseña del usuario "${userNameToReset}"?`,
           show: true,
         }));
       }
@@ -612,7 +612,7 @@ export default function UsuariosPage() {
       case 'confirm':
         return (
           <div>
-            <p>{modalState.data}</p>
+            <p>{modalState.message}</p>
             <div className="modal-footer">
               <button
                 className="btn btn-secondary"

@@ -7,6 +7,9 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage",
+    "test:unit": "vitest run test/controllers test/middlewares test/utils",
+    "test:integration": "vitest run test/integration",
+    "test:all": "vitest run --coverage",
     "start": "node index.js"
   },
   "keywords": [],
