@@ -1,33 +1,27 @@
-// src/pages/ModulosPage.jsx
-import React, { useState, useEffect, useCallback, useMemo } from 'react'; // Añadido useMemo
-import Layout from '../components/Layout'; // Ajusta la ruta
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import Layout from '../components/Layout';
 import ModuloTable from '../components/modulos/ModuloTable';
 import ModuloForm from '../components/modulos/ModuloForm';
 import ModuloActions from '../components/modulos/moduloActions';
-import ModuloFilter from '../components/modulos/ModuloFilter'; // <-- IMPORTAR ModuloFilter
+import ModuloFilter from '../components/modulos/ModuloFilter';
 import PaginationComponent from '../components/PaginationComponent';
 import {
-  fetchAllModulos, // Asume que existe en tu moduloService y usa tu 'api' de Axios
-  createModulo as AddModuloService, // Renombrado para claridad, usa el servicio
-  updateModulo as EditModuloService, // Renombrado para claridad, usa el servicio
-  deleteModulo as DeleteModuloService, // Renombrado para claridad, usa el servicio
-} from '../services/moduloService'; // Ajusta la ruta
-import { fetchAllEstados } from '../services/estadoService'; // Para el selector de estado en el formulario
-import {
-  Alert,
-  Spinner,
-  Modal as BootstrapModal,
-  Button as BsButton,
-} from 'react-bootstrap'; // Usando Modal y Button de react-bootstrap
+  fetchAllModulos,
+  createModulo as AddModuloService,
+  updateModulo as EditModuloService,
+  deleteModulo as DeleteModuloService,
+} from '../services/moduloService';
+import { Alert, Spinner } from 'react-bootstrap';
 
-// El Modal genérico que ya tienes, asegúrate que reciba 'show'
-function Modal({ title, children, onClose, show }) {
-  if (!show) return null;
+// --- COMPONENTE MODAL UNIFICADO ---
+function Modal({ title, children, onClose }) {
   return (
     <div
       className="modal show"
-      tabIndex="-1"
-      style={{ display: 'block', backgroundColor: 'rgba(0,0,0,0.5)' }}
+      style={{
+        display: 'block',
+        backgroundColor: 'rgba(0,0,0,0.5)',
+      }}
     >
       <div className="modal-dialog modal-dialog-centered">
         <div className="modal-content">
@@ -49,21 +43,15 @@ function Modal({ title, children, onClose, show }) {
 
 export default function ModulosPage() {
   const [modulos, setModulos] = useState([]);
-  const [estados, setEstados] = useState([]); // Para el selector de estado en ModuloForm
-  const [selectedModulos, setSelectedModulos] = useState([]); // Para la selección múltiple
-
-  const [loading, setLoading] = useState(true); // Para la carga inicial de la lista
-  const [isProcessing, setIsProcessing] = useState(false); // Para acciones CRUD en el modal
+  const [selectedModulos, setSelectedModulos] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [isProcessing, setIsProcessing] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
 
-  const [modal, setModal] = useState({ type: null, data: null, show: false }); // show para controlar visibilidad
-  // const [activeTab, setActiveTab] = useState('modulos'); // Si solo tienes módulos, no necesitas tabs
-
-  const [itemsPerPage] = useState(6); // Ajustado a 6 para consistencia con otras páginas
+  const [modal, setModal] = useState({ type: null, entity: null, data: null });
+  const [itemsPerPage] = useState(6);
   const [currentPageModulos, setCurrentPageModulos] = useState(1);
-
-  // Estado para los filtros de Módulo
   const [moduloFilters, setModuloFilters] = useState({
     nombre: '',
     horaInicio: '',
@@ -73,7 +61,6 @@ export default function ModulosPage() {
 
   const estadosModuloOptions = useMemo(
     () => [
-      // Usar los valores string directamente si así se almacenan en la BD para el módulo
       { ID_ESTADO: 1, NOMBRE_ESTADO: 'ACTIVO' },
       { ID_ESTADO: 7, NOMBRE_ESTADO: 'INACTIVO' },
     ],
@@ -89,26 +76,17 @@ export default function ModulosPage() {
     setLoading(true);
     setError('');
     try {
-      // Usar las funciones de servicio que llaman a tu instancia 'api' de Axios
-      const [modulosData, estadosData] = await Promise.all([
-        fetchAllModulos(),
-        fetchAllEstados(), // Para poblar el selector de estado en ModuloForm
-      ]);
-
-      setModulos(modulosData || []); // fetchAllModulos ya debería devolver [] en error
-      setEstados(estadosData || []);
-
+      const modulosData = await fetchAllModulos();
+      setModulos(modulosData || []);
       setCurrentPageModulos(1);
     } catch (err) {
-      // console.error('Error al cargar datos para Módulos:', err);
       setError(
         'Error al cargar datos: ' + (err.message || 'Intente más tarde')
       );
       setModulos([]);
-      setEstados([]);
     } finally {
       setLoading(false);
-      setSelectedModulos([]); // Limpiar selección al recargar datos
+      setSelectedModulos([]);
     }
   }, []);
 
@@ -125,7 +103,6 @@ export default function ModulosPage() {
   };
 
   const handleToggleSelectAllModulos = () => {
-    // Selecciona/deselecciona todos los módulos en la página actual (currentModulos)
     const currentModuloIdsOnPage = currentModulos.map((m) => m.ID_MODULO);
     const allOnPageSelected =
       currentModulos.length > 0 &&
@@ -134,12 +111,10 @@ export default function ModulosPage() {
       );
 
     if (allOnPageSelected) {
-      // Deseleccionar todos los de la página actual
       setSelectedModulos((prev) =>
         prev.filter((sm) => !currentModuloIdsOnPage.includes(sm.ID_MODULO))
       );
     } else {
-      // Seleccionar todos los de la página actual que no estén ya seleccionados
       const newSelectionsFromPage = currentModulos.filter(
         (m) => !selectedModulos.some((sm) => sm.ID_MODULO === m.ID_MODULO)
       );
@@ -147,41 +122,31 @@ export default function ModulosPage() {
     }
   };
 
-  const openModalHandler = (type, entityName, entityPayload = null) => {
-    let modalData = null;
-    if (type === 'add') {
-      setSelectedModulos([]); // Limpiar selección para 'add'
-      setModal({ type, entity: entityName, data: null, show: true });
-    } else if (type === 'edit' && entityPayload) {
-      // entityPayload es el ID_MODULO para editar
-      modalData = modulos.find(
-        (m) => String(m.ID_MODULO) === String(entityPayload)
-      );
-      if (!modalData) {
-        displayMessage(setError, 'Módulo no encontrado para editar.');
+  const openModal = (type, entity) => {
+    let data = null;
+    if (type === 'edit') {
+      if (selectedModulos.length !== 1) {
+        displayMessage(
+          setError,
+          'Por favor, seleccione un único módulo para editar.'
+        );
         return;
       }
-      setModal({ type, entity: entityName, data: modalData, show: true });
-    } else if (
-      type === 'delete' &&
-      Array.isArray(entityPayload) &&
-      entityPayload.length > 0
-    ) {
-      // entityPayload es el array de modulos seleccionados
-      setModal({
-        type,
-        entity: entityName,
-        data: [...entityPayload],
-        show: true,
-      });
-    } else {
-      // console.warn("openModalHandler llamado con parámetros inválidos o sin selección:", type, entityPayload);
-      // No mostrar modal si no hay nada que hacer (ej. delete sin selección)
+      data = selectedModulos[0];
+    } else if (type === 'delete') {
+      if (selectedModulos.length === 0) {
+        displayMessage(
+          setError,
+          'Por favor, seleccione al menos un módulo para eliminar.'
+        );
+        return;
+      }
+      data = selectedModulos;
     }
+    setModal({ type, entity, data });
   };
 
-  const closeModalHandler = () =>
-    setModal({ type: null, entity: null, data: null, show: false });
+  const closeModal = () => setModal({ type: null, entity: null, data: null });
 
   const handleFormSubmit = async (formDataFromForm) => {
     setIsProcessing(true);
@@ -190,31 +155,28 @@ export default function ModulosPage() {
     try {
       let message = '';
       if (modal.type === 'add') {
-        await AddModuloService(formDataFromForm); // Usa la función de servicio
+        await AddModuloService(formDataFromForm);
         message = 'Módulo creado con éxito.';
       } else if (modal.type === 'edit' && modal.data) {
-        await EditModuloService(modal.data.ID_MODULO, formDataFromForm); // Usa la función de servicio
+        await EditModuloService(modal.data.ID_MODULO, formDataFromForm);
         message = 'Módulo actualizado con éxito.';
       }
       displayMessage(setSuccess, message);
       loadData();
-      closeModalHandler();
+      closeModal();
     } catch (err) {
       displayMessage(
         setError,
         'Error al guardar módulo: ' + (err.response?.data?.error || err.message)
       );
-      console.error('Error guardando módulo:', err);
     } finally {
-      // console.error('Error guardando módulo:', err);
       setIsProcessing(false);
     }
   };
 
-  const handleDeleteConfirm = async () => {
+  const handleDeleteModulo = async () => {
     if (!modal.data || !Array.isArray(modal.data) || modal.data.length === 0) {
-      // console.error("handleDeleteConfirm: modal.data no es un array válido o está vacío", modal.data);
-      closeModalHandler();
+      closeModal();
       return;
     }
 
@@ -236,10 +198,6 @@ export default function ModulosPage() {
           err.message ||
           `Error eliminando ${moduloToDelete.NOMBRE_MODULO || moduloToDelete.ID_MODULO}`;
         errorMessages.push(specificError);
-        console.error(
-          `Error eliminando módulo ${moduloToDelete.ID_MODULO}:`,
-          err
-        );
       }
     }
 
@@ -257,73 +215,39 @@ export default function ModulosPage() {
     }
 
     if (successCount > 0) {
-      // Solo recargar y limpiar selección si hubo éxito
-      await loadData(); // loadData ya limpia selectedModulos
+      await loadData();
     }
-    closeModalHandler();
-    // setSelectedModulos([]); // loadData lo hace, pero por si acaso no se llama loadData
+    closeModal();
     setIsProcessing(false);
   };
 
-  // Handler para el cambio de filtro de módulos
   const handleModuloFilterChange = useCallback((changedFilters) => {
     setModuloFilters((prevFilters) => ({
       ...prevFilters,
       ...changedFilters,
     }));
-    setCurrentPageModulos(1); // Resetear a la primera página al cambiar filtros
-    setSelectedModulos([]); // Limpiar selección al cambiar filtros
+    setCurrentPageModulos(1);
+    setSelectedModulos([]);
   }, []);
 
-  // Aplicar el filtro a la lista de módulos
   const filteredModulos = useMemo(() => {
     return modulos.filter((modulo) => {
-      // --- INICIO CONSOLE LOGS PARA DEBUG HORARIO ---
-      // console.log(
-      //   `--- Filtrando Módulo ID: ${modulo.ID_MODULO} --- INICIO_MODULO: '${modulo.INICIO_MODULO}', FIN_MODULO: '${modulo.FIN_MODULO}'`
-      // );
-      // console.log(
-      //   `Filtros aplicados: HoraInicio='${moduloFilters.horaInicio}', HoraFin='${moduloFilters.horaFin}'`
-      // );
       const matchesNombre =
         !moduloFilters.nombre ||
         (modulo.NOMBRE_MODULO &&
           modulo.NOMBRE_MODULO.toLowerCase().includes(
             moduloFilters.nombre.toLowerCase()
           ));
-
-      let calculatedMatchesHoraInicio;
-      if (!moduloFilters.horaInicio) {
-        calculatedMatchesHoraInicio = true;
-      } else {
-        calculatedMatchesHoraInicio = modulo.INICIO_MODULO // <-- CAMBIO AQUÍ
-          ? modulo.INICIO_MODULO >= moduloFilters.horaInicio
-          : false;
-      }
-      const matchesHoraInicio = calculatedMatchesHoraInicio;
-      // console.log(
-      //   `Comparando HORA_INICIO: Modulo='${modulo.INICIO_MODULO}' >= Filtro='${moduloFilters.horaInicio}'. Coincide: ${matchesHoraInicio}`
-      // );
-
-      let calculatedMatchesHoraFin;
-      if (!moduloFilters.horaFin) {
-        calculatedMatchesHoraFin = true;
-      } else {
-        calculatedMatchesHoraFin = modulo.FIN_MODULO // <-- CAMBIO AQUÍ
-          ? modulo.FIN_MODULO <= moduloFilters.horaFin
-          : false;
-      }
-      const matchesHoraFin = calculatedMatchesHoraFin;
-      // console.log(
-      //   `Comparando HORA_FIN: Modulo='${modulo.FIN_MODULO}' <= Filtro='${moduloFilters.horaFin}'. Coincide: ${matchesHoraFin}`
-      // );
-
+      const matchesHoraInicio =
+        !moduloFilters.horaInicio ||
+        (modulo.INICIO_MODULO &&
+          modulo.INICIO_MODULO >= moduloFilters.horaInicio);
+      const matchesHoraFin =
+        !moduloFilters.horaFin ||
+        (modulo.FIN_MODULO && modulo.FIN_MODULO <= moduloFilters.horaFin);
       const matchesEstado =
         !moduloFilters.estado ||
         String(modulo.ESTADO_ID_ESTADO) === String(moduloFilters.estado);
-
-      // console.log('--- Fin Filtro Módulo ---');
-
       return (
         matchesNombre && matchesHoraInicio && matchesHoraFin && matchesEstado
       );
@@ -338,6 +262,81 @@ export default function ModulosPage() {
     return filteredModulos.slice(indexOfFirstItem, indexOfLastItem);
   }, [filteredModulos, currentPageModulos, itemsPerPage]);
 
+  const renderDeleteModalContent = () => {
+    if (!modal.data || modal.data.length === 0)
+      return <p>No hay módulos seleccionados.</p>;
+
+    const itemsToDelete = modal.data;
+    const itemName = itemsToDelete.length > 1 ? 'módulos' : 'módulo';
+    const deleteHandler = handleDeleteModulo;
+    const icon = 'bi bi-clock-fill';
+
+    const itemsToList = itemsToDelete.map((item) => ({
+      key: item.ID_MODULO,
+      name: item.NOMBRE_MODULO,
+    }));
+
+    const consequences = (
+      <ul>
+        <li>El módulo horario será eliminado de forma permanente.</li>
+        <li>
+          Cualquier <strong>reserva de examen</strong> que utilice este módulo
+          podría quedar inconsistente o generar errores.
+        </li>
+      </ul>
+    );
+
+    return (
+      <div>
+        <p>
+          ¿Está seguro de que desea eliminar {itemsToDelete.length} {itemName}?
+        </p>
+
+        <ul className="list-unstyled my-3 p-3 border bg-light rounded">
+          {itemsToList.map((item) => (
+            <li key={item.key}>
+              <i className={`${icon} me-2`}></i>
+              {item.name || `Módulo sin nombre (ID: ${item.key})`}
+            </li>
+          ))}
+        </ul>
+
+        <Alert variant="danger" className="mt-3">
+          <Alert.Heading>
+            <i className="bi bi-exclamation-triangle-fill me-2"></i>
+            ¡Atención! Esta acción es irreversible.
+          </Alert.Heading>
+          <p className="mb-0">
+            Al eliminar, se podrían afectar los siguientes datos asociados:
+          </p>
+          <hr />
+          {consequences}
+        </Alert>
+
+        <div className="modal-footer">
+          <button
+            className="btn btn-secondary"
+            onClick={closeModal}
+            disabled={isProcessing}
+          >
+            Cancelar
+          </button>
+          <button
+            className="btn btn-danger"
+            onClick={deleteHandler}
+            disabled={isProcessing}
+          >
+            {isProcessing ? (
+              <Spinner as="span" size="sm" animation="border" />
+            ) : (
+              'Sí, entiendo, eliminar'
+            )}
+          </button>
+        </div>
+      </div>
+    );
+  };
+
   if (loading && modulos.length === 0) {
     return (
       <Layout>
@@ -348,32 +347,6 @@ export default function ModulosPage() {
       </Layout>
     );
   }
-
-  const handleAddAction = () => {
-    openModalHandler('add', 'modulo');
-  };
-
-  const handleEditAction = () => {
-    if (selectedModulos.length === 1) {
-      openModalHandler('edit', 'modulo', selectedModulos[0].ID_MODULO);
-    } else {
-      displayMessage(
-        setError,
-        'Por favor, seleccione un único módulo para editar.'
-      );
-    }
-  };
-
-  const handleDeleteAction = () => {
-    if (selectedModulos.length > 0) {
-      openModalHandler('delete', 'modulo', selectedModulos); // Pasa el array de módulos seleccionados
-    } else {
-      displayMessage(
-        setError,
-        'Por favor, seleccione al menos un módulo para eliminar.'
-      );
-    }
-  };
 
   return (
     <Layout>
@@ -397,19 +370,18 @@ export default function ModulosPage() {
         )}
 
         <ModuloFilter
-          estados={estadosModuloOptions} // Pasar las opciones fijas
+          estados={estadosModuloOptions}
           onFilterChange={handleModuloFilterChange}
           currentFilters={moduloFilters}
         />
 
         <div className="mb-3">
-          {/* Contenedor para acciones */}
           <ModuloActions
-            onAdd={handleAddAction}
-            onEdit={handleEditAction}
-            onDelete={handleDeleteAction}
-            selectedModulos={selectedModulos} // Pasar el array de módulos seleccionados
-            disabled={isProcessing || loading} //isLoading es loading de la tabla, isProcessing es para acciones
+            onAdd={() => openModal('add', 'modulo')}
+            onEdit={() => openModal('edit', 'modulo')}
+            onDelete={() => openModal('delete', 'modulo')}
+            selectedModulos={selectedModulos}
+            disabled={isProcessing || loading}
           />
         </div>
 
@@ -419,7 +391,6 @@ export default function ModulosPage() {
           onToggleModuloSelection={handleToggleModuloSelection}
           onToggleSelectAllModulos={handleToggleSelectAllModulos}
           loading={loading}
-          // Pasa filteredModulos.length si el checkbox de cabecera debe reflejar "todos los filtrados"
         />
         {!loading && filteredModulos.length > itemsPerPage && (
           <PaginationComponent
@@ -431,66 +402,29 @@ export default function ModulosPage() {
         )}
       </div>
 
-      {/* Modal para Crear/Editar/Eliminar Módulo */}
-      <Modal
-        title={
-          modal.type === 'add'
-            ? 'Agregar Módulo'
-            : modal.type === 'edit'
-              ? 'Editar Módulo'
-              : 'Eliminar Módulo'
-        }
-        show={modal.show && modal.entity === 'modulo'} // Controla la visibilidad del modal
-        onClose={closeModalHandler}
-      >
-        {modal.type === 'delete' ? (
-          <div>
-            {modal.data && modal.data.length === 1 ? (
-              <p>
-                ¿Está seguro de que desea eliminar el módulo "
-                <strong>
-                  {modal.data[0]?.NOMBRE_MODULO || 'seleccionado'}
-                </strong>
-                "?
-              </p>
-            ) : (
-              <p>
-                ¿Está seguro de que desea eliminar los
-                <strong>{modal.data?.length}</strong> módulos seleccionados?
-              </p>
-            )}
-            <div className="modal-footer">
-              <BsButton
-                variant="secondary"
-                onClick={closeModalHandler}
-                disabled={isProcessing}
-              >
-                Cancelar
-              </BsButton>
-              <BsButton
-                variant="danger"
-                onClick={handleDeleteConfirm}
-                disabled={isProcessing}
-              >
-                {isProcessing ? (
-                  <Spinner as="span" size="sm" animation="border" />
-                ) : (
-                  'Eliminar'
-                )}
-              </BsButton>
-            </div>
-          </div>
-        ) : (
-          // Para 'add' o 'edit'
-          <ModuloForm
-            initial={modal.data} // Prop se llama 'initial' en ModuloForm
-            onSubmit={handleFormSubmit}
-            onCancel={closeModalHandler}
-            isProcessing={isProcessing}
-            // estados={estados} // ModuloForm obtiene sus propios estados
-          />
-        )}
-      </Modal>
+      {modal.type && modal.entity === 'modulo' && (
+        <Modal
+          title={
+            modal.type === 'add'
+              ? 'Agregar Módulo'
+              : modal.type === 'edit'
+                ? 'Editar Módulo'
+                : 'Eliminar Módulo'
+          }
+          onClose={closeModal}
+        >
+          {modal.type === 'delete' ? (
+            renderDeleteModalContent()
+          ) : (
+            <ModuloForm
+              initial={modal.data}
+              onSubmit={handleFormSubmit}
+              onCancel={closeModal}
+              isProcessing={isProcessing}
+            />
+          )}
+        </Modal>
+      )}
     </Layout>
   );
 }

@@ -4,6 +4,7 @@ import {
   listUsuarioCarreras,
   createUsuarioCarrera,
   deleteUsuarioCarrera,
+  listCarrerasByUsuario,
 } from '../../services/usuarioCarreraService';
 import { fetchAllCarreras } from '../../services/carreraService';
 import { fetchAllEscuelas } from '../../services/escuelaService';
@@ -11,51 +12,54 @@ import { fetchAllEscuelas } from '../../services/escuelaService';
 import UsuarioCarreraActions from './usuarioCarrera/UsuarioCarreraActions';
 import UsuarioCarreraModal from './usuarioCarrera/UsuarioCarreraModal';
 import UsuarioCarreraTable from './usuarioCarrera/UsuarioCarreraTable';
-import UsuarioFilter from '../usuarios/UsuarioFilter'; // Importar el filtro de usuario
-import PaginationComponent from '../PaginationComponent'; // Importar el componente de paginación
+import UsuarioFilter from '../usuarios/UsuarioFilter';
+import PaginationComponent from '../PaginationComponent';
 
 const COORDINADOR_ROLE_NAME = 'COORDINADOR CARRERA';
 const DIRECTOR_ROLE_NAME = 'JEFE CARRERA';
-const COORDINADOR_DOCENTE_ROLE_NAME = 'COORDINADOR DOCENTE'; // Añadido
-const ITEMS_PER_PAGE = 4; // Definir ítems por página
+const COORDINADOR_DOCENTE_ROLE_NAME = 'COORDINADOR DOCENTE';
+const ITEMS_PER_PAGE = 4;
 
 function UsuarioCarreraTab({ allUsers, allRoles }) {
   const [associations, setAssociations] = useState([]);
-  const [eligibleUsers, setEligibleUsers] = useState([]); // Usuarios con roles elegibles (Coordinador, Jefe, Coord. Docente)
+  const [eligibleUsers, setEligibleUsers] = useState([]);
   const [carreras, setCarreras] = useState([]);
   const [escuelas, setEscuelas] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [successMessage, setSuccessMessage] = useState('');
-  const [showModal, setShowModal] = useState(false);
+  const [showFormModal, setShowFormModal] = useState(false);
   const [editingUser, setEditingUser] = useState(null);
 
-  // Estados para los valores seleccionados DENTRO DEL MODAL, controlados por este componente padre
   const [selectedUsuarioIdModal, setSelectedUsuarioIdModal] = useState('');
   const [selectedCarreraIdsModal, setSelectedCarreraIdsModal] = useState([]);
   const [processingModal, setProcessingModal] = useState(false);
 
-  // --- ESTADOS PARA LOS FILTROS DENTRO DEL MODAL, CONTROLADOS AQUÍ ---
   const [searchTermUserModal, setSearchTermUserModal] = useState('');
   const [filterRoleUserModal, setFilterRoleUserModal] = useState('');
   const [filterEscuelaCarreraModal, setFilterEscuelaCarreraModal] =
     useState('');
 
-  // Estados para la tabla principal
   const [groupedAssociations, setGroupedAssociations] = useState({});
   const [selectedUserIdsInTable, setSelectedUserIdsInTable] = useState([]);
 
-  // Estados para el modal de visualización de carreras
   const [showViewCarrerasModal, setShowViewCarrerasModal] = useState(false);
   const [viewingUserCarreras, setViewingUserCarreras] = useState([]);
   const [viewingUserName, setViewingUserName] = useState('');
+  const [viewingModalLoading, setViewingModalLoading] = useState(false);
 
-  // Estado para los filtros de la tabla principal de UsuarioCarreraTab
+  const [showAlertModal, setShowAlertModal] = useState(false);
+  const [alertModalMessage, setAlertModalMessage] = useState('');
+  const [showConfirmModal, setShowConfirmModal] = useState(false);
+  const [confirmModalMessage, setConfirmModalMessage] = useState('');
+  const [confirmModalAction, setConfirmModalAction] = useState(null);
+  const [confirmModalTitle, setConfirmModalTitle] = useState('');
+
   const [usuarioTableFilters, setUsuarioTableFilters] = useState({
     text: '',
     role: '',
   });
-  const [currentPageTable, setCurrentPageTable] = useState(1); // Estado para la paginación de la tabla
+  const [currentPageTable, setCurrentPageTable] = useState(1);
 
   const eligibleRoleIds = useMemo(() => {
     if (!Array.isArray(allRoles) || allRoles.length === 0) return [];
@@ -64,7 +68,7 @@ function UsuarioCarreraTab({ allUsers, allRoles }) {
         (r) =>
           r.NOMBRE_ROL === COORDINADOR_ROLE_NAME ||
           r.NOMBRE_ROL === DIRECTOR_ROLE_NAME ||
-          r.NOMBRE_ROL === COORDINADOR_DOCENTE_ROLE_NAME // Incluido
+          r.NOMBRE_ROL === COORDINADOR_DOCENTE_ROLE_NAME
       )
       .map((r) => r.ID_ROL);
   }, [allRoles]);
@@ -100,9 +104,9 @@ function UsuarioCarreraTab({ allUsers, allRoles }) {
       setEscuelas(Array.isArray(escuelasData) ? escuelasData : []);
       const enrichedAssociations = (Array.isArray(assocData) ? assocData : [])
         .map((assoc) => {
-          const user = Array.isArray(allUsers)
-            ? allUsers.find((u) => u.ID_USUARIO === assoc.USUARIO_ID_USUARIO)
-            : null;
+          const user = allUsers.find(
+            (u) => u.ID_USUARIO === assoc.USUARIO_ID_USUARIO
+          );
           const carrera = validCarrerasData.find(
             (c) => c.ID_CARRERA === assoc.CARRERA_ID_CARRERA
           );
@@ -147,11 +151,9 @@ function UsuarioCarreraTab({ allUsers, allRoles }) {
       setLoading(false);
     }
   }, [fetchData, allUsers, allRoles]);
-  // Usuarios que tienen un rol elegible (Coordinador, etc.) Y NO tienen asociaciones de carrera existentes.
-  // Esta lista se usará para el modal cuando se crea una NUEVA asociación.
+
   const usersAvailableForNewCarreraAssociation = useMemo(() => {
     if (!eligibleUsers || eligibleUsers.length === 0) return [];
-    // Si no hay asociaciones aún, todos los usuarios elegibles están disponibles.
     if (!associations || associations.length === 0) return eligibleUsers;
 
     const associatedUserIds = new Set(
@@ -162,7 +164,6 @@ function UsuarioCarreraTab({ allUsers, allRoles }) {
     );
   }, [eligibleUsers, associations]);
 
-  // Filtrar los usuarios que se mostrarán en la tabla de asociaciones
   const displayableGroupedAssociations = useMemo(() => {
     if (!usuarioTableFilters.text && !usuarioTableFilters.role) {
       return groupedAssociations;
@@ -170,7 +171,6 @@ function UsuarioCarreraTab({ allUsers, allRoles }) {
     const filteredResult = {};
     for (const userIdStr in groupedAssociations) {
       const userId = parseInt(userIdStr, 10);
-      // Encontrar el objeto usuario completo desde eligibleUsers para poder filtrar por nombre, email, rol
       const user = eligibleUsers.find((u) => u.ID_USUARIO === userId);
       if (user) {
         const matchesText =
@@ -231,32 +231,40 @@ function UsuarioCarreraTab({ allUsers, allRoles }) {
 
   const handleUsuarioTableFilterChange = useCallback((changedFilters) => {
     setUsuarioTableFilters((prev) => ({ ...prev, ...changedFilters }));
-    setSelectedUserIdsInTable([]); // Limpiar selección de la tabla al cambiar filtros
-    setCurrentPageTable(1); // Resetear paginación al cambiar filtros
+    setSelectedUserIdsInTable([]);
+    setCurrentPageTable(1);
   }, []);
 
   const resetModalStateAndFilters = () => {
     setSelectedUsuarioIdModal('');
     setSelectedCarreraIdsModal([]);
     setEditingUser(null);
-    setShowModal(false);
+    setShowFormModal(false);
     setSuccessMessage('');
-    // Resetea los filtros del modal
     setSearchTermUserModal('');
     setFilterRoleUserModal('');
     setFilterEscuelaCarreraModal('');
+    setShowAlertModal(false);
+    setAlertModalMessage('');
+    setShowConfirmModal(false);
+    setConfirmModalMessage('');
+    setConfirmModalAction(null);
+    setConfirmModalTitle('');
   };
 
   const handleOpenNewAssociationModal = () => {
     setEditingUser(null);
-    resetModalStateAndFilters(); // Llama a la función que también resetea filtros
-    setShowModal(true);
+    resetModalStateAndFilters();
+    setShowFormModal(true);
   };
 
   const handleOpenEditAssociationModal = (userId) => {
     const userToEdit = eligibleUsers.find((u) => u.ID_USUARIO === userId);
     if (!userToEdit) {
-      setError('No se pudo encontrar el usuario elegible para editar.');
+      setAlertModalMessage(
+        'No se pudo encontrar el usuario elegible para editar.'
+      );
+      setShowAlertModal(true);
       return;
     }
 
@@ -267,41 +275,41 @@ function UsuarioCarreraTab({ allUsers, allRoles }) {
     ).map((c) => String(c.ID_CARRERA));
     setSelectedCarreraIdsModal(associatedCarreras);
 
-    // Resetear filtros del modal al abrir para editar
     setSearchTermUserModal('');
     setFilterRoleUserModal('');
     setFilterEscuelaCarreraModal('');
-    setShowModal(true);
+    setShowFormModal(true);
   };
 
-  // Esta es tu función correcta para abrir el modal de visualización
-  const handleOpenViewCarrerasModal = (userId) => {
-    console.log(
-      '[UsuarioCarreraTab] handleOpenViewCarrerasModal llamado con userId:',
-      userId
-    );
-    const userData = groupedAssociations[userId];
-    console.log(
-      '[UsuarioCarreraTab] userData encontrada para modal de vista:',
-      userData
-    );
-    if (userData && Array.isArray(userData.carreras)) {
-      // Asegúrate que userData y userData.carreras existan
-      setViewingUserName(userData.NOMBRE_USUARIO);
-      setViewingUserCarreras(userData.carreras);
-      setShowViewCarrerasModal(true);
-      console.log(
-        '[UsuarioCarreraTab] setShowViewCarrerasModal(true) fue ejecutado.'
-      );
-    } else {
-      console.warn(
-        '[UsuarioCarreraTab] No se encontró userData o userData.carreras para el modal de visualización. UserData:',
-        userData
-      );
-      // Opcional: mostrar un error al usuario si userData no se encuentra
-      // setError('No se pudieron cargar los detalles de las carreras para este usuario.');
-    }
-  };
+  const handleOpenViewCarrerasModal = useCallback(
+    async (userId) => {
+      const userData = eligibleUsers.find((u) => u.ID_USUARIO === userId);
+      if (userData) {
+        setViewingUserName(userData.NOMBRE_USUARIO);
+        setViewingUserCarreras([]);
+        setShowViewCarrerasModal(true);
+        setViewingModalLoading(true);
+
+        try {
+          const carrerasAsociadas = await listCarrerasByUsuario(userId);
+          setViewingUserCarreras(carrerasAsociadas || []);
+        } catch (err) {
+          console.error('Error al cargar carreras del usuario:', err);
+          setAlertModalMessage('No se pudieron cargar las carreras asociadas.');
+          setShowAlertModal(true);
+          setViewingUserCarreras([]);
+        } finally {
+          setViewingModalLoading(false);
+        }
+      } else {
+        setAlertModalMessage(
+          'No se encontró información del usuario para ver las carreras.'
+        );
+        setShowAlertModal(true);
+      }
+    },
+    [eligibleUsers]
+  );
 
   useEffect(() => {
     console.log(
@@ -312,7 +320,10 @@ function UsuarioCarreraTab({ allUsers, allRoles }) {
 
   const handleModalSubmit = async () => {
     if (!selectedUsuarioIdModal || selectedCarreraIdsModal.length === 0) {
-      alert('Debe seleccionar un usuario y al menos una carrera.');
+      setAlertModalMessage(
+        'Debe seleccionar un usuario y al menos una carrera.'
+      );
+      setShowAlertModal(true);
       return;
     }
     setProcessingModal(true);
@@ -345,44 +356,43 @@ function UsuarioCarreraTab({ allUsers, allRoles }) {
         setSuccessMessage('Asociaciones actualizadas exitosamente.');
       } else {
         await Promise.all(
-          newCarreraIds.map((carreraId) =>
+          selectedCarreraIdsModal.map((carreraId) =>
             createUsuarioCarrera({
-              USUARIO_ID_USUARIO: userId,
-              CARRERA_ID_CARRERA: carreraId,
+              USUARIO_ID_USUARIO: parseInt(selectedUsuarioIdModal),
+              CARRERA_ID_CARRERA: parseInt(carreraId),
             })
           )
         );
         setSuccessMessage('Asociaciones creadas exitosamente.');
       }
-      resetModalStateAndFilters(); // Llama a la función que también resetea filtros
+      resetModalStateAndFilters();
       fetchData();
     } catch (err) {
       const errorMsg =
         `Error al ${editingUser ? 'actualizar' : 'crear'} asociación: ` +
         (err.response?.data?.message || err.message || 'Error desconocido');
-      alert(errorMsg);
+      setAlertModalMessage(errorMsg);
+      setShowAlertModal(true);
       console.error(errorMsg, err);
     } finally {
       setProcessingModal(false);
     }
   };
 
-  const handleToggleUserSelectionInTable = (userIdPassed) => {
+  const handleToggleUserSelectionInTable = (userToToggleId) => {
     setSelectedUserIdsInTable((prevSelected) =>
-      prevSelected.includes(userIdPassed)
-        ? prevSelected.filter((id) => id !== userIdPassed)
-        : [...prevSelected, userIdPassed]
+      prevSelected.includes(userToToggleId)
+        ? prevSelected.filter((id) => id !== userToToggleId)
+        : [...prevSelected, userToToggleId]
     );
   };
 
-  // IDs de usuarios que coinciden con los filtros actuales
   const displayableUserIds = useMemo(() => {
     return Object.keys(displayableGroupedAssociations).map((id) =>
       parseInt(id, 10)
     );
   }, [displayableGroupedAssociations]);
 
-  // Paginación de los IDs de usuario
   const indexOfLastUserId = currentPageTable * ITEMS_PER_PAGE;
   const indexOfFirstUserId = indexOfLastUserId - ITEMS_PER_PAGE;
   const currentUserIdsOnPage = displayableUserIds.slice(
@@ -390,7 +400,6 @@ function UsuarioCarreraTab({ allUsers, allRoles }) {
     indexOfLastUserId
   );
 
-  // Objeto de asociaciones agrupadas solo para la página actual
   const paginatedGroupedAssociations = useMemo(() => {
     const newPaginated = {};
     currentUserIdsOnPage.forEach((userId) => {
@@ -402,7 +411,6 @@ function UsuarioCarreraTab({ allUsers, allRoles }) {
   }, [currentUserIdsOnPage, displayableGroupedAssociations]);
 
   const handleToggleSelectAllInTable = () => {
-    // Usuarios completos en la página actual
     const usersOnCurrentPage = currentUserIdsOnPage
       .map((userId) => eligibleUsers.find((u) => u.ID_USUARIO === userId))
       .filter(Boolean);
@@ -419,7 +427,12 @@ function UsuarioCarreraTab({ allUsers, allRoles }) {
       );
     } else {
       const newSelections = usersOnCurrentPage
-        .filter((u) => !selectedUserIdsInTable.includes(u.ID_USUARIO))
+        .filter(
+          (u) =>
+            !selectedUserIdsInTable.some(
+              (selU) => selU.ID_USUARIO === u.ID_USUARIO
+            )
+        ) // Corregido: evitar duplicados
         .map((u) => u.ID_USUARIO);
       setSelectedUserIdsInTable((prev) => [
         ...new Set([...prev, ...newSelections]),
@@ -427,9 +440,62 @@ function UsuarioCarreraTab({ allUsers, allRoles }) {
     }
   };
 
-  const handleBulkDeleteFromTable = async () => {
-    /* ... tu lógica ... */
+  const executeBulkDeleteFromTable = async (usersToProcessIds) => {
+    setProcessingModal(true);
+    setError(null);
+    try {
+      for (const userId of usersToProcessIds) {
+        const userAssociations = associations.filter(
+          (assoc) => assoc.USUARIO_ID_USUARIO === userId
+        );
+        await Promise.all(
+          userAssociations.map((assoc) =>
+            deleteUsuarioCarrera(userId, assoc.CARRERA_ID_CARRERA)
+          )
+        );
+      }
+      setSuccessMessage('Asociaciones desvinculadas exitosamente.');
+      setSelectedUserIdsInTable([]);
+      fetchData();
+    } catch (err) {
+      setError(
+        'Error al desvincular carreras: ' +
+          (err.response?.data?.message || err.message || 'Error desconocido')
+      );
+      console.error('Error al desvincular carreras:', err);
+    } finally {
+      setProcessingModal(false);
+      setShowConfirmModal(false);
+    }
   };
+
+  // --- handleBulkDeleteFromTable (CORREGIDO PARA MOSTRAR LISTA EN MODAL) ---
+  const handleBulkDeleteFromTable = () => {
+    if (selectedUserIdsInTable.length === 0) {
+      setAlertModalMessage('Seleccione al menos un usuario para desvincular.');
+      setShowAlertModal(true);
+      return;
+    }
+
+    // Obtener los objetos de usuario completos para mostrar en la lista del modal
+    const usersForModalList = selectedUserIdsInTable.map((userId) => {
+      const user = allUsers.find((u) => u.ID_USUARIO === userId); // Buscar en allUsers para tener toda la información
+      return {
+        key: userId,
+        name: user ? user.NOMBRE_USUARIO : `Usuario ID: ${userId}`,
+      };
+    });
+
+    setConfirmModalTitle('Confirmar Eliminación de Asociaciones');
+    setConfirmModalMessage(
+      `<div><p>¿Está seguro de que desea desvincular <strong>TODAS</strong> las carreras de los <strong>${selectedUserIdsInTable.length}</strong> usuarios seleccionados? Esta acción no eliminará a los usuarios.</p><ul class="list-unstyled my-3 p-3 border bg-light rounded" style="maxHeight: '150px', overflowY: 'auto'}">${usersForModalList.map((item) => `<li><i class="bi bi-person-fill me-2"></i>${item.name || `Usuario sin nombre`}</li>`).join('')}</ul></div>`
+    );
+    setConfirmModalAction(
+      () => () => executeBulkDeleteFromTable(selectedUserIdsInTable)
+    );
+    setShowConfirmModal(true);
+  };
+  // --- FIN handleBulkDeleteFromTable ---
 
   const paginateTable = (pageNumber) => setCurrentPageTable(pageNumber);
 
@@ -467,7 +533,7 @@ function UsuarioCarreraTab({ allUsers, allRoles }) {
       )}
 
       <UsuarioFilter
-        roles={allRoles.filter((role) => eligibleRoleIds.includes(role.ID_ROL))} // Solo roles elegibles para esta pestaña
+        roles={allRoles.filter((role) => eligibleRoleIds.includes(role.ID_ROL))}
         onFilterChange={handleUsuarioTableFilterChange}
         currentFilters={usuarioTableFilters}
       />
@@ -478,10 +544,12 @@ function UsuarioCarreraTab({ allUsers, allRoles }) {
           onEditSelected={() => {
             if (selectedUserIdsInTable.length === 1)
               handleOpenEditAssociationModal(selectedUserIdsInTable[0]);
-            else
-              alert(
+            else {
+              setAlertModalMessage(
                 'Seleccione un solo usuario de la tabla para editar sus asociaciones.'
               );
+              setShowAlertModal(true);
+            }
           }}
           onBulkDelete={handleBulkDeleteFromTable}
           processing={processingModal}
@@ -498,29 +566,23 @@ function UsuarioCarreraTab({ allUsers, allRoles }) {
         </Alert>
       )}
 
-      {showModal && (
+      {showFormModal && (
         <UsuarioCarreraModal
-          show={showModal}
-          onHide={resetModalStateAndFilters} // Usa la función que también resetea filtros
+          show={showFormModal}
+          onHide={resetModalStateAndFilters}
           onSubmit={handleModalSubmit}
           editingUser={editingUser}
           allRoles={allRoles}
-          // Si estamos editando, pasamos todos los elegibles (el modal maneja la UI)
-          // Si estamos creando una nueva asociación, pasamos solo los que no tienen asociaciones previas
           eligibleUsers={
             editingUser ? eligibleUsers : usersAvailableForNewCarreraAssociation
           }
-          allCarreras={carreras} // Renombrado de 'carreras' a 'allCarreras' para claridad
-          allEscuelas={escuelas} // Renombrado de 'escuelas' a 'allEscuelas' para claridad
+          allCarreras={carreras}
+          allEscuelas={escuelas}
           selectedUsuarioId={selectedUsuarioIdModal}
           setSelectedUsuarioId={setSelectedUsuarioIdModal}
           selectedCarreraIds={selectedCarreraIdsModal}
-          // Pasamos la función para manejar la selección de carreras del modal directamente
-          // setSelectedCarreraIds para que el modal pueda actualizar este estado del padre
-          // O, si handleCarreraSelection ya hace eso, mantenlo. Por simplicidad, le paso setSelectedCarreraIdsModal.
           setSelectedCarreraIds={setSelectedCarreraIdsModal}
           processing={processingModal}
-          // Pasar los estados de filtro y sus setters al modal
           searchTermUser={searchTermUserModal}
           setSearchTermUser={setSearchTermUserModal}
           filterRoleUser={filterRoleUserModal}
@@ -531,7 +593,7 @@ function UsuarioCarreraTab({ allUsers, allRoles }) {
       )}
 
       <UsuarioCarreraTable
-        groupedAssociations={paginatedGroupedAssociations} // Usar las asociaciones paginadas
+        groupedAssociations={paginatedGroupedAssociations}
         eligibleUsers={eligibleUsers}
         selectedUsersInTab={
           Array.isArray(allUsers)
@@ -547,11 +609,10 @@ function UsuarioCarreraTab({ allUsers, allRoles }) {
         }
         onToggleSelectAllUsers={handleToggleSelectAllInTable}
         onViewUserCarreras={handleOpenViewCarrerasModal}
-        onOpenViewCarrerasModal={handleOpenViewCarrerasModal} // <--- Nombre de prop correcto
+        onOpenViewCarrerasModal={handleOpenViewCarrerasModal}
         onEditUserAssociations={handleOpenEditAssociationModal}
-        onDeleteAllUserAssociations={handleBulkDeleteFromTable} // Añadido por consistencia si la tabla tiene este botón
+        onDeleteAllUserAssociations={handleBulkDeleteFromTable}
       />
-      {/* Componente de Paginación para la tabla */}
       {displayableUserIds.length > ITEMS_PER_PAGE && (
         <PaginationComponent
           itemsPerPage={ITEMS_PER_PAGE}
@@ -561,6 +622,7 @@ function UsuarioCarreraTab({ allUsers, allRoles }) {
         />
       )}
 
+      {/* MODAL DE VISUALIZACIÓN DE CARRERAS ASOCIADAS */}
       <Modal
         show={showViewCarrerasModal}
         onHide={() => setShowViewCarrerasModal(false)}
@@ -570,10 +632,21 @@ function UsuarioCarreraTab({ allUsers, allRoles }) {
           <Modal.Title>Carreras Asociadas a {viewingUserName}</Modal.Title>
         </Modal.Header>
         <Modal.Body>
-          {viewingUserCarreras.length > 0 ? (
-            <ul className="list-group">
+          {viewingModalLoading ? (
+            <div className="text-center">
+              <Spinner animation="border" role="status">
+                <span className="visually-hidden">Cargando carreras...</span>
+              </Spinner>
+            </div>
+          ) : viewingUserCarreras.length > 0 ? (
+            // --- MODIFICACIÓN AQUÍ: Eliminar clases de Bootstrap para la lista ---
+            <ul style={{ listStyleType: 'none', paddingLeft: 0 }}>
+              {' '}
+              {/* Remover padding por defecto de UL */}
               {viewingUserCarreras.map((carrera) => (
-                <li key={carrera.ID_CARRERA} className="list-group-item">
+                <li key={carrera.ID_CARRERA} style={{ marginBottom: '5px' }}>
+                  {' '}
+                  {/* Añadir margen para espacio */}
                   {carrera.NOMBRE_CARRERA}
                 </li>
               ))}
@@ -588,6 +661,67 @@ function UsuarioCarreraTab({ allUsers, allRoles }) {
             onClick={() => setShowViewCarrerasModal(false)}
           >
             Cerrar
+          </Button>
+        </Modal.Footer>
+      </Modal>
+
+      {/* NUEVA MODAL DE ALERTA PERSONALIZADA */}
+      <Modal
+        show={showAlertModal}
+        onHide={() => setShowAlertModal(false)}
+        centered
+      >
+        <Modal.Header closeButton>
+          <Modal.Title>Alerta</Modal.Title>
+        </Modal.Header>
+        <Modal.Body>
+          <Alert variant="info">{alertModalMessage}</Alert>
+        </Modal.Body>
+        <Modal.Footer>
+          <Button variant="primary" onClick={() => setShowAlertModal(false)}>
+            Cerrar
+          </Button>
+        </Modal.Footer>
+      </Modal>
+
+      {/* NUEVA MODAL DE CONFIRMACIÓN PERSONALIZADA */}
+      <Modal
+        show={showConfirmModal}
+        onHide={() => setShowConfirmModal(false)}
+        centered
+      >
+        <Modal.Header closeButton>
+          <Modal.Title>{confirmModalTitle}</Modal.Title>
+        </Modal.Header>
+        <Modal.Body>
+          <Alert variant="warning">
+            <div dangerouslySetInnerHTML={{ __html: confirmModalMessage }} />
+          </Alert>
+        </Modal.Body>
+        <Modal.Footer>
+          <Button
+            variant="secondary"
+            onClick={() => setShowConfirmModal(false)}
+            disabled={processingModal}
+          >
+            Cancelar
+          </Button>
+          <Button
+            variant="danger"
+            onClick={confirmModalAction}
+            disabled={processingModal}
+          >
+            {processingModal ? (
+              <Spinner
+                as="span"
+                size="sm"
+                animation="border"
+                role="status"
+                aria-hidden="true"
+              />
+            ) : (
+              'Confirmar'
+            )}
           </Button>
         </Modal.Footer>
       </Modal>

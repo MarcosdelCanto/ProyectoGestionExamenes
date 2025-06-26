@@ -83,8 +83,9 @@ function UsuarioTable({
               <td>{u.NOMBRE_ROL}</td>
               <td className="text-center">
                 {/* Solo mostrar iconos si el rol es elegible para alguna asociación */}
-                {(u.NOMBRE_ROL === 'COORDINADOR' ||
-                  u.NOMBRE_ROL === 'DIRECTOR') && (
+                {(u.NOMBRE_ROL === 'COORDINADOR CARRERA' || // <-- CAMBIO AQUÍ: Nombres de rol exactos
+                  u.NOMBRE_ROL === 'JEFE CARRERA' || // <-- CAMBIO AQUÍ: Nombres de rol exactos
+                  u.NOMBRE_ROL === 'COORDINADOR DOCENTE') && ( // <-- CAMBIO AQUÍ: Nombres de rol exactos
                   <Button
                     variant="outline-info"
                     size="sm"

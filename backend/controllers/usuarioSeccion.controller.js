@@ -8,15 +8,15 @@ export const listUsuarioSecciones = async (req, res) => {
     conn = await getConnection();
     const result = await conn.execute(
       `SELECT us.USUARIO_ID_USUARIO, u.NOMBRE_USUARIO, u.EMAIL_USUARIO,
-              us.SECCION_ID_SECCION, s.NOMBRE_SECCION
+              us.SECCION_ID_SECCION, s.NOMBRE_SECCION, a.NOMBRE_ASIGNATURA
        FROM USUARIOSECCION us
        JOIN USUARIO u ON us.USUARIO_ID_USUARIO = u.ID_USUARIO
        JOIN SECCION s ON us.SECCION_ID_SECCION = s.ID_SECCION
+       JOIN ASIGNATURA a ON s.ASIGNATURA_ID_ASIGNATURA = a.ID_ASIGNATURA
        ORDER BY u.NOMBRE_USUARIO, s.NOMBRE_SECCION`,
       [],
       { outFormat: oracledb.OUT_FORMAT_OBJECT }
     );
-    // Mapear para que coincida con la estructura esperada por el frontend
     const formattedResult = result.rows.map((row) => ({
       USUARIO_ID_USUARIO: row.USUARIO_ID_USUARIO,
       SECCION_ID_SECCION: row.SECCION_ID_SECCION,
@@ -28,7 +28,7 @@ export const listUsuarioSecciones = async (req, res) => {
       Seccion: {
         ID_SECCION: row.SECCION_ID_SECCION,
         NOMBRE_SECCION: row.NOMBRE_SECCION,
-        // Podrías añadir CODIGO_SECCION si lo tienes y lo necesitas
+        NOMBRE_ASIGNATURA: row.NOMBRE_ASIGNATURA,
       },
     }));
     res.json(formattedResult);
@@ -70,7 +70,6 @@ export const createUsuarioSeccion = async (req, res) => {
   } catch (err) {
     console.error('Error al crear asociación usuario-seccion:', err);
     if (err.errorNum === 1) {
-      // ORA-00001: unique constraint violated
       return res.status(409).json({ error: 'Esta asociación ya existe.' });
     }
     res
@@ -115,21 +114,29 @@ export const getSeccionesByUsuario = async (req, res) => {
   let conn;
   try {
     conn = await getConnection();
+    // --- INICIO DE LA CORRECCIÓN ---
+    // Se añade un JOIN a la tabla ASIGNATURA para obtener su nombre.
     const result = await conn.execute(
-      `SELECT us.SECCION_ID_SECCION, s.NOMBRE_SECCION, s.CODIGO_SECCION
+      `SELECT
+          s.ID_SECCION,
+          s.NOMBRE_SECCION,
+          a.NOMBRE_ASIGNATURA
        FROM USUARIOSECCION us
        JOIN SECCION s ON us.SECCION_ID_SECCION = s.ID_SECCION
+       JOIN ASIGNATURA a ON s.ASIGNATURA_ID_ASIGNATURA = a.ID_ASIGNATURA
        WHERE us.USUARIO_ID_USUARIO = :usuarioId
-       ORDER BY s.NOMBRE_SECCION`,
+       ORDER BY a.NOMBRE_ASIGNATURA, s.NOMBRE_SECCION`,
       { usuarioId },
       { outFormat: oracledb.OUT_FORMAT_OBJECT }
     );
-    // El frontend podría esperar un array de objetos Seccion directamente
+
+    // Se ajusta el resultado para que el frontend lo pueda consumir fácilmente.
     const secciones = result.rows.map((row) => ({
-      ID_SECCION: row.SECCION_ID_SECCION,
-      NOMBRE_SECCION: row.NOMBRE_SECCION,
-      CODIGO_SECCION: row.CODIGO_SECCION, // Opcional, si lo necesitas
+      ID_SECCION: row.ID_SECCION,
+      // Se crea un nombre combinado para mayor claridad.
+      NOMBRE_SECCION: `${row.NOMBRE_ASIGNATURA} - ${row.NOMBRE_SECCION}`,
     }));
+    // --- FIN DE LA CORRECCIÓN ---
     res.json(secciones);
   } catch (err) {
     console.error(
