@@ -7,6 +7,7 @@ import {
   eliminarReserva,
 } from '../store/reservasSlice';
 import api from '../services/api';
+import { fetchAllEscuelas } from '../services/escuelaService'; // Importación necesaria
 
 export function useAgendaData() {
   const [salas, setSalas] = useState([]);
@@ -15,19 +16,54 @@ export function useAgendaData() {
   const [modulos, setModulos] = useState([]);
   const [sedesDisponibles, setSedesDisponibles] = useState([]);
   const [edificiosDisponibles, setEdificiosDisponibles] = useState([]);
+  const [allEscuelasWithColors, setAllEscuelasWithColors] = useState([]); // Nuevo estado para escuelas con colores
 
   const [isLoadingSalas, setIsLoadingSalas] = useState(true);
   const [isLoadingExamenes, setIsLoadingExamenes] = useState(true);
   const [isLoadingModulos, setIsLoadingModulos] = useState(true);
   const [isLoadingReservas, setIsLoadingReservas] = useState(true);
+  const [isLoadingEscuelas, setIsLoadingEscuelas] = useState(true); // Nuevo estado de carga
 
   const dispatch = useDispatch();
   const { lista: reservas, estadoCarga: estadoCargaReservas } = useSelector(
     (state) => state.reservas
   );
 
+  // Función auxiliar para obtener los colores de una escuela dado su nombre
+  const getEscuelaColors = useCallback((schoolName, fetchedEscuelas) => {
+    if (!schoolName || !fetchedEscuelas || fetchedEscuelas.length === 0) {
+      return null;
+    }
+    const matchingEscuela = fetchedEscuelas.find(
+      (esc) => esc.NOMBRE_ESCUELA === schoolName
+    );
+    if (
+      matchingEscuela &&
+      matchingEscuela.COLOR_BACKGROUND &&
+      matchingEscuela.COLOR_BORDER
+    ) {
+      return {
+        COLOR_BACKGROUND: matchingEscuela.COLOR_BACKGROUND,
+        COLOR_BORDER: matchingEscuela.COLOR_BORDER,
+      };
+    }
+    return null;
+  }, []);
+
+  // Función para enriquecer un objeto (reserva o examen) con los colores de su escuela
+  const enrichObjectWithSchoolColors = useCallback(
+    (obj, fetchedEscuelas) => {
+      // Asume que obj tiene una propiedad NOMBRE_ESCUELA (o se puede derivar)
+      if (!obj || !obj.NOMBRE_ESCUELA || !fetchedEscuelas) return obj;
+      const colors = getEscuelaColors(obj.NOMBRE_ESCUELA, fetchedEscuelas);
+      return colors ? { ...obj, ...colors } : obj;
+    },
+    [getEscuelaColors]
+  );
+
+  // `procesarReservaParaFrontend` ahora recibe `fetchedEscuelas` para enriquecer la reserva.
   const procesarReservaParaFrontend = useCallback(
-    (reservaPlana, todosExamenesDisponibles) => {
+    (reservaPlana, todosExamenesDisponibles, fetchedEscuelas) => {
       let procesada = { ...reservaPlana };
       let examenCompletoAnidado = null;
       if (procesada.ID_EXAMEN) {
@@ -36,13 +72,12 @@ export function useAgendaData() {
         );
         if (examenOriginal) {
           examenCompletoAnidado = { ...examenOriginal };
-          if (reservaPlana.NOMBRE_DOCENTE_ASIGNADO) {
+          if (procesada.NOMBRE_DOCENTE_ASIGNADO) {
             examenCompletoAnidado.NOMBRE_DOCENTE =
-              reservaPlana.NOMBRE_DOCENTE_ASIGNADO;
-          } else if (reservaPlana.NOMBRE_DOCENTE_PRINCIPAL) {
-            // Fallback por consistencia
+              procesada.NOMBRE_DOCENTE_ASIGNADO;
+          } else if (procesada.NOMBRE_DOCENTE_PRINCIPAL) {
             examenCompletoAnidado.NOMBRE_DOCENTE =
-              reservaPlana.NOMBRE_DOCENTE_PRINCIPAL;
+              procesada.NOMBRE_DOCENTE_PRINCIPAL;
           }
         } else {
           examenCompletoAnidado = {
@@ -50,7 +85,7 @@ export function useAgendaData() {
             NOMBRE_EXAMEN: procesada.NOMBRE_EXAMEN,
             CANTIDAD_MODULOS_EXAMEN: procesada.CANTIDAD_MODULOS_EXAMEN,
             NOMBRE_ASIGNATURA: procesada.NOMBRE_ASIGNATURA,
-            NOMBRE_DOCENTE: procesada.NOMBRE_DOCENTE_ASIGNADO, // Asegurarse de pasarlo si existe
+            NOMBRE_DOCENTE: procesada.NOMBRE_DOCENTE_ASIGNADO,
           };
         }
       }
@@ -66,9 +101,11 @@ export function useAgendaData() {
             3,
         },
       };
-      return procesada;
+
+      // Adjuntar colores al objeto de reserva principal
+      return enrichObjectWithSchoolColors(procesada, fetchedEscuelas);
     },
-    []
+    [enrichObjectWithSchoolColors]
   );
 
   useEffect(() => {
@@ -83,13 +120,15 @@ export function useAgendaData() {
           sedesRes,
           edificiosRes,
           examenesDisponiblesRes,
+          escuelasRes, // Cargar escuelas con colores
         ] = await Promise.all([
           api.get('/sala'),
-          api.get('/examen'), // <-- 1. Obtenemos TODOS los exámenes para la lista maestra
+          api.get('/examen'),
           api.get('/modulo'),
           api.get('/sede'),
           api.get('/edificio'),
-          api.get('/examen/examenes/disponibles'), // <-- 2. Obtenemos los DISPONIBLES para el selector
+          api.get('/examen/examenes/disponibles'),
+          fetchAllEscuelas(), // Llamada al servicio de escuelas
         ]);
 
         const edificiosData = edificiosRes.data || [];
@@ -113,13 +152,26 @@ export function useAgendaData() {
         setSedesDisponibles(sedesRes.data || []);
         setModulos(modulosRes.data || []);
 
-        // La lista maestra ahora tiene TODOS los exámenes con todos sus datos
-        const todosLosExamenes = examenesRes.data || [];
+        const schoolsWithColors = escuelasRes.filter(Boolean);
+        setAllEscuelasWithColors(schoolsWithColors);
+        setIsLoadingEscuelas(false); // Marcar carga de escuelas como completada
+
+        // Función para procesar cada examen y añadirle los colores de su escuela
+        const processExamAndAddColors = (exam) => {
+          // Asumimos que el objeto 'exam' ya tiene 'NOMBRE_ESCUELA' por JOINS en el backend.
+          // Si no, se necesitaría una lógica para inferir el nombre de la escuela a partir de sus IDs de carrera/asignatura/sección.
+          return enrichObjectWithSchoolColors(exam, schoolsWithColors);
+        };
+
+        const todosLosExamenes = (examenesRes.data || []).map(
+          processExamAndAddColors
+        );
         setTodosLosExamenesOriginal(todosLosExamenes);
 
-        // La lista para el selector de la izquierda solo contiene los disponibles
-        const examenesParaSelector = examenesDisponiblesRes.data || [];
-        setExamenes(examenesParaSelector); // <-- Usamos los disponibles para el selector
+        const examenesParaSelector = (examenesDisponiblesRes.data || []).map(
+          processExamAndAddColors
+        );
+        setExamenes(examenesParaSelector); // Los exámenes ya tienen info de color
       } catch (error) {
         console.error('Error al cargar datos iniciales:', error);
       } finally {
@@ -131,15 +183,20 @@ export function useAgendaData() {
     }
 
     loadInitialData();
-  }, [dispatch]);
+  }, [dispatch, enrichObjectWithSchoolColors]); // Añadir `enrichObjectWithSchoolColors` como dependencia
 
   const reservasProcesadas = useMemo(() => {
     if (
       estadoCargaReservas === 'succeeded' &&
-      todosLosExamenesOriginal.length > 0
+      todosLosExamenesOriginal.length > 0 &&
+      !isLoadingEscuelas // Asegurar que las escuelas ya estén cargadas
     ) {
       return reservas.map((r) =>
-        procesarReservaParaFrontend(r, todosLosExamenesOriginal)
+        procesarReservaParaFrontend(
+          r,
+          todosLosExamenesOriginal,
+          allEscuelasWithColors
+        )
       );
     }
     return [];
@@ -148,19 +205,11 @@ export function useAgendaData() {
     estadoCargaReservas,
     todosLosExamenesOriginal,
     procesarReservaParaFrontend,
+    allEscuelasWithColors, // Asegurar que esté como dependencia
+    isLoadingEscuelas,
   ]);
 
-  useEffect(() => {
-    if (estadoCargaReservas === 'succeeded') {
-      setIsLoadingReservas(false);
-    }
-  }, [estadoCargaReservas]);
-
-  // Ya no necesitamos el useEffect para filtrar examenes, `loadInitialData` lo hace.
-  // El resto de los efectos (loadExamenesYReservas, handleReservaCreada, etc.) deberían funcionar correctamente
-  // o pueden ser simplificados si la lógica de `loadInitialData` es suficiente.
-
-  // ... (El resto de los hooks: loadExamenesYReservas y el listener de eventos se mantienen igual)
+  // `loadExamenesYReservas` ahora también enriquece los exámenes recargados
   const loadExamenesYReservas = useCallback(async () => {
     try {
       setIsLoadingExamenes(true);
@@ -170,15 +219,27 @@ export function useAgendaData() {
       ]);
       dispatch(cargarReservasGlobal());
 
-      setTodosLosExamenesOriginal(examenesMaestrosRes.data || []);
-      setExamenes(examenesDisponiblesRes.data || []);
+      // Procesar exámenes maestros para añadir colores
+      const processedExamenesMaestros = (examenesMaestrosRes.data || []).map(
+        (exam) => enrichObjectWithSchoolColors(exam, allEscuelasWithColors)
+      );
+      setTodosLosExamenesOriginal(processedExamenesMaestros);
+
+      // Procesar exámenes disponibles para añadir colores
+      const processedExamenesDisponibles = (
+        examenesDisponiblesRes.data || []
+      ).map((exam) =>
+        enrichObjectWithSchoolColors(exam, allEscuelasWithColors)
+      );
+      setExamenes(processedExamenesDisponibles);
     } catch (error) {
       console.error('[useAgendaData] Error al recargar exámenes:', error);
     } finally {
       setIsLoadingExamenes(false);
     }
-  }, [dispatch]);
+  }, [dispatch, allEscuelasWithColors, enrichObjectWithSchoolColors]); // Añadir dependencias
 
+  // `handleReservaCreada` y `handleExamenesActualizados` también se ajustan para usar los datos enriquecidos
   useEffect(() => {
     const handleReservaCreada = async (event) => {
       const { reserva: reservaBasica, examenId } = event.detail;
@@ -189,7 +250,8 @@ export function useAgendaData() {
           );
           const nuevaReservaProcesada = procesarReservaParaFrontend(
             nuevaReservaPlana,
-            todosLosExamenesOriginal
+            todosLosExamenesOriginal,
+            allEscuelasWithColors
           );
           dispatch(agregarReserva(nuevaReservaProcesada));
           setExamenes((prev) => prev.filter((ex) => ex.ID_EXAMEN !== examenId));
@@ -207,10 +269,17 @@ export function useAgendaData() {
             (ex) => ex.ID_EXAMEN === examenId
           );
           if (examenAReactivar) {
+            // Asegurar que el examen reactivado también tenga información de color
+            const processedExamenAReactivar = enrichObjectWithSchoolColors(
+              examenAReactivar,
+              allEscuelasWithColors
+            );
             setExamenes((prev) =>
-              prev.some((ex) => ex.ID_EXAMEN === examenAReactivar.ID_EXAMEN)
+              prev.some(
+                (ex) => ex.ID_EXAMEN === processedExamenAReactivar.ID_EXAMEN
+              )
                 ? prev
-                : [...prev, examenAReactivar]
+                : [...prev, processedExamenAReactivar]
             );
           } else {
             loadExamenesYReservas();
@@ -234,22 +303,27 @@ export function useAgendaData() {
     todosLosExamenesOriginal,
     dispatch,
     procesarReservaParaFrontend,
+    allEscuelasWithColors,
+    enrichObjectWithSchoolColors,
   ]);
 
   return {
     salas,
     setSalas,
-    examenes,
+    examenes, // `examenes` ahora incluye `COLOR_BACKGROUND` y `COLOR_BORDER`
     setExamenes,
     todosLosExamenesOriginal,
     modulos,
-    reservas: reservasProcesadas,
+    reservas: reservasProcesadas, // `reservas` ahora incluye `COLOR_BACKGROUND` y `COLOR_BORDER`
     sedesDisponibles,
     edificiosDisponibles,
+    allEscuelasWithColors, // Exportar también las escuelas con colores
     isLoadingSalas,
     isLoadingExamenes,
     isLoadingModulos,
     isLoadingReservas: estadoCargaReservas === 'loading',
+    isLoadingEscuelas, // Exportar el estado de carga de las escuelas
     loadExamenes: loadExamenesYReservas,
   };
 }
+export default useAgendaData;
