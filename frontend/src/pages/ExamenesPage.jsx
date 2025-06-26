@@ -1,53 +1,67 @@
-// src/pages/ExamenesPage.jsx
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import Layout from '../components/Layout';
 import ExamenForm from '../components/examenes/ExamenForm';
 import ExamenActions from '../components/examenes/ExamenActions';
 import ExamenList from '../components/examenes/ExamenList';
-import ExamenFilter from '../components/examenes/ExamenFilter'; // <-- IMPORTAR NUEVO COMPONENTE
-import PaginationComponent from '../components/PaginationComponent'; // <-- IMPORTAR PAGINACIÓN
-import {
-  Alert,
-  Modal as BootstrapModal,
-  Button as BsButton,
-  Spinner,
-} from 'react-bootstrap'; // Usar Modal y Button de react-bootstrap
-import api from '../services/api'; // <-- USA TU INSTANCIA DE AXIOS CONFIGURADA (api.js)
+import ExamenFilter from '../components/examenes/ExamenFilter';
+import PaginationComponent from '../components/PaginationComponent';
+import { Alert, Spinner } from 'react-bootstrap';
+import api from '../services/api';
 
-// Importar los servicios reales
+// Servicios para los filtros
 import { fetchAllEscuelas } from '../services/escuelaService';
 import { fetchAllCarreras } from '../services/carreraService';
 import { fetchAllAsignaturas } from '../services/asignaturaService';
 import { fetchAllSecciones } from '../services/seccionService';
 
-const ITEMS_PER_PAGE = 6; // Cambiado a 6 filas por página
+const ITEMS_PER_PAGE = 6;
 
 const normalizeText = (text) => {
   if (!text) return '';
   return text
-    .normalize('NFD') // Descomponer caracteres acentuados
-    .replace(/[\u0300-\u036f]/g, '') // Eliminar
-    .toLowerCase(); // Convertir a minúsculas
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase();
 };
+
+// --- COMPONENTE MODAL UNIFICADO (COPIADO DE AsignaturasPage.jsx) ---
+function Modal({ title, children, onClose }) {
+  return (
+    <div
+      className="modal show"
+      style={{
+        display: 'block',
+        backgroundColor: 'rgba(0,0,0,0.5)',
+      }}
+    >
+      <div className="modal-dialog">
+        <div className="modal-content">
+          <div className="modal-header">
+            <h5 className="modal-title">{title}</h5>
+            <button
+              type="button"
+              className="btn-close"
+              aria-label="Close"
+              onClick={onClose}
+            ></button>
+          </div>
+          <div className="modal-body">{children}</div>
+        </div>
+      </div>
+    </div>
+  );
+}
 
 export default function ExamenesPage() {
   const [examenes, setExamenes] = useState([]);
-  const [processedExamenes, setProcessedExamenes] = useState([]); // Estado para exámenes enriquecidos
-  const [selectedExamenes, setSelectedExamenes] = useState([]); // Para la selección múltiple
-  const [loading, setLoading] = useState(true); // Inicia en true para la carga inicial
-  const [isProcessing, setIsProcessing] = useState(false); // Para acciones CRUD en el modal
+  const [processedExamenes, setProcessedExamenes] = useState([]);
+  const [selectedExamenes, setSelectedExamenes] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [isProcessing, setIsProcessing] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
-  // const [showModal, setShowModal] = useState(false); // Se manejará con modal.show
-  const [modal, setModal] = useState({
-    type: null,
-    entity: null,
-    data: null,
-    show: false,
-  });
+  const [modal, setModal] = useState({ type: null, entity: null, data: null });
   const [currentPage, setCurrentPage] = useState(1);
-
-  // State para filtros
   const [filters, setFilters] = useState({
     text: '',
     escuela: '',
@@ -57,7 +71,6 @@ export default function ExamenesPage() {
     estado: '',
   });
 
-  // State para datos de los dropdowns del filtro
   const [allEscuelas, setAllEscuelas] = useState([]);
   const [allCarreras, setAllCarreras] = useState([]);
   const [allAsignaturas, setAllAsignaturas] = useState([]);
@@ -65,9 +78,8 @@ export default function ExamenesPage() {
   const estadosExamen = useMemo(
     () => [
       { value: '', label: 'Todos los estados' },
-      { value: 'ACTIVO', label: 'ACTIVO' }, // <--- CAMBIO AQUÍ
+      { value: 'ACTIVO', label: 'ACTIVO' },
       { value: 'PROGRAMADO', label: 'PROGRAMADO' },
-      // Puedes añadir más estados si son necesarios para filtrar
     ],
     []
   );
@@ -81,18 +93,13 @@ export default function ExamenesPage() {
     setLoading(true);
     setError('');
     try {
-      const response = await api.get('/examen'); // Usa tu instancia de Axios
-      setCurrentPage(1); // Resetear página en nueva carga
-      setExamenes(Array.isArray(response.data) ? response.data : []); // Asegura que sea un array
-      setSelectedExamenes([]); // Limpiar selección al recargar
+      const response = await api.get('/examen');
+      setCurrentPage(1);
+      setExamenes(Array.isArray(response.data) ? response.data : []);
+      setSelectedExamenes([]);
     } catch (err) {
       console.error('Error al cargar los exámenes:', err);
-      // setError(
-      //   err.response?.data?.error ||
-      //     err.message ||
-      //     'Error al cargar los exámenes. Intente más tarde.'
-      // );
-      setExamenes([]); // Devuelve array vacío en caso de error
+      setExamenes([]);
     } finally {
       setLoading(false);
     }
@@ -100,11 +107,8 @@ export default function ExamenesPage() {
 
   useEffect(() => {
     loadExamenes();
-
-    // Cargar datos para los filtros
     const loadFilterData = async () => {
       try {
-        // En un futuro, podrías tener un estado de carga para los filtros también
         const [escuelasData, carrerasData, asignaturasData, seccionesData] =
           await Promise.all([
             fetchAllEscuelas(),
@@ -123,7 +127,6 @@ export default function ExamenesPage() {
     loadFilterData();
   }, [loadExamenes]);
 
-  // Efecto para procesar exámenes una vez que todos los datos necesarios estén cargados
   useEffect(() => {
     if (
       examenes.length > 0 &&
@@ -132,103 +135,37 @@ export default function ExamenesPage() {
       allCarreras.length > 0 &&
       allEscuelas.length > 0
     ) {
-      // console.log('Iniciando enriquecimiento de exámenes...');
       const examenesEnriquecidos = examenes.map((ex) => {
-        // console.log(`--- Procesando examen original ID: ${ex.ID_EXAMEN}`, ex);
-
-        // Asumimos que el examen tiene SECCION_ID_SECCION o SECCION_ID
-        // Y que SECCION_ID_SECCION es el más probable según ExamenList.jsx
         let seccionIdDelExamen = ex.SECCION_ID_SECCION || ex.SECCION_ID;
-
-        // Intento de fallback: Si no hay ID de sección, pero sí NOMBRE_SECCION, buscar por nombre.
-        // Esto es menos robusto que tener el ID directamente.
-        if (!seccionIdDelExamen && ex.NOMBRE_SECCION) {
-          const seccionPorNombre = allSecciones.find(
-            (s) =>
-              s.NOMBRE_SECCION === ex.NOMBRE_SECCION ||
-              s.CODIGO_SECCION === ex.NOMBRE_SECCION
-          ); // Comparamos con NOMBRE_SECCION o CODIGO_SECCION
-          if (seccionPorNombre) {
-            seccionIdDelExamen = seccionPorNombre.ID_SECCION;
-            // console.log(
-            //   `  Fallback: ID de Sección encontrado por NOMBRE_SECCION '${ex.NOMBRE_SECCION}': ${seccionIdDelExamen}`
-            // );
-          }
-        }
-        // console.log(`  ID de Sección obtenido de 'ex': ${seccionIdDelExamen}`);
         const seccion = seccionIdDelExamen
           ? allSecciones.find(
               (s) => String(s.ID_SECCION) === String(seccionIdDelExamen)
             )
           : null;
-        // console.log(`  Objeto 'seccion' encontrado:`, seccion);
-
-        // Asumimos que la sección tiene ASIGNATURA_ID_ASIGNATURA o similar
-        // VERIFICA EL NOMBRE DE LA PROPIEDAD 'ASIGNATURA_ID_ASIGNATURA' EN TUS OBJETOS 'seccion'
         const asignaturaIdDesdeSeccion = seccion
-          ? seccion.ASIGNATURA_ID_ASIGNATURA // <-- VERIFICA Y AJUSTA SI ES NECESARIO
+          ? seccion.ASIGNATURA_ID_ASIGNATURA
           : null;
-        // console.log(
-        //   `  ID de Asignatura obtenido de 'seccion': ${asignaturaIdDesdeSeccion}`
-        // );
-
-        // O si el examen tiene un ID de asignatura directo:
         let asignaturaIdDelExamen =
           ex.ASIGNATURA_ID || asignaturaIdDesdeSeccion;
-
-        // Intento de fallback: Si no hay ID de asignatura (directo o de sección), pero sí NOMBRE_ASIGNATURA, buscar por nombre.
-        if (!asignaturaIdDelExamen && ex.NOMBRE_ASIGNATURA) {
-          const asignaturaPorNombre = allAsignaturas.find(
-            (a) => a.NOMBRE_ASIGNATURA === ex.NOMBRE_ASIGNATURA
-          );
-          if (asignaturaPorNombre) {
-            asignaturaIdDelExamen = asignaturaPorNombre.ID_ASIGNATURA;
-            // console.log(
-            //   `  Fallback: ID de Asignatura encontrado por NOMBRE_ASIGNATURA '${ex.NOMBRE_ASIGNATURA}': ${asignaturaIdDelExamen}`
-            // );
-          }
-        }
-        // console.log(
-        //   `  ID de Asignatura final para búsqueda: ${asignaturaIdDelExamen} (de ex.ASIGNATURA_ID: ${ex.ASIGNATURA_ID})`
-        // );
         const asignatura = asignaturaIdDelExamen
           ? allAsignaturas.find(
               (a) => String(a.ID_ASIGNATURA) === String(asignaturaIdDelExamen)
             )
           : null;
-        // console.log(`  Objeto 'asignatura' encontrado:`, asignatura);
-
-        // Asumimos que la asignatura tiene CARRERA_ID_CARRERA o similar
-        // VERIFICA EL NOMBRE DE LA PROPIEDAD 'CARRERA_ID_CARRERA' EN TUS OBJETOS 'asignatura'
         const carreraIdDesdeAsignatura = asignatura
-          ? asignatura.CARRERA_ID_CARRERA // <-- VERIFICA Y AJUSTA SI ES NECESARIO
+          ? asignatura.CARRERA_ID_CARRERA
           : null;
-        // console.log(
-        //   `  ID de Carrera obtenido de 'asignatura': ${carreraIdDesdeAsignatura}`
-        // );
-
         const carrera = carreraIdDesdeAsignatura
           ? allCarreras.find(
               (c) => String(c.ID_CARRERA) === String(carreraIdDesdeAsignatura)
             )
           : null;
-        // console.log(`  Objeto 'carrera' encontrado:`, carrera);
-
-        // Asumimos que la carrera tiene ESCUELA_ID_ESCUELA o similar
-        // VERIFICA EL NOMBRE DE LA PROPIEDAD 'ESCUELA_ID_ESCUELA' EN TUS OBJETOS 'carrera'
         const escuelaIdDesdeCarrera = carrera
-          ? carrera.ESCUELA_ID_ESCUELA // <-- VERIFICA Y AJUSTA SI ES NECESARIO
+          ? carrera.ESCUELA_ID_ESCUELA
           : null;
-        // console.log(
-        //   `  ID de Escuela obtenido de 'carrera': ${escuelaIdDesdeCarrera}`
-        // );
-
-        // const escuela = escuelaIdDesdeCarrera ? allEscuelas.find(e => String(e.ID_ESCUELA) === String(escuelaIdDesdeCarrera)) : null; // No necesitamos el objeto escuela, solo el ID
 
         return {
           ...ex,
-          // Guardamos los IDs derivados para el filtrado. Usa los nombres de propiedad que esperas en filteredExamenes.
-          // Estos son los que usaremos para comparar con filters.escuela, filters.carrera, etc.
           DERIVED_ESCUELA_ID: escuelaIdDesdeCarrera
             ? String(escuelaIdDesdeCarrera)
             : null,
@@ -243,31 +180,13 @@ export default function ExamenesPage() {
             : null,
         };
       });
-      // console.log(
-      //   'Exámenes enriquecidos:',
-      //   examenesEnriquecidos.length > 0 ? examenesEnriquecidos[0] : 'Ninguno'
-      // );
       setProcessedExamenes(examenesEnriquecidos);
     } else {
-      // Si alguna de las listas base no está cargada, o no hay exámenes,
-      // es posible que quieras limpiar processedExamenes o manejarlo de otra forma.
       if (examenes.length === 0) {
-        // Si no hay exámenes originales, no hay nada que procesar.
         setProcessedExamenes([]);
       }
     }
   }, [examenes, allEscuelas, allCarreras, allAsignaturas, allSecciones]);
-
-  useEffect(() => {
-    let timer;
-    if (success) {
-      timer = setTimeout(() => setSuccess(''), 3000);
-    }
-    if (error) {
-      timer = setTimeout(() => setError(''), 5000);
-    }
-    return () => clearTimeout(timer);
-  }, [success, error]);
 
   const handleToggleExamenSelection = (examenToToggle) => {
     setSelectedExamenes((prevSelected) =>
@@ -299,37 +218,31 @@ export default function ExamenesPage() {
     }
   };
 
-  const openModalHandler = (type, entityName, entityPayload = null) => {
-    let modalData = null;
-    if (type === 'add') {
-      setSelectedExamenes([]);
-      setModal({ type, entity: entityName, data: null, show: true });
-    } else if (type === 'edit' && entityPayload) {
-      // entityPayload es el ID_EXAMEN
-      modalData = examenes.find(
-        (ex) => String(ex.ID_EXAMEN) === String(entityPayload)
-      );
-      if (!modalData) {
-        displayMessage(setError, 'Examen no encontrado para editar.');
+  const closeModal = () =>
+    setModal({ type: null, entity: null, data: null, show: false });
+
+  const openModal = (type, entity) => {
+    let data = null;
+    if (type === 'edit') {
+      if (selectedExamenes.length !== 1) {
+        displayMessage(
+          setError,
+          'Por favor, seleccione un único examen para editar.'
+        );
         return;
       }
-      setModal({ type, entity: entityName, data: modalData, show: true });
-    } else if (
-      type === 'delete' &&
-      Array.isArray(entityPayload) &&
-      entityPayload.length > 0
-    ) {
-      setModal({
-        type,
-        entity: entityName,
-        data: [...entityPayload],
-        show: true,
-      });
+      data = selectedExamenes[0];
+    } else if (type === 'delete') {
+      if (selectedExamenes.length === 0) {
+        displayMessage(
+          setError,
+          'Por favor, seleccione al menos un examen para eliminar.'
+        );
+        return;
+      }
+      data = selectedExamenes;
     }
-  };
-
-  const closeModalHandler = () => {
-    setModal({ type: null, entity: null, data: null, show: false });
+    setModal({ type, entity, data, show: true });
   };
 
   const handleFormSubmit = async (formData) => {
@@ -338,14 +251,14 @@ export default function ExamenesPage() {
     setSuccess('');
     try {
       if (modal.type === 'add') {
-        await api.post('/examen', formData); // Asume que formData tiene el formato correcto
+        await api.post('/examen', formData);
         displayMessage(setSuccess, 'Examen creado con éxito');
       } else if (modal.type === 'edit' && modal.data) {
         await api.put(`/examen/${modal.data.ID_EXAMEN}`, formData);
         displayMessage(setSuccess, 'Examen actualizado con éxito');
       }
       await loadExamenes();
-      closeModalHandler();
+      closeModal();
     } catch (err) {
       displayMessage(
         setError,
@@ -359,7 +272,7 @@ export default function ExamenesPage() {
 
   const handleDeleteExamen = async () => {
     if (!modal.data || !Array.isArray(modal.data) || modal.data.length === 0) {
-      closeModalHandler();
+      closeModal();
       return;
     }
     setIsProcessing(true);
@@ -398,11 +311,11 @@ export default function ExamenesPage() {
       }
 
       if (successCount > 0) {
-        await loadExamenes(); // Esto ya limpia selectedExamenes
+        await loadExamenes();
       } else {
-        setSelectedExamenes([]); // Limpiar selección si no hubo éxito
+        setSelectedExamenes([]);
       }
-      closeModalHandler();
+      closeModal();
     } catch (err) {
       displayMessage(
         setError,
@@ -414,36 +327,27 @@ export default function ExamenesPage() {
     }
   };
 
-  // Handler para el cambio de filtro
   const handleFilterChange = useCallback((changedFilters) => {
     setFilters((prevFilters) => {
       const newFilters = { ...prevFilters, ...changedFilters };
-
-      // Si cambia la escuela, resetear carrera, asignatura y sección
       if (changedFilters.escuela !== undefined) {
         newFilters.carrera = '';
         newFilters.asignatura = '';
         newFilters.seccion = '';
-      }
-      // Si cambia la carrera, resetear asignatura y sección
-      else if (changedFilters.carrera !== undefined) {
+      } else if (changedFilters.carrera !== undefined) {
         newFilters.asignatura = '';
         newFilters.seccion = '';
-      }
-      // Si cambia la asignatura, resetear sección
-      else if (changedFilters.asignatura !== undefined) {
+      } else if (changedFilters.asignatura !== undefined) {
         newFilters.seccion = '';
       }
       return newFilters;
     });
-    setCurrentPage(1); // Resetear a la primera página al cambiar filtros
-    setSelectedExamenes([]); // Limpiar selección al cambiar filtros
+    setCurrentPage(1);
+    setSelectedExamenes([]);
   }, []);
 
-  // Opciones filtradas para los dropdowns
   const carrerasOptions = useMemo(() => {
     if (!filters.escuela) return allCarreras;
-    // Asumimos que cada objeto carrera tiene una propiedad como ESCUELA_ID_ESCUELA o ID_ESCUELA
     return allCarreras.filter(
       (c) => String(c.ESCUELA_ID_ESCUELA) === String(filters.escuela)
     );
@@ -463,9 +367,7 @@ export default function ExamenesPage() {
     );
   }, [filters.asignatura, allSecciones]);
 
-  // Aplicar el filtro y la búsqueda
   const filteredExamenes = useMemo(() => {
-    // Usar processedExamenes en lugar de examenes
     return processedExamenes.filter((examen) => {
       const matchesText =
         !filters.text ||
@@ -473,79 +375,20 @@ export default function ExamenesPage() {
           normalizeText(examen.NOMBRE_EXAMEN).includes(
             normalizeText(filters.text)
           ));
-
-      // --- Filtro Escuela ---
-      // Usar el ID derivado
-      const escuelaIdEnExamen = examen.DERIVED_ESCUELA_ID;
       const matchesEscuela =
         !filters.escuela ||
-        (escuelaIdEnExamen !== undefined &&
-          escuelaIdEnExamen !== null &&
-          String(escuelaIdEnExamen) === String(filters.escuela));
-      // console.log(
-      //   `Examen Escuela ID: ${escuelaIdEnExamen}, Filtro Escuela: '${filters.escuela}', Coincide Escuela: ${matchesEscuela}`
-      // );
-
-      // --- Filtro Carrera ---
-      const carreraIdEnExamen = examen.DERIVED_CARRERA_ID;
+        String(examen.DERIVED_ESCUELA_ID) === String(filters.escuela);
       const matchesCarrera =
         !filters.carrera ||
-        (carreraIdEnExamen !== undefined &&
-          carreraIdEnExamen !== null &&
-          String(carreraIdEnExamen) === String(filters.carrera));
-      // console.log(
-      //   `Examen Carrera ID: ${carreraIdEnExamen}, Filtro Carrera: '${filters.carrera}', Coincide Carrera: ${matchesCarrera}`
-      // );
-
-      // --- Filtro Asignatura ---
-      const asignaturaIdEnExamen = examen.DERIVED_ASIGNATURA_ID;
+        String(examen.DERIVED_CARRERA_ID) === String(filters.carrera);
       const matchesAsignatura =
         !filters.asignatura ||
-        (asignaturaIdEnExamen !== undefined &&
-          asignaturaIdEnExamen !== null &&
-          String(asignaturaIdEnExamen) === String(filters.asignatura));
-      // console.log(
-      //   `Examen Asignatura ID: ${asignaturaIdEnExamen}, Filtro Asignatura: '${filters.asignatura}', Coincide Asignatura: ${matchesAsignatura}`
-      // );
-
-      // --- Filtro Sección ---
-      const seccionIdDelExamen = examen.DERIVED_SECCION_ID;
+        String(examen.DERIVED_ASIGNATURA_ID) === String(filters.asignatura);
       const matchesSeccion =
         !filters.seccion ||
-        (seccionIdDelExamen !== undefined &&
-          seccionIdDelExamen !== null &&
-          String(seccionIdDelExamen) === String(filters.seccion));
-      // console.log(
-      //   `Examen Sección ID: ${seccionIdDelExamen}, Filtro Sección: '${filters.seccion}', Coincide Sección: ${matchesSeccion}`
-      // );
-
-      // --- Filtro Estado ---
-      const estadoEnExamen = examen.NOMBRE_ESTADO; // <-- CAMBIO AQUÍ: Usar NOMBRE_ESTADO
-      let calculatedMatchesEstado;
-      if (!filters.estado) {
-        // Si el filtro es "Todos los estados"
-        calculatedMatchesEstado = true;
-      } else {
-        calculatedMatchesEstado = estadoEnExamen === filters.estado;
-      }
-      const matchesEstado = calculatedMatchesEstado;
-      // console.log(
-      //   `Comparando ESTADO: Examen='${estadoEnExamen}' vs Filtro='${filters.estado}'. Coincide: ${matchesEstado}`
-      // );
-
-      const finalMatch =
-        matchesText &&
-        matchesEscuela &&
-        matchesCarrera &&
-        matchesAsignatura &&
-        matchesSeccion &&
-        matchesEstado;
-      // console.log(
-      //   'Resultado final de coincidencia para este examen:',
-      //   finalMatch
-      // );
-      // console.log('----------------------------------------------------');
-
+        String(examen.DERIVED_SECCION_ID) === String(filters.seccion);
+      const matchesEstado =
+        !filters.estado || examen.NOMBRE_ESTADO === filters.estado;
       return (
         matchesText &&
         matchesEscuela &&
@@ -554,10 +397,9 @@ export default function ExamenesPage() {
         matchesSeccion &&
         matchesEstado
       );
-    }); // Fin de examenes.filter()
-  }, [processedExamenes, filters]); // Depender de processedExamenes
+    });
+  }, [processedExamenes, filters]);
 
-  // Lógica de Paginación
   const indexOfLastItem = currentPage * ITEMS_PER_PAGE;
   const indexOfFirstItem = indexOfLastItem - ITEMS_PER_PAGE;
   const currentExamenesPaginados = filteredExamenes.slice(
@@ -565,33 +407,87 @@ export default function ExamenesPage() {
     indexOfLastItem
   );
 
-  // Cambiar de página
   const paginate = (pageNumber) => setCurrentPage(pageNumber);
 
-  const handleAddAction = () => {
-    openModalHandler('add', 'examen');
-  };
+  // --- RENDERIZADO DEL MODAL DE ELIMINACIÓN (LÓGICA UNIFICADA) ---
+  const renderDeleteModalContent = () => {
+    if (!modal.data || modal.data.length === 0)
+      return <p>No hay elementos seleccionados.</p>;
 
-  const handleEditAction = () => {
-    if (selectedExamenes.length === 1) {
-      openModalHandler('edit', 'examen', selectedExamenes[0].ID_EXAMEN);
-    } else {
-      displayMessage(
-        setError,
-        'Por favor, seleccione un único examen para editar.'
-      );
-    }
-  };
+    let itemsToDelete = modal.data;
+    let itemName = 'examen';
+    let deleteHandler = handleDeleteExamen;
+    let icon = 'bi bi-file-earmark-text-fill';
 
-  const handleDeleteAction = () => {
-    if (selectedExamenes.length > 0) {
-      openModalHandler('delete', 'examen', selectedExamenes);
-    } else {
-      displayMessage(
-        setError,
-        'Por favor, seleccione al menos un examen para eliminar.'
-      );
-    }
+    let itemsToList = itemsToDelete.map((item) => ({
+      key: item.ID_EXAMEN,
+      name: item.NOMBRE_EXAMEN,
+    }));
+
+    let consequences = (
+      <ul>
+        <li>
+          Todas las <strong>Reservas</strong> de salas y horarios asociadas a
+          este/os examen/es.
+        </li>
+        <li>
+          Las <strong>confirmaciones y solicitudes de revisión</strong> de los
+          docentes.
+        </li>
+      </ul>
+    );
+
+    return (
+      <div>
+        <p>
+          ¿Está seguro de que desea eliminar {itemsToDelete.length}{' '}
+          {itemsToDelete.length > 1 ? 'exámenes' : 'examen'}?
+        </p>
+
+        <ul className="list-unstyled my-3 p-3 border bg-light rounded">
+          {itemsToList.map((item) => (
+            <li key={item.key}>
+              <i className={`${icon} me-2`}></i>
+              {item.name || `Examen sin nombre (ID: ${item.key})`}
+            </li>
+          ))}
+        </ul>
+
+        <Alert variant="danger" className="mt-3">
+          <Alert.Heading>
+            <i className="bi bi-exclamation-triangle-fill me-2"></i>
+            ¡Atención! Esta acción es irreversible.
+          </Alert.Heading>
+          <p className="mb-0">
+            Al eliminar, también se borrarán de forma permanente los siguientes
+            datos asociados:
+          </p>
+          <hr />
+          {consequences}
+        </Alert>
+
+        <div className="modal-footer">
+          <button
+            className="btn btn-secondary"
+            onClick={closeModal}
+            disabled={isProcessing}
+          >
+            Cancelar
+          </button>
+          <button
+            className="btn btn-danger"
+            onClick={deleteHandler}
+            disabled={isProcessing}
+          >
+            {isProcessing ? (
+              <Spinner as="span" size="sm" animation="border" />
+            ) : (
+              'Sí, entiendo, eliminar'
+            )}
+          </button>
+        </div>
+      </div>
+    );
   };
 
   return (
@@ -615,9 +511,8 @@ export default function ExamenesPage() {
           </Alert>
         )}
 
-        {/* Filtro de Exámenes */}
         <ExamenFilter
-          escuelas={allEscuelas} // El dropdown de escuelas siempre muestra todas
+          escuelas={allEscuelas}
           carreras={carrerasOptions}
           asignaturas={asignaturasOptions}
           secciones={seccionesOptions}
@@ -626,9 +521,9 @@ export default function ExamenesPage() {
           currentFilters={filters}
         />
         <ExamenActions
-          onAdd={handleAddAction}
-          onEdit={handleEditAction}
-          onDelete={handleDeleteAction}
+          onAdd={() => openModal('add', 'examen')}
+          onEdit={() => openModal('edit', 'examen')}
+          onDelete={() => openModal('delete', 'examen')}
           selectedExamenes={selectedExamenes}
           disabled={loading || isProcessing}
         />
@@ -641,11 +536,11 @@ export default function ExamenesPage() {
         ) : (
           <>
             <ExamenList
-              examenes={currentExamenesPaginados} // Usar la lista paginada y filtrada
+              examenes={currentExamenesPaginados}
               selectedExamenes={selectedExamenes}
               onToggleExamenSelection={handleToggleExamenSelection}
               onToggleSelectAllExamenes={handleToggleSelectAllExamenes}
-              loading={loading && examenes.length > 0} // Mostrar loading en tabla si se está recargando pero ya hay datos
+              loading={loading && examenes.length > 0}
             />
             {filteredExamenes.length > ITEMS_PER_PAGE && (
               <PaginationComponent
@@ -659,72 +554,22 @@ export default function ExamenesPage() {
         )}
       </div>
 
-      {/* Modal para Crear/Editar Examen */}
-      {modal.show && (modal.type === 'add' || modal.type === 'edit') && (
-        <BootstrapModal
-          show={modal.show}
-          onHide={closeModalHandler}
-          centered
-          size="lg"
+      {modal.show && modal.entity === 'examen' && (
+        <Modal
+          title={`${modal.type === 'add' ? 'Agregar' : modal.type === 'edit' ? 'Editar' : 'Eliminar'} Examen`}
+          onClose={closeModal}
         >
-          <BootstrapModal.Header closeButton>
-            <BootstrapModal.Title>
-              {modal.type === 'add' ? 'Agregar Nuevo Examen' : 'Editar Examen'}
-            </BootstrapModal.Title>
-          </BootstrapModal.Header>
-          <BootstrapModal.Body>
+          {modal.type === 'delete' ? (
+            renderDeleteModalContent()
+          ) : (
             <ExamenForm
-              onSubmit={handleFormSubmit} // ExamenForm espera 'onSubmit'
-              initial={modal.type === 'edit' ? modal.data : null} // ExamenForm espera 'initial'
-              onCancel={closeModalHandler} // ExamenForm espera 'onCancel'
+              onSubmit={handleFormSubmit}
+              initial={modal.data}
+              onCancel={closeModal}
               isProcessing={isProcessing}
             />
-          </BootstrapModal.Body>
-        </BootstrapModal>
-      )}
-      {/* Modal de Confirmación para Eliminar Examen */}
-      {modal.show && modal.type === 'delete' && modal.data && (
-        <BootstrapModal show={modal.show} onHide={closeModalHandler} centered>
-          <BootstrapModal.Header closeButton>
-            <BootstrapModal.Title>Confirmar Eliminación</BootstrapModal.Title>
-          </BootstrapModal.Header>
-          <BootstrapModal.Body>
-            {modal.data && modal.data.length === 1 ? (
-              <p>
-                ¿Está seguro de que desea eliminar el examen "
-                <strong>
-                  {modal.data[0]?.NOMBRE_EXAMEN || 'seleccionado'}
-                </strong>
-                "?
-              </p>
-            ) : (
-              <p>
-                ¿Está seguro de que desea eliminar los
-                <strong>{modal.data?.length}</strong> exámenes seleccionados?
-              </p>
-            )}
-          </BootstrapModal.Body>
-          <BootstrapModal.Footer>
-            <BsButton
-              variant="secondary"
-              onClick={closeModalHandler}
-              disabled={isProcessing}
-            >
-              Cancelar
-            </BsButton>
-            <BsButton
-              variant="danger"
-              onClick={handleDeleteExamen}
-              disabled={isProcessing}
-            >
-              {isProcessing ? (
-                <Spinner as="span" size="sm" animation="border" />
-              ) : (
-                'Eliminar'
-              )}
-            </BsButton>
-          </BootstrapModal.Footer>
-        </BootstrapModal>
+          )}
+        </Modal>
       )}
     </Layout>
   );
