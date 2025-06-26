@@ -94,7 +94,7 @@ function UsuarioTable({
                       e.stopPropagation();
                       onShowUserCarreras(u);
                     }}
-                    title="Ver Carreras Asociadas"
+                    title="VER CARRERAS Asociadas"
                   >
                     <i className="bi bi-diagram-3"></i>
                     {/* Icono para carreras */}

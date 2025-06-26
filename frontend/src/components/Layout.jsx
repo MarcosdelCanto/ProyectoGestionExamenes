@@ -295,7 +295,7 @@ export default function Layout({ children }) {
               id="inicio"
             />
 
-            {hasPermission('VIEW_CALENDARIO') && (
+            {hasPermission('VER CALENDARIO') && (
               <NavItem
                 to="/calendario"
                 icon="bi-calendar3"
@@ -311,7 +311,7 @@ export default function Layout({ children }) {
               id="examenes-programados"
             />
 
-            {hasPermission('VIEW_EXAMENES') && (
+            {hasPermission('VER EXAMENES') && (
               <NavItem
                 to="/examen"
                 icon="bi-file-earmark-text-fill"
@@ -320,7 +320,7 @@ export default function Layout({ children }) {
               />
             )}
 
-            {hasPermission('VIEW_ASIGNATURAS') && (
+            {hasPermission('VER ASIGNATURAS') && (
               <NavItem
                 to="/asignaturas"
                 icon="bi-book-fill"
@@ -329,7 +329,7 @@ export default function Layout({ children }) {
               />
             )}
 
-            {hasPermission('VIEW_SALAS') && (
+            {hasPermission('VER SALAS') && (
               <NavItem
                 to="/salas"
                 icon="bi-door-open-fill"
@@ -338,7 +338,7 @@ export default function Layout({ children }) {
               />
             )}
 
-            {hasPermission('VIEW_MODULOS') && (
+            {hasPermission('VER MODULOS') && (
               <NavItem
                 to="/modulos"
                 icon="bi-grid-1x2-fill"
@@ -347,7 +347,7 @@ export default function Layout({ children }) {
               />
             )}
 
-            {hasPermission('VIEW_USUARIOS') && (
+            {hasPermission('VER USUARIOS') && (
               <NavItem
                 to="/usuarios"
                 icon="bi-people-fill"
@@ -356,7 +356,7 @@ export default function Layout({ children }) {
               />
             )}
 
-            {hasPermission('VIEW_ROLES') && (
+            {hasPermission('VER ROLES') && (
               <NavItem
                 to="/roles"
                 icon="bi-shield-lock-fill"
@@ -365,7 +365,7 @@ export default function Layout({ children }) {
               />
             )}
 
-            {hasPermission('VIEW_CARGA_DATOS') && (
+            {hasPermission('VER CARGA DE DATOS') && (
               <NavItem
                 to="/carga-datos"
                 icon="bi-cloud-upload-fill"
@@ -374,7 +374,7 @@ export default function Layout({ children }) {
               />
             )}
 
-            {hasPermission('VIEW_REPORTES') && (
+            {hasPermission('VER REPORTES') && (
               <NavItem
                 to="/reportes"
                 icon="bi-file-bar-graph-fill"

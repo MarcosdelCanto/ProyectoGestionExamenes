@@ -14,21 +14,21 @@ import { checkPermission } from '../middlewares/permission.middleware.js'; // De
 const router = Router();
 
 // Todas estas rutas deberían estar protegidas al menos por authMiddleware
-// y luego por checkPermission con los permisos específicos (ej: 'VIEW_ROLES', 'CREATE_ROLES', etc.)
+// y luego por checkPermission con los permisos específicos (ej: 'VER ROLES', 'CREAR ROLES', etc.)
 
-router.get('/', authMiddleware, checkPermission(['VIEW_ROLES']), fetchAllRoles);
-router.get(
+router.get('/', authMiddleware, checkPermission(['VER ROLES']), fetchAllRoles);
+router.get('/:id', authMiddleware, checkPermission(['VER ROLES']), getRoleById); // O un permiso 'VIEW_ROL_DETAIL'
+router.post('/', authMiddleware, checkPermission(['CREAR ROLES']), createRole);
+router.put(
   '/:id',
   authMiddleware,
-  checkPermission(['VIEW_ROLES']),
-  getRoleById
-); // O un permiso 'VIEW_ROL_DETAIL'
-router.post('/', authMiddleware, checkPermission(['CREATE_ROLES']), createRole);
-router.put('/:id', authMiddleware, checkPermission(['EDIT_ROLES']), updateRole);
+  checkPermission(['EDITAR ROLES']),
+  updateRole
+);
 router.delete(
   '/:id',
   authMiddleware,
-  checkPermission(['DELETE_ROLES']),
+  checkPermission(['ELIMINAR ROLES']),
   deleteRole
 );
 

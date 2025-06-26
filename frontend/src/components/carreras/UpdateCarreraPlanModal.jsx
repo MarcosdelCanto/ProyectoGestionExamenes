@@ -223,7 +223,7 @@ function UpdateCarreraPlanModal({ show, handleClose, onUpdateComplete }) {
 
     const ws = XLSX.utils.aoa_to_sheet(sampleData);
     const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, ws, 'Plantilla Actualizar Carreras');
+    XLSX.utils.book_append_sheet(wb, ws, 'Plantilla ACTUALIZAR CARRERAS');
     XLSX.writeFile(wb, 'plantilla_actualizar_carreras.xlsx');
   };
 

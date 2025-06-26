@@ -13,7 +13,7 @@ import { authMiddleware } from '../middlewares/auth.middleware.js'; // <-- 1. Im
 import { checkPermission } from '../middlewares/permission.middleware.js'; // <-- 2. Importar middleware de permisos
 
 const router = Router();
-router.use(authMiddleware, checkPermission(['VIEW_DASHBOARD']));
+router.use(authMiddleware, checkPermission(['VER DASHBOARD']));
 
 router.get('/summary', getDashboardSummary); // authRequired,
 router.get('/charts/examenes-por-carrera', getExamenesPorCarreraChartData);

@@ -23,18 +23,18 @@ export const checkPermission = (requiredPermissions) => {
 
   // Esta es la función middleware que Express usará
   return async (req, res, next) => {
-    console.log(
-      '[permissionMiddleware] Entrando. req.user recibido:',
-      req.user
-    );
-    console.log(
-      '[permissionMiddleware] Path de la petición actual:',
-      req.originalUrl
-    );
-    console.log(
-      '[permissionMiddleware] Permisos requeridos para esta ruta (limpios):',
-      cleanedPermissions
-    );
+    //console.log(
+    //  '[permissionMiddleware] Entrando. req.user recibido:',
+    //  req.user
+    //);
+    //console.log(
+    //  '[permissionMiddleware] Path de la petición actual:',
+    //  req.originalUrl
+    //);
+    //console.log(
+    //  '[permissionMiddleware] Permisos requeridos para esta ruta (limpios):',
+    //  cleanedPermissions
+    //);
 
     // Verifica si req.user y req.user.rol_id_rol están definidos
     if (!req.user || typeof req.user.rol_id_rol === 'undefined') {
@@ -48,21 +48,21 @@ export const checkPermission = (requiredPermissions) => {
     }
 
     const rolId = req.user.rol_id_rol;
-    console.log(`[permissionMiddleware] rol_id_rol del usuario: ${rolId}`);
+    //console.log(`[permissionMiddleware] rol_id_rol del usuario: ${rolId}`);
 
     // Si no se requieren permisos específicos (después de la limpieza), permite el paso.
     if (cleanedPermissions.length === 0) {
-      console.log(
-        '[permissionMiddleware] No se requieren permisos específicos para esta ruta. Pasando al siguiente manejador...'
-      );
+      //console.log(
+      //  '[permissionMiddleware] No se requieren permisos específicos para esta ruta. Pasando al siguiente manejador...'
+      //);
       return next();
     }
 
     let connection;
     try {
-      console.log(
-        `[permissionMiddleware] Conectando a la BD para verificar permisos del rol: ${rolId}`
-      );
+      //console.log(
+      //  `[permissionMiddleware] Conectando a la BD para verificar permisos del rol: ${rolId}`
+      //);
       connection = await getConnection();
 
       // Consulta para obtener todos los permisos asociados al ROL del usuario
@@ -79,10 +79,10 @@ export const checkPermission = (requiredPermissions) => {
       );
 
       const userPermissions = result.rows.map((p) => p.NOMBRE_PERMISO);
-      console.log(
-        `[permissionMiddleware] Permisos encontrados para el rol ${rolId}:`,
-        userPermissions
-      );
+      //console.log(
+      //  `[permissionMiddleware] Permisos encontrados para el rol ${rolId}:`,
+      //  userPermissions
+      //);
 
       // 3. Verificar si el usuario tiene AL MENOS UNO de los permisos requeridos
       // Se utiliza 'cleanedPermissions' para garantizar que es un array.
@@ -91,10 +91,10 @@ export const checkPermission = (requiredPermissions) => {
       );
 
       if (hasRequiredPermission) {
-        console.log(
-          '[permissionMiddleware] Usuario TIENE el permiso requerido. Llamando a next(). req.user actual:',
-          req.user
-        );
+        //console.log(
+        //  '[permissionMiddleware] Usuario TIENE el permiso requerido. Llamando a next(). req.user actual:',
+        //  req.user
+        //);
         next(); // El usuario tiene el permiso, continuar al controlador
       } else {
         console.log(

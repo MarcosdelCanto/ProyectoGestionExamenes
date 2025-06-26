@@ -27,7 +27,7 @@ const router = Router();
 router.get(
   '/mis-confirmadas',
   authMiddleware,
-  checkPermission(['VIEW_RESERVA_DETAIL']),
+  checkPermission(['VER DETALLE RESERVA']),
   getMisReservasConfirmadas
 );
 
@@ -43,21 +43,21 @@ router.get(
 router.post(
   '/crear-para-examen-existente',
   authMiddleware,
-  checkPermission(['CREATE_RESERVAS_EXAMEN']), // Ej: Permiso para coordinadores
+  checkPermission(['CREAR RESERVA EXAMEN']), // Ej: Permiso para coordinadores
   crearReservaParaExamenExistente
 );
 
 router.get(
   '/docente/pendientes',
   authMiddleware,
-  checkPermission(['DOCENTE_VIEW_RESERVAS_PENDIENTES']), // Ej: Permiso para docentes
+  checkPermission(['VER RESERVAS PENDIENTES DOCENTE']), // Ej: Permiso para docentes
   getMisReservasPendientes
 );
 
 router.put(
   '/:idReserva/docente/confirmacion',
   authMiddleware,
-  checkPermission(['DOCENTE_VIEW_RESERVAS_PENDIENTES']), // O un permiso más específico como 'ACTUALIZAR_CONFIRMACION_RESERVA'
+  checkPermission(['VER RESERVAS PENDIENTES DOCENTE']), // O un permiso más específico como 'ACTUALIZAR_CONFIRMACION_RESERVA'
   actualizarConfirmacionDocente
 );
 
@@ -65,7 +65,7 @@ router.put(
 router.post(
   '/crear-en-curso',
   authMiddleware,
-  checkPermission(['CREATE_RESERVAS_EXAMEN']),
+  checkPermission(['CREAR RESERVA EXAMEN']),
   crearReservaEnCurso
 );
 
@@ -73,7 +73,7 @@ router.post(
 router.put(
   '/:idReserva/enviar-a-docente',
   authMiddleware,
-  checkPermission(['UPDATE_RESERVA']),
+  checkPermission(['EDITAR RESERVA']),
   enviarReservaADocente
 );
 
@@ -81,7 +81,7 @@ router.put(
 router.delete(
   '/:idReserva/cancelar-completa',
   authMiddleware,
-  checkPermission(['DELETE_RESERVA']),
+  checkPermission(['ELIMINAR RESERVA']),
   cancelarReservaCompleta
 );
 
@@ -91,41 +91,41 @@ router.delete(
 router.get(
   '/',
   authMiddleware,
-  checkPermission(['VIEW_ALL_RESERVAS']), // Ej: Permiso para ver todas las reservas
+  checkPermission(['VER TODAS LAS RESERVA']), // Ej: Permiso para ver todas las reservas
   getAllReservas
 );
 
 router.post(
   '/', // Tu ruta original para crear reservas
   authMiddleware,
-  checkPermission(['CREATE_RESERVAS_EXAMEN']), // Permiso para el método original de creación
+  checkPermission(['CREAR RESERVA EXAMEN']), // Permiso para el método original de creación
   createReserva
 );
 router.get(
   '/:id',
   authMiddleware,
-  checkPermission(['VIEW_RESERVA_DETAIL']), // Ej: Permiso para ver detalle de una reserva
+  checkPermission(['VER DETALLE RESERVA']), // Ej: Permiso para ver detalle de una reserva
   getReservaById
 );
 
 router.put(
   '/actualizar/:id',
   authMiddleware,
-  checkPermission(['UPDATE_RESERVA']), // Ej: Permiso para actualizar cualquier reserva
+  checkPermission(['EDITAR RESERVA']), // Ej: Permiso para actualizar cualquier reserva
   updateReserva
 );
 
 router.delete(
   '/:id',
   authMiddleware,
-  checkPermission(['DELETE_RESERVA']), // Ej: Permiso para eliminar cualquier reserva
+  checkPermission(['ELIMINAR RESERVA']), // Ej: Permiso para eliminar cualquier reserva
   deleteReserva
 );
 // --- RUTA PARA DESCARTAR RESERVA ---
 router.put(
   '/:idReserva/descartar',
   authMiddleware,
-  checkPermission(['UPDATE_RESERVA']), // Asumiendo que el mismo permiso de actualizar sirve para descartar
+  checkPermission(['EDITAR RESERVA']), // Asumiendo que el mismo permiso de actualizar sirve para descartar
   descartarReserva
 );
 
