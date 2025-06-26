@@ -1,9 +1,12 @@
 import { useState, useEffect } from 'react';
+import { fetchAllSedes } from '../../services/sedeService'; // Importar servicio
 
 function EscuelaForm({ initial, onSubmit, onCancel }) {
   const [nombre, setNombre] = useState(initial?.NOMBRE_ESCUELA || '');
   const [sedeId, setSedeId] = useState(initial?.SEDE_ID_SEDE?.toString() || ''); // Asumiendo que la escuela tiene SEDE_ID_SEDE
   const [sedes, setSedes] = useState([]);
+  const [loadingSedes, setLoadingSedes] = useState(true); // Estado de carga
+  const [errorSedes, setErrorSedes] = useState(''); // Estado
 
   useEffect(() => {
     if (initial) {
@@ -18,12 +21,16 @@ function EscuelaForm({ initial, onSubmit, onCancel }) {
 
   useEffect(() => {
     const fetchSedes = async () => {
+      setLoadingSedes(true); // Inicia la carga
+      setErrorSedes(''); // Limpia errores anteriores
       try {
-        const response = await fetch('http://localhost:3000/api/sede');
-        const data = await response.json();
+        const data = await fetchAllSedes();
         setSedes(data);
       } catch (error) {
-        // console.error('Error al obtener las sedes:', error);
+        console.error('Error al obtener las sedes:', error);
+        setErrorSedes('Error al cargar las sedes');
+      } finally {
+        setLoadingSedes(false); // Finaliza la carga
       }
     };
     fetchSedes();
@@ -56,9 +63,10 @@ function EscuelaForm({ initial, onSubmit, onCancel }) {
           value={sedeId}
           onChange={(e) => setSedeId(e.target.value)}
           required
+          disabled={loadingSedes} // Deshabilitar si está cargando
         >
           <option value="" key="default">
-            Seleccione una sede
+            {loadingSedes ? 'Cargando sedes...' : 'Seleccione una Sede'}
           </option>
           {sedes.map((sede) => (
             <option key={`sede-${sede.ID_SEDE}`} value={sede.ID_SEDE}>
@@ -66,6 +74,7 @@ function EscuelaForm({ initial, onSubmit, onCancel }) {
             </option>
           ))}
         </select>
+        {errorSedes && <div className="text-danger mt-2">{errorSedes}</div>}
       </div>
       <div className="modal-footer">
         <button type="button" className="btn btn-secondary" onClick={onCancel}>

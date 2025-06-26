@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { fetchAllCarreras } from '../../services/carreraService'; // Importar servicio
 
 function AsignaturaForm({ initial, onSubmit, onCancel }) {
   const [nombre, setNombre] = useState(initial?.NOMBRE_ASIGNATURA || '');
@@ -6,6 +7,8 @@ function AsignaturaForm({ initial, onSubmit, onCancel }) {
     initial?.CARRERA_ID_CARRERA?.toString() || ''
   );
   const [carrera, setCarrera] = useState([]);
+  const [loadingCarreras, setLoadingCarreras] = useState(true); // Estado de carga
+  const [errorCarreras, setErrorCarreras] = useState(''); // Estado
 
   useEffect(() => {
     if (initial) {
@@ -19,12 +22,16 @@ function AsignaturaForm({ initial, onSubmit, onCancel }) {
 
   useEffect(() => {
     const fetchCarreras = async () => {
+      setLoadingCarreras(true); // Inicia la carga
+      setErrorCarreras(''); // Limpia errores anteriores
       try {
-        const response = await fetch('http://localhost:3000/api/carrera');
-        const data = await response.json();
+        const data = await fetchAllCarreras();
         setCarrera(data);
       } catch (error) {
         console.error('Error al obtener las carreras:', error);
+        setErrorCarreras('Error al cargar las carreras');
+      } finally {
+        setLoadingCarreras(false); // Finaliza la carga
       }
     };
     fetchCarreras();
@@ -55,13 +62,16 @@ function AsignaturaForm({ initial, onSubmit, onCancel }) {
       <div className="mb-3">
         <label className="form-label">Carrera</label>
         <select
-          className="form-control"
+          className="form-select"
           value={carreraId}
           onChange={(e) => setCarreraId(e.target.value)}
           required
+          disabled={loadingCarreras}
         >
           <option value="" key="default">
-            Seleccione una carrera
+            {loadingCarreras
+              ? 'Cargando carreras...'
+              : 'Seleccione una carreras'}
           </option>
           {carrera.map((carrera) => (
             <option
@@ -72,6 +82,9 @@ function AsignaturaForm({ initial, onSubmit, onCancel }) {
             </option>
           ))}
         </select>
+        {errorCarreras && (
+          <div className="alert alert-danger mt-2">{errorCarreras}</div>
+        )}
       </div>
       <div className="modal-footer">
         <button type="button" className="btn btn-secondary" onClick={onCancel}>
