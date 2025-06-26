@@ -12,7 +12,7 @@ import {
 } from 'react-icons/fa';
 
 const StatCard = ({ title, value, icon, color }) => (
-  <div className="col-md-4 mb-4">
+  <div className="col-md-4 mb-4" style={{ width: '14%', minWidth: '200px' }}>
     <div className={`card h-100 dashboard-card border-left-${color}`}>
       <div className="card-body">
         <div className="row no-gutters align-items-center">
@@ -108,8 +108,7 @@ export const SummaryDashboard = () => {
           icon={<FaBookOpen />}
           color="success"
         />
-      </div>
-      <div className="row">
+
         <StatCard
           title="Asignaturas"
           value={stats.totalAsignaturas || 0}
@@ -128,8 +127,7 @@ export const SummaryDashboard = () => {
           icon={<FaChalkboardTeacher />}
           color="secondary"
         />
-      </div>
-      <div className="row">
+
         <StatCard
           title="Exámenes Activos"
           value={stats.examenesActivos || 0}

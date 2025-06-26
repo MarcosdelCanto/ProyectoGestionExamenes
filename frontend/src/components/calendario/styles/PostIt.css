@@ -109,8 +109,9 @@
   display: flex;
   flex-direction: column;
   position: relative;
-  padding-bottom: 0; /* ← Remover padding bottom */
-  /* La altura será determinada por flex: 1 y el espacio disponible */
+  padding-bottom: 0;
+  margin-left: 4px;
+  padding-top: 30px;
 }
 
 .examen-header {
@@ -270,11 +271,6 @@
   display: flex;
   justify-content: center; /* Alinear los botones a la derecha */
   translate: 4px -2px;
-}
-
-/* Asegurar que los controles no interfieran con el contenido */
-.examen-content {
-  padding-top: 30px; /* Espacio para los controles anclados */
 }
 
 /* Para PostIts de 1 módulo, ajustar el padding */
