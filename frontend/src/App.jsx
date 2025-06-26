@@ -55,7 +55,7 @@ function App() {
           {/* Ruta para que el alumno vea sus reservas  CONFIRMADOs */}
           {/* Rutas protegidas por permisos específicos */}
           <Route
-            element={<PrivateRoute requiredPermissions={['VIEW_CALENDARIO']} />}
+            element={<PrivateRoute requiredPermissions={['VER CALENDARIO']} />}
           >
             <Route path="/calendario" element={<CalendarioPage />} />
           </Route>
@@ -65,7 +65,7 @@ function App() {
           <Route
             element={
               <PrivateRoute
-                requiredPermissions={['DOCENTE_VIEW_RESERVAS_PENDIENTES']}
+                requiredPermissions={['VER RESERVAS PENDIENTES DOCENTE']}
               />
             }
           >
@@ -86,60 +86,54 @@ function App() {
           {/* Usando el nombre de permiso que definimos en la BD */}
           <Route
             element={
-              <PrivateRoute requiredPermissions={['CREATE_RESERVAS_EXAMEN']} />
+              <PrivateRoute requiredPermissions={['CREAR RESERVA EXAMEN']} />
             }
           >
             <Route path="/reservas/crear" element={<CrearReservaPage />} />
           </Route>
 
           <Route
-            element={<PrivateRoute requiredPermissions={['VIEW_EXAMENES']} />}
+            element={<PrivateRoute requiredPermissions={['VER EXAMENES']} />}
           >
             <Route path="/examen" element={<ExamenesPage />} />
           </Route>
 
-          <Route
-            element={<PrivateRoute requiredPermissions={['VIEW_SALAS']} />}
-          >
+          <Route element={<PrivateRoute requiredPermissions={['VER SALAS']} />}>
             <Route path="/salas" element={<SalasPage />} />
           </Route>
 
           <Route
-            element={
-              <PrivateRoute requiredPermissions={['VIEW_ASIGNATURAS']} />
-            }
+            element={<PrivateRoute requiredPermissions={['VER ASIGNATURAS']} />}
           >
             <Route path="/asignaturas" element={<AsignaturasPage />} />
           </Route>
 
           <Route
-            element={<PrivateRoute requiredPermissions={['VIEW_MODULOS']} />}
+            element={<PrivateRoute requiredPermissions={['VER MODULOS']} />}
           >
             <Route path="/modulos" element={<ModulosPage />} />
           </Route>
 
           <Route
-            element={<PrivateRoute requiredPermissions={['VIEW_USUARIOS']} />}
+            element={<PrivateRoute requiredPermissions={['VER USUARIOS']} />}
           >
             <Route path="/usuarios" element={<UsuariosPage />} />
           </Route>
 
           <Route
             element={
-              <PrivateRoute requiredPermissions={['VIEW_CARGA_DATOS']} />
+              <PrivateRoute requiredPermissions={['VER CARGA DE DATOS']} />
             }
           >
             <Route path="/carga-datos" element={<CargaDatosPage />} />
           </Route>
 
-          <Route
-            element={<PrivateRoute requiredPermissions={['VIEW_ROLES']} />}
-          >
+          <Route element={<PrivateRoute requiredPermissions={['VER ROLES']} />}>
             <Route path="/roles" element={<RolesPage />} />
           </Route>
 
           <Route
-            element={<PrivateRoute requiredPermissions={['VIEW_REPORTES']} />}
+            element={<PrivateRoute requiredPermissions={['VER REPORTES']} />}
           >
             <Route path="/reportes" element={<ReportesPage />} />
           </Route>

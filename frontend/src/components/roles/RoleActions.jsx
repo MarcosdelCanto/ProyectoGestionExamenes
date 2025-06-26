@@ -16,8 +16,8 @@ function RoleActions({
   return (
     <Row className="mb-3">
       <Col>
-        {/* Solo mostramos botón si el usuario tiene el permiso CREATE_ROLES */}
-        {hasPermission('CREATE_ROLES') && (
+        {/* Solo mostramos botón si el usuario tiene el permiso CREAR ROLES */}
+        {hasPermission('CREAR ROLES') && (
           <Button
             variant="success"
             onClick={onAddRole}
@@ -30,8 +30,8 @@ function RoleActions({
           </Button>
         )}
 
-        {/* Solo mostramos botón si el usuario tiene el permiso EDIT_ROLES */}
-        {hasPermission('EDIT_ROLES') && (
+        {/* Solo mostramos botón si el usuario tiene el permiso EDITAR ROLES */}
+        {hasPermission('EDITAR ROLES') && (
           <Button
             variant="warning"
             onClick={onEditRole}
@@ -44,8 +44,8 @@ function RoleActions({
           </Button>
         )}
 
-        {/* Solo mostramos botón si el usuario tiene el permiso DELETE_ROLES */}
-        {hasPermission('DELETE_ROLES') && (
+        {/* Solo mostramos botón si el usuario tiene el permiso ELIMINAR ROLES */}
+        {hasPermission('ELIMINAR ROLES') && (
           <Button
             variant="danger"
             onClick={onDeleteRole}

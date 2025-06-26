@@ -112,7 +112,7 @@ function UsuarioCarreraTable({
                       onClick={(e) => {
                         e.stopPropagation();
                         console.log(
-                          '[UsuarioCarreraTable] Clic en "Ver Carreras" para userId:',
+                          '[UsuarioCarreraTable] Clic en "VER CARRERAS" para userId:',
                           userIdNum
                         ); // userIdNum es el ID del usuario de esa fila
                         console.log(
@@ -127,7 +127,7 @@ function UsuarioCarreraTable({
                           );
                         }
                       }}
-                      title="Ver carreras asociadas"
+                      title="VER CARRERAS asociadas"
                       disabled={processing}
                     >
                       <i className="bi bi-eye-fill"></i> Ver (

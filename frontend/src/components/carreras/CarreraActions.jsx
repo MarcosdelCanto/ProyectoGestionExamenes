@@ -76,7 +76,7 @@ function CarreraActions({
         >
           <i className="bi bi-upload"></i>
           <span className="btn-responsive-text ms-2">
-            Actualizar Carreras (Plan Estudio)
+            ACTUALIZAR CARRERAS (Plan Estudio)
           </span>
         </Button>
 

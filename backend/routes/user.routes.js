@@ -18,7 +18,7 @@ const router = Router();
 router.get(
   '/profile',
   authMiddleware,
-  checkPermission(['VIEW_USUARIOS']),
+  checkPermission(['VER USUARIOS']),
   getProfile
 ); // CAMBIO: Usar authMiddleware
 
@@ -26,7 +26,7 @@ router.get(
 router.post(
   '/import',
   authMiddleware,
-  checkPermission(['CREATE_USUARIOS']),
+  checkPermission(['CREAR USUARIOS']),
   importUsuarios
 ); // CAMBIO: Usar authMiddleware
 
@@ -35,23 +35,18 @@ router.post(
 router.get(
   '/docentes',
   authMiddleware,
-  checkPermission(['VIEW_USUARIOS']),
+  checkPermission(['VER USUARIOS']),
   getDocentes
 ); // CAMBIO: Usar authMiddleware
 
 // GET /api/usuarios
-router.get(
-  '/',
-  authMiddleware,
-  checkPermission(['VIEW_USUARIOS']),
-  getUsuarios
-); // CAMBIO: Usar authMiddleware
+router.get('/', authMiddleware, checkPermission(['VER USUARIOS']), getUsuarios); // CAMBIO: Usar authMiddleware
 
 // NUEVA RUTA PROTEGIDA PARA BÚSQUEDA
 router.get(
   '/docentes/search',
   authMiddleware,
-  checkPermission(['VIEW_USUARIOS']),
+  checkPermission(['VER USUARIOS']),
   searchDocentes
 ); // CAMBIO: Usar authMiddleware
 
@@ -60,7 +55,7 @@ router.get(
 router.delete(
   '/:id',
   authMiddleware,
-  checkPermission(['DELETE_USUARIOS']),
+  checkPermission(['ELIMINAR USUARIOS']),
   deleteUser
 ); // CAMBIO: Usar authMiddleware
 
@@ -69,7 +64,7 @@ router.delete(
 router.post(
   '/bulk-delete',
   authMiddleware,
-  checkPermission(['DELETE_USUARIOS']),
+  checkPermission(['ELIMINAR USUARIOS']),
   deleteMultipleUsers
 ); // CAMBIO: Usar authMiddleware
 // --- FIN NUEVA RUTA ---

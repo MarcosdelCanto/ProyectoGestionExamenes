@@ -10,10 +10,10 @@ export const authMiddleware = (req, res, next) => {
     const token = authHeader.split(' ')[1];
     const userPayload = verifyAccessToken(token);
     req.user = userPayload;
-    console.log(
-      '[authMiddleware] Payload del token asignado a req.user:',
-      req.user
-    ); // <--- AÑADE ESTO
+    //console.log(
+    //  '[authMiddleware] Payload del token asignado a req.user:',
+    //  req.user
+    //); // <--- AÑADE ESTO
     next();
   } catch (err) {
     console.error('Error en authMiddleware:', err);

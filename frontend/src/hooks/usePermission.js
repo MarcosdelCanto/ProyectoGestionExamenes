@@ -110,7 +110,7 @@ export function usePermission() {
 
   /**
    * Verifica si el usuario actual tiene un permiso específico.
-   * @param {string} permissionName - El nombre del permiso a verificar (ej. 'VIEW_USUARIOS').
+   * @param {string} permissionName - El nombre del permiso a verificar (ej. 'VER USUARIOS').
    * @returns {boolean} - True si el usuario tiene el permiso, false en caso contrario.
    */
   const hasPermission = useCallback(
@@ -173,7 +173,7 @@ export function usePermission() {
 
   // Funciones helper para verificar acciones comunes sobre recursos (ej. 'USUARIOS', 'CARRERAS')
   // Estas funciones construyen el nombre del permiso en el formato "ACCIÓN_RECURSO_EN_MAYÚSCULAS"
-  // para que coincida con tus permisos de backend (ej. 'VIEW_CARRERAS', 'CREATE_USUARIOS').
+  // para que coincida con tus permisos de backend (ej. 'VER CARRERAS', 'CREAR USUARIOS').
   const canView = useCallback(
     (resource) => hasPermission(`VIEW_${resource.toUpperCase()}`),
     [hasPermission]

@@ -18,7 +18,7 @@ const router = Router();
 router.get(
   '/examenes/disponibles',
   authMiddleware,
-  checkPermission(['CREATE_RESERVAS_EXAMEN']),
+  checkPermission(['CREAR RESERVA EXAMEN']),
   getAvailableExamsForUser
 );
 
@@ -28,34 +28,34 @@ router.get('/para-selector', authMiddleware, getAllExamenesForSelect); // Para e
 router.get(
   '/',
   authMiddleware,
-  checkPermission(['CREATE_RESERVAS_EXAMEN']), // ID_PERMISO: 33
+  checkPermission(['CREAR RESERVA EXAMEN']), // ID_PERMISO: 33
   getAllExamenes
 );
 
 router.post(
   '/',
   authMiddleware,
-  checkPermission(['CREATE_EXAMENES']), // ID_PERMISO: 46
+  checkPermission(['CREAR EXAMENES']), // ID_PERMISO: 46
   createExamen
 );
 
 router.get(
   '/:id',
   authMiddleware,
-  checkPermission(['VIEW_EXAMENES']), // Usualmente, si puedes ver la lista, puedes ver el detalle. O crea 'VIEW_EXAMEN_DETAIL'.
+  checkPermission(['VER EXAMENES']), // Usualmente, si puedes ver la lista, puedes ver el detalle. O crea 'VIEW_EXAMEN_DETAIL'.
   getExamenById
 );
 
 router.put(
   '/:id',
   authMiddleware,
-  checkPermission(['EDIT_EXAMENES']), // ID_PERMISO: 47
+  checkPermission(['EDITAR EXAMENES']), // ID_PERMISO: 47
   updateExamen
 );
 router.delete(
   '/:id',
   authMiddleware,
-  checkPermission(['DELETE_EXAMENES']), // ID_PERMISO: 48
+  checkPermission(['ELIMINAR EXAMENES']), // ID_PERMISO: 48
   deleteExamen
 );
 

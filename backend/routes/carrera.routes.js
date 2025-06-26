@@ -18,31 +18,31 @@ const router = Router();
 router.get(
   '/',
   authMiddleware,
-  checkPermission('VIEW_CARRERAS'),
+  checkPermission('VER CARRERAS'),
   getAllCarreras
 );
 router.get(
   '/:id',
   authMiddleware,
-  checkPermission('VIEW_CARRERAS'),
+  checkPermission('VER CARRERAS'),
   getCarreraById
 );
 router.post(
   '/',
   authMiddleware,
-  checkPermission('CREATE_CARRERAS'),
+  checkPermission('CREAR CARRERAS'),
   createCarrera
 );
 router.put(
   '/:id',
   authMiddleware,
-  checkPermission('UPDATE_CARRERAS'),
+  checkPermission('ACTUALIZAR CARRERAS'),
   updateCarrera
 );
 router.delete(
   '/:id',
   authMiddleware,
-  checkPermission('DELETE_CARRERAS'),
+  checkPermission('ELIMINAR CARRERAS'),
   deleteCarrera
 );
 
@@ -50,7 +50,7 @@ router.delete(
 router.get(
   '/escuela/:escuelaId',
   authMiddleware,
-  checkPermission('VIEW_CARRERAS'),
+  checkPermission('VER CARRERAS'),
   getCarrerasByEscuela
 );
 // --- FIN NUEVA RUTA ---
@@ -59,7 +59,7 @@ router.get(
 router.post(
   '/bulk-update-plans',
   authMiddleware,
-  checkPermission('UPDATE_CARRERAS'),
+  checkPermission('ACTUALIZAR CARRERAS'),
   updateCarrerasFromPlanEstudio
 ); // Asumo permiso 'editar_carreras'
 // --- FIN RUTA existente ---

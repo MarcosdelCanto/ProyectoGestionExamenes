@@ -291,3 +291,74 @@ button:focus-visible {
   vertical-align: middle;
   font-size: 0.9em; /* Iconos ligeramente más pequeños si es necesario */
 }
+
+/* frontend/src/index.css o tu archivo CSS general */
+
+/* Contenedor principal de los permisos */
+.permissions-container {
+  /* Mantener el border y rounded de Bootstrap */
+  /* El p-2 del JSX da el padding interno */
+  max-height: 400px; /* Limita la altura para que aparezca scroll si hay muchos permisos */
+  overflow-y: auto; /* Habilita el scroll vertical */
+}
+
+/* Fila de cada grupo de permisos (ej. "Asignaturas" y sus checkboxes) */
+.permission-group-row {
+  display: flex; /* Asegura el flexbox */
+  align-items: flex-start; /* Alinea los elementos al inicio (arriba) */
+  margin-bottom: 1rem; /* Espacio entre cada grupo */
+  padding-bottom: 0.75rem; /* Relleno debajo de la línea */
+}
+
+/* Línea divisora sutil entre grupos */
+.group-separator-line {
+  border-bottom: 1px solid #dee2e6; /* Línea gris clara de Bootstrap */
+}
+
+/* Opcional: Eliminar la línea divisora del último grupo */
+.permissions-container .permission-group-row:last-child {
+  border-bottom: none;
+  margin-bottom: 0;
+  padding-bottom: 0;
+}
+
+/* Columna del nombre del grupo y checkbox "seleccionar todo" */
+.group-name-col {
+  flex-shrink: 0; /* Evita que esta columna se encoja */
+  width: 160px; /* Ancho fijo o ajustable para el nombre del grupo */
+  /* md={4} de Bootstrap ya da un ancho, pero flex-shrink y width dan más control */
+  padding-right: 1rem; /* Espacio entre el nombre del grupo y los permisos individuales */
+  white-space: nowrap; /* Evita que el nombre del grupo se rompa en varias líneas */
+}
+
+/* Estilo para el checkbox del grupo (el que tiene el nombre del grupo al lado) */
+.group-name-col .form-check-input {
+  margin-top: 0.25rem; /* Alinea el checkbox mejor con el texto */
+}
+
+/* Contenedor de los checkboxes de permisos individuales */
+.individual-permissions-col {
+  flex-grow: 1; /* Permite que esta columna ocupe el resto del espacio */
+}
+
+/* Estilos para cada checkbox individual de permiso */
+.individual-permission-check .form-check-label {
+  white-space: normal; /* Permite que el texto se envuelva */
+  word-break: break-word; /* Asegura que palabras muy largas se rompan si no hay espacios */
+  font-size: 0.875rem; /* Ajusta el tamaño de fuente si es necesario */
+  line-height: 1.2; /* Espaciado entre líneas para texto envuelto */
+  margin-left: 0.25rem; /* Pequeño margen entre el checkbox y el texto */
+  padding-left: 0; /* Asegurar que no haya padding extra del label */
+}
+
+/* Ajuste del checkbox para que se alinee mejor con el texto cuando el label se envuelve */
+.individual-permission-check .form-check-input {
+  margin-top: 0.25rem; /* Ajusta esto si el texto del label está más alto */
+}
+
+/* Ajuste de tooltips */
+.tooltip-inner {
+  max-width: 280px; /* Aumenta el ancho máximo para tooltips largos */
+  text-align: left; /* Asegura que el texto del tooltip no se justifique */
+  font-size: 0.85rem; /* Tamaño de fuente para el tooltip */
+}

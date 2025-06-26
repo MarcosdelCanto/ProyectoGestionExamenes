@@ -80,9 +80,9 @@ const emitReservaActualizada = async (io, reservaIdNum) => {
       );
       reserva.MODULOS = modulosResult.rows;
       io.emit('reservaActualizadaDesdeServidor', reserva);
-      console.log(
-        `[Socket.IO] Evento 'reservaActualizadaDesdeServidor' emitido para reserva #${reservaIdNum}.`
-      );
+      //console.log(
+      //  `[Socket.IO] Evento 'reservaActualizadaDesdeServidor' emitido para reserva #${reservaIdNum}.`
+      //);
     }
   } catch (err) {
     console.error(
@@ -209,9 +209,9 @@ async function startServer() {
 
           // Notificar a todos los clientes que la reserva fue eliminada
           io.emit('reservaEliminadaDesdeServidor', { id_reserva });
-          console.log(
-            `[Socket.IO] Evento 'reservaEliminadaDesdeServidor' emitido para reserva #${id_reserva}.`
-          );
+          //console.log(
+          //  `[Socket.IO] Evento 'reservaEliminadaDesdeServidor' emitido para reserva #${id_reserva}.`
+          //);
         } catch (err) {
           console.error(
             `[Socket] Error cancelando reserva #${id_reserva}:`,

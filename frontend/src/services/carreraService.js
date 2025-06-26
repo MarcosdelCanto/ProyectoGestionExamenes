@@ -110,7 +110,7 @@ export const fetchCarrerasByEscuela = async (escuelaId) => {
 };
 
 /**
- * Envía los datos JSON procesados del archivo al backend para actualizar carreras y sus planes de estudio.
+ * Envía los datos JSON procesados del archivo al backend para ACTUALIZAR CARRERAS y sus planes de estudio.
  * @param {Array<Object>} datos - Array de objetos con 'Identificador Carrera Actual', 'Nuevo Nombre Carrera', 'Planes de Estudio'.
  * @returns {Promise<Object>}
  */
