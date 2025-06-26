@@ -1,0 +1,44 @@
+{
+  "name": "e2e-tests",
+  "version": "1.0.0",
+  "description": "Pruebas de extremo a extremo para el sistema de gestión de exámenes",
+  "main": "index.js",
+  "type": "module",
+  "scripts": {
+    "test": "playwright test && npm run test:summary",
+    "test:headed": "playwright test --headed && npm run test:summary",
+    "test:debug": "playwright test --debug",
+    "test:ui": "playwright test --ui",
+    "test:codegen": "playwright codegen http://localhost:5174",
+    "test:report": "playwright show-report",
+    "test:open": "node open-report.js",
+    "test:summary": "node show-summary.js",
+    "test:with-media": "playwright test --config=playwright.config.media.js --project=chromium && npm run test:summary",
+    "test:screenshots": "playwright test tests/smoke.spec.js --config=playwright.config.media.js --project=chromium && npm run test:summary",
+    "test:videos": "playwright test tests/auth.spec.js --config=playwright.config.media.js --project=chromium && npm run test:summary",
+    "test:traces": "playwright test --config=playwright.config.media.js --project=chromium && npm run test:summary",
+    "test:demo": "playwright test tests/smoke.spec.js --config=playwright.config.media.js --project=chromium",
+    "test:generate-media": "node generate-media.js",
+    "test:install": "playwright install",
+    "test:docker": "docker-compose -f ../docker-compose.yml -f docker-compose.e2e.yml up --abort-on-container-exit",
+    "test:ci": "playwright test --reporter=github",
+    "test:smoke": "playwright test tests/smoke.spec.js --project=chromium && npm run test:summary",
+    "test:auth": "playwright test tests/auth.spec.js --project=chromium && npm run test:summary",
+    "test:examenes": "playwright test tests/examenes.spec.js --project=chromium && npm run test:summary",
+    "test:ui-only": "playwright test tests/navegacion.spec.js --project=chromium && npm run test:summary",
+    "test:mobile": "playwright test --project=\"Mobile Chrome\" --project=\"Mobile Safari\" && npm run test:summary",
+    "test:all-browsers": "playwright test --project=chromium --project=firefox --project=webkit && npm run test:summary"
+  },
+  "keywords": [
+    "e2e",
+    "testing",
+    "playwright",
+    "automation"
+  ],
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {
+    "@playwright/test": "^1.48.0",
+    "dotenv": "^16.5.0"
+  }
+}

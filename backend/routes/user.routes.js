@@ -4,6 +4,7 @@ import { authMiddleware } from '../middlewares/auth.middleware.js'; // CAMBIO: I
 import { checkPermission } from '../middlewares/permission.middleware.js';
 import {
   getProfile,
+  getMyPermissions,
   importUsuarios,
   getUsuarios,
   getDocentes,
@@ -15,12 +16,10 @@ import {
 const router = Router();
 
 // GET /api/usuarios/profile
-router.get(
-  '/profile',
-  authMiddleware,
-  checkPermission(['VER USUARIOS']),
-  getProfile
-); // CAMBIO: Usar authMiddleware
+router.get('/profile', authMiddleware, getProfile); // CAMBIO: Usar authMiddleware - No requiere permiso especial para ver su propio perfil
+
+// GET /api/usuarios/my-permissions
+router.get('/my-permissions', authMiddleware, getMyPermissions); // Obtener los permisos del usuario actual - no necesita checkPermission ya que es para el propio usuario
 
 // POST /api/usuarios/import
 router.post(

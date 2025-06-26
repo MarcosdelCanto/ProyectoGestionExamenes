@@ -1,8 +1,8 @@
 import { useState, useEffect, useCallback } from 'react';
-// Asumimos que refreshCurrentUserPermissions actualiza localStorage y devuelve el usuario actualizado
+// Importamos funciones para gestionar el usuario y refrescar sus permisos desde el backend
 import {
   getCurrentUser, // Función para leer el usuario del localStorage
-  refreshCurrentUserPermissions, // Función para refrescar los permisos desde el backend y actualizar localStorage
+  refreshCurrentUserPermissionsImproved, // Función mejorada para refrescar los permisos desde el backend y actualizar localStorage
 } from '../services/authService';
 import { listCarrerasByUsuario } from '../services/usuarioCarreraService'; // Servicio para obtener carreras asociadas a un usuario
 
@@ -30,7 +30,7 @@ export function usePermission() {
     setLoading(true); // Inicia el estado de carga
     try {
       // Llama al servicio para actualizar los permisos del usuario en el backend y localStorage.
-      const updatedUser = await refreshCurrentUserPermissions();
+      const updatedUser = await refreshCurrentUserPermissionsImproved();
       setCurrentUser(updatedUser); // Actualiza el estado local del hook con el usuario refrescado.
       console.log('[usePermission] Datos del usuario recargados:', updatedUser);
     } catch (error) {
@@ -122,7 +122,7 @@ export function usePermission() {
 
       // El administrador (o cualquier rol con control total) siempre tiene todos los permisos.
       // Se asume 'ADMINISTRADOR' es el nombre del rol con todos los privilegios.
-      if (currentUser.NOMBRE_ROL === 'ADMINISTRADOR') {
+      if (currentUser.nombre_rol === 'ADMINISTRADOR') {
         return true;
       }
 
@@ -151,7 +151,7 @@ export function usePermission() {
       }
 
       // El administrador siempre tiene permiso sobre todas las carreras.
-      if (currentUser.NOMBRE_ROL === 'ADMINISTRADOR') {
+      if (currentUser.nombre_rol === 'ADMINISTRADOR') {
         return true;
       }
 
@@ -172,22 +172,22 @@ export function usePermission() {
   ); // Depende de loading y currentUser para reevaluarse.
 
   // Funciones helper para verificar acciones comunes sobre recursos (ej. 'USUARIOS', 'CARRERAS')
-  // Estas funciones construyen el nombre del permiso en el formato "ACCIÓN_RECURSO_EN_MAYÚSCULAS"
+  // Estas funciones construyen el nombre del permiso en el formato usado en el backend
   // para que coincida con tus permisos de backend (ej. 'VER CARRERAS', 'CREAR USUARIOS').
   const canView = useCallback(
-    (resource) => hasPermission(`VIEW_${resource.toUpperCase()}`),
+    (resource) => hasPermission(`VER ${resource.toUpperCase()}`),
     [hasPermission]
   );
   const canCreate = useCallback(
-    (resource) => hasPermission(`CREATE_${resource.toUpperCase()}`),
+    (resource) => hasPermission(`CREAR ${resource.toUpperCase()}`),
     [hasPermission]
   );
   const canEdit = useCallback(
-    (resource) => hasPermission(`EDIT_${resource.toUpperCase()}`),
+    (resource) => hasPermission(`EDITAR ${resource.toUpperCase()}`),
     [hasPermission]
   );
   const canDelete = useCallback(
-    (resource) => hasPermission(`DELETE_${resource.toUpperCase()}`),
+    (resource) => hasPermission(`ELIMINAR ${resource.toUpperCase()}`),
     [hasPermission]
   );
 

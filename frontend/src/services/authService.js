@@ -91,21 +91,53 @@ export function getCurrentUser() {
   return { isAuthenticated: false, rol: null, permisos: [] };
 }
 
-export async function refreshCurrentUserPermissions() {
+// Función para obtener los permisos del usuario actual directamente desde el endpoint específico
+export async function fetchMyPermissions() {
+  try {
+    const response = await fetch(`${baseURL}/usuarios/my-permissions`, {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${getAccessToken()}`,
+      },
+    });
+
+    if (response.ok) {
+      const permisos = await response.json();
+      console.log(
+        '[AuthService] Permisos del usuario actual obtenidos:',
+        permisos
+      );
+      return permisos;
+    } else {
+      console.error(
+        '[AuthService] Error al obtener permisos del usuario actual:',
+        response.status
+      );
+      return [];
+    }
+  } catch (error) {
+    console.error('[AuthService] Error en fetchMyPermissions:', error);
+    return [];
+  }
+}
+
+// Función mejorada para refrescar permisos usando el endpoint específico
+export async function refreshCurrentUserPermissionsImproved() {
   const currentUserData = getCurrentUser();
 
-  if (currentUserData.isAuthenticated && currentUserData.rol_id_rol) {
+  if (currentUserData.isAuthenticated && currentUserData.id_usuario) {
     try {
-      // Obtenemos tanto permisos como carreras en paralelo
+      // Usamos el nuevo endpoint para obtener permisos del usuario actual
       const [permisos, carreras] = await Promise.all([
-        fetchPermisosByRol(currentUserData.rol_id_rol),
-        listCarrerasByUsuario(currentUserData.id_usuario), // Usamos id_usuario en minúsculas
+        fetchMyPermissions(), // Usar el nuevo endpoint específico
+        listCarrerasByUsuario(currentUserData.id_usuario),
       ]);
 
       const updatedUser = {
         ...currentUserData,
         permisos: permisos || [],
-        carrerasAsociadas: carreras || [], // Actualizamos también las carreras
+        carrerasAsociadas: carreras || [],
       };
 
       localStorage.setItem('user', JSON.stringify(updatedUser));

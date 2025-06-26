@@ -10,6 +10,7 @@ Proyecto web para la gestión y planificación de exámenes, considerando la dis
 planificador-examenes/
 ├── frontend/    → Aplicación web con React + Vite
 ├── backend/     → API REST con Node.js + Express
+├── e2e/         → Pruebas de extremo a extremo con Playwright
 └── .vscode/     → Configuraciones compartidas del equipo
 ```
 
@@ -22,6 +23,8 @@ planificador-examenes/
 | Frontend             | React, Vite                     |
 | Backend              | Node.js, Express                |
 | Base de datos        | Oracle (conexión en desarrollo) |
+| Testing E2E          | Playwright                      |
+| Testing Unitario     | Vitest                          |
 | Estilo de código     | ESLint, Prettier                |
 | Control de versiones | Git, GitHub                     |
 | Editor recomendado   | Visual Studio Code, Trae        |
@@ -67,6 +70,28 @@ touch .env
 node index.js
 ```
 
+#### Pruebas E2E (Extremo a Extremo)
+
+```bash
+cd e2e
+npm install
+npm run test:install  # Instala navegadores de Playwright
+cp .env.example .env  # Configura variables de prueba
+
+# Ejecutar pruebas (requiere que la app esté corriendo)
+npm test
+```
+
+#### Docker (Recomendado)
+
+```bash
+# Ejecutar toda la aplicación
+docker-compose up
+
+# Ejecutar con pruebas E2E
+docker-compose -f docker-compose.yml -f e2e/docker-compose.e2e.yml up
+```
+
 ---
 
 ## 🔧 Configuración de entorno de desarrollo
@@ -85,7 +110,53 @@ node index.js
 - ✅ Simulación de conexión a base de datos lista
 - ✅ ESLint + Prettier integrados
 - ✅ Extensiones VSCode compartidas
+- ✅ Pruebas unitarias con Vitest (frontend/backend)
+- ✅ Pruebas de integración implementadas
+- ✅ **Pruebas E2E con Playwright configuradas**
 - 🟡 Base de datos Oracle: pendiente de conexión
+
+---
+
+## 🧪 Testing Strategy
+
+El proyecto implementa una estrategia de testing completa:
+
+### 1. **Pruebas Unitarias** (Vitest)
+
+- Frontend: Componentes React
+- Backend: Controladores y middlewares
+
+### 2. **Pruebas de Integración** (Vitest + Supertest)
+
+- APIs endpoints
+- Flujos de datos entre servicios
+
+### 3. **Pruebas E2E** (Playwright) ⭐ **NUEVO**
+
+- Flujos completos de usuario
+- Multi-navegador (Chrome, Firefox, Safari)
+- Responsive testing
+- Smoke tests automáticos
+
+#### Comandos de Testing
+
+```bash
+# Frontend
+cd frontend
+npm test              # Unitarias
+npm run test:coverage # Con coverage
+
+# Backend
+cd backend
+npm test              # Unitarias
+npm run test:integration # Integración
+
+# E2E
+cd e2e
+npm test              # Todas las pruebas E2E
+npm run test:ui       # Con interfaz visual
+npm run test:debug    # Modo debug
+```
 
 ---
 

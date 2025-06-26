@@ -1,0 +1,21 @@
+FROM mcr.microsoft.com/playwright:v1.48.0-focal
+
+WORKDIR /app
+
+# Copiar archivos de configuración
+COPY package*.json ./
+COPY playwright.config.js ./
+
+# Instalar dependencias
+RUN npm ci
+
+# Copiar código de pruebas
+COPY tests/ ./tests/
+COPY utils/ ./utils/
+COPY .env* ./
+
+# Crear directorio para resultados
+RUN mkdir -p test-results playwright-report
+
+# Comando por defecto
+CMD ["npm", "test"]

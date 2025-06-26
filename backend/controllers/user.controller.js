@@ -82,13 +82,11 @@ export const deleteUser = async (req, res) => {
       }
     }
     console.error('Error al eliminar usuario y sus asociaciones:', err);
-    res
-      .status(500)
-      .json({
-        error:
-          'Error interno del servidor al eliminar usuario y sus asociaciones.',
-        details: err.message,
-      });
+    res.status(500).json({
+      error:
+        'Error interno del servidor al eliminar usuario y sus asociaciones.',
+      details: err.message,
+    });
   } finally {
     if (conn) {
       try {
@@ -114,12 +112,10 @@ export const deleteMultipleUsers = async (req, res) => {
   let failedDeletions = [];
 
   if (!Array.isArray(ids) || ids.length === 0) {
-    return res
-      .status(400)
-      .json({
-        error:
-          'Se requiere un array de IDs de usuario para la eliminación masiva.',
-      });
+    return res.status(400).json({
+      error:
+        'Se requiere un array de IDs de usuario para la eliminación masiva.',
+    });
   }
 
   try {
@@ -511,6 +507,39 @@ export const searchDocentes = async (req, res) => {
         await connection.close();
       } catch (err) {
         console.error('Error closing connection for searchDocentes', err);
+      }
+    }
+  }
+};
+
+export const getMyPermissions = async (req, res) => {
+  const { rol_id_rol } = req.user; // viene del authMiddleware
+
+  let conn;
+  try {
+    conn = await getConnection();
+    const result = await conn.execute(
+      `SELECT P.ID_PERMISO, P.NOMBRE_PERMISO, P.DESCRIPCION_PERMISO, P.GRUPO_PERMISO
+       FROM ADMIN.PERMISOS P
+       JOIN ADMIN.PERMISOSROL PR ON P.ID_PERMISO = PR.ID_PERMISO
+       WHERE PR.ID_ROL = :rolId
+       ORDER BY P.GRUPO_PERMISO, P.NOMBRE_PERMISO`,
+      { rolId: rol_id_rol },
+      { outFormat: oracledb.OUT_FORMAT_OBJECT }
+    );
+
+    return res.json(result.rows);
+  } catch (err) {
+    console.error('Error en getMyPermissions:', err);
+    return res
+      .status(500)
+      .json({ error: 'Error al obtener permisos del usuario.' });
+  } finally {
+    if (conn) {
+      try {
+        await conn.close();
+      } catch (e) {
+        console.error('Error cerrando conexión en getMyPermissions:', e);
       }
     }
   }

@@ -1,0 +1,41 @@
+version: "3.8"
+
+services:
+  # Servicio específico para pruebas E2E
+  e2e-tests:
+    build:
+      context: ./e2e
+      dockerfile: Dockerfile.e2e
+    depends_on:
+      - backend
+      - frontend
+    environment:
+      - E2E_BASE_URL=http://frontend:80
+      - API_BASE_URL=http://backend:3000
+      - CI=true
+    volumes:
+      - ./e2e/test-results:/app/test-results
+      - ./e2e/playwright-report:/app/playwright-report
+    networks:
+      - app-network
+    command: ["npm", "test"]
+
+  # Base de datos de prueba (si necesitas datos específicos)
+  test-db:
+    image: oracle/database:19.3.0-ee
+    environment:
+      - ORACLE_PWD=TestPassword123
+      - ORACLE_CHARACTERSET=AL32UTF8
+    ports:
+      - "1522:1521"
+    volumes:
+      - test-db-data:/opt/oracle/oradata
+    networks:
+      - app-network
+
+volumes:
+  test-db-data:
+
+networks:
+  app-network:
+    external: true
