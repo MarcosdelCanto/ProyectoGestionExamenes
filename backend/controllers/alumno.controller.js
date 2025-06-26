@@ -16,12 +16,10 @@ export const getMisReservas = async (req, res) => {
     const ROL_ID_ALUMNO = 3; // Confirmamos que es un alumno
 
     if (req.user.rol_id_rol !== ROL_ID_ALUMNO) {
-      return handleError(
-        res,
-        null,
-        'Acceso denegado. Funcionalidad solo para alumnos.',
-        403
-      );
+      return res.status(403).json({
+        error: 'Acceso denegado. Funcionalidad solo para alumnos.',
+        details: null,
+      });
     }
 
     connection = await getConnection();
