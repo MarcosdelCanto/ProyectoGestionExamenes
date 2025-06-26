@@ -81,7 +81,12 @@ export default function UsuarioForm({
       alert('La contraseña es requerida para nuevos usuarios.');
       return;
     }
-    onSave({ nombre, email, rolId, password: password.trim() || undefined });
+    onSave({
+      nombre_usuario: nombre,
+      email_usuario: email,
+      rol_id_rol: rolId,
+      password_usuario: password.trim() || undefined,
+    });
   };
 
   return (

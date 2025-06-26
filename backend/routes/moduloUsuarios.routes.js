@@ -20,6 +20,6 @@ router.get('/roles', listRoles);
 router.post('/', createUsuario);
 router.put('/:id_usuario', updateUsuario);
 router.delete('/:id_usuario', deleteUsuario);
-router.put('/:id_usuario', resetPassword);
+router.put('/:id_usuario/password', resetPassword); // Ruta específica para resetear contraseña
 
 export default router;

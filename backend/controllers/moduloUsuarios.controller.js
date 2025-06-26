@@ -1,6 +1,6 @@
 import { getConnection } from '../db.js';
 import bcrypt from 'bcrypt';
-import crypto from 'crypto';
+import crypto from 'crypto'; // Necesario para resetPassword
 
 //lista todos los roles
 export const listRoles = async (req, res, next) => {
@@ -44,9 +44,15 @@ export const listUsuarios = async (req, res, next) => {
 // funcion para crear un nuevo usuario
 export const createUsuario = async (req, res, next) => {
   try {
-    const { nombre_usuario, email_usuario, rol_id_rol } = req.body;
-    const plainPassword = crypto.randomBytes(8).toString('hex');
-    const hashedPassword = await bcrypt.hash(plainPassword, 10);
+    const { nombre_usuario, email_usuario, rol_id_rol, password_usuario } =
+      req.body;
+
+    // Validar que se proporcione una contraseña
+    if (!password_usuario || !password_usuario.trim()) {
+      return res.status(400).json({ message: 'La contraseña es requerida' });
+    }
+
+    const hashedPassword = await bcrypt.hash(password_usuario, 10);
 
     const conn = await getConnection();
     await conn.execute(
@@ -62,7 +68,6 @@ export const createUsuario = async (req, res, next) => {
 
     res.status(201).json({
       message: 'Usuario creado correctamente',
-      password: plainPassword,
     });
   } catch (error) {
     if (error.errorNum === 1) {
