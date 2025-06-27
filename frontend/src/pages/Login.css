@@ -3,18 +3,56 @@
   justify-content: center;
   align-items: center;
   height: 100vh;
-  width: 100vw; /* 👈 importante: ancho completo */
+  width: 100vw;
   margin: 0;
   padding: 0;
-  background-color: #f8f9fa;
+  background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 50%, #dee2e6 100%);
   box-sizing: border-box;
   overflow: hidden;
 }
+
 .logo-duoc {
-  width: 100px;
-  height: auto;
+  height: 60px;
+  width: auto;
   margin-bottom: 20px;
 }
+
+.login-card {
+  min-width: 400px !important;
+  max-width: 450px !important;
+  width: 100% !important;
+  border: none;
+  border-radius: 15px;
+  background: rgba(255, 255, 255, 0.98);
+  backdrop-filter: blur(10px);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+}
+
+.form-control:focus {
+  border-color: #003d7a;
+  box-shadow: 0 0 0 0.2rem rgba(0, 61, 122, 0.25);
+}
+
+.btn-primary {
+  background-color: #003d7a;
+  border-color: #003d7a;
+  padding: 12px;
+  font-weight: 500;
+  transition: all 0.3s ease;
+}
+
+.btn-primary:hover {
+  background-color: #002a54;
+  border-color: #002a54;
+  transform: translateY(-1px);
+}
+
+.btn-primary:disabled {
+  background-color: #6c757d;
+  border-color: #6c757d;
+  transform: none;
+}
+
 .password-toggle-btn {
   /* Hereda el padding y line-height de .btn de Bootstrap */
   box-shadow: none !important; /* Quitar sombra de foco del botón mismo */
@@ -28,8 +66,3 @@
   border-left: none; /* Sin borde izquierdo para unirse al input */
 }
 /* Estilos de foco: cuando el input tiene foco, el borde del botón también cambia */
-
-.login-card {
-  max-width: 400px;
-  width: 100%;
-}

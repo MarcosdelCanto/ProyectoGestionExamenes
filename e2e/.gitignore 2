@@ -1,0 +1,45 @@
+# Archivos de configuración
+.env
+.env.local
+.env.test
+
+# Resultados de pruebas
+test-results/
+playwright-report/
+test-results.xml
+results.json
+
+# Screenshots y videos
+screenshots/
+videos/
+traces/
+
+# Dependencias
+node_modules/
+package-lock.json
+yarn.lock
+
+# Logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# OS generated files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Temporary files
+*.tmp
+*.temp

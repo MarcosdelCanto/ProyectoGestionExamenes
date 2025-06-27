@@ -12,6 +12,8 @@ import 'react-toastify/dist/ReactToastify.css'; // <-- IMPORTAR ESTILOS CSS
 
 // Tus Páginas
 import Login from './pages/Login';
+import ForgotPassword from './pages/ForgotPassword';
+import ResetPassword from './pages/ResetPassword';
 import HomePage from './pages/HomePage';
 import ModulosPage from './pages/ModulosPage';
 import UsuariosPage from './pages/UsuariosPage';
@@ -44,6 +46,8 @@ function App() {
         <Routes>
           {/* Ruta pública de login */}
           <Route path="/login" element={<Login />} />
+          <Route path="/forgot-password" element={<ForgotPassword />} />
+          <Route path="/reset-password" element={<ResetPassword />} />
           <Route path="/consulta-examenes" element={<ConsultaExamenes />} />
 
           {/* Página de acceso no autorizado */}

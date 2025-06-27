@@ -2,8 +2,23 @@
 import oracledb from 'oracledb';
 import { getConnection } from '../db.js';
 import bcrypt from 'bcrypt';
-import crypto from 'crypto';
-import nodemailer from 'nodemailer';
+import crypto from 'cr      html: `
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; background-color: #ffffff;">
+          <div style="text-align: center; margin-bottom: 30px; background-color: #003d7a; padding: 20px; border-radius: 10px;">
+            <img src="https://www.duoc.cl/wp-content/uploads/2023/02/duoc-uc-logo.png" 
+                 alt="Duoc UC" 
+                 style="max-width: 200px; height: auto; display: block; margin: 0 auto;"
+                 width="200">
+            <div style="color: white; font-size: 18px; font-weight: bold; margin-top: 10px;">
+              Sistema de Gestión de Exámenes Transversales
+            </div>
+          </div>
+
+          <h2 style="color: #003d7a; text-align: center; margin-bottom: 30px;">Recuperación de Contraseña</h2>
+
+          <p style="font-size: 16px; line-height: 1.6;">Hola <strong>${usuario.NOMBRE_USUARIO}</strong>,</p>
+
+          <p style="font-size: 16px; line-height: 1.6;">Recibimos una solicitud para restablecer la contraseña de tu cuenta en el Sistema de Gestión de Exámenes Transversales.</p>`rt nodemailer from 'nodemailer';
 import {
   generateAccessToken,
   generateRefreshToken,
@@ -67,7 +82,7 @@ export const login = async (req, res) => {
     // Generar tokens
     const payload = {
       id_usuario: ID_USUARIO,
-      nombre_usuario: NOMBRE_USUARIO, // <-- AÑADIR NOMBRE DE USUARIO AL PAYLOAD
+      nombre_usuario: NOMBRE_USUARIO,
       rol_id_rol: ROL_ID_ROL,
       nombre_rol: NOMBRE_ROL,
     };
@@ -84,12 +99,12 @@ export const login = async (req, res) => {
       refreshToken,
       usuario: {
         id_usuario: ID_USUARIO,
-        nombre_usuario: NOMBRE_USUARIO, // <-- AÑADIR NOMBRE DE USUARIO A LA RESPUESTA
+        nombre_usuario: NOMBRE_USUARIO,
         email_usuario,
-        ROL_ID_ROL, // Mantener formato original en mayúsculas
-        rol_id_rol: ROL_ID_ROL, // Añadir formato en minúsculas para compatibilidad
+        ROL_ID_ROL,
+        rol_id_rol: ROL_ID_ROL,
         nombre_rol: NOMBRE_ROL,
-        rol: NOMBRE_ROL, // Asegurar que esto sea el NOMBRE_ROL
+        rol: NOMBRE_ROL,
       },
     });
   } catch (err) {
@@ -104,34 +119,6 @@ export const login = async (req, res) => {
       }
     }
   }
-};
-
-// Opcional: manejar refresh
-export const handleRefreshToken = (req, res) => {
-  const { token } = req.body;
-  if (!token || !refreshTokens.includes(token)) {
-    return res.status(401).json({ mensaje: 'Refresh token inválido.' });
-  }
-
-  try {
-    const payload = verifyRefreshToken(token);
-    const newAccessToken = generateAccessToken({
-      id_usuario: payload.id_usuario,
-      nombre_usuario: payload.nombre_usuario, // <-- Asegurar que se propaga al refrescar
-      rol_id_rol: payload.rol_id_rol, // Mantener consistencia
-      nombre_rol: payload.nombre_rol,
-    });
-    return res.json({ accessToken: newAccessToken });
-  } catch (err) {
-    return res.status(401).json({ mensaje: 'Refresh token expirado.', err });
-  }
-};
-
-// Opcional: logout
-export const logout = (req, res) => {
-  const { token } = req.body;
-  refreshTokens = refreshTokens.filter((t) => t !== token);
-  return res.sendStatus(204);
 };
 
 // Función para solicitar recuperación de contraseña
@@ -181,63 +168,41 @@ export const forgotPassword = async (req, res) => {
     // Crear enlace de recuperación
     const resetLink = `${process.env.FRONTEND_URL || 'http://localhost:5173'}/reset-password?token=${resetToken}`;
 
-    // Configurar el email con imagen mejorada
+    // Configurar el email
     const mailOptions = {
       from: 'info@examenestransversales.cl',
       to: email_usuario,
       subject: 'Recuperación de Contraseña - Sistema de Gestión de Exámenes',
       html: `
-        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; background-color: #ffffff;">
-
-          <!-- Header con logo y fondo azul -->
-          <div style="text-align: center; margin-bottom: 30px; background-color: #003d7a; padding: 20px; border-radius: 10px;">
-            <div style="color: white; font-size: 20px; font-weight: bold; margin-bottom: 10px;">
-              DUOC UC
-            </div>
-            <div style="color: white; font-size: 16px;">
-              Sistema de Gestión de Exámenes Transversales
-            </div>
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+          <div style="text-align: center; margin-bottom: 30px;">
+            <img src="https://www.duoc.cl/wp-content/uploads/2023/02/duoc-uc-logo.png" alt="Duoc UC" style="max-width: 200px;">
           </div>
 
-          <h2 style="color: #003d7a; text-align: center; margin-bottom: 30px;">🔑 Recuperación de Contraseña</h2>
+          <h2 style="color: #003d7a; text-align: center;">Recuperación de Contraseña</h2>
 
-          <p style="font-size: 16px; line-height: 1.6;">Hola <strong>${usuario.NOMBRE_USUARIO}</strong>,</p>
+          <p>Hola <strong>${usuario.NOMBRE_USUARIO}</strong>,</p>
 
-          <p style="font-size: 16px; line-height: 1.6;">Recibimos una solicitud para restablecer la contraseña de tu cuenta en el Sistema de Gestión de Exámenes Transversales.</p>
+          <p>Recibimos una solicitud para restablecer la contraseña de tu cuenta en el Sistema de Gestión de Exámenes Transversales.</p>
 
-          <div style="text-align: center; margin: 40px 0;">
+          <div style="text-align: center; margin: 30px 0;">
             <a href="${resetLink}"
-               style="background-color: #003d7a; color: white; padding: 15px 30px;
-                      text-decoration: none; border-radius: 8px; display: inline-block;
-                      font-size: 16px; font-weight: bold;">
-              🔓 Restablecer Contraseña
+               style="background-color: #003d7a; color: white; padding: 12px 24px;
+                      text-decoration: none; border-radius: 5px; display: inline-block;">
+              Restablecer Contraseña
             </a>
           </div>
 
-          <div style="background-color: #fff3cd; border-left: 4px solid #ffc107; padding: 15px; margin: 20px 0; border-radius: 5px;">
-            <p style="margin: 0; font-size: 14px; color: #856404;">
-              <strong>⏰ Importante:</strong> Este enlace expirará en 1 hora por motivos de seguridad.
-            </p>
-          </div>
+          <p><strong>Este enlace expirará en 1 hora.</strong></p>
 
-          <p style="font-size: 14px; line-height: 1.6; color: #666;">
-            Si no solicitaste este cambio, puedes ignorar este correo. Tu contraseña no será modificada.
+          <p>Si no solicitaste este cambio, puedes ignorar este correo. Tu contraseña no será modificada.</p>
+
+          <hr style="margin: 30px 0; border: none; border-top: 1px solid #eee;">
+
+          <p style="color: #666; font-size: 12px; text-align: center;">
+            Este correo fue enviado automáticamente por el Sistema de Gestión de Exámenes Transversales.<br>
+            Administrado por examenestransversales.cl
           </p>
-
-          <p style="font-size: 14px; line-height: 1.6; color: #666;">
-            Por tu seguridad, nunca compartas este enlace con nadie.
-          </p>
-
-          <hr style="margin: 40px 0; border: none; border-top: 1px solid #eee;">
-
-          <div style="text-align: center;">
-            <p style="color: #666; font-size: 12px; margin: 0;">
-              Este correo fue enviado automáticamente por el Sistema de Gestión de Exámenes Transversales
-            </p>
-            <p style="color: #666; font-size: 12px; margin: 5px 0 0 0;">
-              Administrado por <strong>examenestransversales.cl</strong>
-            </p>
-          </div>
         </div>
       `,
     };
@@ -336,59 +301,39 @@ export const resetPassword = async (req, res) => {
     // Eliminar token usado
     resetTokens.splice(resetEntryIndex, 1);
 
-    // Enviar email de confirmación con diseño mejorado
+    // Enviar email de confirmación
     const mailOptions = {
       from: 'info@examenestransversales.cl',
       to: resetEntry.email,
       subject: 'Contraseña Actualizada - Sistema de Gestión de Exámenes',
       html: `
-        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; background-color: #ffffff;">
-
-          <!-- Header con logo y fondo verde (éxito) -->
-          <div style="text-align: center; margin-bottom: 30px; background-color: #28a745; padding: 20px; border-radius: 10px;">
-            <div style="color: white; font-size: 20px; font-weight: bold; margin-bottom: 10px;">
-              DUOC UC
-            </div>
-            <div style="color: white; font-size: 16px;">
-              Sistema de Gestión de Exámenes Transversales
-            </div>
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+          <div style="text-align: center; margin-bottom: 30px;">
+            <img src="https://www.duoc.cl/wp-content/uploads/2023/02/duoc-uc-logo.png" alt="Duoc UC" style="max-width: 200px;">
           </div>
 
-          <h2 style="color: #28a745; text-align: center; margin-bottom: 30px;">✅ Contraseña Actualizada</h2>
+          <h2 style="color: #28a745; text-align: center;">Contraseña Actualizada Exitosamente</h2>
 
-          <div style="background-color: #d4edda; border-left: 4px solid #28a745; padding: 20px; margin: 20px 0; border-radius: 5px;">
-            <p style="margin: 0; font-size: 16px; color: #155724;">
-              <strong>¡Perfecto!</strong> Tu contraseña ha sido actualizada correctamente.
-            </p>
-          </div>
+          <p>Tu contraseña ha sido actualizada correctamente en el Sistema de Gestión de Exámenes Transversales.</p>
 
-          <p style="font-size: 16px; line-height: 1.6;">Ya puedes iniciar sesión con tu nueva contraseña en el sistema.</p>
+          <p>Ya puedes iniciar sesión con tu nueva contraseña.</p>
 
-          <div style="text-align: center; margin: 40px 0;">
+          <div style="text-align: center; margin: 30px 0;">
             <a href="${process.env.FRONTEND_URL || 'http://localhost:5173'}/login"
-               style="background-color: #28a745; color: white; padding: 15px 30px;
-                      text-decoration: none; border-radius: 8px; display: inline-block;
-                      font-size: 16px; font-weight: bold;">
-              🚀 Iniciar Sesión
+               style="background-color: #28a745; color: white; padding: 12px 24px;
+                      text-decoration: none; border-radius: 5px; display: inline-block;">
+              Iniciar Sesión
             </a>
           </div>
 
-          <div style="background-color: #f8d7da; border-left: 4px solid #dc3545; padding: 15px; margin: 20px 0; border-radius: 5px;">
-            <p style="margin: 0; font-size: 14px; color: #721c24;">
-              <strong>⚠️ Importante:</strong> Si no realizaste este cambio, contacta inmediatamente al administrador del sistema.
-            </p>
-          </div>
+          <p style="color: #dc3545;"><strong>Si no realizaste este cambio, contacta inmediatamente al administrador del sistema.</strong></p>
 
-          <hr style="margin: 40px 0; border: none; border-top: 1px solid #eee;">
+          <hr style="margin: 30px 0; border: none; border-top: 1px solid #eee;">
 
-          <div style="text-align: center;">
-            <p style="color: #666; font-size: 12px; margin: 0;">
-              Este correo fue enviado automáticamente por el Sistema de Gestión de Exámenes Transversales
-            </p>
-            <p style="color: #666; font-size: 12px; margin: 5px 0 0 0;">
-              Administrado por <strong>examenestransversales.cl</strong>
-            </p>
-          </div>
+          <p style="color: #666; font-size: 12px; text-align: center;">
+            Este correo fue enviado automáticamente por el Sistema de Gestión de Exámenes Transversales.<br>
+            Administrado por examenestransversales.cl
+          </p>
         </div>
       `,
     };
@@ -412,4 +357,32 @@ export const resetPassword = async (req, res) => {
       }
     }
   }
+};
+
+// Manejar refresh token
+export const handleRefreshToken = (req, res) => {
+  const { token } = req.body;
+  if (!token || !refreshTokens.includes(token)) {
+    return res.status(401).json({ mensaje: 'Refresh token inválido.' });
+  }
+
+  try {
+    const payload = verifyRefreshToken(token);
+    const newAccessToken = generateAccessToken({
+      id_usuario: payload.id_usuario,
+      nombre_usuario: payload.nombre_usuario,
+      rol_id_rol: payload.rol_id_rol,
+      nombre_rol: payload.nombre_rol,
+    });
+    return res.json({ accessToken: newAccessToken });
+  } catch (err) {
+    return res.status(401).json({ mensaje: 'Refresh token expirado.', err });
+  }
+};
+
+// Logout
+export const logout = (req, res) => {
+  const { token } = req.body;
+  refreshTokens = refreshTokens.filter((t) => t !== token);
+  return res.sendStatus(204);
 };

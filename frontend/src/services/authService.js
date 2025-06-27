@@ -164,3 +164,85 @@ export async function refreshCurrentUserPermissionsImproved() {
         carrerasAsociadas: [],
       };
 }
+
+// Función para refrescar el access token usando el refresh token
+export async function refreshAccessToken() {
+  const refreshToken = getRefreshToken();
+
+  if (!refreshToken) {
+    throw new Error('No hay refresh token disponible');
+  }
+
+  try {
+    const response = await fetch(`${baseURL}/auth/refresh`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ token: refreshToken }),
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      throw new Error(errorData.mensaje || 'Error al refrescar token');
+    }
+
+    const { accessToken } = await response.json();
+    setAccessToken(accessToken);
+
+    return accessToken;
+  } catch (error) {
+    // Si falla el refresh, limpiamos la sesión
+    logout();
+    throw error;
+  }
+}
+
+// Función para hacer fetch con manejo automático de token expirado
+export async function fetchWithAuth(url, options = {}) {
+  const accessToken = getAccessToken();
+
+  if (!accessToken) {
+    throw new Error('No hay token de acceso');
+  }
+
+  // Primera tentativa con el token actual
+  const response = await fetch(url, {
+    ...options,
+    headers: {
+      ...options.headers,
+      Authorization: `Bearer ${accessToken}`,
+      'Content-Type': 'application/json',
+    },
+  });
+
+  // Si el token expiró, intentar refrescarlo
+  if (response.status === 401) {
+    const errorData = await response.json().catch(() => ({}));
+
+    if (errorData.codigo === 'TOKEN_EXPIRED') {
+      try {
+        // Intentar refrescar el token
+        await refreshAccessToken();
+
+        // Reintentar la petición original con el nuevo token
+        return fetch(url, {
+          ...options,
+          headers: {
+            ...options.headers,
+            Authorization: `Bearer ${getAccessToken()}`,
+            'Content-Type': 'application/json',
+          },
+        });
+      } catch (refreshError) {
+        // Si falla el refresh, redirigir al login
+        window.location.href = '/login';
+        throw new Error(
+          'Sesión expirada. Por favor, inicia sesión nuevamente.'
+        );
+      }
+    }
+  }
+
+  return response;
+}

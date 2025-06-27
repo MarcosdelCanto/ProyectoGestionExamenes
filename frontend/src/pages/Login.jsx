@@ -1,6 +1,6 @@
 // src/pages/Login.jsx
 import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import { login } from '../services/authService';
 import './Login.css';
 
@@ -31,7 +31,10 @@ const Login = () => {
 
   return (
     <div className="login-wrapper d-flex align-items-center justify-content-center vh-100">
-      <div className="card p-4 shadow login-card">
+      <div
+        className="card p-4 shadow login-card"
+        style={{ minWidth: '400px', maxWidth: '450px', width: '100%' }}
+      >
         <div className="text-center mb-4">
           <img
             src="/images/logoduoc.svg.png"
@@ -83,10 +86,16 @@ const Login = () => {
             </div>
           </div>
 
-          <button type="submit" className="btn btn-primary w-100">
+          <button type="submit" className="btn btn-primary w-100 mb-3">
             Entrar
           </button>
         </form>
+
+        <div className="text-center">
+          <Link to="/forgot-password" className="text-decoration-none">
+            ¿Olvidaste tu contraseña?
+          </Link>
+        </div>
       </div>
     </div>
   );
