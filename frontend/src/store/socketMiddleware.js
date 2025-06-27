@@ -46,6 +46,7 @@ export const socketMiddleware = (storeAPI) => {
     console.log(
       `[SocketMiddleware] Evento 'reservaEliminadaDesdeServidor' RECIBIDO para ID: ${id_reserva}`
     );
+    console.log('[SocketMiddleware] Esto va a eliminar la reserva del estado local');
     if (id_reserva) {
       // Despachamos la acción de eliminar a la slice principal.
       // Si la otra slice también necesita saberlo, se añadiría aquí.
@@ -65,6 +66,14 @@ export const socketMiddleware = (storeAPI) => {
   });
 
   // Conectar el socket después de definir todos los listeners
+  socket.on('connect', () => {
+    console.log('[SocketMiddleware] Socket conectado con ID:', socket.id);
+  });
+
+  socket.on('disconnect', () => {
+    console.log('[SocketMiddleware] Socket desconectado');
+  });
+
   socket.connect();
 
   return (next) => (action) => {

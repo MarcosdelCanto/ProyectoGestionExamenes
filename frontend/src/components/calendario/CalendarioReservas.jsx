@@ -38,19 +38,24 @@ export default function CalendarioReservas() {
 
   // --- LÓGICA DE CARGA DE DATOS (useEffect MODIFICADO) ---
   useEffect(() => {
+    console.log('[CalendarioReservas] useEffect ejecutado, estadoCarga:', estadoCarga);
+    
     // 3. Despachamos la acción correcta para cargar las reservas confirmadas
     if (estadoCarga === 'idle') {
+      console.log('[CalendarioReservas] Despachando cargarReservasConfirmadas...');
       dispatch(cargarReservasConfirmadas());
     }
 
     const cargarModulos = async () => {
       try {
         setLoadingModulos(true);
+        console.log('[CalendarioReservas] Cargando módulos...');
         const modulosData = await fetchAllModulos();
         setModulos(modulosData || []);
+        console.log('[CalendarioReservas] Módulos cargados:', modulosData?.length || 0);
       } catch (err) {
         setErrorModulos('No se pudieron cargar los horarios del calendario.');
-        console.error('Error cargando módulos:', err);
+        console.error('[CalendarioReservas] Error cargando módulos:', err);
       } finally {
         setLoadingModulos(false);
       }
@@ -58,6 +63,16 @@ export default function CalendarioReservas() {
 
     cargarModulos();
   }, [estadoCarga, dispatch]);
+
+  // useEffect para monitorear cambios en las reservas
+  useEffect(() => {
+    console.log('[CalendarioReservas] Las reservas han cambiado:', {
+      cantidad: reservas.length,
+      estadoCarga,
+      error: errorReservas,
+      reservas: reservas
+    });
+  }, [reservas, estadoCarga, errorReservas]);
 
   const {
     fechas,
@@ -80,9 +95,16 @@ export default function CalendarioReservas() {
   }
 
   if (finalError) {
+    // Manejar errores que pueden ser objetos o strings
+    const errorMessage = typeof finalError === 'string' 
+      ? finalError 
+      : finalError?.message || finalError?.error || 'Error al cargar el calendario';
+    
+    console.log('[CalendarioReservas] Error detectado:', finalError);
+    
     return (
       <div className="alert alert-danger text-center p-4">
-        <p>{finalError}</p>
+        <p>{errorMessage}</p>
       </div>
     );
   }
@@ -92,6 +114,15 @@ export default function CalendarioReservas() {
     const fechaReservaString = reserva.FECHA_RESERVA.split('T')[0];
     return fechas.some((f) => f.fecha === fechaReservaString);
   });
+
+  // Log de depuración para ver qué datos tenemos
+  console.log('Estado de carga:', estadoCarga);
+  console.log('Total de reservas:', reservas.length);
+  console.log('Reservas semanales:', reservasSemanales.length);
+  console.log('Reservas completas:', reservas);
+  console.log('Fechas de la semana:', fechas);
+  console.log('Token de autenticación:', localStorage.getItem('accessToken') ? 'Presente' : 'Ausente');
+  console.log('Error en reservas:', errorReservas);
 
   const handlePrintPdf = () => {
     const element = calendarRef.current;
