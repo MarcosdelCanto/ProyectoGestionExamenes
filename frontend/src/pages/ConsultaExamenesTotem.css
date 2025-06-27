@@ -1,0 +1,403 @@
+/* src/pages/ConsultaExamenesTotem.css */
+
+/* Contenedor principal del tótem */
+.totem-container {
+  min-height: 100vh;
+  background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+  padding: 20px 0;
+}
+
+/* Header del tótem */
+.totem-header {
+  background: linear-gradient(135deg, #003d7a 0%, #0056b3 100%);
+  color: white;
+  padding: 30px 0;
+  margin-bottom: 40px;
+  border-radius: 0 0 20px 20px;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+}
+
+.totem-logo {
+  height: 80px;
+  width: auto;
+  margin-bottom: 15px;
+  filter: brightness(0) invert(1);
+}
+
+.totem-title {
+  font-size: 2.5rem;
+  font-weight: bold;
+  margin-bottom: 10px;
+  text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+}
+
+.totem-subtitle {
+  font-size: 1.2rem;
+  opacity: 0.9;
+  margin-bottom: 0;
+}
+
+/* Sección de selección de tipo de usuario */
+.tipo-usuario-section {
+  margin-bottom: 40px;
+}
+
+.tipo-usuario-card {
+  border: 3px solid transparent;
+  border-radius: 20px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
+  background: white;
+  height: 100%;
+}
+
+.tipo-usuario-card:hover {
+  transform: translateY(-10px);
+  box-shadow: 0 15px 35px rgba(0, 0, 0, 0.2);
+  border-color: #003d7a;
+}
+
+.tipo-usuario-icon {
+  width: 120px;
+  height: 120px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto;
+  font-size: 3.5rem;
+  color: white;
+  transition: all 0.3s ease;
+}
+
+.docente-icon {
+  background: linear-gradient(135deg, #ffc107 0%, #ff8f00 100%);
+}
+
+.alumno-icon {
+  background: linear-gradient(135deg, #007bff 0%, #6f42c1 100%);
+}
+
+.tipo-usuario-card:hover .tipo-usuario-icon {
+  transform: scale(1.1);
+}
+
+.badge-docente {
+  background: linear-gradient(135deg, #ffc107 0%, #ff8f00 100%);
+  color: #212529;
+  padding: 8px 15px;
+  border-radius: 20px;
+  font-size: 0.9rem;
+  font-weight: 600;
+}
+
+.badge-alumno {
+  background: linear-gradient(135deg, #007bff 0%, #6f42c1 100%);
+  color: white;
+  padding: 8px 15px;
+  border-radius: 20px;
+  font-size: 0.9rem;
+}
+
+/* Sección de búsqueda */
+.busqueda-section {
+  margin-bottom: 40px;
+}
+
+.busqueda-card {
+  border: none;
+  border-radius: 20px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+  background: white;
+  padding: 20px;
+}
+
+.selected-tipo-icon {
+  width: 80px;
+  height: 80px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto 15px;
+  font-size: 2rem;
+  color: white;
+}
+
+.docente-icon-small {
+  background: linear-gradient(135deg, #ffc107 0%, #ff8f00 100%);
+}
+
+.alumno-icon-small {
+  background: linear-gradient(135deg, #007bff 0%, #6f42c1 100%);
+}
+
+.form-label-totem {
+  font-size: 1.2rem;
+  font-weight: 600;
+  color: #333;
+  margin-bottom: 10px;
+}
+
+.input-group-totem {
+  position: relative;
+  margin-bottom: 15px;
+}
+
+.input-totem {
+  font-size: 1.1rem;
+  padding: 15px 20px;
+  border: 2px solid #e9ecef;
+  border-radius: 12px;
+  transition: all 0.3s ease;
+}
+
+.input-totem:focus {
+  border-color: #003d7a;
+  box-shadow: 0 0 0 0.2rem rgba(0, 61, 122, 0.25);
+}
+
+.input-suffix {
+  position: absolute;
+  right: 15px;
+  top: 50%;
+  transform: translateY(-50%);
+  background: #f8f9fa;
+  padding: 5px 10px;
+  border-radius: 6px;
+  font-size: 0.9rem;
+  color: #6c757d;
+  border: 1px solid #dee2e6;
+}
+
+.email-preview {
+  text-align: center;
+  margin-top: 10px;
+  padding: 10px;
+  background: #e7f3ff;
+  border-radius: 8px;
+  color: #0066cc;
+  font-size: 0.95rem;
+}
+
+.btn-buscar-totem {
+  background: linear-gradient(135deg, #003d7a 0%, #0056b3 100%);
+  border: none;
+  padding: 12px 30px;
+  font-size: 1.1rem;
+  border-radius: 10px;
+  transition: all 0.3s ease;
+}
+
+.btn-buscar-totem:hover {
+  background: linear-gradient(135deg, #002a54 0%, #004085 100%);
+  transform: translateY(-2px);
+  box-shadow: 0 8px 20px rgba(0, 61, 122, 0.3);
+}
+
+.btn-volver-totem {
+  padding: 12px 30px;
+  font-size: 1.1rem;
+  border-radius: 10px;
+  border: 2px solid #6c757d;
+  transition: all 0.3s ease;
+}
+
+.btn-volver-totem:hover {
+  background: #6c757d;
+  color: white;
+  transform: translateY(-2px);
+}
+
+/* Sección de resultados */
+.resultados-section {
+  margin-bottom: 40px;
+}
+
+.resultados-card {
+  border: none;
+  border-radius: 20px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+  background: white;
+}
+
+.resultados-header {
+  background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+  border-bottom: 2px solid #dee2e6;
+  border-radius: 20px 20px 0 0;
+  padding: 20px;
+}
+
+.examenes-table {
+  font-size: 1rem;
+  margin-bottom: 0;
+}
+
+.examenes-table th {
+  background: #003d7a !important;
+  color: white;
+  border: none;
+  padding: 15px;
+  font-weight: 600;
+}
+
+.examenes-table td {
+  padding: 12px 15px;
+  vertical-align: middle;
+  border-color: #e9ecef;
+}
+
+.examenes-table tbody tr:hover {
+  background-color: #f8f9fa;
+  transition: background-color 0.3s ease;
+}
+
+/* Botones de acción - Estilos unificados con color azul corporativo */
+.btn-totem {
+  border: none;
+  padding: 12px 25px;
+  border-radius: 10px;
+  font-weight: 600;
+  transition: all 0.3s ease;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  text-decoration: none !important;
+  background: linear-gradient(135deg, #003d7a 0%, #0056b3 100%);
+  color: white !important;
+}
+
+.btn-totem:hover {
+  transform: translateY(-2px);
+  background: linear-gradient(135deg, #002a54 0%, #004085 100%);
+  box-shadow: 0 8px 20px rgba(0, 61, 122, 0.3);
+  color: white !important;
+}
+
+.btn-primary,
+.btn-totem.btn-primary {
+  background: linear-gradient(135deg, #003d7a 0%, #0056b3 100%);
+  color: white !important;
+}
+
+.btn-primary:hover,
+.btn-totem.btn-primary:hover {
+  background: linear-gradient(135deg, #002a54 0%, #004085 100%);
+  box-shadow: 0 8px 20px rgba(0, 61, 122, 0.3);
+  color: white !important;
+}
+
+/* Mantener estilos específicos para casos especiales */
+.btn-success,
+.btn-info,
+.btn-warning,
+.btn-secondary {
+  background: linear-gradient(135deg, #003d7a 0%, #0056b3 100%);
+  color: white !important;
+  border: none;
+  padding: 12px 25px;
+  border-radius: 10px;
+  font-weight: 600;
+  transition: all 0.3s ease;
+}
+
+.btn-success:hover,
+.btn-info:hover,
+.btn-warning:hover,
+.btn-secondary:hover {
+  background: linear-gradient(135deg, #002a54 0%, #004085 100%);
+  box-shadow: 0 8px 20px rgba(0, 61, 122, 0.3);
+  color: white !important;
+  transform: translateY(-2px);
+}
+
+/* Modal personalizado */
+.modal-content {
+  border: none;
+  border-radius: 15px;
+  box-shadow: 0 15px 35px rgba(0, 0, 0, 0.2);
+}
+
+.modal-header {
+  background: linear-gradient(135deg, #003d7a 0%, #0056b3 100%);
+  color: white;
+  border-radius: 15px 15px 0 0;
+  border-bottom: none;
+}
+
+.modal-header .btn-close {
+  filter: brightness(0) invert(1);
+}
+
+/* Efectos de hover y animaciones */
+@keyframes pulseSuccess {
+  0% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.05);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+.text-success i {
+  animation: pulseSuccess 2s infinite;
+}
+
+/* Responsividad */
+@media (max-width: 768px) {
+  .totem-title {
+    font-size: 2rem;
+  }
+
+  .totem-subtitle {
+    font-size: 1rem;
+  }
+
+  .tipo-usuario-icon {
+    width: 100px;
+    height: 100px;
+    font-size: 3rem;
+  }
+
+  .selected-tipo-icon {
+    width: 60px;
+    height: 60px;
+    font-size: 1.5rem;
+  }
+
+  .btn-buscar-totem,
+  .btn-volver-totem {
+    display: block;
+    width: 100%;
+    margin-bottom: 10px;
+  }
+
+  .examenes-table {
+    font-size: 0.9rem;
+  }
+}
+
+@media (max-width: 576px) {
+  .totem-container {
+    padding: 10px 0;
+  }
+
+  .totem-header {
+    padding: 20px 0;
+    margin-bottom: 20px;
+  }
+
+  .totem-logo {
+    height: 60px;
+  }
+
+  .tipo-usuario-icon {
+    width: 80px;
+    height: 80px;
+    font-size: 2.5rem;
+  }
+}

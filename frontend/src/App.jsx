@@ -29,6 +29,7 @@ import DocenteReservasPage from './pages/DocenteReservasPage';
 import CrearReservaPage from './pages/CrearReservaPage';
 import MisReservasAsignadasPage from './pages/MisReservasAsignadasPage.jsx';
 import ConsultaExamenes from './pages/ConsultaExamenes.jsx';
+import ConsultaExamenesTotem from './pages/ConsultaExamenesTotem.jsx';
 
 // Componentes
 import PrivateRoute from './components/PrivateRoute';
@@ -49,6 +50,7 @@ function App() {
           <Route path="/forgot-password" element={<ForgotPassword />} />
           <Route path="/reset-password" element={<ResetPassword />} />
           <Route path="/consulta-examenes" element={<ConsultaExamenes />} />
+          <Route path="/totem" element={<ConsultaExamenesTotem />} />
 
           {/* Página de acceso no autorizado */}
           <Route path="/unauthorized" element={<UnauthorizedPage />} />
