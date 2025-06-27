@@ -102,56 +102,56 @@ const ConsultaExamenesTotem = () => {
     // HEADER CON COLORES INSTITUCIONALES
     // Fondo azul institucional para el header
     doc.setFillColor(0, 61, 122); // Color azul Duoc UC
-    doc.rect(0, 0, pageWidth, 55, 'F');
+    doc.rect(0, 0, pageWidth, 45, 'F');
 
     // Título principal en blanco
     doc.setTextColor(255, 255, 255);
-    doc.setFontSize(24);
+    doc.setFontSize(18);
     doc.setFont('helvetica', 'bold');
-    doc.text('DUOC UC', pageWidth / 2, 18, { align: 'center' });
+    doc.text('DUOC UC', pageWidth / 2, 15, { align: 'center' });
 
-    doc.setFontSize(12);
+    doc.setFontSize(10);
     doc.setFont('helvetica', 'normal');
-    doc.text('Sistema de Gestion de Examenes', pageWidth / 2, 30, {
+    doc.text('Sistema de Gestion de Examenes', pageWidth / 2, 25, {
       align: 'center',
     });
 
-    doc.setFontSize(11);
-    doc.text('Programacion Academica', pageWidth / 2, 42, { align: 'center' });
+    doc.setFontSize(9);
+    doc.text('Programacion Academica', pageWidth / 2, 35, { align: 'center' });
 
     // INFORMACIÓN DEL USUARIO
     doc.setTextColor(0, 0, 0); // Volver a negro
-    doc.setFontSize(14);
+    doc.setFontSize(11);
     doc.setFont('helvetica', 'bold');
 
     // Tipo de usuario
     const tipoTexto = tipoUsuario === 'docente' ? 'DOCENTE' : 'ESTUDIANTE';
-    doc.text(`PERFIL: ${tipoTexto}`, 20, 75);
+    doc.text(`PERFIL: ${tipoTexto}`, 20, 60);
 
-    doc.setFontSize(11);
+    doc.setFontSize(9);
     doc.setFont('helvetica', 'normal');
-    doc.text(`Email: ${emailCompleto}`, 20, 85);
+    doc.text(`Email: ${emailCompleto}`, 20, 68);
     doc.text(
       `Fecha de consulta: ${new Date().toLocaleDateString('es-CL')}`,
       20,
-      93
+      75
     );
     doc.text(
       `Hora de consulta: ${new Date().toLocaleTimeString('es-CL')}`,
       20,
-      101
+      82
     );
 
     // Línea separadora
     doc.setLineWidth(0.5);
     doc.setDrawColor(0, 61, 122);
-    doc.line(20, 110, pageWidth - 20, 110);
+    doc.line(20, 90, pageWidth - 20, 90);
 
     // TÍTULO DE LA TABLA
-    doc.setFontSize(14);
+    doc.setFontSize(11);
     doc.setFont('helvetica', 'bold');
     doc.setTextColor(0, 61, 122);
-    doc.text(`EXAMENES PROGRAMADOS (${reservas.length})`, 20, 125);
+    doc.text(`EXAMENES PROGRAMADOS (${reservas.length})`, 20, 100);
 
     // Definir columnas de la tabla
     const tableColumn = ['Fecha', 'Horario', 'Examen', 'Docente', 'Sala'];
@@ -176,17 +176,17 @@ const ConsultaExamenesTotem = () => {
     autoTable(doc, {
       head: [tableColumn],
       body: tableRows,
-      startY: 135,
+      startY: 108,
       styles: {
-        fontSize: 10,
-        cellPadding: 5,
+        fontSize: 8,
+        cellPadding: 3,
         lineWidth: 0.1,
         lineColor: [200, 200, 200],
       },
       headStyles: {
         fillColor: [0, 61, 122], // Azul institucional
         textColor: [255, 255, 255],
-        fontSize: 11,
+        fontSize: 9,
         fontStyle: 'bold',
         halign: 'center',
       },
@@ -194,11 +194,11 @@ const ConsultaExamenesTotem = () => {
         fillColor: [248, 249, 250], // Gris muy claro para filas alternadas
       },
       columnStyles: {
-        0: { halign: 'center', cellWidth: 30 }, // Fecha
-        1: { halign: 'center', cellWidth: 35 }, // Horario
-        2: { halign: 'left', cellWidth: 55 }, // Examen
-        3: { halign: 'left', cellWidth: 40 }, // Docente
-        4: { halign: 'center', cellWidth: 30 }, // Sala
+        0: { halign: 'center', cellWidth: 25 }, // Fecha
+        1: { halign: 'center', cellWidth: 30 }, // Horario
+        2: { halign: 'left', cellWidth: 50 }, // Examen
+        3: { halign: 'left', cellWidth: 35 }, // Docente
+        4: { halign: 'center', cellWidth: 25 }, // Sala
       },
       margin: { left: 20, right: 20 },
       theme: 'grid',
@@ -208,29 +208,30 @@ const ConsultaExamenesTotem = () => {
     const finalY = doc.lastAutoTable.finalY || 200;
 
     // Línea separadora inferior
-    doc.setLineWidth(0.5);
+    doc.setLineWidth(0.3);
     doc.setDrawColor(0, 61, 122);
-    doc.line(20, finalY + 15, pageWidth - 20, finalY + 15);
+    doc.line(20, finalY + 8, pageWidth - 20, finalY + 8);
 
     // Información del footer
-    doc.setFontSize(9);
+    doc.setFontSize(7);
     doc.setTextColor(100, 100, 100);
     doc.setFont('helvetica', 'normal');
     doc.text(
       'Duoc UC - Sistema de Gestion de Examenes Transversales',
       20,
-      finalY + 25
+      finalY + 15
     );
     doc.text(
       `Documento generado automaticamente el ${new Date().toLocaleDateString('es-CL')} a las ${new Date().toLocaleTimeString('es-CL')}`,
       20,
-      finalY + 32
+      finalY + 20
     );
 
     // Número de página
     doc.setTextColor(0, 61, 122);
     doc.setFont('helvetica', 'bold');
-    doc.text('Pagina 1', pageWidth - 30, finalY + 25, { align: 'center' });
+    doc.setFontSize(7);
+    doc.text('Pagina 1', pageWidth - 30, finalY + 15, { align: 'center' });
 
     return doc;
   };
@@ -435,7 +436,7 @@ const ConsultaExamenesTotem = () => {
                         size="lg"
                         onClick={handleBuscar}
                         disabled={loading || !nombreUsuario.trim()}
-                        className="btn-buscar-totem btn-totem me-3"
+                        className="btn-buscar-totem btn-totem btn-primary me-3"
                       >
                         {loading ? (
                           <>
@@ -451,10 +452,10 @@ const ConsultaExamenesTotem = () => {
                       </Button>
 
                       <Button
-                        variant="primary"
+                        variant="secondary"
                         size="lg"
                         onClick={reiniciarConsulta}
-                        className="btn-volver-totem btn-totem"
+                        className="btn-volver-totem btn-totem btn-secondary"
                       >
                         <i className="fas fa-arrow-left me-2"></i>
                         Cambiar Perfil
@@ -484,9 +485,9 @@ const ConsultaExamenesTotem = () => {
                     </Col>
                     <Col xs="auto">
                       <Button
-                        variant="primary"
+                        variant="secondary"
                         onClick={reiniciarConsulta}
-                        className="btn-totem me-2"
+                        className="btn-totem btn-secondary me-2"
                       >
                         <i className="fas fa-redo me-2"></i>
                         Nueva Consulta
@@ -507,20 +508,22 @@ const ConsultaExamenesTotem = () => {
                     <>
                       <div className="text-center mb-4">
                         <Button
-                          variant="primary"
+                          variant={
+                            tipoUsuario === 'docente' ? 'warning' : 'success'
+                          }
                           size="lg"
                           onClick={descargarPDF}
-                          className="btn-totem me-3"
+                          className={`btn-totem me-3 ${tipoUsuario === 'docente' ? 'btn-warning' : 'btn-success'}`}
                         >
                           <i className="fas fa-print me-2"></i>
                           Descargar PDF
                         </Button>
 
                         <Button
-                          variant="primary"
+                          variant="info"
                           size="lg"
                           onClick={() => setShowEmailModal(true)}
-                          className="btn-totem"
+                          className="btn-totem btn-info"
                         >
                           <i className="fas fa-envelope me-2"></i>
                           Enviar por Email
@@ -616,7 +619,7 @@ const ConsultaExamenesTotem = () => {
 
               <div className="d-grid gap-2">
                 <Button
-                  variant="primary"
+                  variant="success"
                   size="lg"
                   onClick={enviarPDFPorEmail}
                   disabled={enviandoEmail}
@@ -636,7 +639,7 @@ const ConsultaExamenesTotem = () => {
                 </Button>
 
                 <Button
-                  variant="primary"
+                  variant="secondary"
                   onClick={() => setShowEmailModal(false)}
                   disabled={enviandoEmail}
                   className="btn-totem"
