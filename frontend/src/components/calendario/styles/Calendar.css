@@ -200,6 +200,78 @@
   border: 2px dashed #007bff;
 }
 
+/* Estilos para impresión PDF - Optimización visual */
+@media print {
+  .calendar-table {
+    page-break-inside: avoid;
+    font-size: 10px !important;
+  }
+
+  .calendar-table th,
+  .calendar-table td {
+    padding: 2px !important;
+    font-size: 10px !important;
+  }
+
+  .orden-col,
+  .horario-col {
+    position: static !important;
+    font-size: 9px !important;
+  }
+
+  .calendar-cell {
+    height: 25px !important;
+  }
+}
+
+/* Estilos específicos para la generación de PDF (clase temporal) */
+.printing-pdf {
+  position: static !important;
+  overflow: visible !important;
+  transform: none !important;
+  width: auto !important;
+  height: auto !important;
+}
+
+/* Estilos mínimos para PDF - conservar visual original */
+.printing-pdf .calendar-table {
+  width: 100% !important;
+  border-collapse: collapse !important;
+}
+
+.printing-pdf .calendar-table th,
+.printing-pdf .calendar-table td {
+  border: 1px solid #dee2e6 !important;
+  vertical-align: top !important;
+}
+
+.printing-pdf .orden-col {
+  position: static !important;
+  left: auto !important;
+  z-index: auto !important;
+  box-shadow: none !important;
+}
+
+.printing-pdf .horario-col {
+  position: static !important;
+  left: auto !important;
+  z-index: auto !important;
+  box-shadow: none !important;
+}
+
+.printing-pdf .calendar-cell {
+  overflow: visible !important;
+  position: relative !important;
+}
+
+.printing-pdf .calendar-header-cell,
+.printing-pdf thead th {
+  position: static !important;
+  top: auto !important;
+  z-index: auto !important;
+  box-shadow: none !important;
+}
+
 /* Indicador visual para celdas incompatibles */
 .calendar-table .calendar-cell.drop-invalid {
   background-color: rgba(220, 53, 69, 0.1);

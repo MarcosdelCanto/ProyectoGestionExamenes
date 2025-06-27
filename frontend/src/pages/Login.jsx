@@ -31,6 +31,16 @@ const Login = () => {
 
   return (
     <div className="login-wrapper d-flex align-items-center justify-content-center vh-100">
+      {/* Botón flotante para ir al tótem */}
+      <Link
+        to="/totem"
+        className="totem-access-btn position-fixed"
+        title="Consulta Pública de Exámenes"
+      >
+        <i className="fas fa-desktop me-2"></i>
+        Tótem
+      </Link>
+
       <div
         className="card p-4 shadow login-card"
         style={{ minWidth: '400px', maxWidth: '450px', width: '100%' }}

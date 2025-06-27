@@ -96,10 +96,7 @@ export default function CalendarioReservas() {
   const handlePrintPdf = () => {
     const element = calendarRef.current;
     if (!element) return;
-    const scrollableContainer = element.querySelector(
-      '.table-wrapper-readonly'
-    );
-    if (!scrollableContainer) return;
+
     const dateForFilename = isValid(weekStartDate)
       ? weekStartDate
       : fechaSeleccionada;
@@ -107,34 +104,136 @@ export default function CalendarioReservas() {
       alert('Fecha inválida para generar PDF.');
       return;
     }
-    scrollableContainer.classList.add('printing-pdf');
-    const contentWidth = element.scrollWidth;
-    const contentHeight = element.scrollHeight;
-    const printableWidth = (11 - 1) * 192;
-    const printableHeight = (8.5 - 1) * 192;
-    const scaleX = printableWidth / contentWidth;
-    const scaleY = printableHeight / contentHeight;
-    const finalScale = Math.min(scaleX, scaleY) * 0.72;
-    const opt = {
-      margin: 0.5,
-      filename: `reservas_semanales_${format(dateForFilename, 'yyyy-MM-dd')}.pdf`,
-      image: { type: 'jpeg', quality: 0.98 },
-      html2canvas: {
-        scale: finalScale,
-        logging: true,
-        dpi: 192,
-        letterRendering: true,
-      },
-      jsPDF: { unit: 'in', format: 'letter', orientation: 'landscape' },
-      pagebreak: { mode: 'avoid-all' },
-    };
-    html2pdf()
-      .set(opt)
-      .from(element)
-      .save()
-      .finally(() => {
-        scrollableContainer.classList.remove('printing-pdf');
-      });
+
+    // Solo ocultar los controles de navegación, mantener toda la visual original
+    const tempStyle = document.createElement('style');
+    tempStyle.textContent = `
+      .printing-pdf .d-flex.justify-content-between {
+        display: none !important;
+      }
+      .printing-pdf .table-wrapper {
+        overflow: visible !important;
+        height: auto !important;
+        max-height: none !important;
+      }
+      .printing-pdf .calendar-table {
+        table-layout: fixed !important;
+        width: 100% !important;
+      }
+      .printing-pdf .calendar-table thead th {
+        position: static !important;
+        top: auto !important;
+        z-index: auto !important;
+        box-shadow: none !important;
+      }
+      .printing-pdf .orden-col {
+        width: 40px !important;
+        min-width: 40px !important;
+        max-width: 40px !important;
+        position: static !important;
+        left: auto !important;
+        z-index: auto !important;
+        box-shadow: none !important;
+      }
+      .printing-pdf .horario-col {
+        width: 80px !important;
+        min-width: 80px !important;
+        max-width: 80px !important;
+        position: static !important;
+        left: auto !important;
+        z-index: auto !important;
+        box-shadow: none !important;
+      }
+      .printing-pdf .calendar-header-cell {
+        width: auto !important;
+        max-width: none !important;
+      }
+      /* Forzar que los post-its ocupen todo el ancho en PDF */
+      .printing-pdf .calendar-cell {
+        position: relative !important;
+        overflow: visible !important;
+        padding: 0 !important;
+        width: auto !important;
+      }
+      .printing-pdf .examen-post-it {
+        width: 100% !important;
+        left: 0 !important;
+        right: 0 !important;
+        position: absolute !important;
+        top: 0 !important;
+        bottom: 0 !important;
+        box-sizing: border-box !important;
+        margin: 0 !important;
+        padding: 2px 4px !important;
+      }
+      .printing-pdf .examen-content {
+        width: 100% !important;
+        box-sizing: border-box !important;
+        padding: 2px 4px !important;
+      }
+      .printing-pdf .examen-header,
+      .printing-pdf .examen-info,
+      .printing-pdf .examen-title {
+        width: 100% !important;
+        text-align: left !important;
+      }
+    `;
+    document.head.appendChild(tempStyle);
+
+    // Preparar el elemento para captura
+    element.classList.add('printing-pdf');
+
+    // Esperar un momento para que los estilos se apliquen
+    setTimeout(() => {
+      // Configuración para capturar exactamente lo que se ve en pantalla
+      const opt = {
+        margin: [8, 15, 8, 5], // [top, right, bottom, left] - más margen derecho, menos izquierdo
+        filename: `calendario_examenes_${format(dateForFilename, 'yyyy-MM-dd')}.pdf`,
+        image: {
+          type: 'jpeg',
+          quality: 0.98, // Alta calidad para conservar la visual
+        },
+        html2canvas: {
+          scale: 1.2, // Escala moderada para mantener proporciones
+          logging: false,
+          dpi: 150,
+          letterRendering: true,
+          useCORS: true,
+          allowTaint: false,
+          scrollX: -10, // Desplazar ligeramente a la derecha
+          scrollY: 0,
+          foreignObjectRendering: false, // Desactivar para mejor compatibilidad con estilos CSS
+          backgroundColor: '#ffffff',
+          width: element.scrollWidth + 20, // Añadir un poco más de ancho
+          height: element.scrollHeight, // Usar la altura real del elemento
+          windowWidth: window.innerWidth + 20,
+          windowHeight: window.innerHeight,
+          removeContainer: false, // No remover contenedores para mantener estructura
+          ignoreElements: function (element) {
+            // No ignorar ningún elemento para asegurar captura completa
+            return false;
+          },
+        },
+        jsPDF: {
+          unit: 'mm',
+          format: 'a3', // A3 para que quepa el calendario completo
+          orientation: 'landscape',
+          compress: true,
+        },
+        pagebreak: {
+          mode: 'avoid-all', // Evitar cortes de página
+        },
+      };
+
+      html2pdf()
+        .set(opt)
+        .from(element)
+        .save()
+        .finally(() => {
+          element.classList.remove('printing-pdf');
+          document.head.removeChild(tempStyle);
+        });
+    }, 100); // Esperar 100ms para que los estilos se apliquen
   };
 
   return (

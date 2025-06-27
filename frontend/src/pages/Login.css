@@ -65,4 +65,47 @@
   border-right: 1px solid #ced4da !important; /* Color de borde estándar de input de Bootstrap */
   border-left: none; /* Sin borde izquierdo para unirse al input */
 }
-/* Estilos de foco: cuando el input tiene foco, el borde del botón también cambia */
+
+/* Botón de acceso al tótem */
+.totem-access-btn {
+  top: 20px;
+  right: 20px;
+  z-index: 1000;
+  background: linear-gradient(135deg, #0056b3 0%, #003d7a 100%);
+  color: white !important;
+  padding: 12px 20px;
+  border-radius: 25px;
+  text-decoration: none !important;
+  font-weight: 600;
+  font-size: 0.9rem;
+  box-shadow: 0 4px 15px rgba(0, 61, 122, 0.3);
+  transition: all 0.3s ease;
+  display: flex;
+  align-items: center;
+  border: 2px solid rgba(255, 255, 255, 0.2);
+}
+
+.totem-access-btn:hover {
+  background: linear-gradient(135deg, #004085 0%, #002a54 100%);
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(0, 61, 122, 0.4);
+  color: white !important;
+}
+
+.totem-access-btn i {
+  font-size: 1rem;
+}
+
+/* Responsividad para el botón del tótem */
+@media (max-width: 768px) {
+  .totem-access-btn {
+    top: 15px;
+    right: 15px;
+    padding: 10px 16px;
+    font-size: 0.8rem;
+  }
+
+  .totem-access-btn i {
+    font-size: 0.9rem;
+  }
+}
