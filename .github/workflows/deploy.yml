@@ -11,6 +11,7 @@ jobs:
   build-and-deploy:
     # El tipo de máquina virtual que usará GitHub
     runs-on: ubuntu-latest
+    timeout-minutes: 60 # Añadido para prevenir que el job se quede colgado indefinidamente
 
     steps:
       # 1. Clona tu repositorio en la máquina virtual de GitHub
@@ -37,7 +38,7 @@ jobs:
       - name: Construir y Subir Backend
         uses: docker/build-push-action@v5
         with:
-          context: ./backend
+          context: ./backend # Esto es relativo a la raíz del repositorio clonado
           file: ./backend/Dockerfile
           platforms: linux/amd64 # La arquitectura de tu EC2
           push: true
@@ -47,7 +48,7 @@ jobs:
       - name: Construir y Subir Frontend
         uses: docker/build-push-action@v5
         with:
-          context: ./frontend
+          context: ./frontend # Esto es relativo a la raíz del repositorio clonado
           file: ./frontend/Dockerfile
           platforms: linux/amd64
           push: true
@@ -59,10 +60,10 @@ jobs:
         with:
           host: ${{ secrets.EC2_HOST }}
           username: ${{ secrets.EC2_USER }}
-          key: ${{ secrets.EC2_SSH_KEY }}
+          password: ${{ secrets.EC2_PASSWORD }}
           script: |
-            # Navega a la carpeta donde están tus archivos de configuración
-            cd /home/ubuntu
+            # Navega a la carpeta donde está tu repositorio clonado en el servidor EC2
+            cd /home/linuxuser/ProyectoGestionExamenes # <--- ¡RUTA FINAL Y CONFIRMADA!
             # Descarga las imágenes actualizadas desde Docker Hub
             docker compose pull
             # Reinicia los contenedores con las nuevas imágenes

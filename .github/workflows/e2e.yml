@@ -2,14 +2,21 @@ name: E2E Tests
 
 on:
   push:
-    branches: [main, develop]
+    branches:
+      - main
+      - develop
+      - desarrollo_simultaneo # <--- ¡Añadido aquí!
   pull_request:
-    branches: [main, develop]
+    branches:
+      - main
+      - develop
+      - desarrollo_simultaneo # <--- ¡Y aquí también!
 
 jobs:
   e2e-tests:
     name: Run E2E Tests
     runs-on: ubuntu-latest
+    timeout-minutes: 60 # Añadido para prevenir que el job se quede colgado indefinidamente
 
     strategy:
       matrix:
