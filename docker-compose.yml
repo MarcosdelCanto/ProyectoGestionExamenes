@@ -10,7 +10,10 @@ services:
     env_file:
       - .env
     environment:
-      DOCKER_ENV: "true" # <--- AÑADE ESTA LÍNEA
+      DOCKER_ENV: "true"
+      NODE_ENV: "production"
+      FRONTEND_URL: "http://64.176.16.195:8080"
+      TZ: "America/Santiago"
     ports:
       - "3000:3000"
     volumes:
@@ -31,6 +34,8 @@ services:
       - backend
     networks:
       - app-network
+    environment: # <--- SI NO EXISTE, AÑADE ESTA SECCIÓN
+      TZ: "America/Santiago"
 
 networks:
   app-network:
