@@ -12,26 +12,36 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v3
 
-      # --- PASO CLAVE AÑADIDO ---
-      # Crea el archivo .env que tu docker-compose necesita para las pruebas
-      - name: Create .env file
+      - name: Create .env file for testing
         run: |
-          echo "VARIABLE_DE_EJEMPLO_1=${{ secrets.MI_SECRETO_1 }}" >> .env
-          echo "VARIABLE_DE_EJEMPLO_2=${{ secrets.MI_SECRETO_2 }}" >> .env
-          # --- ¡IMPORTANTE! Agrega aquí todas las variables que tu aplicación necesite ---
-          # --- y crea los secretos correspondientes en GitHub ---
+          # Agrega aquí CUALQUIER variable de entorno que tu docker-compose.yml
+          # necesite para funcionar en el entorno de pruebas.
+          # Crea los secretos correspondientes en GitHub Settings.
+          echo "DUMMY_VAR=dummy_value_for_testing" >> .env
+          echo "Archivo .env de prueba creado:"
+          cat .env
 
-          echo "Archivo .env creado:"
-          cat .env # Imprime el contenido del archivo para depuración
+      # --- PASO CLAVE AÑADIDO ---
+      # Crea un override para usar la etapa 'builder' en las pruebas
+      - name: Create Docker Compose Override for Testing
+        run: |
+          cat <<EOF > docker-compose.override.yml
+          services:
+            frontend:
+              build:
+                # IMPORTANTE: Si tu etapa de build no se llama 'builder' en tu Dockerfile,
+                # cámbialo aquí.
+                target: builder
+              # Mantenemos el contenedor corriendo para poder ejecutar 'exec' en él
+              command: tail -f /dev/null
+          EOF
 
-      - name: Build the stack
-        run: docker compose build
-
-      - name: Start the stack
-        run: docker compose up -d
+      - name: Build and Start the stack for testing
+        # Usamos el override para que 'frontend' sea el contenedor con herramientas de dev
+        run: docker compose -f docker-compose.yml -f docker-compose.override.yml up -d --build
 
       - name: Wait for services to be ready
-        run: sleep 30
+        run: echo "Waiting for 30 seconds for services to start..." && sleep 30
 
       - name: Run E2E tests
         run: docker compose exec -T frontend npm run test:e2e
@@ -64,6 +74,7 @@ jobs:
           tags: ${{ secrets.DOCKERHUB_USERNAME }}/proyectogestionexamenes-backend:latest
 
       - name: Build and push frontend image
+        # Este paso construye la imagen de producción final por defecto
         uses: docker/build-push-action@v4
         with:
           context: ./frontend
