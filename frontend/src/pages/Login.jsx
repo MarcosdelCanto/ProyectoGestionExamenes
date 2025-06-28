@@ -38,7 +38,7 @@ const Login = () => {
         title="Consulta Pública de Exámenes"
       >
         <i className="fas fa-desktop me-2"></i>
-        Tótem
+        Tótem prueba
       </Link>
 
       <div
