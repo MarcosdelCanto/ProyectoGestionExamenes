@@ -1,4 +1,4 @@
-name: Deploy to EC2
+name: Test and Deploy to Vultr
 
 on:
   push:
@@ -6,7 +6,36 @@ on:
       - desarrollo_simultaneo
 
 jobs:
+  #--- Nuevo Job para Pruebas ---
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Build the stack
+        run: docker compose build
+
+      - name: Start the stack
+        run: docker compose up -d
+
+      # Pequeña pausa para asegurar que los servicios estén listos
+      - name: Wait for services to be ready
+        run: sleep 30
+
+      - name: Run E2E tests
+        # IMPORTANTE: Reemplaza el comando de abajo con el comando real que usas para tus pruebas
+        run: docker compose exec -T frontend npm run test:e2e
+
+      # Este paso se ejecuta siempre, para limpiar los contenedores
+      - name: Tear down the stack
+        if: always()
+        run: docker compose down
+
+  #--- Job de Despliegue (Modificado) ---
   deploy:
+    # 'needs: test' asegura que este job solo se ejecute si el job 'test' fue exitoso
+    needs: test
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
@@ -25,7 +54,6 @@ jobs:
         uses: docker/build-push-action@v4
         with:
           context: ./backend
-          file: ./backend/Dockerfile
           push: true
           tags: ${{ secrets.DOCKERHUB_USERNAME }}/proyectogestionexamenes-backend:latest
 
@@ -33,11 +61,10 @@ jobs:
         uses: docker/build-push-action@v4
         with:
           context: ./frontend
-          file: ./frontend/Dockerfile
           push: true
           tags: ${{ secrets.DOCKERHUB_USERNAME }}/proyectogestionexamenes-frontend:latest
 
-      - name: Deploy to EC2
+      - name: Deploy to Vultr
         uses: appleboy/ssh-action@master
         with:
           host: ${{ secrets.EC2_HOST }}

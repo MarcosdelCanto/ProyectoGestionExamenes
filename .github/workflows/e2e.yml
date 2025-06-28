@@ -3,13 +3,9 @@ name: E2E Tests
 on:
   push:
     branches:
-      - main
-      - develop
       - desarrollo_simultaneo # <--- ¡Añadido aquí!
   pull_request:
     branches:
-      - main
-      - develop
       - desarrollo_simultaneo # <--- ¡Y aquí también!
 
 jobs:
