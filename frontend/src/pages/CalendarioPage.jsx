@@ -295,50 +295,6 @@ export function CalendarioPage() {
               draggedExamen={activeDraggableExamen}
               dropTargetCell={hoverTargetCell}
             />
-
-            {/* DEBUG: Mostrar posición del mouse (temporal) */}
-            {isDragging && (
-              <div
-                style={{
-                  position: 'fixed',
-                  top: '10px',
-                  right: '10px',
-                  background: 'rgba(0,0,0,0.8)',
-                  color: 'white',
-                  padding: '10px',
-                  borderRadius: '4px',
-                  fontSize: '12px',
-                  zIndex: 9999,
-                  maxWidth: '300px',
-                }}
-              >
-                <div>
-                  Mouse: {mousePosition.x}, {mousePosition.y}
-                </div>
-                <div>
-                  Dentro calendario: {isMouseInsideCalendar() ? '✅' : '❌'}
-                </div>
-                <div>Hover activo: {hoverTargetCell ? '✅' : '❌'}</div>
-                <div>Drop target: {dropTargetCell ? '✅' : '❌'}</div>
-                {hoverTargetCell && (
-                  <div style={{ color: '#90EE90' }}>
-                    Hover: {hoverTargetCell.fecha} - M
-                    {hoverTargetCell.modulo.ORDEN}
-                  </div>
-                )}
-                {dropTargetCell && (
-                  <div style={{ color: '#FFB6C1' }}>
-                    Drop: {dropTargetCell.fecha} - M
-                    {dropTargetCell.modulo.ORDEN}
-                  </div>
-                )}
-                <div
-                  style={{ marginTop: '5px', fontSize: '10px', color: '#DDD' }}
-                >
-                  El problema probablemente está en CalendarGrid
-                </div>
-              </div>
-            )}
           </div>
 
           <DragOverlay>
