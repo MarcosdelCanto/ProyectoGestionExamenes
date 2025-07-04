@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
-import { format, startOfWeek } from 'date-fns';
+import { format, set, startOfWeek } from 'date-fns';
 import { useDispatch, useSelector } from 'react-redux'; // <-- AGREGAR useSelector si no está
 import { es } from 'date-fns/locale';
 import { Modal } from 'react-bootstrap';
@@ -76,7 +76,6 @@ export default function AgendaSemanal({
   const [modulosSeleccionados, setModulosSeleccionados] = useState([]);
   const [isProcessingDrop, setIsProcessingDrop] = useState(false);
   const [lastProcessedDrop, setLastProcessedDrop] = useState(null);
-
   const dispatch = useDispatch();
   const reservasFromStore = useSelector((state) => state.reservas.lista);
 
@@ -180,11 +179,6 @@ export default function AgendaSemanal({
 
   const handleSelectModulo = useCallback(
     (fecha, orden) => {
-      if (!selectedExamInternal) {
-        alert('Primero selecciona un examen.');
-        return;
-      }
-
       setModulosSeleccionados((prev) => {
         const yaSeleccionado = prev.some(
           (m) => m.fecha === fecha && m.numero === orden
@@ -724,7 +718,6 @@ export default function AgendaSemanal({
         onSetSelectedEdificio={setSelectedEdificio}
         onAplicarFiltros={() => setShowSalaFilterModal(false)}
       />
-
       {/* Modal de Eliminación */}
       <Modal
         show={showDeleteModal}

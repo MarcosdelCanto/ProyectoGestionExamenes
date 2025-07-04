@@ -136,18 +136,18 @@
   margin-bottom: 15px;
 }
 
-/* Estilos responsivos */
+/* Estilos responsivos existentes */
 @media (max-width: 992px) {
   .main-content {
     flex-direction: column;
-    height: auto; /* En móvil permitir altura automática */
+    height: auto;
   }
 
   .calendar-container {
-    height: auto; /* Altura automática en móvil */
+    height: auto;
   }
 
   .calendar-content {
-    overflow: visible; /* En móvil permitir scroll si es necesario */
+    overflow: visible;
   }
 }
