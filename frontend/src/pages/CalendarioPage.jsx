@@ -198,6 +198,13 @@ export function CalendarioPage() {
       return;
     }
 
+    if (!isMouseInsideCalendar()) {
+      console.log(
+        'Drop cancelado: El cursor del mouse está fuera del área del calendario.'
+      );
+      return; // ¡Importante! Cancela el drop aquí.
+    }
+
     const examDropData = active.data?.current?.examen;
     const targetData = over.data?.current;
 
