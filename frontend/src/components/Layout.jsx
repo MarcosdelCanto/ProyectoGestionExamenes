@@ -125,6 +125,19 @@ export default function Layout({ children }) {
       });
       offcanvasInstanceRef.current = bsOffcanvas;
       bsOffcanvas.show(); // Muestra el Offcanvas al montar el componente
+
+      // Asegurar z-index correcto después de inicializar
+      setTimeout(() => {
+        const sidebar = offcanvasRef.current;
+        const sidebarOverlay = document.querySelector('.sidebar-overlay');
+
+        if (sidebar && !sidebar.style.zIndex) {
+          sidebar.style.zIndex = '1045';
+        }
+        if (sidebarOverlay && !sidebarOverlay.style.zIndex) {
+          sidebarOverlay.style.zIndex = '1040';
+        }
+      }, 100);
     }
     return () => {
       if (
@@ -149,6 +162,17 @@ export default function Layout({ children }) {
       ) {
         document.body.style.overflow = '';
         document.body.style.paddingRight = '';
+      }
+
+      // Verificar y corregir z-index al cambiar de página
+      const sidebar = offcanvasRef.current;
+      const sidebarOverlay = document.querySelector('.sidebar-overlay');
+
+      if (sidebar && !sidebar.style.zIndex) {
+        sidebar.style.zIndex = '1045';
+      }
+      if (sidebarOverlay && !sidebarOverlay.style.zIndex) {
+        sidebarOverlay.style.zIndex = '1040';
       }
     }, 0);
     return () => clearTimeout(timeoutId);

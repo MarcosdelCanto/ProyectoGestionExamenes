@@ -64,6 +64,75 @@ const MisReservasAsignadasPage = () => {
   const [reservaParaDescartar, setReservaParaDescartar] = useState(null);
   const [loadingDescartar, setLoadingDescartar] = useState(false);
 
+  // Efecto para manejar z-index cuando se abren modales
+  useEffect(() => {
+    const anyModalOpen =
+      showEditModal ||
+      showRevisarModal ||
+      showObservacionesModal ||
+      showConfirmDescartarModal;
+
+    if (anyModalOpen) {
+      // Cuando cualquier modal está abierto, ajustar z-index del sidebar y overlay
+      const sidebar = document.querySelector('.offcanvas.offcanvas-start');
+      const sidebarOverlay = document.querySelector('.sidebar-overlay');
+
+      if (sidebar) {
+        sidebar.style.zIndex = '1060'; // Mayor que el backdrop del modal (1055)
+      }
+      if (sidebarOverlay) {
+        sidebarOverlay.style.zIndex = '1059'; // Entre el modal y el sidebar
+      }
+    } else {
+      // Cuando no hay modales abiertos, restaurar z-index originales
+      const sidebar = document.querySelector('.offcanvas.offcanvas-start');
+      const sidebarOverlay = document.querySelector('.sidebar-overlay');
+
+      if (sidebar) {
+        sidebar.style.zIndex = '1045'; // Z-index original
+      }
+      if (sidebarOverlay) {
+        sidebarOverlay.style.zIndex = '1040'; // Z-index original
+      }
+    }
+
+    // Cleanup al desmontar
+    return () => {
+      const sidebar = document.querySelector('.offcanvas.offcanvas-start');
+      const sidebarOverlay = document.querySelector('.sidebar-overlay');
+
+      if (sidebar) {
+        sidebar.style.zIndex = '1045';
+      }
+      if (sidebarOverlay) {
+        sidebarOverlay.style.zIndex = '1040';
+      }
+    };
+  }, [
+    showEditModal,
+    showRevisarModal,
+    showObservacionesModal,
+    showConfirmDescartarModal,
+  ]);
+
+  // Efecto para corregir z-index al cargar la página
+  useEffect(() => {
+    // Ejecutar después de que el Layout se haya montado completamente
+    const timer = setTimeout(() => {
+      const sidebar = document.querySelector('.offcanvas.offcanvas-start');
+      const sidebarOverlay = document.querySelector('.sidebar-overlay');
+
+      if (sidebar && !sidebar.style.zIndex) {
+        sidebar.style.zIndex = '1045';
+      }
+      if (sidebarOverlay && !sidebarOverlay.style.zIndex) {
+        sidebarOverlay.style.zIndex = '1040';
+      }
+    }, 100);
+
+    return () => clearTimeout(timer);
+  }, []); // Solo ejecutar una vez al montar
+
   const cargarAsignaciones = useCallback(async () => {
     setLoading(true);
     setError(null);
@@ -553,6 +622,8 @@ const MisReservasAsignadasPage = () => {
         size="lg"
         backdrop="static"
         centered
+        style={{ zIndex: 1055 }} // Asegurar z-index específico para este modal
+        backdropClassName="modal-backdrop-custom" // Clase personalizada para el backdrop
       >
         <Modal.Header closeButton>
           <Modal.Title>{modalEditTitle}</Modal.Title>
@@ -590,7 +661,13 @@ const MisReservasAsignadasPage = () => {
         </Modal.Body>
       </Modal>
 
-      <Modal show={showRevisarModal} onHide={handleCloseRevisarModal} centered>
+      <Modal
+        show={showRevisarModal}
+        onHide={handleCloseRevisarModal}
+        centered
+        style={{ zIndex: 1055 }}
+        backdropClassName="modal-backdrop-custom"
+      >
         <Modal.Header closeButton>
           <Modal.Title>
             Revisar Reserva: {selectedReserva?.NOMBRE_EXAMEN}
@@ -705,6 +782,8 @@ const MisReservasAsignadasPage = () => {
         show={showObservacionesModal}
         onHide={handleCloseObservacionesModal}
         centered
+        style={{ zIndex: 1055 }}
+        backdropClassName="modal-backdrop-custom"
       >
         <Modal.Header closeButton>
           <Modal.Title>
@@ -734,6 +813,8 @@ const MisReservasAsignadasPage = () => {
         show={showConfirmDescartarModal}
         onHide={handleCloseConfirmDescartarModal}
         centered
+        style={{ zIndex: 1055 }}
+        backdropClassName="modal-backdrop-custom"
       >
         <Modal.Header closeButton>
           <Modal.Title>Confirmar Descarte de Reserva</Modal.Title>

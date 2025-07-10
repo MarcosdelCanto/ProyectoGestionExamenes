@@ -228,7 +228,7 @@ button:focus-visible {
   width: 100vw;
   height: 100vh;
   background-color: rgba(0, 0, 0, 0.5); /* Fondo semi-transparente */
-  z-index: 1040; /* Menor que el offcanvas (1045) pero mayor que el contenido */
+  z-index: 1040 !important; /* Menor que el offcanvas (1045) pero mayor que el contenido */
   opacity: 0;
   visibility: hidden;
   transition:
@@ -361,4 +361,19 @@ button:focus-visible {
   max-width: 280px; /* Aumenta el ancho máximo para tooltips largos */
   text-align: left; /* Asegura que el texto del tooltip no se justifique */
   font-size: 0.85rem; /* Tamaño de fuente para el tooltip */
+}
+
+/* Estilos para corregir conflictos de z-index entre modales y sidebar en MisReservasAsignadasPage */
+.modal-backdrop-custom {
+  z-index: 1050 !important; /* Menor que el sidebar overlay (1059) pero mayor que el contenido */
+}
+
+/* Asegurar que los modales tengan el z-index correcto */
+.modal.show {
+  z-index: 1055 !important;
+}
+
+/* Evitar conflictos de overlay múltiples */
+.modal-backdrop-custom.show {
+  opacity: 0.5;
 }
