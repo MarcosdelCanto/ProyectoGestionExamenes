@@ -548,15 +548,21 @@ const ReservaForm = ({
         .then((data) => {
           setModulos(data);
           if (isEditMode && !resetearModulos && initialData?.modulosIds) {
-            setSelectedModulosIds(initialData.modulosIds); // Corregido a setSelectedModulosIds
+            setModulosIds(initialData.modulosIds);
           }
         })
-        .catch(() => setError('No se pudieron cargar los módulos.'))
+        .catch((error) => {
+          console.error('[ReservaForm] Error al cargar módulos:', error);
+          setError(
+            'No se pudieron cargar los módulos: ' +
+              (error.message || error.error || 'Error desconocido')
+          );
+        })
         .finally(() => setLoadingModules(false));
     } else {
       setModulos([]);
       if (!isEditMode) {
-        setModulosIds([]); // Corregido a setModulosIds
+        setModulosIds([]);
       }
     }
   }, [
