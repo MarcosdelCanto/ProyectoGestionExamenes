@@ -106,9 +106,9 @@
 }
 
 .calendar-table .horario-col {
-  width: 80px !important;
+  width: 100px;
   min-width: 80px;
-  max-width: 80px;
+  max-width: 100px;
   white-space: nowrap;
   background-color: #343a40;
   color: white;
