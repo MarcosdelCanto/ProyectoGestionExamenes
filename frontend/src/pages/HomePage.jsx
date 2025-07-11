@@ -10,7 +10,7 @@ import Layout from '../components/Layout';
 import Avatar from '../components/Avatar';
 import { SummaryDashboard } from '../components/SummaryDashboard/';
 import DashboardConGraficos from '../components/dashboard/DashboardConGraficos';
-import CalendarioReservas from '../components/calendario/CalendarioReservas'; // <-- 1. Importar el nuevo calendario
+import CalendarioReservas from '../components/calendario/CalendarioReservas';
 /* import { usePermission } from '../hooks/usePermission'; */ // <-- Hook causing error, disabled for now.
 
 // Estilos
