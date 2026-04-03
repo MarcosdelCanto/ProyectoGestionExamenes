@@ -113,5 +113,5 @@ jobs:
           script: |
             cd ~/app
             chmod +x backend/init-db.sh
-            docker compose -f docker-compose.prod.yml pull
-            docker compose -f docker-compose.prod.yml up -d --force-recreate
+            docker-compose -f docker-compose.prod.yml pull
+            docker-compose -f docker-compose.prod.yml up -d --force-recreate
