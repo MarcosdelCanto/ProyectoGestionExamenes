@@ -113,5 +113,6 @@ jobs:
           script: |
             cd ~/app
             chmod +x backend/init-db.sh
+            docker rm -f examenes-frontend examenes-backend oracle-xe 2>/dev/null || true
             docker-compose -f docker-compose.prod.yml pull
             docker-compose -f docker-compose.prod.yml up -d --force-recreate
