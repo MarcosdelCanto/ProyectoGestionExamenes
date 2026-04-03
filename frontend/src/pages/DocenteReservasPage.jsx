@@ -33,7 +33,9 @@ const MisReservasAsignadasPage = () => {
   const [error, setError] = useState(null);
   // Determina la pestaña activa por defecto según el rol del usuario
   const [activeTab, setActiveTab] = useState(
-    user.nombre_rol === 'DOCENTE' ? 'pendientes' : 'proximas'
+    (user.nombre_rol || '').toUpperCase() === 'DOCENTE'
+      ? 'pendientes'
+      : 'proximas'
   );
 
   // --- Estados para el modal de EDICIÓN (para admins/coordinadores) ---
@@ -143,9 +145,9 @@ const MisReservasAsignadasPage = () => {
   const esAdminOComite =
     user &&
     ['ADMINISTRADOR', 'COORDINADOR CARRERA', 'COORDINADOR DOCENTE'].includes(
-      user.nombre_rol
+      (user.nombre_rol || '').toUpperCase()
     );
-  const esDocente = user && user.nombre_rol === 'DOCENTE';
+  const esDocente = user && (user.nombre_rol || '').toUpperCase() === 'DOCENTE';
 
   // --- Renderizado de Contenido de Pestañas ---
   const renderTablaReservas = (data, esEditable = false) => {

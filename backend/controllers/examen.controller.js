@@ -41,7 +41,7 @@ export const getAllExamenes = async (_req, res) => {
                  FROM USUARIOSECCION US
                  JOIN USUARIO U ON US.USUARIO_ID_USUARIO = U.ID_USUARIO
                  JOIN ROL R ON U.ROL_ID_ROL = R.ID_ROL
-                 WHERE US.SECCION_ID_SECCION = s.id_seccion AND R.NOMBRE_ROL = 'DOCENTE'
+                 WHERE US.SECCION_ID_SECCION = s.id_seccion AND UPPER(R.NOMBRE_ROL) = 'DOCENTE'
               ) AS NOMBRE_DOCENTE
        FROM EXAMEN e
        JOIN SECCION s ON e.seccion_id_seccion = s.id_seccion
@@ -321,7 +321,7 @@ export const getAvailableExamsForUser = async (req, res) => {
                 FROM USUARIOSECCION US_DOC
                 JOIN USUARIO U ON US_DOC.USUARIO_ID_USUARIO = U.ID_USUARIO
                 JOIN ROL R ON U.ROL_ID_ROL = R.ID_ROL
-                WHERE US_DOC.SECCION_ID_SECCION = sec.ID_SECCION AND R.NOMBRE_ROL = 'DOCENTE'
+                WHERE US_DOC.SECCION_ID_SECCION = sec.ID_SECCION AND UPPER(R.NOMBRE_ROL) = 'DOCENTE'
              ) AS NOMBRE_DOCENTE
       FROM EXAMEN ex
       JOIN ESTADO est ON ex.ESTADO_ID_ESTADO = est.ID_ESTADO

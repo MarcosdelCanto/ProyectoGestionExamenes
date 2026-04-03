@@ -357,7 +357,7 @@ export default function ExamenPostIt({
 
   const getActionButtons = () => {
     if (isPreview || isDragOverlay) return null;
-    if (user?.nombre_rol !== 'ADMINISTRADOR') {
+    if ((user?.nombre_rol || '').toUpperCase() !== 'ADMINISTRADOR') {
       const carreraDelExamenId =
         examenAsignadoCompleto?.reservaCompleta?.ID_CARRERA ||
         examenAsignadoCompleto?.ID_CARRERA ||

@@ -34,7 +34,6 @@ jobs:
       - name: Wait for services to be ready
         run: echo "Waiting for 30 seconds for services to start..." && sleep 30
 
-      # --- LÍNEA CORREGIDA ---
       - name: Run E2E tests
         run: docker compose exec -T frontend npm run test:ui
 
@@ -72,6 +71,39 @@ jobs:
           push: true
           tags: ${{ secrets.DOCKERHUB_USERNAME }}/proyectogestionexamenes-frontend:latest
 
+      - name: Copiar archivos de despliegue al servidor
+        uses: appleboy/scp-action@master
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ${{ secrets.EC2_USER }}
+          password: ${{ secrets.EC2_PASSWORD }}
+          source: "docker-compose.prod.yml,backend/setup_database.sql,backend/init-db.sh"
+          target: "~/app"
+
+      - name: Crear archivo .env en el servidor
+        uses: appleboy/ssh-action@master
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ${{ secrets.EC2_USER }}
+          password: ${{ secrets.EC2_PASSWORD }}
+          script: |
+            mkdir -p ~/app
+            cat > ~/app/.env << 'ENVEOF'
+            PORT=3000
+            JWT_SECRET=${{ secrets.JWT_SECRET }}
+            REFRESH_SECRET=${{ secrets.REFRESH_SECRET }}
+            JWT_EXPIRES_IN=3h
+            REFRESH_EXPIRES_IN=7d
+            CORS_ORIGIN=https://examenes.zima-code.com
+            DB_USER=ADMIN
+            DB_PASSWORD=${{ secrets.DB_PASSWORD }}
+            DB_POOL_MIN=2
+            DB_POOL_MAX=10
+            DB_POOL_INCREMENT=2
+            EMAIL_USER=${{ secrets.EMAIL_USER }}
+            EMAIL_PASSWORD=${{ secrets.EMAIL_PASSWORD }}
+            ENVEOF
+
       - name: Deploy to Vultr
         uses: appleboy/ssh-action@master
         with:
@@ -79,5 +111,7 @@ jobs:
           username: ${{ secrets.EC2_USER }}
           password: ${{ secrets.EC2_PASSWORD }}
           script: |
-            docker compose pull
-            docker compose up -d --force-recreate
+            cd ~/app
+            chmod +x backend/init-db.sh
+            docker compose -f docker-compose.prod.yml pull
+            docker compose -f docker-compose.prod.yml up -d --force-recreate

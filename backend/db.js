@@ -6,8 +6,9 @@ import { fileURLToPath } from 'url';
 
 dotenv.config({ path: path.resolve(process.cwd(), '../.env') }); // Asegura leer el .env de la raíz
 
-// --- Lógica para determinar la ubicación de la wallet ---
+// --- Lógica para determinar el modo de conexión ---
 const isRunningInDocker = !!process.env.DOCKER_ENV;
+const useWallet = process.env.DB_USE_WALLET === 'true';
 
 // __dirname no existe en módulos ES, así que lo calculamos
 const __filename = fileURLToPath(import.meta.url);
@@ -18,7 +19,9 @@ const walletPath = isRunningInDocker
   ? process.env.TNS_ADMIN
   : path.join(__dirname, 'wallet');
 
-console.log(`[DB] Entorno detectado. Usando wallet en: ${walletPath}`);
+console.log(
+  `[DB] Entorno detectado. Modo wallet: ${useWallet}. Connect string: ${process.env.DB_CONNECTSTRING}`
+);
 
 let pool;
 oracledb.outFormat = oracledb.OUT_FORMAT_OBJECT;
@@ -29,18 +32,25 @@ export async function initDB() {
       `Intentando conectar con DB_USER: "${process.env.DB_USER}" y DB_CONNECTSTRING: "${process.env.DB_CONNECTSTRING}"`
     );
 
-    // En modo Thin, es mejor pasar 'walletLocation' y 'walletPassword' directamente al pool
-    pool = await oracledb.createPool({
+    const poolConfig = {
       user: process.env.DB_USER,
       password: process.env.DB_PASSWORD,
       connectString: process.env.DB_CONNECTSTRING,
-      walletLocation: walletPath, // <-- Usamos la ruta dinámica que calculamos
-      walletPassword: process.env.WALLET_PASSWORD,
       poolMin: parseInt(process.env.DB_POOL_MIN, 10) || 2,
       poolMax: parseInt(process.env.DB_POOL_MAX, 10) || 10,
       poolIncrement: parseInt(process.env.DB_POOL_INCREMENT, 10) || 2,
-    });
-    console.log('✅ Pool de conexiones Oracle creado (Modo Thin)');
+    };
+
+    // Solo agregar wallet si estamos en modo cloud
+    if (useWallet) {
+      poolConfig.walletLocation = walletPath;
+      poolConfig.walletPassword = process.env.WALLET_PASSWORD;
+    }
+
+    pool = await oracledb.createPool(poolConfig);
+    console.log(
+      `✅ Pool de conexiones Oracle creado (${useWallet ? 'Wallet/Cloud' : 'Local'})`
+    );
   } catch (err) {
     console.error('❌ Error creando pool Oracle (Modo Thin):', err);
     throw err;

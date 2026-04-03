@@ -100,7 +100,9 @@ function UsuarioTable({
                     {/* Icono para carreras */}
                   </Button>
                 )}
-                {(u.NOMBRE_ROL === 'ALUMNO' || u.NOMBRE_ROL === 'DOCENTE') && (
+                {['ALUMNO', 'DOCENTE'].includes(
+                  (u.NOMBRE_ROL || '').toUpperCase()
+                ) && (
                   <Button
                     variant="outline-success"
                     size="sm"

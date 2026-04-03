@@ -247,7 +247,7 @@ export const getDocentesBySeccion = async (req, res) => {
       JOIN USUARIOSECCION us ON u.ID_USUARIO = us.USUARIO_ID_USUARIO
       JOIN ROL r ON u.ROL_ID_ROL = r.ID_ROL
       WHERE us.SECCION_ID_SECCION = :seccionId
-      AND r.NOMBRE_ROL = 'DOCENTE'
+      AND UPPER(r.NOMBRE_ROL) = 'DOCENTE'
     `;
     const result = await connection.execute(
       sql,

@@ -488,7 +488,7 @@ export const searchDocentes = async (req, res) => {
           WHERE us.USUARIO_ID_USUARIO = u.ID_USUARIO) AS SECCIONES
       FROM USUARIO u
       JOIN ROL r ON u.ROL_ID_ROL = r.ID_ROL
-      WHERE r.NOMBRE_ROL = 'DOCENTE' -- O el rol correcto
+      WHERE UPPER(r.NOMBRE_ROL) = 'DOCENTE'
         AND UPPER(u.NOMBRE_USUARIO) LIKE :searchTerm
     `;
 

@@ -15,9 +15,11 @@ import UsuarioCarreraTable from './usuarioCarrera/UsuarioCarreraTable';
 import UsuarioFilter from '../usuarios/UsuarioFilter';
 import PaginationComponent from '../PaginationComponent';
 
-const COORDINADOR_ROLE_NAME = 'COORDINADOR CARRERA';
-const DIRECTOR_ROLE_NAME = 'JEFE CARRERA';
-const COORDINADOR_DOCENTE_ROLE_NAME = 'COORDINADOR DOCENTE';
+const COORDINADOR_ROLE_NAME = 'coordinador carrera';
+const DIRECTOR_ROLE_NAME = 'jefe carrera';
+const COORDINADOR_DOCENTE_ROLE_NAME = 'coordinador docente';
+// También se permiten roles base de la BD
+const EXTRA_ALLOWED_ROLES = ['administrador', 'docente'];
 const ITEMS_PER_PAGE = 4;
 
 function UsuarioCarreraTab({ allUsers, allRoles }) {
@@ -64,12 +66,15 @@ function UsuarioCarreraTab({ allUsers, allRoles }) {
   const eligibleRoleIds = useMemo(() => {
     if (!Array.isArray(allRoles) || allRoles.length === 0) return [];
     return allRoles
-      .filter(
-        (r) =>
-          r.NOMBRE_ROL === COORDINADOR_ROLE_NAME ||
-          r.NOMBRE_ROL === DIRECTOR_ROLE_NAME ||
-          r.NOMBRE_ROL === COORDINADOR_DOCENTE_ROLE_NAME
-      )
+      .filter((r) => {
+        const nombre = (r.NOMBRE_ROL || '').toLowerCase();
+        return (
+          nombre === COORDINADOR_ROLE_NAME ||
+          nombre === DIRECTOR_ROLE_NAME ||
+          nombre === COORDINADOR_DOCENTE_ROLE_NAME ||
+          EXTRA_ALLOWED_ROLES.includes(nombre)
+        );
+      })
       .map((r) => r.ID_ROL);
   }, [allRoles]);
 

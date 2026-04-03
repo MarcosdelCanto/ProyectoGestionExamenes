@@ -170,6 +170,3 @@ npm run test:debug    # Modo debug
 ---
 
 ## 🤝 Equipo
-
-- [Tu nombre o grupo] – Desarrollo
-- [Compañero que crea la base de datos] – BD Oracle

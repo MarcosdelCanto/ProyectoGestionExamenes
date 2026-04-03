@@ -36,7 +36,9 @@ const MisReservasAsignadasPage = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [activeTab, setActiveTab] = useState(
-    user?.nombre_rol === 'DOCENTE' ? 'pendientes' : 'proximas'
+    (user?.nombre_rol || '').toUpperCase() === 'DOCENTE'
+      ? 'pendientes'
+      : 'proximas'
   );
   const [showEditModal, setShowEditModal] = useState(false);
   const [currentReservaToEdit, setCurrentReservaToEdit] = useState(null);
@@ -331,8 +333,9 @@ const MisReservasAsignadasPage = () => {
       'COORDINADOR CARRERA',
       'COORDINADOR DOCENTE',
       'JEFE CARRERA',
-    ].includes(user?.nombre_rol);
-  const esDocente = user && user?.nombre_rol === 'DOCENTE';
+    ].includes((user?.nombre_rol || '').toUpperCase());
+  const esDocente =
+    user && (user?.nombre_rol || '').toUpperCase() === 'DOCENTE';
 
   if (loading) {
     return (

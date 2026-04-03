@@ -77,5 +77,3 @@
 2. **Configurar email** en variables de entorno del servidor
 3. **Personalizar estilos** según preferencias
 4. **Agregar más funcionalidades** si es necesario
-
-¿Te gustaría que ajuste algún aspecto del diseño o funcionalidad?

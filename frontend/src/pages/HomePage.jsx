@@ -70,10 +70,10 @@ export default function HomePage() {
   // This replaces the functionality from the usePermission hook which was causing an error.
   const hasRole = (rolesToCheck) => {
     if (!perfil?.NOMBRE_ROL) return false;
-    const userRole = perfil.NOMBRE_ROL;
+    const userRole = (perfil.NOMBRE_ROL || '').toUpperCase();
     return Array.isArray(rolesToCheck)
-      ? rolesToCheck.includes(userRole)
-      : userRole === rolesToCheck;
+      ? rolesToCheck.map((r) => r.toUpperCase()).includes(userRole)
+      : rolesToCheck.toUpperCase() === userRole;
   };
 
   // Una vez cargados, determina los roles para la lógica condicional

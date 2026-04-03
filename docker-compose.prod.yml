@@ -1,0 +1,72 @@
+services:
+  oracle-db:
+    image: container-registry.oracle.com/database/express:21.3.0-xe
+    container_name: oracle-xe
+    environment:
+      ORACLE_PWD: ${DB_PASSWORD}
+      ORACLE_CHARACTERSET: AL32UTF8
+      TZ: "America/Santiago"
+    ports:
+      - "1521:1521"
+    volumes:
+      - oracle-data:/opt/oracle/oradata
+      - ./backend/init-db.sh:/opt/oracle/scripts/setup/01_init.sh:ro
+      - ./backend/setup_database.sql:/tmp/setup_database.sql:ro
+    restart: always
+    networks:
+      - app-network
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "bash",
+          "-c",
+          "echo 'SELECT 1 FROM DUAL;' | sqlplus -s system/${DB_PASSWORD}@localhost:1521/XEPDB1",
+        ]
+      interval: 30s
+      timeout: 10s
+      retries: 10
+      start_period: 120s
+
+  backend:
+    image: micobo/proyectogestionexamenes-backend:latest
+    container_name: examenes-backend
+    env_file:
+      - .env
+    environment:
+      DOCKER_ENV: "true"
+      NODE_ENV: "production"
+      FRONTEND_URL: "https://examenes.zima-code.com"
+      TZ: "America/Santiago"
+      DB_USE_WALLET: "false"
+      DB_CONNECTSTRING: "oracle-db:1521/XEPDB1"
+    depends_on:
+      oracle-db:
+        condition: service_healthy
+    ports:
+      - "3000:3000"
+    restart: always
+    networks:
+      - app-network
+
+  examenes-frontend:
+    image: micobo/proyectogestionexamenes-frontend:latest
+    container_name: examenes-frontend
+    depends_on:
+      - backend
+    networks:
+      - app-network
+      - npm-network
+    environment:
+      TZ: "America/Santiago"
+    restart: always
+
+volumes:
+  oracle-data:
+
+networks:
+  app-network:
+    driver: bridge
+  npm-network:
+    external: true
+    name: proxy_default

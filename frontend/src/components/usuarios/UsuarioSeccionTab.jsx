@@ -15,8 +15,8 @@ import UsuarioSeccionTable from './usuarioSeccion/UsuarioSeccionTable.jsx';
 import UsuarioFilter from './UsuarioFilter';
 import PaginationComponent from '../PaginationComponent';
 
-const ALUMNO_ROLE_NAME = 'ALUMNO';
-const DOCENTE_ROLE_NAME = 'DOCENTE';
+const ALUMNO_ROLE_NAME = 'alumno';
+const DOCENTE_ROLE_NAME = 'docente';
 const ITEMS_PER_PAGE = 4;
 
 function UsuarioSeccionTab({ allUsers, allRoles }) {
@@ -63,11 +63,10 @@ function UsuarioSeccionTab({ allUsers, allRoles }) {
   const eligibleRoleIds = useMemo(() => {
     if (!allRoles || allRoles.length === 0) return [];
     return allRoles
-      .filter(
-        (r) =>
-          r.NOMBRE_ROL === ALUMNO_ROLE_NAME ||
-          r.NOMBRE_ROL === DOCENTE_ROLE_NAME
-      )
+      .filter((r) => {
+        const nombre = (r.NOMBRE_ROL || '').toLowerCase();
+        return nombre === ALUMNO_ROLE_NAME || nombre === DOCENTE_ROLE_NAME;
+      })
       .map((r) => r.ID_ROL);
   }, [allRoles]);
 

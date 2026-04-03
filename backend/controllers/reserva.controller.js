@@ -1697,16 +1697,21 @@ export const cancelarReservaCompleta = async (req, res) => {
 export const getMisReservasConfirmadas = async (req, res) => {
   let connection;
   const { id_usuario: userId, nombre_rol: userRole } = req.user; // Obtiene el ID y rol del usuario logueado
-  
-  console.log('[getMisReservasConfirmadas] Usuario ID:', userId, 'Rol:', userRole);
+
+  console.log(
+    '[getMisReservasConfirmadas] Usuario ID:',
+    userId,
+    'Rol:',
+    userRole
+  );
 
   try {
     connection = await getConnection();
-    
+
     let sql;
-    
+
     // Determinar la consulta según el rol del usuario
-    if (userRole === 'ALUMNO') {
+    if ((userRole || '').toUpperCase() === 'ALUMNO') {
       // Para alumnos: mostrar reservas de las secciones a las que están asociados
       sql = `
         SELECT DISTINCT
@@ -1772,7 +1777,10 @@ export const getMisReservasConfirmadas = async (req, res) => {
       `;
     }
 
-    console.log('[getMisReservasConfirmadas] Ejecutando consulta para rol:', userRole);
+    console.log(
+      '[getMisReservasConfirmadas] Ejecutando consulta para rol:',
+      userRole
+    );
 
     const result = await connection.execute(
       sql,
@@ -1810,8 +1818,13 @@ export const getMisReservasConfirmadas = async (req, res) => {
       ).values(),
     ];
 
-    console.log('[getMisReservasConfirmadas] Reservas encontradas para usuario', userId, ':', uniqueReservas.length);
-    
+    console.log(
+      '[getMisReservasConfirmadas] Reservas encontradas para usuario',
+      userId,
+      ':',
+      uniqueReservas.length
+    );
+
     res.json(uniqueReservas);
   } catch (error) {
     handleError(res, error, 'Error al obtener mis reservas confirmadas');
