@@ -1,6 +1,7 @@
 // src/components/asignaturas/AsignaturaFilter.jsx
 import React from 'react';
-import Select from 'react-select'; // Importar react-select
+import Select from 'react-select';
+import { duocSelectStyles } from '../../styles/duocSelectStyles';
 import { Card, Form, Row, Col, Button } from 'react-bootstrap';
 
 function AsignaturaFilter({
@@ -74,6 +75,9 @@ function AsignaturaFilter({
                     })
                   }
                   placeholder="Todas las escuelas"
+                  styles={duocSelectStyles}
+                  menuPortalTarget={document.body}
+                  menuPosition="fixed"
                   isClearable
                 />
               </Form.Group>
@@ -108,6 +112,9 @@ function AsignaturaFilter({
                     !currentFilters.escuela // Deshabilitar si no hay escuela seleccionada
                   }
                   placeholder="Todas las carreras"
+                  styles={duocSelectStyles}
+                  menuPortalTarget={document.body}
+                  menuPosition="fixed"
                   isClearable
                 />
               </Form.Group>

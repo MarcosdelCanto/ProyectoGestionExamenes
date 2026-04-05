@@ -55,7 +55,10 @@ function SeccionList({
               }`}
               style={{ cursor: 'pointer' }}
             >
-              <td className="text-center align-middle">
+              <td
+                className="text-center align-middle"
+                onClick={(e) => e.stopPropagation()}
+              >
                 <input
                   type="checkbox"
                   className="form-check-input"
@@ -64,10 +67,7 @@ function SeccionList({
                       (ss) => ss.ID_SECCION === s.ID_SECCION
                     )
                   }
-                  onChange={(e) => {
-                    e.stopPropagation();
-                    onToggleSeccionSelection(s);
-                  }}
+                  onChange={() => onToggleSeccionSelection(s)}
                   aria-label={`Seleccionar sección ${s.NOMBRE_SECCION || s.ID_SECCION}`}
                 />
               </td>

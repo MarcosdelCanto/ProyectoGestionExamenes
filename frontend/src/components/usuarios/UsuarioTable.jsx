@@ -62,7 +62,7 @@ function UsuarioTable({
               } `}
               style={{ cursor: 'pointer' }}
             >
-              <td className="text-center">
+              <td className="text-center" onClick={(e) => e.stopPropagation()}>
                 <input
                   type="checkbox"
                   className="form-check-input"
@@ -71,10 +71,7 @@ function UsuarioTable({
                       (su) => su.ID_USUARIO === u.ID_USUARIO
                     )
                   }
-                  onChange={(e) => {
-                    e.stopPropagation(); // Evita que el onClick de la fila se dispare dos veces
-                    onToggleUsuarioSelection(u);
-                  }}
+                  onChange={() => onToggleUsuarioSelection(u)}
                 />
               </td>
               <td className="text-center">{u.ID_USUARIO}</td>

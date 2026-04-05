@@ -1,6 +1,7 @@
 // src/components/carreras/CarreraFilter.jsx
 import React from 'react';
-import Select from 'react-select'; // Importar react-select
+import Select from 'react-select';
+import { duocSelectStyles } from '../../styles/duocSelectStyles';
 import { Card, Form, Row, Col, Button } from 'react-bootstrap';
 
 function CarreraFilter({ escuelas = [], onFilterChange, currentFilters }) {
@@ -67,6 +68,9 @@ function CarreraFilter({ escuelas = [], onFilterChange, currentFilters }) {
                     })
                   }
                   placeholder="Todas las escuelas"
+                  styles={duocSelectStyles}
+                  menuPortalTarget={document.body}
+                  menuPosition="fixed"
                   isClearable
                 />
               </Form.Group>

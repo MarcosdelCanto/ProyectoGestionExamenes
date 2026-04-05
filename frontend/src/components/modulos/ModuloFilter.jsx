@@ -1,6 +1,7 @@
 // src/components/modulos/ModuloFilter.jsx
 import React from 'react';
-import Select from 'react-select'; // Importar react-select
+import Select from 'react-select';
+import { duocSelectStyles } from '../../styles/duocSelectStyles';
 import { Card, Form, Row, Col, Button } from 'react-bootstrap';
 
 function ModuloFilter({ estados = [], onFilterChange, currentFilters }) {
@@ -86,6 +87,9 @@ function ModuloFilter({ estados = [], onFilterChange, currentFilters }) {
                     })
                   }
                   placeholder="Todos los estados"
+                  styles={duocSelectStyles}
+                  menuPortalTarget={document.body}
+                  menuPosition="fixed"
                   isClearable
                 />
               </Form.Group>

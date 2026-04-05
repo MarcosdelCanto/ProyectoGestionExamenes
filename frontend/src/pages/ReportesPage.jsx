@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import Modal from 'react-modal';
+import Select from 'react-select';
 import * as XLSX from 'xlsx';
 
 // Hook y componentes de UI
@@ -9,12 +10,10 @@ import FilterModal from '../components/reportes/FilterModal';
 import FilterForm from '../components/reportes/FilterForm';
 import ReportTable from '../components/reportes/ReportTable';
 import ReportToolbar from '../components/reportes/ReportToolbar';
-// --- 1. DESCOMENTA ESTA LÍNEA ---
 import ColumnSelectorModal from '../components/reportes/ColumnSelectorModal';
-import PaginationComponent from '../components/PaginationComponent'; // Importar paginación
-
-// Configuración del reporte
-import { reportConfig, REPORT_TYPES } from './reportConfig'; // Ajusté la ruta por si acaso
+import PaginationComponent from '../components/PaginationComponent';
+import { reportConfig, REPORT_TYPES } from './reportConfig';
+import './ReportesPage.css';
 Modal.setAppElement('#root');
 const ITEMS_PER_PAGE_REPORT = 6; // O el número de filas que prefieras para los reportes
 
@@ -24,6 +23,7 @@ const ReportesPage = () => {
   );
   const [isFilterModalOpen, setIsFilterModalOpen] = useState(false);
   const [isColumnModalOpen, setIsColumnModalOpen] = useState(false);
+  const [isReportSelectOpen, setIsReportSelectOpen] = useState(false);
   const [columnVisibility, setColumnVisibility] = useState({});
   const [currentPageReport, setCurrentPageReport] = useState(1);
 
@@ -145,28 +145,103 @@ const ReportesPage = () => {
     <Layout>
       {/* <--- 2. ENVUELVES TODO EL CONTENIDO DE TU PÁGINA CON EL LAYOUT */}
       <div className="container-fluid p-4 reportes-page">
-        <div className="card shadow mb-4">
+        {isReportSelectOpen && (
+          <div
+            onClick={() => setIsReportSelectOpen(false)}
+            style={{
+              position: 'fixed',
+              inset: 0,
+              backgroundColor: 'rgba(0,0,0,0.35)',
+              backdropFilter: 'blur(3px)',
+              zIndex: 9998,
+            }}
+          />
+        )}
+        <div className="d-flex justify-content-between align-items-center mb-3">
+          <h2 className="display-6">
+            <i className="bi bi-file-earmark-bar-graph-fill me-3"></i>
+            Reportes
+          </h2>
+        </div>
+        <hr />
+        <div
+          className="card shadow mb-4"
+          style={
+            isReportSelectOpen ? { position: 'relative', zIndex: 9999 } : {}
+          }
+        >
           <div className="card-header">
             <h4 className="card-title">Generador de Reportes</h4>
           </div>
           <div className="card-body">
             <div className="mb-3">
-              <label htmlFor="reportTypeSelect" className="form-label">
+              <label className="form-label">
                 Seleccione un tipo de reporte:
               </label>
-              <select
-                id="reportTypeSelect"
-                className="form-select"
-                value={selectedReportType}
-                onChange={handleReportTypeChange}
-              >
-                <option value={REPORT_TYPES.DETALLE_EXAMENES}>
-                  Reporte Detallado de Exámenes
-                </option>
-                <option value={REPORT_TYPES.ALUMNOS_RESERVAS}>
-                  Reporte de Alumnos y sus Reservas
-                </option>
-              </select>
+              <Select
+                inputId="reportTypeSelect"
+                onMenuOpen={() => setIsReportSelectOpen(true)}
+                onMenuClose={() => setIsReportSelectOpen(false)}
+                options={[
+                  {
+                    value: REPORT_TYPES.DETALLE_EXAMENES,
+                    label: 'Reporte Detallado de Exámenes',
+                  },
+                  {
+                    value: REPORT_TYPES.ALUMNOS_RESERVAS,
+                    label: 'Reporte de Alumnos y sus Reservas',
+                  },
+                ]}
+                value={[
+                  {
+                    value: REPORT_TYPES.DETALLE_EXAMENES,
+                    label: 'Reporte Detallado de Exámenes',
+                  },
+                  {
+                    value: REPORT_TYPES.ALUMNOS_RESERVAS,
+                    label: 'Reporte de Alumnos y sus Reservas',
+                  },
+                ].find((o) => o.value === selectedReportType)}
+                onChange={(opt) =>
+                  handleReportTypeChange({ target: { value: opt.value } })
+                }
+                styles={{
+                  control: (base, state) => ({
+                    ...base,
+                    borderColor: state.isFocused ? '#6c757d' : '#ced4da',
+                    boxShadow: state.isFocused
+                      ? '0 0 0 0.2rem rgba(108,117,125,0.25)'
+                      : 'none',
+                    borderRadius: '0.375rem',
+                    fontSize: '0.9rem',
+                    '&:hover': { borderColor: '#6c757d' },
+                  }),
+                  option: (base, state) => ({
+                    ...base,
+                    backgroundColor: state.isSelected
+                      ? '#1a1a1a'
+                      : state.isFocused
+                        ? '#f0f0f0'
+                        : '#ffffff',
+                    color: state.isSelected ? '#ffffff' : '#2d2d2d',
+                    fontSize: '0.9rem',
+                    cursor: 'pointer',
+                    ':active': { backgroundColor: '#d6d8db', color: '#1a1a1a' },
+                  }),
+                  singleValue: (base) => ({ ...base, color: '#2d2d2d' }),
+                  indicatorSeparator: () => ({ display: 'none' }),
+                  dropdownIndicator: (base) => ({ ...base, color: '#6c757d' }),
+                  menu: (base) => ({
+                    ...base,
+                    borderRadius: '0.375rem',
+                    boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
+                    zIndex: 9999,
+                  }),
+                  menuPortal: (base) => ({ ...base, zIndex: 9999 }),
+                }}
+                menuPortalTarget={document.body}
+                menuPosition="fixed"
+              />
             </div>
           </div>
         </div>
@@ -183,15 +258,17 @@ const ReportesPage = () => {
               />
             </div>
 
-            <ReportTable
-              headers={getVisibleHeaders()}
-              allHeaders={currentConfig.tableHeaders}
-              columnVisibility={columnVisibility}
-              data={currentReportDataOnPage} // Pasar solo los datos de la página actual
-              mapper={currentConfig.excelMapper}
-              isLoading={isLoading}
-              error={error}
-            />
+            <div className="p-1">
+              <ReportTable
+                headers={getVisibleHeaders()}
+                allHeaders={currentConfig.tableHeaders}
+                columnVisibility={columnVisibility}
+                data={currentReportDataOnPage} // Pasar solo los datos de la página actual
+                mapper={currentConfig.excelMapper}
+                isLoading={isLoading}
+                error={error}
+              />
+            </div>
           </div>
         )}
 

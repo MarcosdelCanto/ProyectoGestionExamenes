@@ -58,17 +58,17 @@ function SedeList({
               }
               style={{ cursor: 'pointer' }}
             >
-              <td className="text-center align-middle">
+              <td
+                className="text-center align-middle"
+                onClick={(e) => e.stopPropagation()}
+              >
                 <input
                   type="checkbox"
                   className="form-check-input"
                   checked={
                     !!selectedSedes.find((s) => s.ID_SEDE === sede.ID_SEDE)
                   }
-                  onChange={(e) => {
-                    e.stopPropagation();
-                    onToggleSedeSelection(sede);
-                  }}
+                  onChange={() => onToggleSedeSelection(sede)}
                   aria-label={`Seleccionar sede ${sede.NOMBRE_SEDE || sede.ID_SEDE}`}
                 />
               </td>

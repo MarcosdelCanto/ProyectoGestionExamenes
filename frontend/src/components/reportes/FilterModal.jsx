@@ -31,8 +31,7 @@ const FilterModal = ({ isOpen, onRequestClose, onApply, title, children }) => {
         ></button>
       </div>
       <div className="modal-body">
-        {/* El contenido del formulario se renderiza aquí */}
-        {children}
+        <div className="filter-form-grid">{children}</div>
       </div>
       <div className="modal-footer">
         <button

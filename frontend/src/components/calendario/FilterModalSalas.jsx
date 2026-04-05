@@ -1,5 +1,10 @@
 import React from 'react';
-import { Modal, Button, Form } from 'react-bootstrap'; // Importar componentes de react-bootstrap
+import Select from 'react-select';
+import { Modal, Button } from 'react-bootstrap';
+import {
+  duocSelectStyles,
+  duocSelectStylesDisabled,
+} from '../../styles/duocSelectStyles';
 
 export default function FilterModalSalas({
   isOpen,
@@ -10,16 +15,30 @@ export default function FilterModalSalas({
   edificiosDisponibles,
   selectedEdificio,
   onSetSelectedEdificio,
-  onAplicarFiltros, // Para cerrar el modal y aplicar
+  onAplicarFiltros,
 }) {
   if (!isOpen) return null;
 
-  // La función onAplicarFiltros ahora también cerrará el modal.
-  // Si solo quieres aplicar y mantener el modal abierto, necesitarías separar la lógica.
   const handleApplyAndClose = () => {
-    onAplicarFiltros(); // Llama a la función original de aplicar filtros
-    onClose(); // Cierra el modal
+    onAplicarFiltros();
+    onClose();
   };
+
+  const sedeOptions = sedesDisponibles.map((s) => ({
+    value: String(s.ID_SEDE),
+    label: s.NOMBRE_SEDE,
+  }));
+  const edificiosFiltrados = edificiosDisponibles.filter(
+    (e) =>
+      !selectedSede ||
+      (e.SEDE_ID_SEDE && e.SEDE_ID_SEDE.toString() === selectedSede)
+  );
+  const edificioOptions = edificiosFiltrados.map((e) => ({
+    value: String(e.ID_EDIFICIO),
+    label: e.NOMBRE_EDIFICIO,
+  }));
+  const edificiosDisabled =
+    !selectedSede && edificiosDisponibles.some((e) => e.SEDE_ID_SEDE);
 
   return (
     <Modal show={isOpen} onHide={onClose} centered>
@@ -27,55 +46,39 @@ export default function FilterModalSalas({
         <Modal.Title as="h5">Filtrar Salas</Modal.Title>
       </Modal.Header>
       <Modal.Body>
-        <Form>
-          <Form.Group className="mb-3" controlId="sedeSelect">
-            <Form.Label className="form-label-sm">Sede:</Form.Label>
-            <Form.Select
-              className="form-select form-select-sm"
-              value={selectedSede}
-              onChange={(e) => onSetSelectedSede(e.target.value)}
-            >
-              <option value="">Todas las Sedes</option>
-              {sedesDisponibles.map((sede) => (
-                <option key={sede.ID_SEDE} value={sede.ID_SEDE}>
-                  {sede.NOMBRE_SEDE}
-                </option>
-              ))}
-            </Form.Select>
-          </Form.Group>
-
-          <Form.Group className="mb-3" controlId="edificioSelect">
-            <Form.Label className="form-label form-label-sm">
-              Edificio:
-            </Form.Label>
-            <Form.Select
-              className="form-select form-select-sm"
-              value={selectedEdificio}
-              onChange={(e) => onSetSelectedEdificio(e.target.value)}
-              disabled={
-                !selectedSede &&
-                edificiosDisponibles.some((e) => e.SEDE_ID_SEDE)
-              }
-            >
-              <option value="">Todos los Edificios</option>
-              {edificiosDisponibles
-                .filter(
-                  (edificio) =>
-                    !selectedSede ||
-                    (edificio.SEDE_ID_SEDE &&
-                      edificio.SEDE_ID_SEDE.toString() === selectedSede)
-                )
-                .map((edificio) => (
-                  <option
-                    key={edificio.ID_EDIFICIO}
-                    value={edificio.ID_EDIFICIO}
-                  >
-                    {edificio.NOMBRE_EDIFICIO}
-                  </option>
-                ))}
-            </Form.Select>
-          </Form.Group>
-        </Form>
+        <div className="mb-3">
+          <label className="form-label form-label-sm">Sede:</label>
+          <Select
+            inputId="sedeSelect"
+            options={sedeOptions}
+            value={sedeOptions.find((o) => o.value === selectedSede) || null}
+            onChange={(opt) => onSetSelectedSede(opt ? opt.value : '')}
+            placeholder="Todas las Sedes"
+            isClearable
+            styles={duocSelectStyles}
+            menuPortalTarget={document.body}
+            menuPosition="fixed"
+          />
+        </div>
+        <div className="mb-3">
+          <label className="form-label form-label-sm">Edificio:</label>
+          <Select
+            inputId="edificioSelect"
+            options={edificioOptions}
+            value={
+              edificioOptions.find((o) => o.value === selectedEdificio) || null
+            }
+            onChange={(opt) => onSetSelectedEdificio(opt ? opt.value : '')}
+            placeholder="Todos los Edificios"
+            isClearable
+            isDisabled={edificiosDisabled}
+            styles={
+              edificiosDisabled ? duocSelectStylesDisabled : duocSelectStyles
+            }
+            menuPortalTarget={document.body}
+            menuPosition="fixed"
+          />
+        </div>
       </Modal.Body>
       <Modal.Footer>
         <Button variant="secondary" size="sm" onClick={onClose}>

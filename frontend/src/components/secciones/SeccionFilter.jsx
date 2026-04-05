@@ -1,6 +1,7 @@
 // src/components/secciones/SeccionFilter.jsx
 import React from 'react';
-import Select from 'react-select'; // Importar react-select
+import Select from 'react-select';
+import { duocSelectStyles } from '../../styles/duocSelectStyles';
 import { Card, Form, Row, Col, Button } from 'react-bootstrap';
 
 function SeccionFilter({
@@ -76,6 +77,9 @@ function SeccionFilter({
                     })
                   }
                   placeholder="Todas"
+                  styles={duocSelectStyles}
+                  menuPortalTarget={document.body}
+                  menuPosition="fixed"
                   isClearable
                 />
               </Form.Group>
@@ -111,6 +115,9 @@ function SeccionFilter({
                     !currentFilters.escuela // Deshabilitar si no hay escuela seleccionada
                   }
                   placeholder="Todas"
+                  styles={duocSelectStyles}
+                  menuPortalTarget={document.body}
+                  menuPosition="fixed"
                   isClearable
                 />
               </Form.Group>
@@ -145,6 +152,9 @@ function SeccionFilter({
                     !currentFilters.carrera // Deshabilitar si no hay carrera seleccionada
                   }
                   placeholder="Todas"
+                  styles={duocSelectStyles}
+                  menuPortalTarget={document.body}
+                  menuPosition="fixed"
                   isClearable
                 />
               </Form.Group>

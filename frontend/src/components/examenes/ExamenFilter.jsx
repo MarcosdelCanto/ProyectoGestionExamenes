@@ -1,6 +1,7 @@
 // src/components/examenes/ExamenFilter.jsx
 import React from 'react';
-import Select from 'react-select'; // Importar react-select
+import Select from 'react-select';
+import { duocSelectStyles } from '../../styles/duocSelectStyles';
 import { Card, Form, Row, Col, Button } from 'react-bootstrap';
 
 // Función para normalizar el texto de búsqueda (eliminar tildes, acentos, etc.)
@@ -93,6 +94,9 @@ function ExamenFilter({
                     })
                   }
                   placeholder="Todas las escuelas"
+                  styles={duocSelectStyles}
+                  menuPortalTarget={document.body}
+                  menuPosition="fixed"
                   isClearable
                 />
               </Form.Group>
@@ -124,6 +128,9 @@ function ExamenFilter({
                     })
                   }
                   placeholder="Todas las carreras"
+                  styles={duocSelectStyles}
+                  menuPortalTarget={document.body}
+                  menuPosition="fixed"
                   isClearable
                 />
               </Form.Group>
@@ -155,6 +162,9 @@ function ExamenFilter({
                     })
                   }
                   placeholder="Todas las asignaturas"
+                  styles={duocSelectStyles}
+                  menuPortalTarget={document.body}
+                  menuPosition="fixed"
                   isClearable
                 />
               </Form.Group>
@@ -193,6 +203,9 @@ function ExamenFilter({
                     })
                   }
                   placeholder="Todas las secciones"
+                  styles={duocSelectStyles}
+                  menuPortalTarget={document.body}
+                  menuPosition="fixed"
                   isClearable
                 />
               </Form.Group>
@@ -215,6 +228,9 @@ function ExamenFilter({
                     })
                   }
                   placeholder="Todos los estados"
+                  styles={duocSelectStyles}
+                  menuPortalTarget={document.body}
+                  menuPosition="fixed"
                   isClearable
                 />
               </Form.Group>

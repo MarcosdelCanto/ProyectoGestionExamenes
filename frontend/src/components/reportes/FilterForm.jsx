@@ -1,204 +1,270 @@
-// src/components/reportes/FilterForm.js
+// src/components/reportes/FilterForm.jsx
 
 import React from 'react';
+import Select from 'react-select';
+import {
+  duocSelectStyles,
+  duocSelectStylesDisabled as disabledStyles,
+} from '../../styles/duocSelectStyles';
+
+const toOption = (value, label) => (value ? { value, label } : null);
 
 const FilterForm = ({ config, tempFilters, filterOptions, onFilterChange }) => {
   if (!config || !config.filterFields) {
     return null;
   }
 
-  // Itera sobre los campos definidos en la configuración y crea el input/select correspondiente.
   return config.filterFields.map((fieldKey) => {
     switch (fieldKey) {
-      case 'sede':
+      case 'sede': {
+        const options = [
+          { value: '', label: 'Todas' },
+          ...(filterOptions.sedes?.map((s) => ({
+            value: s.ID_SEDE,
+            label: s.NOMBRE_SEDE,
+          })) || []),
+        ];
         return (
           <div className="mb-3" key="sede">
-            <label htmlFor="repSede" className="form-label">
-              Sede
-            </label>
-            <select
-              id="repSede"
-              className="form-select"
-              value={tempFilters.sedeId || ''}
-              onChange={(e) => onFilterChange('sedeId', e.target.value)}
-            >
-              <option value="">Todas</option>
-              {filterOptions.sedes?.map((s) => (
-                <option key={s.ID_SEDE} value={s.ID_SEDE}>
-                  {s.NOMBRE_SEDE}
-                </option>
-              ))}
-            </select>
+            <label className="form-label">Sede</label>
+            <Select
+              inputId="repSede"
+              options={options}
+              value={
+                options.find(
+                  (o) => String(o.value) === String(tempFilters.sedeId || '')
+                ) || options[0]
+              }
+              onChange={(opt) => onFilterChange('sedeId', opt?.value || '')}
+              
+              menuPortalTarget={document.body}
+              menuPosition="fixed"
+              placeholder="Todas"
+            />
           </div>
         );
+      }
 
-      case 'escuela':
+      case 'escuela': {
+        const isDisabled =
+          !tempFilters.sedeId || filterOptions.escuelas?.length === 0;
+        const options = [
+          { value: '', label: 'Todas' },
+          ...(filterOptions.escuelas?.map((e) => ({
+            value: e.ID_ESCUELA,
+            label: e.NOMBRE_ESCUELA,
+          })) || []),
+        ];
         return (
           <div className="mb-3" key="escuela">
-            <label htmlFor="repEscuela" className="form-label">
-              Escuela
-            </label>
-            <select
-              id="repEscuela"
-              className="form-select"
-              value={tempFilters.escuelaId || ''}
-              onChange={(e) => onFilterChange('escuelaId', e.target.value)}
-              disabled={
-                !tempFilters.sedeId || filterOptions.escuelas?.length === 0
+            <label className="form-label">Escuela</label>
+            <Select
+              inputId="repEscuela"
+              options={options}
+              value={
+                options.find(
+                  (o) => String(o.value) === String(tempFilters.escuelaId || '')
+                ) || options[0]
               }
-            >
-              <option value="">Todas</option>
-              {filterOptions.escuelas?.map((e) => (
-                <option key={e.ID_ESCUELA} value={e.ID_ESCUELA}>
-                  {e.NOMBRE_ESCUELA}
-                </option>
-              ))}
-            </select>
+              onChange={(opt) => onFilterChange('escuelaId', opt?.value || '')}
+              isDisabled={isDisabled}
+              
+              menuPortalTarget={document.body}
+              menuPosition="fixed"
+              placeholder="Todas"
+            />
           </div>
         );
+      }
 
-      case 'carrera':
+      case 'carrera': {
+        const isDisabled =
+          !tempFilters.escuelaId || filterOptions.carreras?.length === 0;
+        const options = [
+          { value: '', label: 'Todas' },
+          ...(filterOptions.carreras?.map((c) => ({
+            value: c.ID_CARRERA,
+            label: c.NOMBRE_CARRERA,
+          })) || []),
+        ];
         return (
           <div className="mb-3" key="carrera">
-            <label htmlFor="repCarrera" className="form-label">
-              Carrera
-            </label>
-            <select
-              id="repCarrera"
-              className="form-select"
-              value={tempFilters.carreraId || ''}
-              onChange={(e) => onFilterChange('carreraId', e.target.value)}
-              disabled={
-                !tempFilters.escuelaId || filterOptions.carreras?.length === 0
+            <label className="form-label">Carrera</label>
+            <Select
+              inputId="repCarrera"
+              options={options}
+              value={
+                options.find(
+                  (o) => String(o.value) === String(tempFilters.carreraId || '')
+                ) || options[0]
               }
-            >
-              <option value="">Todas</option>
-              {filterOptions.carreras?.map((c) => (
-                <option key={c.ID_CARRERA} value={c.ID_CARRERA}>
-                  {c.NOMBRE_CARRERA}
-                </option>
-              ))}
-            </select>
+              onChange={(opt) => onFilterChange('carreraId', opt?.value || '')}
+              isDisabled={isDisabled}
+              
+              menuPortalTarget={document.body}
+              menuPosition="fixed"
+              placeholder="Todas"
+            />
           </div>
         );
+      }
 
-      case 'asignatura':
+      case 'asignatura': {
+        const isDisabled =
+          !tempFilters.carreraId || filterOptions.asignaturas?.length === 0;
+        const options = [
+          { value: '', label: 'Todas' },
+          ...(filterOptions.asignaturas?.map((a) => ({
+            value: a.ID_ASIGNATURA,
+            label: a.NOMBRE_ASIGNATURA,
+          })) || []),
+        ];
         return (
           <div className="mb-3" key="asignatura">
-            <label htmlFor="repAsignatura" className="form-label">
-              Asignatura
-            </label>
-            <select
-              id="repAsignatura"
-              className="form-select"
-              value={tempFilters.asignaturaId || ''}
-              onChange={(e) => onFilterChange('asignaturaId', e.target.value)}
-              disabled={
-                !tempFilters.carreraId ||
-                filterOptions.asignaturas?.length === 0
+            <label className="form-label">Asignatura</label>
+            <Select
+              inputId="repAsignatura"
+              options={options}
+              value={
+                options.find(
+                  (o) =>
+                    String(o.value) === String(tempFilters.asignaturaId || '')
+                ) || options[0]
               }
-            >
-              <option value="">Todas</option>
-              {filterOptions.asignaturas?.map((a) => (
-                <option key={a.ID_ASIGNATURA} value={a.ID_ASIGNATURA}>
-                  {a.NOMBRE_ASIGNATURA}
-                </option>
-              ))}
-            </select>
+              onChange={(opt) =>
+                onFilterChange('asignaturaId', opt?.value || '')
+              }
+              isDisabled={isDisabled}
+              
+              menuPortalTarget={document.body}
+              menuPosition="fixed"
+              placeholder="Todas"
+            />
           </div>
         );
+      }
 
-      case 'seccion':
+      case 'seccion': {
+        const isDisabled =
+          !tempFilters.asignaturaId || filterOptions.secciones?.length === 0;
+        const options = [
+          { value: '', label: 'Todas' },
+          ...(filterOptions.secciones?.map((s) => ({
+            value: s.ID_SECCION,
+            label: s.NOMBRE_SECCION,
+          })) || []),
+        ];
         return (
           <div className="mb-3" key="seccion">
-            <label htmlFor="repSeccion" className="form-label">
-              Sección
-            </label>
-            <select
-              id="repSeccion"
-              className="form-select"
-              value={tempFilters.seccionId || ''}
-              onChange={(e) => onFilterChange('seccionId', e.target.value)}
-              disabled={
-                !tempFilters.asignaturaId ||
-                filterOptions.secciones?.length === 0
+            <label className="form-label">Sección</label>
+            <Select
+              inputId="repSeccion"
+              options={options}
+              value={
+                options.find(
+                  (o) => String(o.value) === String(tempFilters.seccionId || '')
+                ) || options[0]
               }
-            >
-              <option value="">Todas</option>
-              {filterOptions.secciones?.map((s) => (
-                <option key={s.ID_SECCION} value={s.ID_SEccion}>
-                  {s.NOMBRE_SECCION}
-                </option>
-              ))}
-            </select>
+              onChange={(opt) => onFilterChange('seccionId', opt?.value || '')}
+              isDisabled={isDisabled}
+              
+              menuPortalTarget={document.body}
+              menuPosition="fixed"
+              placeholder="Todas"
+            />
           </div>
         );
+      }
 
-      case 'jornada':
+      case 'jornada': {
+        const options = [
+          { value: '', label: 'Todas' },
+          ...(filterOptions.jornadas?.map((j) => ({
+            value: j.ID_JORNADA,
+            label: j.NOMBRE_JORNADA,
+          })) || []),
+        ];
         return (
           <div className="mb-3" key="jornada">
-            <label htmlFor="repJornada" className="form-label">
-              Jornada
-            </label>
-            <select
-              id="repJornada"
-              className="form-select"
-              value={tempFilters.jornadaId || ''}
-              onChange={(e) => onFilterChange('jornadaId', e.target.value)}
-            >
-              <option value="">Todas</option>
-              {filterOptions.jornadas?.map((j) => (
-                <option key={j.ID_JORNADA} value={j.ID_JORNADA}>
-                  {j.NOMBRE_JORNADA}
-                </option>
-              ))}
-            </select>
+            <label className="form-label">Jornada</label>
+            <Select
+              inputId="repJornada"
+              options={options}
+              value={
+                options.find(
+                  (o) => String(o.value) === String(tempFilters.jornadaId || '')
+                ) || options[0]
+              }
+              onChange={(opt) => onFilterChange('jornadaId', opt?.value || '')}
+              
+              menuPortalTarget={document.body}
+              menuPosition="fixed"
+              placeholder="Todas"
+            />
           </div>
         );
+      }
 
-      case 'estado':
+      case 'estado': {
+        const options = [
+          { value: '', label: 'Todos' },
+          ...(filterOptions.estados?.map((est) => ({
+            value: est.ID_ESTADO,
+            label: est.NOMBRE_ESTADO,
+          })) || []),
+        ];
         return (
           <div className="mb-3" key="estado">
-            <label htmlFor="repEstado" className="form-label">
-              Estado Examen
-            </label>
-            <select
-              id="repEstado"
-              className="form-select"
-              value={tempFilters.estadoExamenId || ''}
-              onChange={(e) => onFilterChange('estadoExamenId', e.target.value)}
-            >
-              <option value="">Todos</option>
-              {filterOptions.estados?.map((est) => (
-                <option key={est.ID_ESTADO} value={est.ID_ESTADO}>
-                  {est.NOMBRE_ESTADO}
-                </option>
-              ))}
-            </select>
+            <label className="form-label">Estado Examen</label>
+            <Select
+              inputId="repEstado"
+              options={options}
+              value={
+                options.find(
+                  (o) =>
+                    String(o.value) === String(tempFilters.estadoExamenId || '')
+                ) || options[0]
+              }
+              onChange={(opt) =>
+                onFilterChange('estadoExamenId', opt?.value || '')
+              }
+              
+              menuPortalTarget={document.body}
+              menuPosition="fixed"
+              placeholder="Todos"
+            />
           </div>
         );
+      }
 
-      case 'docente':
+      case 'docente': {
+        const options = [
+          { value: '', label: 'Todos' },
+          ...(filterOptions.docentes?.map((d) => ({
+            value: d.ID_USUARIO,
+            label: d.NOMBRE_USUARIO,
+          })) || []),
+        ];
         return (
           <div className="mb-3" key="docente">
-            <label htmlFor="repDocente" className="form-label">
-              Docente
-            </label>
-            <select
-              id="repDocente"
-              className="form-select"
-              value={tempFilters.docenteId || ''}
-              onChange={(e) => onFilterChange('docenteId', e.target.value)}
-            >
-              <option value="">Todos</option>
-              {filterOptions.docentes?.map((d) => (
-                <option key={d.ID_USUARIO} value={d.ID_USUARIO}>
-                  {d.NOMBRE_USUARIO}
-                </option>
-              ))}
-            </select>
+            <label className="form-label">Docente</label>
+            <Select
+              inputId="repDocente"
+              options={options}
+              value={
+                options.find(
+                  (o) => String(o.value) === String(tempFilters.docenteId || '')
+                ) || options[0]
+              }
+              onChange={(opt) => onFilterChange('docenteId', opt?.value || '')}
+              
+              menuPortalTarget={document.body}
+              menuPosition="fixed"
+              placeholder="Todos"
+            />
           </div>
         );
+      }
 
       case 'dateRange':
         return (

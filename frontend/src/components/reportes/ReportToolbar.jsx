@@ -16,22 +16,21 @@ const ReportToolbar = ({
       <div>
         <button
           onClick={onFilterClick}
-          className="btn btn-sm btn-outline-secondary me-2"
+          className="btn btn-sm btn-toolbar-yellow me-2"
           title="Filtrar Resultados"
         >
           <FaFilter /> Filtrar
         </button>
-        {/* --- NUEVO BOTÓN --- */}
         <button
-          onClick={onConfigureColumnsClick} // Llamamos a la nueva función
-          className="btn btn-sm btn-outline-dark me-2" // Un color diferente
+          onClick={onConfigureColumnsClick}
+          className="btn btn-sm btn-toolbar-gray me-2"
           title="Configurar Columnas Visibles"
         >
           <FaCog /> Columnas
         </button>
         <button
           onClick={onExportClick}
-          className="btn btn-sm btn-outline-success"
+          className="btn btn-sm btn-toolbar-excel"
           title="Exportar a Excel"
           disabled={isExportDisabled}
         >

@@ -67,17 +67,17 @@ function RoleTable({
               }`} // Resaltar si está en el array de seleccionados
               style={{ cursor: 'pointer' }}
             >
-              <td className="text-center align-middle">
+              <td
+                className="text-center align-middle"
+                onClick={(e) => e.stopPropagation()}
+              >
                 <input
                   type="checkbox"
                   className="form-check-input"
                   checked={
                     !!selectedRoles.find((r) => r.ID_ROL === role.ID_ROL)
                   }
-                  onChange={(e) => {
-                    e.stopPropagation(); // Evita que el onClick de la fila se dispare también
-                    onToggleRoleSelection(role);
-                  }}
+                  onChange={() => onToggleRoleSelection(role)}
                   aria-label={`Seleccionar rol ${role.NOMBRE_ROL || role.ID_ROL}`}
                 />
               </td>

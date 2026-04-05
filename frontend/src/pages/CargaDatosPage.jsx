@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import BulkUpload from '../components/cargaMasiva/BulkUpload';
 import { Container, Row, Col, Alert } from 'react-bootstrap';
 import Layout from '../components/Layout';
+import './CargaDatosPage.css';
 
 const alertStyle = {
   position: 'fixed',
@@ -60,7 +61,7 @@ function CargaDatosPage() {
   return (
     <Layout>
       <style>{keyframes}</style>
-      <div className="container-fluid pt-4">
+      <div className="container-fluid pt-4 carga-datos-page">
         <Container fluid>
           <Row>
             <Col>

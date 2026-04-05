@@ -35,16 +35,31 @@ const ReportTable = ({
   }
 
   return (
-    <div
-      className="table-responsive"
-      style={{ maxHeight: '450px', overflowY: 'auto' }}
-    >
-      <table className="table table-hover table-bordered">
+    <div style={{ width: '100%', overflowX: 'hidden' }}>
+      <table
+        className="table table-hover table-bordered"
+        style={{
+          width: '100%',
+          tableLayout: 'fixed',
+          fontSize: '0.75rem',
+          marginBottom: 0,
+        }}
+      >
         <thead className="table-light text-center align-middle sticky-top">
           <tr>
             {/* Renderizamos solo las cabeceras que están en la prop 'headers' (las visibles) */}
             {headers.map((header) => (
-              <th key={header}>{header}</th>
+              <th
+                key={header}
+                style={{
+                  padding: '0.3rem 0.4rem',
+                  overflow: 'hidden',
+                  textOverflow: 'ellipsis',
+                  whiteSpace: 'nowrap',
+                }}
+              >
+                {header}
+              </th>
             ))}
           </tr>
         </thead>
@@ -62,7 +77,14 @@ const ReportTable = ({
                   y usamos cada 'header' como clave para acceder al valor correcto en 'mappedItem'.
                 */}
                 {headers.map((headerKey) => (
-                  <td key={`${rowKey}-${headerKey}`}>
+                  <td
+                    key={`${rowKey}-${headerKey}`}
+                    style={{
+                      whiteSpace: 'normal',
+                      wordBreak: 'break-word',
+                      padding: '0.25rem 0.35rem',
+                    }}
+                  >
                     {mappedItem[headerKey]}
                   </td>
                 ))}

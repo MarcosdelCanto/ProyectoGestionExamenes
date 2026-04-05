@@ -1,0 +1,278 @@
+/* ============================================================
+   CARGA MASIVA DE DATOS — Paleta Duoc UC
+   ============================================================ */
+
+/* Botón descargar plantilla — verde Excel */
+.btn.btn-toolbar-excel {
+  background-color: #1d6f42 !important;
+  border-color: #1d6f42 !important;
+  color: #ffffff !important;
+  font-weight: 600;
+}
+.btn.btn-toolbar-excel:hover {
+  background-color: #185a36 !important;
+  border-color: #185a36 !important;
+  color: #ffffff !important;
+}
+.btn.btn-toolbar-excel:disabled {
+  opacity: 0.45;
+}
+
+/* Botón Confirmar y Cargar a BD — amarillo Duoc UC */
+.btn.btn-confirmar-carga {
+  background-color: #ffb81c !important;
+  border-color: #ffb81c !important;
+  color: #1a1a1a !important;
+  font-weight: 700;
+}
+.btn.btn-confirmar-carga:hover {
+  background-color: #e6a619 !important;
+  border-color: #e6a619 !important;
+  color: #1a1a1a !important;
+}
+.btn.btn-confirmar-carga:disabled {
+  opacity: 0.45;
+}
+
+/* Card principal */
+.carga-datos-page .card {
+  border-top: none !important;
+}
+
+/* Zona de carga de archivo — borde segmentado */
+.file-drop-zone {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.25rem;
+  padding: 1.25rem 1rem;
+  border: 2px dashed #ced4da;
+  border-radius: 0.5rem;
+  background-color: #fafafa;
+  cursor: pointer;
+  transition:
+    border-color 0.2s ease,
+    background-color 0.2s ease;
+  text-align: center;
+  color: #555;
+  min-height: 100px;
+}
+
+.file-drop-zone:hover {
+  border-color: #1a1a1a;
+  background-color: #f5f5f5;
+}
+
+.file-drop-zone--active {
+  border-color: #ffb81c;
+  background-color: #fffbf0;
+  color: #1a1a1a;
+  font-weight: 600;
+}
+
+.file-drop-zone--disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+  pointer-events: none;
+}
+
+/* Header de card — oscuro con texto blanco */
+.carga-datos-page .card-header {
+  background-color: #1a1a1a !important;
+  color: #ffffff !important;
+  font-size: 1rem;
+  font-weight: 700;
+  border-bottom: 2px solid #ffb81c !important;
+  padding: 0.75rem 1.25rem;
+}
+
+.carga-datos-page .card-header h5,
+.carga-datos-page .card-header .card-title {
+  color: #ffffff !important;
+  margin-bottom: 0;
+}
+
+/* Card body con mejor uso del espacio */
+.carga-datos-page .card-body {
+  padding: 1.5rem;
+}
+
+/* Layout de dos columnas para sede + archivo */
+.carga-datos-page .form-row-2col {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem 1.5rem;
+}
+
+@media (max-width: 768px) {
+  .carga-datos-page .form-row-2col {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* Separador visual entre secciones del formulario */
+.carga-datos-page .form-section {
+  padding: 1rem 1.25rem;
+  background-color: #fafafa;
+  border-radius: 0.5rem;
+  border: 1px solid #f0f0f0;
+  margin-bottom: 1rem;
+}
+
+/* Zona de file input — sin bloquear el selector nativo */
+.carga-datos-page .form-control[type='file'] {
+  border: 1px solid #cccccc;
+  border-radius: 0.5rem;
+  padding: 0.4rem 0.75rem;
+  font-size: 0.9rem;
+  background-color: #fafafa;
+  cursor: pointer;
+  transition: border-color 0.2s ease;
+}
+.carga-datos-page .form-control[type='file']:hover {
+  border-color: #ffb81c;
+}
+.carga-datos-page .form-control[type='file']:focus {
+  border-color: #1a1a1a;
+  box-shadow: 0 0 0 0.2rem rgba(26, 26, 26, 0.15);
+  outline: none;
+}
+
+/* Select de sede */
+.carga-datos-page .form-select {
+  border: 1px solid #cccccc;
+  border-radius: 0.5rem;
+  font-size: 0.9rem;
+  color: #2d2d2d;
+  background-color: #ffffff;
+  transition:
+    border-color 0.15s ease,
+    box-shadow 0.15s ease;
+}
+.carga-datos-page .form-select:focus {
+  border-color: #1a1a1a;
+  box-shadow: 0 0 0 0.2rem rgba(26, 26, 26, 0.15);
+}
+.carga-datos-page .form-select option {
+  color: #2d2d2d;
+  background-color: #ffffff;
+}
+
+/* Labels de pasos */
+.carga-datos-page .form-label {
+  font-weight: 600;
+  font-size: 0.875rem;
+  color: #2d2d2d;
+}
+
+/* Info del archivo seleccionado */
+.carga-datos-page .archivo-seleccionado {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  background-color: #f5f5f5;
+  border: 1px solid #dddddd;
+  border-radius: 0.375rem;
+  padding: 0.35rem 0.75rem;
+  font-size: 0.85rem;
+  color: #1a1a1a;
+  font-weight: 500;
+}
+
+/* Botones de acción */
+.carga-datos-page .btn-primary {
+  background-color: #1a1a1a;
+  border-color: #1a1a1a;
+  color: #ffffff;
+  font-weight: 600;
+  font-size: 0.875rem;
+}
+.carga-datos-page .btn-primary:hover:not(:disabled) {
+  background-color: #333333;
+  border-color: #333333;
+}
+.carga-datos-page .btn-primary:disabled {
+  opacity: 0.5;
+}
+
+.carga-datos-page .btn-success {
+  background-color: #1a1a1a;
+  border-color: #ffb81c;
+  color: #ffb81c;
+  font-weight: 600;
+  font-size: 0.875rem;
+}
+.carga-datos-page .btn-success:hover:not(:disabled) {
+  background-color: #ffb81c;
+  border-color: #ffb81c;
+  color: #1a1a1a;
+}
+
+.carga-datos-page .btn-outline-secondary {
+  border-color: #999;
+  color: #555;
+  font-size: 0.875rem;
+}
+.carga-datos-page .btn-outline-secondary:hover {
+  background-color: #1a1a1a;
+  border-color: #1a1a1a;
+  color: #ffffff;
+}
+
+.carga-datos-page .btn-outline-info {
+  border-color: #cccccc;
+  color: #555555;
+  font-size: 0.875rem;
+}
+.carga-datos-page .btn-outline-info:hover {
+  background-color: #f5f5f5;
+  border-color: #999999;
+  color: #1a1a1a;
+}
+
+/* Sección de vista previa */
+.carga-datos-page .preview-section {
+  background-color: #fafafa;
+  border: 1px solid #eeeeee;
+  border-radius: 0.625rem;
+  padding: 1rem;
+  margin-top: 1rem;
+}
+
+.carga-datos-page .preview-section h5 {
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: #1a1a1a;
+  margin-bottom: 0.75rem;
+}
+
+/* Alertas de éxito/error */
+.carga-datos-page .alert {
+  border-radius: 0.5rem;
+  font-size: 0.875rem;
+  border-left: 4px solid;
+  border-top: none;
+  border-right: none;
+  border-bottom: none;
+}
+.carga-datos-page .alert-danger {
+  border-left-color: #dc3545;
+  background-color: #fff5f5;
+  color: #7f1d1d;
+}
+.carga-datos-page .alert-success {
+  border-left-color: #ffb81c;
+  background-color: #fffdf0;
+  color: #1a1a1a;
+}
+
+/* Ícono del título en amarillo Duoc UC */
+.carga-datos-page h2.display-6 .bi {
+  color: #ffb81c;
+}
+
+hr {
+  border-color: #eeeeee;
+  opacity: 1;
+}

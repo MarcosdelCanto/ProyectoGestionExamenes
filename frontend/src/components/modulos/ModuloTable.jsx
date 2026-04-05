@@ -59,7 +59,10 @@ export default function ModuloTable({
               }
               style={{ cursor: 'pointer' }}
             >
-              <td className="text-center align-middle">
+              <td
+                className="text-center align-middle"
+                onClick={(e) => e.stopPropagation()}
+              >
                 <input
                   type="checkbox"
                   className="form-check-input"
@@ -68,10 +71,7 @@ export default function ModuloTable({
                       (m) => m.ID_MODULO === modulo.ID_MODULO
                     )
                   }
-                  onChange={(e) => {
-                    e.stopPropagation(); // Evita que el onClick de la fila se dispare también
-                    onToggleModuloSelection(modulo);
-                  }}
+                  onChange={() => onToggleModuloSelection(modulo)}
                   aria-label={`Seleccionar módulo ${modulo.NOMBRE_MODULO || modulo.ID_MODULO}`}
                 />
               </td>

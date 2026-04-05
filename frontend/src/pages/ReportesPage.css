@@ -1,6 +1,122 @@
-.reportes-page .card-title {
-  font-size: 1.1rem;
-  font-weight: 500;
+/* ============================================================
+   PÁGINA DE REPORTES — Paleta Duoc UC
+   ============================================================ */
+
+/* Card header — oscuro con texto blanco */
+.reportes-page .card-header {
+  background-color: #1a1a1a !important;
+  color: #ffffff !important;
+  border-bottom: 2px solid #ffb81c !important;
+  padding: 0.75rem 1.25rem;
+}
+
+.reportes-page .card-header h4,
+.reportes-page .card-header h5,
+.reportes-page .card-header .card-title {
+  color: #ffffff !important;
+  font-weight: 700;
+  margin-bottom: 0;
+}
+
+/* Selector de tipo de reporte */
+.reportes-page .form-select {
+  border: 1px solid #cccccc;
+  border-radius: 0.5rem;
+  padding: 0.45rem 0.75rem;
+  font-size: 0.9rem;
+  color: #2d2d2d;
+  background-color: #ffffff;
+  transition:
+    border-color 0.15s ease,
+    box-shadow 0.15s ease;
+}
+.reportes-page .form-select:focus {
+  border-color: #1a1a1a;
+  box-shadow: 0 0 0 0.2rem rgba(26, 26, 26, 0.15);
+}
+
+/* Botones del toolbar (sobre fondo negro) */
+.btn.btn-toolbar-yellow {
+  background-color: #ffb81c !important;
+  border-color: #ffb81c !important;
+  color: #1a1a1a !important;
+  font-size: 0.8rem;
+  font-weight: 600;
+}
+.btn.btn-toolbar-yellow:hover {
+  background-color: #e6a619 !important;
+  border-color: #e6a619 !important;
+  color: #1a1a1a !important;
+}
+
+.btn.btn-toolbar-gray {
+  background-color: #6c757d !important;
+  border-color: #6c757d !important;
+  color: #ffffff !important;
+  font-size: 0.8rem;
+  font-weight: 600;
+}
+.btn.btn-toolbar-gray:hover {
+  background-color: #5a6268 !important;
+  border-color: #5a6268 !important;
+  color: #ffffff !important;
+}
+
+.btn.btn-toolbar-excel {
+  background-color: #1d6f42 !important;
+  border-color: #1d6f42 !important;
+  color: #ffffff !important;
+  font-size: 0.8rem;
+  font-weight: 600;
+}
+.btn.btn-toolbar-excel:hover {
+  background-color: #185a36 !important;
+  border-color: #185a36 !important;
+  color: #ffffff !important;
+}
+.btn.btn-toolbar-excel:disabled {
+  opacity: 0.45;
+}
+
+/* Botones del toolbar */
+.reportes-page .btn-outline-secondary {
+  border-color: #999;
+  color: #555;
+  font-size: 0.8rem;
+}
+.reportes-page .btn-outline-secondary:hover {
+  background-color: #1a1a1a;
+  border-color: #1a1a1a;
+  color: #ffffff;
+}
+
+.reportes-page .btn-outline-dark {
+  border-color: #1a1a1a;
+  color: #1a1a1a;
+  font-size: 0.8rem;
+}
+.reportes-page .btn-outline-dark:hover {
+  background-color: #1a1a1a;
+  color: #ffb81c;
+}
+
+.reportes-page .btn-outline-success {
+  border-color: #198754;
+  color: #198754;
+  font-size: 0.8rem;
+}
+.reportes-page .btn-outline-success:hover {
+  background-color: #198754;
+  color: #ffffff;
+}
+.reportes-page .btn-outline-success:disabled {
+  opacity: 0.45;
+}
+
+/* Tabla de reportes */
+.reportes-page .table-responsive {
+  max-height: 480px;
+  overflow-y: auto;
 }
 
 /* Estilos para react-modal */
@@ -10,34 +126,125 @@
   left: 0;
   right: 0;
   bottom: 0;
-  background-color: rgba(0, 0, 0, 0.75);
-  z-index: 1000; /* Asegúrate de que esté por encima de otros contenidos */
+  background-color: rgba(0, 0, 0, 0.6);
+  z-index: 9999;
   display: flex;
   align-items: center;
   justify-content: center;
+  backdrop-filter: blur(2px);
 }
 
 .ReactModal__Content {
-  position: relative; /* Cambiado de absolute para que el centrado del overlay funcione mejor */
+  position: relative;
   background: #fff;
   overflow: auto;
-  border-radius: 8px;
+  border-radius: 0.75rem;
   outline: none;
-  padding: 20px;
-  min-width: 300px; /* Ancho mínimo */
-  max-width: 600px; /* Ancho máximo */
-  width: 90%; /* Ancho responsivo */
-  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.5);
-  max-height: 90vh; /* Altura máxima para evitar que sea más alto que la pantalla */
+  padding: 0;
+  min-width: 300px;
+  max-width: 620px;
+  width: 90%;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.22);
+  max-height: 90vh;
+  display: flex;
+  flex-direction: column;
 }
 
-/* Opcional: Estilos para el botón de cierre si lo tienes dentro del modal */
+/* Cabecera del modal — oscuro con borde amarillo */
+.ReactModal__Content .modal-header {
+  background-color: #1a1a1a;
+  color: #ffffff;
+  border-bottom: 3px solid #ffb81c;
+  padding: 0.9rem 1.25rem;
+  flex-shrink: 0;
+}
+
+.ReactModal__Content .modal-title {
+  color: #ffffff !important;
+  font-weight: 700;
+  font-size: 1rem;
+}
+
+/* Botón cerrar (×) visible sobre fondo negro */
+.ReactModal__Content .btn-close {
+  filter: invert(1) grayscale(100%) brightness(200%);
+  opacity: 0.85;
+}
+.ReactModal__Content .btn-close:hover {
+  opacity: 1;
+}
+
+/* Cuerpo del modal */
+.ReactModal__Content .modal-body {
+  padding: 1.25rem 1.5rem;
+  overflow-y: auto;
+  flex: 1;
+}
+
+/* Pie del modal */
+.ReactModal__Content .modal-footer {
+  border-top: 1px solid #e0e0e0;
+  padding: 0.75rem 1.25rem;
+  background-color: #f8f8f8;
+  flex-shrink: 0;
+  border-radius: 0 0 0.75rem 0.75rem;
+  justify-content: space-between;
+}
+
+/* Botón "Cancelar / Cerrar" en modales */
+.ReactModal__Content .modal-footer .btn-secondary {
+  background-color: #6c757d !important;
+  border-color: #6c757d !important;
+  color: #ffffff !important;
+}
+.ReactModal__Content .modal-footer .btn-secondary:hover {
+  background-color: #5a6268 !important;
+  border-color: #5a6268 !important;
+}
+
+/* Botón "Aplicar" en modales */
+.ReactModal__Content .modal-footer .btn-primary {
+  background-color: #ffb81c !important;
+  border-color: #ffb81c !important;
+  color: #1a1a1a !important;
+  font-weight: 600;
+}
+.ReactModal__Content .modal-footer .btn-primary:hover {
+  background-color: #e6a619 !important;
+  border-color: #e6a619 !important;
+  color: #1a1a1a !important;
+}
+
 .modal-close-button {
   position: absolute;
-  top: 10px;
-  right: 10px;
+  top: 0.75rem;
+  right: 0.75rem;
   background: transparent;
   border: none;
-  font-size: 1.5rem;
+  font-size: 1.25rem;
   cursor: pointer;
+  color: #666;
+  line-height: 1;
+  transition: color 0.15s ease;
+}
+.modal-close-button:hover {
+  color: #1a1a1a;
+}
+
+/* Grid 2 columnas para el formulario de filtros */
+.filter-form-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0 1.25rem;
+}
+
+/* El bloque de fechas (dateRange) ocupa las 2 columnas completas */
+.filter-form-grid > .row {
+  grid-column: 1 / -1;
+}
+
+@media (max-width: 500px) {
+  .filter-form-grid {
+    grid-template-columns: 1fr;
+  }
 }

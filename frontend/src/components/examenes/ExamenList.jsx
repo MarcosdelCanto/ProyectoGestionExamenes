@@ -65,7 +65,10 @@ function ExamenList({
               }
               style={{ cursor: 'pointer' }}
             >
-              <td className="text-center align-middle">
+              <td
+                className="text-center align-middle"
+                onClick={(e) => e.stopPropagation()}
+              >
                 <input
                   type="checkbox"
                   className="form-check-input"
@@ -74,10 +77,7 @@ function ExamenList({
                       (ex) => ex.ID_EXAMEN === examen.ID_EXAMEN
                     )
                   }
-                  onChange={(e) => {
-                    e.stopPropagation(); // Prevent row click from firing
-                    onToggleExamenSelection(examen);
-                  }}
+                  onChange={() => onToggleExamenSelection(examen)}
                   aria-label={`Seleccionar examen ${examen.NOMBRE_EXAMEN || examen.ID_EXAMEN}`}
                 />
               </td>

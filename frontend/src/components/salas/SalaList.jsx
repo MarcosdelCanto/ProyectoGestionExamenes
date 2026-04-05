@@ -58,17 +58,17 @@ function SalaList({
               }
               style={{ cursor: 'pointer' }}
             >
-              <td className="text-center align-middle">
+              <td
+                className="text-center align-middle"
+                onClick={(e) => e.stopPropagation()}
+              >
                 <input
                   type="checkbox"
                   className="form-check-input"
                   checked={
                     !!selectedSalas.find((s) => s.ID_SALA === sala.ID_SALA)
                   }
-                  onChange={(e) => {
-                    e.stopPropagation();
-                    onToggleSalaSelection(sala);
-                  }}
+                  onChange={() => onToggleSalaSelection(sala)}
                   aria-label={`Seleccionar sala ${sala.NOMBRE_SALA || sala.ID_SALA}`}
                 />
               </td>

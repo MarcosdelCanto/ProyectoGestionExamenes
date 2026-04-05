@@ -73,15 +73,15 @@ function UsuarioSeccionTable({
                 className={isSelected ? 'table-primary' : ''}
                 style={{ cursor: 'pointer' }}
               >
-                <td className="text-center align-middle">
+                <td
+                  className="text-center align-middle"
+                  onClick={(e) => e.stopPropagation()}
+                >
                   <input
                     type="checkbox"
                     className="form-check-input"
                     checked={isSelected}
-                    onChange={(e) => {
-                      e.stopPropagation();
-                      onToggleUserSelection(userObject);
-                    }}
+                    onChange={() => onToggleUserSelection(userObject)}
                   />
                 </td>
                 <td className="align-middle">

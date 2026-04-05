@@ -1,6 +1,7 @@
 // src/components/salas/SalaFilter.jsx
 import React from 'react';
-import Select from 'react-select'; // Importar react-select
+import Select from 'react-select';
+import { duocSelectStyles } from '../../styles/duocSelectStyles';
 import { Card, Form, Row, Col, Button } from 'react-bootstrap';
 
 // Función para normalizar texto (eliminar tildes)
@@ -88,6 +89,9 @@ function SalaFilter({
                     })
                   }
                   placeholder="Todas las sedes"
+                  styles={duocSelectStyles}
+                  menuPortalTarget={document.body}
+                  menuPosition="fixed"
                   isClearable
                 />
               </Form.Group>
@@ -129,6 +133,9 @@ function SalaFilter({
                     !currentFilters.sede // Deshabilitar si no hay sede seleccionada
                   } // Deshabilitar si no hay sede o no hay opciones
                   placeholder="Todos los edificios"
+                  styles={duocSelectStyles}
+                  menuPortalTarget={document.body}
+                  menuPosition="fixed"
                   isClearable
                 />
               </Form.Group>

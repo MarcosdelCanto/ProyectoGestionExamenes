@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import * as XLSX from 'xlsx';
 import { Card, Button, Form, Alert, Spinner, Table } from 'react-bootstrap';
+import Select from 'react-select';
 import cargaService from '../../services/cargaService';
 import { fetchAllSedes } from '../../services/sedeService';
 
@@ -307,42 +308,108 @@ function BulkUpload({ onUploadComplete }) {
       <Card.Header as="h5">Carga Masiva de Datos por Sede</Card.Header>
       <Card.Body>
         <Form>
-          <Form.Group className="mb-3">
-            <Form.Label>
-              1. Selecciona una Sede <span className="text-danger">*</span>
-            </Form.Label>
-            <Form.Select
-              value={selectedSede}
-              onChange={(e) => setSelectedSede(e.target.value)}
-              disabled={!!fileName || isLoading || isUploading}
-              aria-label="Selector de Sede"
-            >
-              <option value="">-- Elige una sede --</option>
-              {Array.isArray(sedes) &&
-                sedes.map((sede) => (
-                  <option key={sede.ID_SEDE} value={sede.ID_SEDE}>
-                    {sede.NOMBRE_SEDE}
-                  </option>
-                ))}
-            </Form.Select>
-            {sedes.length === 0 && !isLoading && (
-              <Form.Text className="text-muted">
-                No hay sedes cargadas.
-              </Form.Text>
-            )}
-          </Form.Group>
+          <div className="form-row-2col">
+            <Form.Group className="mb-3">
+              <Form.Label>
+                1. Selecciona una Sede <span className="text-danger">*</span>
+              </Form.Label>
+              <Select
+                inputId="bulk-sede-select"
+                placeholder="-- Elige una sede --"
+                isDisabled={!!fileName || isLoading || isUploading}
+                options={
+                  Array.isArray(sedes)
+                    ? sedes.map((s) => ({
+                        value: s.ID_SEDE,
+                        label: s.NOMBRE_SEDE,
+                      }))
+                    : []
+                }
+                value={
+                  selectedSede
+                    ? {
+                        value: selectedSede,
+                        label:
+                          sedes.find(
+                            (s) => String(s.ID_SEDE) === String(selectedSede)
+                          )?.NOMBRE_SEDE || selectedSede,
+                      }
+                    : null
+                }
+                onChange={(opt) => setSelectedSede(opt ? opt.value : '')}
+                isClearable
+                menuPortalTarget={document.body}
+                menuPosition="fixed"
+                styles={{
+                  control: (base, state) => ({
+                    ...base,
+                    borderColor: state.isFocused ? '#6c757d' : '#ced4da',
+                    boxShadow: state.isFocused
+                      ? '0 0 0 0.2rem rgba(108,117,125,0.25)'
+                      : 'none',
+                    borderRadius: '0.375rem',
+                    fontSize: '0.9rem',
+                    opacity: !!fileName || isLoading || isUploading ? 0.65 : 1,
+                    '&:hover': { borderColor: '#6c757d' },
+                  }),
+                  option: (base, state) => ({
+                    ...base,
+                    backgroundColor: state.isSelected
+                      ? '#1a1a1a'
+                      : state.isFocused
+                        ? '#f0f0f0'
+                        : '#ffffff',
+                    color: state.isSelected ? '#ffffff' : '#2d2d2d',
+                    fontSize: '0.9rem',
+                    cursor: 'pointer',
+                    ':active': { backgroundColor: '#d6d8db', color: '#1a1a1a' },
+                  }),
+                  singleValue: (base) => ({ ...base, color: '#2d2d2d' }),
+                  placeholder: (base) => ({ ...base, color: '#6c757d' }),
+                  indicatorSeparator: () => ({ display: 'none' }),
+                  dropdownIndicator: (base) => ({ ...base, color: '#6c757d' }),
+                  clearIndicator: (base) => ({
+                    ...base,
+                    color: '#6c757d',
+                    '&:hover': { color: '#1a1a1a' },
+                  }),
+                  menu: (base) => ({
+                    ...base,
+                    borderRadius: '0.375rem',
+                    boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
+                  }),
+                  menuPortal: (base) => ({ ...base, zIndex: 9999 }),
+                }}
+              />
+              {sedes.length === 0 && !isLoading && (
+                <Form.Text className="text-muted">
+                  No hay sedes cargadas.
+                </Form.Text>
+              )}
+            </Form.Group>
+          </div>
 
-          <Form.Group controlId="bulk-upload-file-input" className="mb-3">
+          <Form.Group className="mb-3">
             <Form.Label>
               2. Selecciona un archivo (.xlsx, .xls)
               <span className="text-danger">*</span>
             </Form.Label>
-            <Form.Control
-              type="file"
-              accept=".xlsx, .xls"
-              onChange={handleFileChange}
-              disabled={isLoading || isUploading || !selectedSede}
-            />
+            <label
+              htmlFor="bulk-upload-file-input"
+              className={`file-drop-zone${isLoading || isUploading || !selectedSede ? ' file-drop-zone--disabled' : ''}${fileName ? ' file-drop-zone--active' : ''}`}
+            >
+              <i className="bi bi-cloud-upload fs-3 mb-1"></i>
+              <span>{fileName || 'Haz clic para seleccionar un archivo'}</span>
+              <small className="text-muted">.xlsx, .xls</small>
+              <Form.Control
+                id="bulk-upload-file-input"
+                type="file"
+                accept=".xlsx, .xls"
+                onChange={handleFileChange}
+                disabled={isLoading || isUploading || !selectedSede}
+                style={{ display: 'none' }}
+              />
+            </label>
           </Form.Group>
 
           {fileName && (
@@ -379,7 +446,7 @@ function BulkUpload({ onUploadComplete }) {
               <Button
                 onClick={handleConfirmUpload}
                 disabled={isUploading || isLoading}
-                variant="success"
+                className="btn-confirmar-carga"
               >
                 {isUploading ? (
                   <>
@@ -409,7 +476,7 @@ function BulkUpload({ onUploadComplete }) {
             )}
 
             <Button
-              variant="info"
+              className="btn-toolbar-excel"
               onClick={handleDownloadSample}
               disabled={isLoading || isUploading}
               title="Descargar plantilla con encabezados requeridos"

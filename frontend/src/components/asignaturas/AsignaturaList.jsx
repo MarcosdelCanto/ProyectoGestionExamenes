@@ -56,7 +56,10 @@ function AsignaturaList({
               }`}
               style={{ cursor: 'pointer' }}
             >
-              <td className="text-center align-middle">
+              <td
+                className="text-center align-middle"
+                onClick={(e) => e.stopPropagation()}
+              >
                 <input
                   type="checkbox"
                   className="form-check-input"
@@ -65,10 +68,7 @@ function AsignaturaList({
                       (sa) => sa.ID_ASIGNATURA === a.ID_ASIGNATURA
                     )
                   }
-                  onChange={(e) => {
-                    e.stopPropagation(); // Evita que el onClick de la fila se dispare también
-                    onToggleAsignaturaSelection(a);
-                  }}
+                  onChange={() => onToggleAsignaturaSelection(a)}
                   aria-label={`Seleccionar asignatura ${a.NOMBRE_ASIGNATURA || a.ID_ASIGNATURA}`}
                 />
               </td>

@@ -1,6 +1,11 @@
 // src/components/examenes/FilterModalExamenes.jsx
 
 import React from 'react';
+import Select from 'react-select';
+import {
+  duocSelectStyles,
+  duocSelectStylesDisabled,
+} from '../../styles/duocSelectStyles';
 // Asumiendo que tienes un archivo CSS para tus modales
 import '../calendario/styles/Modal.css';
 
@@ -44,6 +49,30 @@ export default function FilterModalExamenes({
       asignatura.CARRERA_ID_CARRERA === parseInt(selectedCarrera)
   );
 
+  const sedeOptions = sedes.map((s) => ({
+    value: String(s.ID_SEDE),
+    label: s.NOMBRE_SEDE,
+  }));
+  const escuelaOptions = escuelasFiltradas.map((e) => ({
+    value: String(e.ID_ESCUELA),
+    label: e.NOMBRE_ESCUELA,
+  }));
+  const carreraOptions = carrerasFiltradas.map((c) => ({
+    value: String(c.ID_CARRERA),
+    label: c.NOMBRE_CARRERA,
+  }));
+  const asignaturaOptions = asignaturasFiltradas.map((a) => ({
+    value: String(a.ID_ASIGNATURA),
+    label: a.NOMBRE_ASIGNATURA,
+  }));
+
+  const escuelasDisabled =
+    !selectedSede && escuelas.some((e) => e.SEDE_ID_SEDE);
+  const carrerasDisabled =
+    !selectedEscuela && carreras.some((c) => c.ESCUELA_ID_ESCUELA);
+  const asignaturasDisabled =
+    !selectedCarrera && asignaturas.some((a) => a.CARRERA_ID_CARRERA);
+
   return (
     <>
       <div className="modal-backdrop" onClick={onClose}></div>
@@ -60,96 +89,84 @@ export default function FilterModalExamenes({
         <div className="modal-content">
           {/* Filtro por Sede */}
           <div className="form-group mb-3">
-            <label htmlFor="sedeFilter" className="form-label form-label-sm">
-              Sede:
-            </label>
-            <select
-              id="sedeFilter"
-              className="form-select form-select-sm"
-              value={selectedSede}
-              onChange={(e) => onSetSelectedSede(e.target.value)}
-            >
-              <option value="">Todas las Sedes</option>
-              {sedes.map((sede) => (
-                <option key={sede.ID_SEDE} value={sede.ID_SEDE}>
-                  {sede.NOMBRE_SEDE}
-                </option>
-              ))}
-            </select>
+            <label className="form-label form-label-sm">Sede:</label>
+            <Select
+              inputId="sedeFilter"
+              options={sedeOptions}
+              value={sedeOptions.find((o) => o.value === selectedSede) || null}
+              onChange={(opt) => onSetSelectedSede(opt ? opt.value : '')}
+              placeholder="Todas las Sedes"
+              isClearable
+              styles={duocSelectStyles}
+              menuPortalTarget={document.body}
+              menuPosition="fixed"
+            />
           </div>
 
           {/* Filtro por Escuela */}
           <div className="form-group mb-3">
-            <label htmlFor="escuelaFilter" className="form-label form-label-sm">
-              Escuela:
-            </label>
-            <select
-              id="escuelaFilter"
-              className="form-select form-select-sm"
-              value={selectedEscuela}
-              onChange={(e) => onSetSelectedEscuela(e.target.value)}
-              disabled={!selectedSede && escuelas.some((e) => e.SEDE_ID_SEDE)}
-            >
-              <option value="">Todas las Escuelas</option>
-              {escuelasFiltradas.map((escuela) => (
-                <option key={escuela.ID_ESCUELA} value={escuela.ID_ESCUELA}>
-                  {escuela.NOMBRE_ESCUELA}
-                </option>
-              ))}
-            </select>
+            <label className="form-label form-label-sm">Escuela:</label>
+            <Select
+              inputId="escuelaFilter"
+              options={escuelaOptions}
+              value={
+                escuelaOptions.find((o) => o.value === selectedEscuela) || null
+              }
+              onChange={(opt) => onSetSelectedEscuela(opt ? opt.value : '')}
+              placeholder="Todas las Escuelas"
+              isClearable
+              isDisabled={escuelasDisabled}
+              styles={
+                escuelasDisabled ? duocSelectStylesDisabled : duocSelectStyles
+              }
+              menuPortalTarget={document.body}
+              menuPosition="fixed"
+            />
           </div>
 
           {/* Filtro por Carrera */}
           <div className="form-group mb-3">
-            <label htmlFor="carreraFilter" className="form-label form-label-sm">
-              Carrera:
-            </label>
-            <select
-              id="carreraFilter"
-              className="form-select form-select-sm"
-              value={selectedCarrera}
-              onChange={(e) => onSetSelectedCarrera(e.target.value)}
-              disabled={
-                !selectedEscuela && carreras.some((c) => c.ESCUELA_ID_ESCUELA)
+            <label className="form-label form-label-sm">Carrera:</label>
+            <Select
+              inputId="carreraFilter"
+              options={carreraOptions}
+              value={
+                carreraOptions.find((o) => o.value === selectedCarrera) || null
               }
-            >
-              <option value="">Todas las Carreras</option>
-              {carrerasFiltradas.map((carrera) => (
-                <option key={carrera.ID_CARRERA} value={carrera.ID_CARRERA}>
-                  {carrera.NOMBRE_CARRERA}
-                </option>
-              ))}
-            </select>
+              onChange={(opt) => onSetSelectedCarrera(opt ? opt.value : '')}
+              placeholder="Todas las Carreras"
+              isClearable
+              isDisabled={carrerasDisabled}
+              styles={
+                carrerasDisabled ? duocSelectStylesDisabled : duocSelectStyles
+              }
+              menuPortalTarget={document.body}
+              menuPosition="fixed"
+            />
           </div>
 
           {/* Filtro por Asignatura */}
           <div className="form-group mb-3">
-            <label
-              htmlFor="asignaturaFilter"
-              className="form-label form-label-sm"
-            >
-              Asignatura:
-            </label>
-            <select
-              id="asignaturaFilter"
-              className="form-select form-select-sm"
-              value={selectedAsignatura}
-              onChange={(e) => onSetSelectedAsignatura(e.target.value)}
-              disabled={
-                !selectedCarrera &&
-                asignaturas.some((a) => a.CARRERA_ID_CARRERA)
+            <label className="form-label form-label-sm">Asignatura:</label>
+            <Select
+              inputId="asignaturaFilter"
+              options={asignaturaOptions}
+              value={
+                asignaturaOptions.find((o) => o.value === selectedAsignatura) ||
+                null
               }
-            >
-              <option value="">Todas las Asignaturas</option>
-              {asignaturasFiltradas.map((asignatura) => (
-                <option
-                  key={asignatura.ID_ASIGNATURA}
-                  value={asignatura.ID_ASIGNATURA}
-                >
-                  {asignatura.NOMBRE_ASIGNATURA}
-                </option>
-              ))}
-            </select>
+              onChange={(opt) => onSetSelectedAsignatura(opt ? opt.value : '')}
+              placeholder="Todas las Asignaturas"
+              isClearable
+              isDisabled={asignaturasDisabled}
+              styles={
+                asignaturasDisabled
+                  ? duocSelectStylesDisabled
+                  : duocSelectStyles
+              }
+              menuPortalTarget={document.body}
+              menuPosition="fixed"
+            />
           </div>
         </div>
         <div className="modal-footer">

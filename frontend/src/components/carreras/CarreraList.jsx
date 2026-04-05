@@ -55,7 +55,10 @@ function CarreraList({
               }`}
               style={{ cursor: 'pointer' }}
             >
-              <td className="text-center align-middle">
+              <td
+                className="text-center align-middle"
+                onClick={(e) => e.stopPropagation()}
+              >
                 <input
                   type="checkbox"
                   className="form-check-input"
@@ -64,10 +67,7 @@ function CarreraList({
                       (sc) => sc.ID_CARRERA === c.ID_CARRERA
                     )
                   }
-                  onChange={(e) => {
-                    e.stopPropagation();
-                    onToggleCarreraSelection(c);
-                  }}
+                  onChange={() => onToggleCarreraSelection(c)}
                   aria-label={`Seleccionar carrera ${c.NOMBRE_CARRERA || c.ID_CARRERA}`}
                 />
               </td>
