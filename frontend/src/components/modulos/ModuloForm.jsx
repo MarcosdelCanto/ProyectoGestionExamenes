@@ -1,5 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { fetchAllEstados } from '../../services/estadoService'; // Importar el servicio
+import Select from 'react-select';
+import { fetchAllEstados } from '../../services/estadoService';
+import { duocSelectStyles } from '../../styles/duocSelectStyles';
 
 function ModuloForm({ initial, onSubmit, onCancel }) {
   const [nombre, setNombre] = useState(initial?.NOMBRE_MODULO || '');
@@ -35,6 +37,13 @@ function ModuloForm({ initial, onSubmit, onCancel }) {
       (estado) => estado.ID_ESTADO === 1 || estado.ID_ESTADO === 7
     );
   }, [estados]);
+
+  const estadosOptions = estadosFiltradosParaForm.map((e) => ({
+    value: e.ID_ESTADO.toString(),
+    label: e.NOMBRE_ESTADO,
+  }));
+  const selectedEstado =
+    estadosOptions.find((o) => o.value === estadoId) || null;
 
   const handleSubmit = (e) => {
     e.preventDefault();
@@ -101,21 +110,14 @@ function ModuloForm({ initial, onSubmit, onCancel }) {
       </div>
       <div className="mb-3">
         <label className="form-label">Estado</label>
-        <select
-          className="form-control"
-          value={estadoId}
-          onChange={(e) => setEstadoId(e.target.value)}
-          required
-        >
-          <option value="" key="default">
-            Seleccione un estado
-          </option>
-          {estadosFiltradosParaForm.map((estado) => (
-            <option key={`estado-${estado.ID_ESTADO}`} value={estado.ID_ESTADO}>
-              {estado.NOMBRE_ESTADO}
-            </option>
-          ))}
-        </select>
+        <Select
+          options={estadosOptions}
+          value={selectedEstado}
+          onChange={(opt) => setEstadoId(opt ? opt.value : '')}
+          placeholder="Seleccione un estado"
+          styles={duocSelectStyles}
+          menuPortalTarget={document.body}
+        />
       </div>
       <div className="modal-footer">
         <button type="button" className="btn btn-secondary" onClick={onCancel}>

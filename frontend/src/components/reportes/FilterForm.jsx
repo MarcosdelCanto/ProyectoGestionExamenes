@@ -36,7 +36,7 @@ const FilterForm = ({ config, tempFilters, filterOptions, onFilterChange }) => {
                 ) || options[0]
               }
               onChange={(opt) => onFilterChange('sedeId', opt?.value || '')}
-              
+              styles={duocSelectStyles}
               menuPortalTarget={document.body}
               menuPosition="fixed"
               placeholder="Todas"
@@ -68,7 +68,7 @@ const FilterForm = ({ config, tempFilters, filterOptions, onFilterChange }) => {
               }
               onChange={(opt) => onFilterChange('escuelaId', opt?.value || '')}
               isDisabled={isDisabled}
-              
+              styles={isDisabled ? disabledStyles : duocSelectStyles}
               menuPortalTarget={document.body}
               menuPosition="fixed"
               placeholder="Todas"
@@ -100,7 +100,7 @@ const FilterForm = ({ config, tempFilters, filterOptions, onFilterChange }) => {
               }
               onChange={(opt) => onFilterChange('carreraId', opt?.value || '')}
               isDisabled={isDisabled}
-              
+              styles={isDisabled ? disabledStyles : duocSelectStyles}
               menuPortalTarget={document.body}
               menuPosition="fixed"
               placeholder="Todas"
@@ -135,7 +135,7 @@ const FilterForm = ({ config, tempFilters, filterOptions, onFilterChange }) => {
                 onFilterChange('asignaturaId', opt?.value || '')
               }
               isDisabled={isDisabled}
-              
+              styles={isDisabled ? disabledStyles : duocSelectStyles}
               menuPortalTarget={document.body}
               menuPosition="fixed"
               placeholder="Todas"
@@ -167,7 +167,7 @@ const FilterForm = ({ config, tempFilters, filterOptions, onFilterChange }) => {
               }
               onChange={(opt) => onFilterChange('seccionId', opt?.value || '')}
               isDisabled={isDisabled}
-              
+              styles={isDisabled ? disabledStyles : duocSelectStyles}
               menuPortalTarget={document.body}
               menuPosition="fixed"
               placeholder="Todas"
@@ -196,7 +196,7 @@ const FilterForm = ({ config, tempFilters, filterOptions, onFilterChange }) => {
                 ) || options[0]
               }
               onChange={(opt) => onFilterChange('jornadaId', opt?.value || '')}
-              
+              styles={duocSelectStyles}
               menuPortalTarget={document.body}
               menuPosition="fixed"
               placeholder="Todas"
@@ -228,7 +228,7 @@ const FilterForm = ({ config, tempFilters, filterOptions, onFilterChange }) => {
               onChange={(opt) =>
                 onFilterChange('estadoExamenId', opt?.value || '')
               }
-              
+              styles={duocSelectStyles}
               menuPortalTarget={document.body}
               menuPosition="fixed"
               placeholder="Todos"
@@ -257,7 +257,7 @@ const FilterForm = ({ config, tempFilters, filterOptions, onFilterChange }) => {
                 ) || options[0]
               }
               onChange={(opt) => onFilterChange('docenteId', opt?.value || '')}
-              
+              styles={duocSelectStyles}
               menuPortalTarget={document.body}
               menuPosition="fixed"
               placeholder="Todos"

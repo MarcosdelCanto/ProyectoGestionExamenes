@@ -15,13 +15,13 @@ import { fetchAllSedes } from '../../../services/sedeService';
 import { fetchEdificiosBySede } from '../../../services/edificioService';
 
 const COLORS_PIE = [
-  '#0d6efd',
-  '#198754',
-  '#ffc107',
-  '#dc3545',
-  '#6f42c1',
+  '#FFB81C',
+  '#e05c3a',
+  '#28a745',
+  '#7c3aed',
   '#fd7e14',
-]; // Colores para el PieChart
+  '#6c757d',
+]; // Paleta Duoc UC
 
 const initialChartState = {
   data: [], // Espera datos en formato { name: 'Estado', value: cantidad }
@@ -357,7 +357,8 @@ const UsoSalasChart = () => {
           </button>
           <button
             type="button"
-            className="btn btn-primary"
+            className="btn btn-warning fw-semibold"
+            style={{ color: '#1a1a1a' }}
             onClick={handleApplyFilters}
           >
             Aplicar Filtros

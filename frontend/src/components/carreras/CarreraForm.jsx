@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { fetchAllEscuelas } from '../../services/escuelaService'; // Importa el servicio de escuelas
+import Select from 'react-select';
+import { fetchAllEscuelas } from '../../services/escuelaService';
+import { duocSelectStyles } from '../../styles/duocSelectStyles';
 
 function CarreraForm({ initial, onSubmit, onCancel }) {
   const [nombre, setNombre] = useState(initial?.NOMBRE_CARRERA || '');
@@ -42,6 +44,13 @@ function CarreraForm({ initial, onSubmit, onCancel }) {
     fetchEscuelas();
   }, []); // Se ejecuta solo una vez al montar
 
+  const escuelasOptions = escuelas.map((e) => ({
+    value: e.ID_ESCUELA.toString(),
+    label: e.NOMBRE_ESCUELA,
+  }));
+  const selectedEscuela =
+    escuelasOptions.find((o) => o.value === escuelaId) || null;
+
   const handleSubmit = (e) => {
     e.preventDefault();
     onSubmit({
@@ -63,27 +72,17 @@ function CarreraForm({ initial, onSubmit, onCancel }) {
         />
         <label className="form-label mt-3">Escuela</label>
         {/* Añadido mt-3 para espacio */}
-        <select
-          className="form-select"
-          value={escuelaId}
-          onChange={(e) => setEscuelaId(e.target.value)}
-          required
-          disabled={loadingEscuelas} // Deshabilita el selector mientras carga
-        >
-          <option value="" key="default">
-            {loadingEscuelas
-              ? 'Cargando escuelas...'
-              : 'Seleccione una Escuela'}
-          </option>
-          {escuelas.map((escuela) => (
-            <option
-              key={`escuela-${escuela.ID_ESCUELA}`}
-              value={escuela.ID_ESCUELA}
-            >
-              {escuela.NOMBRE_ESCUELA}
-            </option>
-          ))}
-        </select>
+        <Select
+          options={escuelasOptions}
+          value={selectedEscuela}
+          onChange={(opt) => setEscuelaId(opt ? opt.value : '')}
+          placeholder={
+            loadingEscuelas ? 'Cargando escuelas...' : 'Seleccione una Escuela'
+          }
+          isDisabled={loadingEscuelas}
+          styles={duocSelectStyles}
+          menuPortalTarget={document.body}
+        />
         {errorEscuelas && (
           <div className="alert alert-danger mt-2" role="alert">
             {errorEscuelas}

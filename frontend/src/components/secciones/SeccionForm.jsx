@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react';
-// Asumimos que tienes estos servicios y funciones
+import Select from 'react-select';
 import { fetchAllAsignaturas } from '../../services/asignaturaService';
 import { fetchAllJornadas } from '../../services/jornadaService';
+import { duocSelectStyles } from '../../styles/duocSelectStyles';
 function SeccionForm({ initial, onSubmit, onCancel }) {
   const [nombre, setNombre] = useState(initial?.NOMBRE_SECCION || '');
   const [asignaturaId, setAsignaturaId] = useState(
@@ -79,6 +80,20 @@ function SeccionForm({ initial, onSubmit, onCancel }) {
     fetchData();
   }, []);
 
+  const asignaturasOptions = asignatura.map((a) => ({
+    value: a.ID_ASIGNATURA.toString(),
+    label: a.NOMBRE_ASIGNATURA,
+  }));
+  const jornadasOptions = jornada.map((j) => ({
+    value: j.ID_JORNADA.toString(),
+    label: j.NOMBRE_JORNADA,
+  }));
+
+  const selectedAsignatura =
+    asignaturasOptions.find((o) => o.value === asignaturaId) || null;
+  const selectedJornada =
+    jornadasOptions.find((o) => o.value === jornadaId) || null;
+
   const handleSubmit = (e) => {
     e.preventDefault();
     onSubmit({
@@ -104,45 +119,25 @@ function SeccionForm({ initial, onSubmit, onCancel }) {
       </div>
       <div className="mb-3">
         <label className="form-label">Asignatura</label>
-        <select
-          className="form-control"
-          value={asignaturaId}
-          onChange={(e) => setAsignaturaId(e.target.value)}
-          required
-        >
-          <option value="" key="default">
-            Seleccione una asignatura
-          </option>
-          {asignatura.map((asignatura) => (
-            <option
-              key={`asignatura-${asignatura.ID_ASIGNATURA}`}
-              value={asignatura.ID_ASIGNATURA}
-            >
-              {asignatura.NOMBRE_ASIGNATURA}
-            </option>
-          ))}
-        </select>
+        <Select
+          options={asignaturasOptions}
+          value={selectedAsignatura}
+          onChange={(opt) => setAsignaturaId(opt ? opt.value : '')}
+          placeholder="Seleccione una asignatura"
+          styles={duocSelectStyles}
+          menuPortalTarget={document.body}
+        />
       </div>
       <div className="mb-3">
         <label className="form-label">Jornada</label>
-        <select
-          className="form-control"
-          value={jornadaId}
-          onChange={(e) => setJornadaId(e.target.value)}
-          required
-        >
-          <option value="" key="default">
-            Seleccione una jornada
-          </option>
-          {jornada.map((jornada) => (
-            <option
-              key={`jornada-${jornada.ID_JORNADA}`}
-              value={jornada.ID_JORNADA}
-            >
-              {jornada.NOMBRE_JORNADA}
-            </option>
-          ))}
-        </select>
+        <Select
+          options={jornadasOptions}
+          value={selectedJornada}
+          onChange={(opt) => setJornadaId(opt ? opt.value : '')}
+          placeholder="Seleccione una jornada"
+          styles={duocSelectStyles}
+          menuPortalTarget={document.body}
+        />
       </div>
       <div className="modal-footer">
         <button type="button" className="btn btn-secondary" onClick={onCancel}>

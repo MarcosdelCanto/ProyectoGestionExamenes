@@ -12,24 +12,14 @@ import {
 } from 'react-icons/fa';
 
 const StatCard = ({ title, value, icon, color }) => (
-  <div className="col-md-4 mb-4" style={{ width: '14%', minWidth: '200px' }}>
-    <div className={`card h-100 dashboard-card border-left-${color}`}>
-      <div className="card-body">
-        <div className="row no-gutters align-items-center">
-          <div className="col mr-2">
-            <div
-              className={`text-xs font-weight-bold text-${color} text-uppercase mb-1`}
-            >
-              {title}
-            </div>
-            <div className="h5 mb-0 font-weight-bold text-gray-800">
-              {value}
-            </div>
-          </div>
-          <div className="col-auto">
-            {React.cloneElement(icon, { size: 32, className: 'text-gray-300' })}
-          </div>
-        </div>
+  <div className="col mb-4" style={{ minWidth: '180px', maxWidth: '220px' }}>
+    <div className={`stat-card stat-card--${color}`}>
+      <div className="stat-card__icon-wrap">
+        {React.cloneElement(icon, { size: 26 })}
+      </div>
+      <div className="stat-card__content">
+        <span className="stat-card__label">{title}</span>
+        <span className="stat-card__value">{value}</span>
       </div>
     </div>
   </div>
@@ -75,7 +65,7 @@ export const SummaryDashboard = () => {
     return <p>No hay datos disponibles para mostrar en el dashboard.</p>;
   }
 
-  // Ejemplo de datos que podría devolver tu API:
+  // Ejemplo de datos que podría devolver la API:
   // stats = {
   //   totalSedes: 5,
   //   totalEscuelas: 12,
@@ -89,7 +79,7 @@ export const SummaryDashboard = () => {
   return (
     <div className="container-fluid dashboard-container">
       <h2 className="mb-4">Panel de Control General</h2>
-      <div className="row">
+      <div className="d-flex flex-wrap gap-3">
         <StatCard
           title="Sedes"
           value={stats.totalSedes || 0}

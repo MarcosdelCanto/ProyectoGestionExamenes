@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import Select from 'react-select';
 import AsyncSelect from 'react-select/async';
+import { duocSelectStyles } from '../../styles/duocSelectStyles';
 import {
   Form,
   Button,
@@ -34,26 +35,7 @@ import FilterModalSalas from '../calendario/FilterModalSalas';
 import FilterModalExamenes from '../examenes/FilterModalExamenes';
 
 // --- Componentes de Estilo y Formato ---
-const customSelectStyles = {
-  control: (provided, state) => ({
-    ...provided,
-    borderColor: state.isFocused ? '#0d6efd' : '#ced4da',
-    boxShadow: state.isFocused ? '0 0 0 0.25rem rgba(13, 110, 253, .25)' : null,
-    '&:hover': {
-      borderColor: state.isFocused ? '#0d6efd' : '#adb5bd',
-    },
-    transition: 'border-color .15s ease-in-out,box-shadow .15s ease-in-out',
-  }),
-  option: (provided, state) => ({
-    ...provided,
-    backgroundColor: state.isSelected
-      ? '#0d6efd'
-      : state.isFocused
-        ? '#e9ecef'
-        : null,
-    color: state.isSelected ? 'white' : 'black',
-  }),
-};
+const customSelectStyles = duocSelectStyles;
 
 const formatDocenteOptionLabel = ({ label, SECCIONES }) => (
   <div
@@ -1057,7 +1039,7 @@ const ReservaForm = ({
           </Form.Text>
         </Form.Group>
 
-        <div className="d-flex justify-content-end mt-4">
+        <div className="modal-footer">
           <Button
             variant="secondary"
             onClick={onCancel}

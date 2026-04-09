@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { getRoles } from '../../services/usuarioService';
 import Select from 'react-select'; // Importar react-select
+import { duocSelectStyles } from '../../styles/duocSelectStyles';
 import { Spinner } from 'react-bootstrap'; // Importar Spinner para el botón de Guardar
 // NO importes Modal o Button de react-bootstrap aquí, ya que el padre los maneja en el Modal.Footer.
 
@@ -132,6 +133,8 @@ export default function UsuarioForm({
           isDisabled={loadingRoles || isProcessing}
           isClearable
           noOptionsMessage={() => 'No hay roles disponibles'}
+          styles={duocSelectStyles}
+          menuPortalTarget={document.body}
         />
         {loadingRoles && (
           <small className="form-text text-muted">Cargando roles...</small>

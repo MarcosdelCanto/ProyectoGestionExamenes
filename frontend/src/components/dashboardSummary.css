@@ -1,60 +1,119 @@
 .dashboard-container {
-  /* Definiendo colores como variables CSS en un scope local o global (ej. :root) */
-  --color-primary: #4e73df;
-  --color-success: #1cc88a;
-  --color-info: #36b9cc;
-  --color-warning: #f6c23e;
-  --color-danger: #e74a3b;
-  --color-secondary: #858796;
-  --color-dark: #5a5c69;
-  --color-gray-300: #dddfeb;
-  --color-gray-800: #5a5c69;
-}
-
-.dashboard-container {
   padding: 20px;
 }
 
-.dashboard-card {
-  transition: transform 0.2s; /* Animation */
+/* --- Stat Card --- */
+.stat-card {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 1rem 1.25rem;
+  border-radius: 12px;
+  background: #ffffff;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  border-left: 4px solid #ffb81c;
+  transition:
+    transform 0.18s ease,
+    box-shadow 0.18s ease;
+  cursor: default;
 }
 
-.dashboard-card:hover {
-  transform: scale(
-    1.03
-  ); /* (103% zoom - Note: if a parent element has "overflow: hidden" it will crop.) */
+.stat-card:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.13);
 }
 
-/* Colores para los bordes izquierdos de las tarjetas (inspirado en SB Admin) */
-.border-left-primary {
-  border-left: 0.25rem solid var(--color-primary) !important;
-}
-.border-left-success {
-  border-left: 0.25rem solid var(--color-success) !important;
-}
-.border-left-info {
-  border-left: 0.25rem solid var(--color-info) !important;
-}
-.border-left-warning {
-  border-left: 0.25rem solid var(--color-warning) !important;
-}
-.border-left-danger {
-  border-left: 0.25rem solid var(--color-danger) !important;
-}
-.border-left-secondary {
-  border-left: 0.25rem solid var(--color-secondary) !important;
-}
-.border-left-dark {
-  border-left: 0.25rem solid var(--color-dark) !important;
+.stat-card__icon-wrap {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 52px;
+  height: 52px;
+  border-radius: 10px;
+  background-color: #ffb81c;
+  color: #ffffff;
+  flex-shrink: 0;
 }
 
-.text-gray-300 {
-  color: var(--color-gray-300) !important;
-}
-.text-gray-800 {
-  color: var(--color-gray-800) !important;
+.stat-card__content {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  min-width: 0;
 }
 
-.text-xs {
+.stat-card__label {
   font-size: 0.7rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: #6c757d;
+  white-space: normal;
+  word-break: break-word;
+  min-height: calc(0.7rem * 1.4 * 2);
+  line-height: 1.4;
+}
+
+.stat-card__value {
+  font-size: 1.6rem;
+  font-weight: 800;
+  color: #1a1a1a;
+  line-height: 1;
+}
+
+/* Color variants for left border + icon */
+.stat-card--primary {
+  border-left-color: #ffb81c;
+}
+.stat-card--primary .stat-card__icon-wrap {
+  background-color: #ffb81c;
+  color: #ffffff;
+}
+
+.stat-card--info {
+  border-left-color: #36b9cc;
+}
+.stat-card--info .stat-card__icon-wrap {
+  background-color: #36b9cc;
+  color: #ffffff;
+}
+
+.stat-card--success {
+  border-left-color: #28a745;
+}
+.stat-card--success .stat-card__icon-wrap {
+  background-color: #28a745;
+  color: #ffffff;
+}
+
+.stat-card--warning {
+  border-left-color: #e05c3a;
+}
+.stat-card--warning .stat-card__icon-wrap {
+  background-color: #e05c3a;
+  color: #ffffff;
+}
+
+.stat-card--danger {
+  border-left-color: #7c3aed;
+}
+.stat-card--danger .stat-card__icon-wrap {
+  background-color: #7c3aed;
+  color: #ffffff;
+}
+
+.stat-card--secondary {
+  border-left-color: #6c757d;
+}
+.stat-card--secondary .stat-card__icon-wrap {
+  background-color: #6c757d;
+  color: #ffffff;
+}
+
+.stat-card--dark {
+  border-left-color: #1a1a1a;
+}
+.stat-card--dark .stat-card__icon-wrap {
+  background-color: #1a1a1a;
+  color: #ffffff;
 }

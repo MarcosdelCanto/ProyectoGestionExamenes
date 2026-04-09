@@ -17,13 +17,13 @@ import { fetchAllJornadas } from '../../../services/jornadaService';
 import { fetchAllEstados } from '../../../services/estadoService'; // Asumiendo que tienes un servicio para estados
 
 const COLORS = [
-  '#198754',
-  '#0d6efd',
-  '#ffc107',
-  '#dc3545',
-  '#6f42c1',
+  '#FFB81C',
+  '#e05c3a',
+  '#28a745',
+  '#7c3aed',
   '#fd7e14',
-]; // Color diferente para este gráfico
+  '#6c757d',
+]; // Paleta Duoc UC
 
 const initialChartState = {
   data: [],
@@ -349,7 +349,8 @@ const ModulosAgendadosChart = () => {
           </button>
           <button
             type="button"
-            className="btn btn-primary"
+            className="btn btn-warning fw-semibold"
+            style={{ color: '#1a1a1a' }}
             onClick={handleApplyFilters}
           >
             Aplicar Filtros

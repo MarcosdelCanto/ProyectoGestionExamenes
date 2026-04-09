@@ -41,6 +41,9 @@ export default function Layout({ children }) {
   // Componente de NavItem con hover y tooltip
   const NavItem = ({ to, icon, text, isBold = false, id }) => {
     const isHovered = hoveredItem === id;
+    const isActive =
+      location.pathname === to ||
+      (to !== '/' && location.pathname.startsWith(to));
 
     const tooltip = (
       <Tooltip id={`tooltip-${id}`} className="custom-tooltip">
@@ -48,7 +51,9 @@ export default function Layout({ children }) {
       </Tooltip>
     );
     const iconElement = (
-      <div className="sidebar-icon-container">
+      <div
+        className={`sidebar-icon-container${isActive ? ' sidebar-icon-active' : ''}`}
+      >
         <i className={`bi ${icon}`}></i>
       </div>
     );
@@ -93,8 +98,11 @@ export default function Layout({ children }) {
         >
           <Link
             to={to}
-            className={`nav-link ${isBold ? 'fw-bold' : ''} text-dark d-flex align-items-center justify-content-center`}
-            style={{ ...navLinkStyle, ...getNavLinkHoverStyle(isHovered) }}
+            className={`nav-link ${isBold ? 'fw-bold' : ''} text-dark d-flex align-items-center justify-content-center${isActive ? ' nav-link-active' : ''}`}
+            style={{
+              ...navLinkStyle,
+              ...(!isActive ? getNavLinkHoverStyle(isHovered) : {}),
+            }}
             onMouseEnter={() => setHoveredItem(id)}
             onMouseLeave={() => setHoveredItem(null)}
           >
@@ -106,8 +114,11 @@ export default function Layout({ children }) {
     return (
       <Link
         to={to}
-        className={`nav-link ${isBold ? 'fw-bold' : ''} text-dark d-flex align-items-center`}
-        style={{ ...navLinkStyle, ...getNavLinkHoverStyle(isHovered) }}
+        className={`nav-link ${isBold ? 'fw-bold' : ''} text-dark d-flex align-items-center${isActive ? ' nav-link-active' : ''}`}
+        style={{
+          ...navLinkStyle,
+          ...(!isActive ? getNavLinkHoverStyle(isHovered) : {}),
+        }}
         onMouseEnter={() => setHoveredItem(id)}
         onMouseLeave={() => setHoveredItem(null)}
       >

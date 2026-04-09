@@ -68,7 +68,7 @@ function Modal({ title, children, onClose }) {
               onClick={onClose}
             ></button>
           </div>
-          <div className="modal-body">{children}</div>
+          <div className="modal-body p-0">{children}</div>
         </div>
       </div>
     </div>

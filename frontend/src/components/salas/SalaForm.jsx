@@ -1,5 +1,7 @@
 import { useState, useEffect } from 'react';
-import { fetchAllEdificios } from '../../services/edificioService'; // Importar servicio
+import Select from 'react-select';
+import { fetchAllEdificios } from '../../services/edificioService';
+import { duocSelectStyles } from '../../styles/duocSelectStyles';
 
 function SalaForm({ initial, onSubmit, onCancel }) {
   const [nombre, setNombre] = useState(initial?.NOMBRE_SALA || '');
@@ -39,6 +41,13 @@ function SalaForm({ initial, onSubmit, onCancel }) {
     fetchEdificios();
   }, []);
 
+  const edificiosOptions = edificios.map((e) => ({
+    value: e.ID_EDIFICIO.toString(),
+    label: `${e.SIGLA_EDIFICIO} - ${e.NOMBRE_EDIFICIO}`,
+  }));
+  const selectedEdificio =
+    edificiosOptions.find((o) => o.value === edificioId) || null;
+
   const handleSubmit = (e) => {
     e.preventDefault();
     onSubmit({
@@ -73,24 +82,14 @@ function SalaForm({ initial, onSubmit, onCancel }) {
       </div>
       <div className="mb-3">
         <label className="form-label">Edificio</label>
-        <select
-          className="form-select"
-          value={edificioId}
-          onChange={(e) => setEdificioId(e.target.value)}
-          required
-        >
-          <option value="" key="default">
-            Seleccione un edificio
-          </option>
-          {edificios.map((edificio) => (
-            <option
-              key={`edificio-${edificio.ID_EDIFICIO}`}
-              value={edificio.ID_EDIFICIO}
-            >
-              {edificio.SIGLA_EDIFICIO} - {edificio.NOMBRE_EDIFICIO}
-            </option>
-          ))}
-        </select>
+        <Select
+          options={edificiosOptions}
+          value={selectedEdificio}
+          onChange={(opt) => setEdificioId(opt ? opt.value : '')}
+          placeholder="Seleccione un edificio"
+          styles={duocSelectStyles}
+          menuPortalTarget={document.body}
+        />
       </div>
       <div className="modal-footer">
         <button type="button" className="btn btn-secondary" onClick={onCancel}>

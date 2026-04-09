@@ -1,5 +1,7 @@
 import { useState, useEffect } from 'react';
+import Select from 'react-select';
 import { fetchAllCarreras } from '../../services/carreraService'; // Importar servicio
+import { duocSelectStyles } from '../../styles/duocSelectStyles';
 
 function AsignaturaForm({ initial, onSubmit, onCancel }) {
   const [nombre, setNombre] = useState(initial?.NOMBRE_ASIGNATURA || '');
@@ -37,6 +39,14 @@ function AsignaturaForm({ initial, onSubmit, onCancel }) {
     fetchCarreras();
   }, []);
 
+  const carrerasOptions = carrera.map((c) => ({
+    value: c.ID_CARRERA.toString(),
+    label: c.NOMBRE_CARRERA,
+  }));
+
+  const selectedCarrera =
+    carrerasOptions.find((o) => o.value === carreraId) || null;
+
   const handleSubmit = (e) => {
     e.preventDefault();
     onSubmit({
@@ -61,27 +71,18 @@ function AsignaturaForm({ initial, onSubmit, onCancel }) {
       </div>
       <div className="mb-3">
         <label className="form-label">Carrera</label>
-        <select
-          className="form-select"
-          value={carreraId}
-          onChange={(e) => setCarreraId(e.target.value)}
+        <Select
+          options={carrerasOptions}
+          value={selectedCarrera}
+          onChange={(opt) => setCarreraId(opt ? opt.value : '')}
+          placeholder={
+            loadingCarreras ? 'Cargando carreras...' : 'Seleccione una carrera'
+          }
+          isDisabled={loadingCarreras}
+          styles={duocSelectStyles}
+          menuPortalTarget={document.body}
           required
-          disabled={loadingCarreras}
-        >
-          <option value="" key="default">
-            {loadingCarreras
-              ? 'Cargando carreras...'
-              : 'Seleccione una carreras'}
-          </option>
-          {carrera.map((carrera) => (
-            <option
-              key={`carrera-${carrera.ID_CARRERA}`}
-              value={carrera.ID_CARRERA}
-            >
-              {carrera.NOMBRE_CARRERA}
-            </option>
-          ))}
-        </select>
+        />
         {errorCarreras && (
           <div className="alert alert-danger mt-2">{errorCarreras}</div>
         )}

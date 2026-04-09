@@ -82,7 +82,8 @@ button:hover {
 }
 button:focus,
 button:focus-visible {
-  outline: 4px auto -webkit-focus-ring-color;
+  outline: none;
+  box-shadow: 0 0 0 0.2rem rgba(108, 117, 125, 0.25);
 }
 
 /* Estilos para el sidebar minimizado */
@@ -217,6 +218,37 @@ button:focus-visible {
   width: var(--sidebar-icon-size);
   text-align: center; /* Centra el icono dentro de su espacio fijo */
   /* El tamaño del icono se puede definir aquí o heredar */
+}
+
+/* Nav link activo */
+.nav-link-active {
+  background-color: #fff3cc !important;
+  color: #1a1a1a !important;
+  font-weight: 600;
+  border-radius: 8px;
+}
+
+.nav-link-active .sidebar-link-text {
+  color: #1a1a1a !important;
+}
+
+/* Ícono activo: círculo amarillo Duoc UC detrás del ícono */
+.sidebar-icon-active {
+  background-color: #ffb81c;
+  color: #1a1a1a !important;
+  border-radius: 50%;
+  width: 2rem;
+  height: 2rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.sidebar-icon-active .bi {
+  color: #1a1a1a !important;
+  font-size: 1rem;
+  width: auto !important;
 }
 
 @media (prefers-color-scheme: light) {
@@ -451,18 +483,8 @@ button:focus-visible {
   box-shadow:
     0 1px 3px rgba(0, 0, 0, 0.07),
     0 6px 20px rgba(0, 0, 0, 0.06) !important;
-  transition:
-    box-shadow 0.2s ease,
-    transform 0.15s ease;
   background-color: #ffffff;
   overflow: hidden;
-}
-
-.card:hover {
-  box-shadow:
-    0 4px 12px rgba(0, 0, 0, 0.1),
-    0 12px 32px rgba(0, 0, 0, 0.08) !important;
-  transform: translateY(-1px);
 }
 
 /* Card header */
@@ -486,7 +508,33 @@ button:focus-visible {
 
 /* Card body */
 .card-body {
-  padding: 1.25rem;
+  padding: 1.5rem;
+  background-color: #ffffff;
+}
+
+/* Empty state: cuando el card-body solo contiene un alert centrado */
+.card-body .alert.text-center,
+.card-body > div > .alert.text-center,
+.card-body > div > div > .alert.text-center {
+  flex-direction: column;
+  justify-content: center;
+  min-height: 120px;
+  border-left: none !important;
+  border-radius: 0.5rem !important;
+  border: 1.5px dashed #ffb81c !important;
+  background-color: #fffbeb !important;
+  color: #1a1a1a !important;
+  font-size: 0.92rem;
+  font-weight: 500;
+  gap: 0.5rem;
+  padding: 2rem 1.5rem;
+}
+
+.card-body .alert.text-center::before,
+.card-body > div > .alert.text-center::before,
+.card-body > div > div > .alert.text-center::before {
+  font-size: 2rem;
+  opacity: 0.6;
 }
 
 /* Card footer */
@@ -510,6 +558,99 @@ button:focus-visible {
 /* ============================================================
    FIN ESTILOS DE CARDS
    ============================================================ */
+
+/* ============================================================
+   BOOTSTRAP MODAL (.modal-content) — mismo estilo que ReactModal
+   ============================================================ */
+.modal-content {
+  border: none !important;
+  border-radius: 0.75rem !important;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.22) !important;
+  overflow: hidden;
+}
+
+.modal-header {
+  background-color: #1a1a1a !important;
+  color: #ffffff !important;
+  border-bottom: 3px solid #ffb81c !important;
+  padding: 0.9rem 1.25rem;
+}
+
+.modal-header .modal-title {
+  color: #ffffff !important;
+  font-weight: 700;
+  font-size: 1rem;
+}
+
+.modal-header .btn-close {
+  filter: invert(1) grayscale(100%) brightness(200%);
+  opacity: 0.85;
+}
+.modal-header .btn-close:hover {
+  opacity: 1;
+}
+
+.modal-body {
+  padding: 1.25rem 1.5rem;
+  background-color: #ffffff;
+}
+
+/* modal-body p-0: sin padding; el form/div hijo aporta padding al contenido */
+.modal-body.p-0 {
+  padding: 0 !important;
+}
+
+.modal-body.p-0 > form,
+.modal-body.p-0 > div {
+  padding: 1.25rem 1.5rem 0 1.5rem;
+}
+
+/* Footer dentro del form: márgenes negativos para escapar el padding del form */
+.modal-body.p-0 .modal-footer {
+  margin: 1rem -1.5rem 0 -1.5rem;
+  border-radius: 0 0 0.75rem 0.75rem;
+}
+
+/* Cuando modal-body tiene padding normal y hay footer adentro */
+.modal-body:not(.p-0):has(.modal-footer) {
+  padding-bottom: 0;
+}
+
+.modal-body:not(.p-0) .modal-footer,
+.modal-body:not(.p-0) form .modal-footer {
+  margin: 1rem -1.5rem 0 -1.5rem;
+  border-radius: 0 0 0.75rem 0.75rem;
+}
+
+.modal-footer {
+  border-top: 1px solid #e0e0e0 !important;
+  padding: 0.75rem 1.5rem !important;
+  background-color: #f8f8f8 !important;
+  justify-content: space-between;
+  border-radius: 0 0 0.75rem 0.75rem;
+}
+
+.modal-footer .btn-secondary {
+  background-color: #6c757d !important;
+  border-color: #6c757d !important;
+  color: #ffffff !important;
+}
+.modal-footer .btn-secondary:hover {
+  background-color: #5a6268 !important;
+  border-color: #5a6268 !important;
+}
+
+.modal-footer .btn-primary {
+  background-color: #ffb81c !important;
+  border-color: #ffb81c !important;
+  color: #1a1a1a !important;
+  font-weight: 600;
+}
+.modal-footer .btn-primary:hover {
+  background-color: #e6a619 !important;
+  border-color: #e6a619 !important;
+  color: #1a1a1a !important;
+}
 
 /* ============================================================
    BOOTSTRAP PRIMARY → NEGRO (paleta Duoc UC)
@@ -552,6 +693,96 @@ button:focus-visible {
   --bs-alert-bg: #f5f5f5;
   --bs-alert-border-color: #cccccc;
   --bs-alert-color: #1a1a1a;
+}
+
+/* Alert light → amarillo claro Duoc UC */
+.alert-light {
+  --bs-alert-bg: #fffbeb;
+  --bs-alert-border-color: #ffb81c;
+  --bs-alert-color: #1a1a1a;
+  border-left: 4px solid #ffb81c;
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+}
+.alert-light::before {
+  font-family: 'bootstrap-icons';
+  content: '\f431'; /* bi-info-circle */
+  font-size: 1.1rem;
+  color: #ffb81c;
+  flex-shrink: 0;
+}
+
+/* Alert info → amarillo claro Duoc UC */
+.alert-info {
+  --bs-alert-bg: #fffbeb;
+  --bs-alert-border-color: #ffb81c;
+  --bs-alert-color: #1a1a1a;
+  border-left: 4px solid #ffb81c;
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+}
+.alert-info::before {
+  font-family: 'bootstrap-icons';
+  content: '\f431'; /* bi-info-circle */
+  font-size: 1.1rem;
+  color: #ffb81c;
+  flex-shrink: 0;
+}
+
+/* Alert warning → amarillo más cálido */
+.alert-warning {
+  --bs-alert-bg: #fff3cc;
+  --bs-alert-border-color: #e0a000;
+  --bs-alert-color: #1a1a1a;
+  border-left: 4px solid #e0a000;
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+}
+.alert-warning::before {
+  font-family: 'bootstrap-icons';
+  content: '\f33b'; /* bi-exclamation-triangle */
+  font-size: 1.1rem;
+  color: #e0a000;
+  flex-shrink: 0;
+}
+
+/* Alert danger → rojo suave */
+.alert-danger {
+  --bs-alert-bg: #fdf2f2;
+  --bs-alert-border-color: #dc3545;
+  --bs-alert-color: #842029;
+  border-left: 4px solid #dc3545;
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+}
+.alert-danger::before {
+  font-family: 'bootstrap-icons';
+  content: '\f623'; /* bi-x-circle */
+  font-size: 1.1rem;
+  color: #dc3545;
+  flex-shrink: 0;
+}
+
+/* Alert success → verde oscuro */
+.alert-success {
+  --bs-alert-bg: #f0faf4;
+  --bs-alert-border-color: #198754;
+  --bs-alert-color: #0a3622;
+  border-left: 4px solid #198754;
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+}
+.alert-success::before {
+  font-family: 'bootstrap-icons';
+  content: '\f26a'; /* bi-check-circle */
+  font-size: 1.1rem;
+  color: #198754;
+  flex-shrink: 0;
 }
 
 /* Link color */
@@ -640,10 +871,64 @@ a:hover {
 .form-check-input:focus,
 input.form-control:focus,
 select.form-select:focus,
-textarea.form-control:focus {
+textarea.form-control:focus,
+.input-group .form-control:focus,
+.input-group .form-select:focus {
   border-color: #6c757d !important;
   box-shadow: 0 0 0 0.25rem rgba(108, 117, 125, 0.25) !important;
   outline: 0 !important;
+  z-index: 1;
+}
+
+/* Bootstrap 5.3 :focus-within input-group — anula bordes azules en todos los hijos */
+.input-group:focus-within .form-control,
+.input-group:focus-within .form-select,
+.input-group:focus-within .input-group-text,
+.input-group:focus-within .btn {
+  border-color: #6c757d !important;
+  box-shadow: none !important;
+}
+.input-group:focus-within .form-control:focus,
+.input-group:focus-within .form-select:focus {
+  box-shadow: 0 0 0 0.25rem rgba(108, 117, 125, 0.25) !important;
+}
+
+/* input activo dentro de input-group (clic) */
+.input-group .form-control:active,
+.input-group input:active {
+  border-color: #6c757d !important;
+  box-shadow: none !important;
+}
+
+/* Botones de herramienta (ej: filtro junto al select) — sin anillo azul */
+.btn-outline-secondary:focus,
+.btn-outline-secondary:focus-visible,
+.btn-outline-secondary:active:focus {
+  box-shadow: 0 0 0 0.2rem rgba(108, 117, 125, 0.25) !important;
+  outline: none !important;
+}
+
+/* btn-outline-secondary activo/presionado — sin azul */
+.btn-outline-secondary {
+  --bs-btn-active-bg: #6c757d;
+  --bs-btn-active-border-color: #6c757d;
+  --bs-btn-active-color: #fff;
+}
+.btn-outline-secondary:active,
+.btn-outline-secondary.active,
+.btn-outline-secondary:active:hover {
+  background-color: #6c757d !important;
+  border-color: #6c757d !important;
+  color: #fff !important;
+  box-shadow: none !important;
+}
+
+/* Todos los demás botones Bootstrap — sin anillo azul */
+.btn:focus,
+.btn:focus-visible,
+.btn-close:focus {
+  box-shadow: 0 0 0 0.2rem rgba(108, 117, 125, 0.25) !important;
+  outline: none !important;
 }
 
 /* Borde y flecha del select en gris neutro */
@@ -652,10 +937,46 @@ textarea.form-control:focus {
   background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3e%3cpath fill='none' stroke='%236c757d' stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M2 5l6 6 6-6'/%3e%3c/svg%3e");
 }
 
+/* Opciones de <select> nativo — sin fondo azul del navegador */
+select option {
+  background-color: #ffffff;
+  color: #2d2d2d;
+}
+
+select option:checked,
+select option:hover,
+select option:focus {
+  background-color: #1a1a1a;
+  color: #ffffff;
+}
+
+/* Dropdown items — sin azul Bootstrap */
+.dropdown-item:hover,
+.dropdown-item:focus {
+  background-color: #f0f0f0 !important;
+  color: #1a1a1a !important;
+}
+
+.dropdown-item.active,
+.dropdown-item:active {
+  background-color: #6c757d !important;
+  color: #ffffff !important;
+}
+
 /* Selección de texto en la app — gris suave en lugar de azul */
 ::selection {
   background-color: #d6d8db;
   color: #1a1a1a;
+}
+
+/* Input tipo fecha — segmento seleccionado sin azul */
+input[type='date'],
+input[type='week'],
+input[type='month'],
+input[type='time'],
+input[type='datetime-local'] {
+  accent-color: #6c757d;
+  color-scheme: light;
 }
 
 /* ============================================================

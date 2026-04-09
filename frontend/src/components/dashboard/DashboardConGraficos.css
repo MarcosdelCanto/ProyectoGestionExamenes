@@ -1,20 +1,62 @@
-.card-header {
-  background-color: #f8f9fa; /* Un fondo ligero para el header de la tarjeta */
-  padding: 0.75rem 1.25rem;
-  border-bottom: 1px solid rgba(0, 0, 0, 0.125);
+.dashboard-charts .card {
+  border: none;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  transition: box-shadow 0.2s ease;
 }
 
-.card-title {
-  margin-bottom: 0; /* Ajuste para que el título y los botones se alineen mejor */
+.dashboard-charts .card:hover {
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.13);
 }
 
-.chart-actions button {
-  font-size: 0.8rem; /* Iconos un poco más pequeños */
-  padding: 0.2rem 0.4rem;
+.dashboard-charts .card-header {
+  background: linear-gradient(135deg, #1a1a1a 0%, #2d2d2d 100%) !important;
+  color: #ffffff !important;
+  padding: 0.85rem 1.25rem;
+  border-bottom: 3px solid #ffb81c !important;
+  border-radius: 12px 12px 0 0 !important;
+}
+
+.dashboard-charts .card-title {
+  margin-bottom: 0;
+  color: #ffffff !important;
+  font-size: 0.95rem;
+  letter-spacing: 0.02em;
+}
+
+.dashboard-charts .chart-actions button {
+  font-size: 0.8rem;
+  padding: 0.25rem 0.5rem;
+  color: #ffffff !important;
+  border-color: rgba(255, 255, 255, 0.4) !important;
+  background-color: transparent !important;
+}
+
+.dashboard-charts .chart-actions button:hover {
+  background-color: #ffb81c !important;
+  border-color: #ffb81c !important;
+  color: #1a1a1a !important;
+}
+
+.dashboard-charts .chart-actions .btn-outline-success {
+  color: #ffffff !important;
+  border-color: rgba(255, 255, 255, 0.4) !important;
+}
+
+.dashboard-charts .chart-actions .btn-outline-success:hover {
+  background-color: #28a745 !important;
+  border-color: #28a745 !important;
+  color: #ffffff !important;
+}
+
+.dashboard-charts .card-body {
+  padding: 1.25rem;
+  background-color: #ffffff !important;
+  border-radius: 0 0 12px 12px;
 }
 
 .table-responsive {
-  max-height: 300px; /* O la altura que coincida con tu gráfico */
+  max-height: 300px;
   overflow-y: auto;
 }
 
@@ -28,7 +70,7 @@
   left: 0;
   right: 0;
   bottom: 0;
-  z-index: 1050; /* Asegura que esté por encima de otros elementos */
+  z-index: 1050;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -42,7 +84,7 @@
   background: white;
   padding: 20px;
   border-radius: 8px;
-  max-width: 500px; /* Ancho máximo del modal */
+  max-width: 500px;
   width: 90%;
-  outline: none; /* Quita el borde por defecto al enfocar */
+  outline: none;
 }

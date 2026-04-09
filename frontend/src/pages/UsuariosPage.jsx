@@ -48,7 +48,7 @@ function Modal({ title, children, onClose, processing }) {
               disabled={processing}
             ></button>
           </div>
-          <div className="modal-body">{children}</div>
+          <div className="modal-body p-0">{children}</div>
         </div>
       </div>
     </div>

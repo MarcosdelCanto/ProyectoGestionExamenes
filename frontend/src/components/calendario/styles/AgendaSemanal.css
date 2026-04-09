@@ -81,8 +81,8 @@
 }
 
 .badge {
-  background-color: #007bff;
-  color: white;
+  background-color: #ffb81c !important;
+  color: #1a1a1a !important;
   border-radius: 50%;
   padding: 2px 8px;
   font-size: 12px;

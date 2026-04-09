@@ -1,5 +1,7 @@
 import { useState, useEffect } from 'react';
-import { fetchAllSedes } from '../../services/sedeService'; // Importar servicio
+import Select from 'react-select';
+import { fetchAllSedes } from '../../services/sedeService';
+import { duocSelectStyles } from '../../styles/duocSelectStyles';
 
 function EdificioForm({ initial, onSubmit, onCancel }) {
   const [nombre, setNombre] = useState(initial?.NOMBRE_EDIFICIO || '');
@@ -35,6 +37,12 @@ function EdificioForm({ initial, onSubmit, onCancel }) {
     };
     fetchSedes();
   }, []);
+
+  const sedesOptions = sedes.map((s) => ({
+    value: s.ID_SEDE.toString(),
+    label: s.NOMBRE_SEDE,
+  }));
+  const selectedSede = sedesOptions.find((o) => o.value === sedeId) || null;
 
   const handleSubmit = (e) => {
     e.preventDefault();
@@ -73,19 +81,14 @@ function EdificioForm({ initial, onSubmit, onCancel }) {
       </div>
       <div className="mb-3">
         <label className="form-label">Sede</label>
-        <select
-          className="form-select"
-          value={sedeId}
-          onChange={(e) => setSedeId(e.target.value)}
-          required
-        >
-          <option value="">Seleccione una sede</option>
-          {sedes.map((sede) => (
-            <option key={`sede-${sede.ID_SEDE}`} value={sede.ID_SEDE}>
-              {sede.NOMBRE_SEDE}
-            </option>
-          ))}
-        </select>
+        <Select
+          options={sedesOptions}
+          value={selectedSede}
+          onChange={(opt) => setSedeId(opt ? opt.value : '')}
+          placeholder="Seleccione una sede"
+          styles={duocSelectStyles}
+          menuPortalTarget={document.body}
+        />
       </div>
       <div className="modal-footer">
         <button type="button" className="btn btn-secondary" onClick={onCancel}>

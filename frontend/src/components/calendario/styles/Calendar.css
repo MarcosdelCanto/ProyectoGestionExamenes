@@ -66,7 +66,7 @@
   .calendar-cell:hover:not(.contains-examen):not(.con-examen):not(
     .part-of-examen
   ) {
-  background-color: #f1f8ff;
+  background-color: #f0f0f0;
 }
 
 /* Celdas seleccionadas */
@@ -77,9 +77,9 @@
 
 /* Celdas durante una operación de arrastre */
 .calendar-table .calendar-cell.drop-hover {
-  background-color: rgba(0, 123, 255, 0.15) !important;
-  border: 2px solid #007bff !important;
-  box-shadow: inset 0 0 10px rgba(0, 123, 255, 0.3);
+  background-color: rgba(255, 184, 28, 0.2) !important;
+  border: 2px solid #ffb81c !important;
+  box-shadow: inset 0 0 10px rgba(255, 184, 28, 0.3);
   z-index: 10;
 }
 
@@ -130,6 +130,15 @@
   z-index: 1000 !important;
   border-bottom: 2px solid #495057;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  user-select: none;
+}
+
+.calendar-table .calendar-header-cell:active,
+.calendar-table .calendar-header-cell:focus,
+.calendar-table .calendar-header-cell:focus-visible {
+  background-color: #343a40 !important;
+  outline: none !important;
+  box-shadow: none !important;
 }
 
 /* INTERSECCIÓN: Header + columnas fijas */
@@ -320,9 +329,9 @@
 
 /* === HOVER PREVIEW MEJORADO === */
 .calendar-cell.drop-hover {
-  background-color: rgba(0, 123, 255, 0.15) !important;
-  border: 2px solid #007bff !important;
-  box-shadow: inset 0 0 10px rgba(0, 123, 255, 0.3);
+  background-color: rgba(255, 184, 28, 0.2) !important;
+  border: 2px solid #ffb81c !important;
+  box-shadow: inset 0 0 10px rgba(255, 184, 28, 0.3);
   position: relative;
 }
 

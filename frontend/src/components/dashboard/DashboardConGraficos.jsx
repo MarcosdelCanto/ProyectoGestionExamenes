@@ -19,7 +19,7 @@ const DashboardConGraficos = () => {
   //   return <div className="container-fluid p-4"><div className="alert alert-danger">Error al cargar algunos gráficos.</div></div>;
   // }
   return (
-    <div className="row g-3 g-md-4 p-3 p-md-4">
+    <div className="dashboard-charts row g-3 g-md-4 p-3 p-md-4">
       {/* Gráfico de Exámenes por Carrera */}
       <div className="col-12 col-md-6 mb-4">
         <ExamenesPorCarreraChart />

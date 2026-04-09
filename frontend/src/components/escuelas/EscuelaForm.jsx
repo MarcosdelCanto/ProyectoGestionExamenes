@@ -1,7 +1,9 @@
 // frontend/src/components/escuelas/EscuelaForm.jsx
 
 import { useState, useEffect } from 'react';
-import { fetchAllSedes } from '../../services/sedeService'; // Importar servicio
+import Select from 'react-select';
+import { fetchAllSedes } from '../../services/sedeService';
+import { duocSelectStyles } from '../../styles/duocSelectStyles';
 
 function EscuelaForm({ initial, onSubmit, onCancel }) {
   const [nombre, setNombre] = useState(initial?.NOMBRE_ESCUELA || '');
@@ -50,6 +52,12 @@ function EscuelaForm({ initial, onSubmit, onCancel }) {
     fetchSedes();
   }, []);
 
+  const sedesOptions = sedes.map((s) => ({
+    value: s.ID_SEDE.toString(),
+    label: s.NOMBRE_SEDE,
+  }));
+  const selectedSede = sedesOptions.find((o) => o.value === sedeId) || null;
+
   const handleSubmit = (e) => {
     e.preventDefault();
     onSubmit({
@@ -74,22 +82,17 @@ function EscuelaForm({ initial, onSubmit, onCancel }) {
       </div>
       <div className="mb-3">
         <label className="form-label">Sede</label>
-        <select
-          className="form-select"
-          value={sedeId}
-          onChange={(e) => setSedeId(e.target.value)}
-          required
-          disabled={loadingSedes}
-        >
-          <option value="" key="default">
-            {loadingSedes ? 'Cargando sedes...' : 'Seleccione una Sede'}
-          </option>
-          {sedes.map((sede) => (
-            <option key={`sede-${sede.ID_SEDE}`} value={sede.ID_SEDE}>
-              {sede.NOMBRE_SEDE}
-            </option>
-          ))}
-        </select>
+        <Select
+          options={sedesOptions}
+          value={selectedSede}
+          onChange={(opt) => setSedeId(opt ? opt.value : '')}
+          placeholder={
+            loadingSedes ? 'Cargando sedes...' : 'Seleccione una Sede'
+          }
+          isDisabled={loadingSedes}
+          styles={duocSelectStyles}
+          menuPortalTarget={document.body}
+        />
         {errorSedes && <div className="text-danger mt-2">{errorSedes}</div>}
       </div>
       <div className="mb-3">
