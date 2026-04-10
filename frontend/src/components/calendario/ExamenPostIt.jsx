@@ -18,7 +18,10 @@ import {
   cancelarReservaCompleta,
 } from '../../services/reservaService';
 import { toast } from 'react-toastify';
-import { searchDocentes, fetchDocentesBySeccion } from '../../services/usuarioService';
+import {
+  searchDocentes,
+  fetchDocentesBySeccion,
+} from '../../services/usuarioService';
 import { useDispatch } from 'react-redux';
 import { actualizarModulosReservaLocalmente } from '../../store/reservasSlice';
 import './styles/PostIt.css';
@@ -613,23 +616,36 @@ export default function ExamenPostIt({
                   <ListGroup.Item
                     key={docente.value ?? docente.label}
                     action
-                    active={tempSelectedDocente?.value === docente.value && tempSelectedDocente?.label === docente.label}
+                    active={
+                      tempSelectedDocente?.value === docente.value &&
+                      tempSelectedDocente?.label === docente.label
+                    }
                     onClick={() => setTempSelectedDocente(docente)}
                     className="d-flex justify-content-between align-items-center"
                   >
-                    <span><i className="bi bi-person-check-fill me-2 text-success"></i>{docente.label}</span>
-                    {tempSelectedDocente?.value === docente.value && tempSelectedDocente?.label === docente.label && (
-                      <Badge bg="primary" pill>✓</Badge>
-                    )}
+                    <span>
+                      <i className="bi bi-person-check-fill me-2 text-success"></i>
+                      {docente.label}
+                    </span>
+                    {tempSelectedDocente?.value === docente.value &&
+                      tempSelectedDocente?.label === docente.label && (
+                        <Badge bg="primary" pill>
+                          ✓
+                        </Badge>
+                      )}
                   </ListGroup.Item>
                 ))}
               </ListGroup>
               <hr className="my-2" />
-              <Form.Label className="fw-semibold">O buscar otro docente</Form.Label>
+              <Form.Label className="fw-semibold">
+                O buscar otro docente
+              </Form.Label>
             </div>
           )}
           <Form.Group className="mb-3">
-            {docentesAsignados.length === 0 && <Form.Label>Buscar por nombre</Form.Label>}
+            {docentesAsignados.length === 0 && (
+              <Form.Label>Buscar por nombre</Form.Label>
+            )}
             <Form.Control
               type="text"
               placeholder="Comience a escribir para buscar..."

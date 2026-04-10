@@ -1285,7 +1285,9 @@ export const crearReservaEnCurso = async (req, res) => {
         `[crearReservaEnCurso] ${docente_ids.length} docentes asignados`
       );
     } else {
-      console.log(`[crearReservaEnCurso] Sin docentes asignados (se asignarán después)`);
+      console.log(
+        `[crearReservaEnCurso] Sin docentes asignados (se asignarán después)`
+      );
     }
 
     const updateExamenSql = `
