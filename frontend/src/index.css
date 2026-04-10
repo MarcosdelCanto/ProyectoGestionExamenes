@@ -36,6 +36,7 @@ body,
   --bs-input-focus-border-color: #6c757d;
   --bs-input-focus-box-shadow: 0 0 0 0.25rem rgba(108, 117, 125, 0.25);
   --bs-form-select-focus-box-shadow: 0 0 0 0.25rem rgba(108, 117, 125, 0.25);
+  accent-color: #6c757d;
 }
 
 /* Nueva clase para empujar el contenido principal */
@@ -878,6 +879,22 @@ textarea.form-control:focus,
   box-shadow: 0 0 0 0.25rem rgba(108, 117, 125, 0.25) !important;
   outline: 0 !important;
   z-index: 1;
+}
+
+/* Hover/active en inputs y selects — evita azul al pasar el mouse */
+.form-control:hover,
+.form-select:hover,
+input.form-control:hover,
+select.form-select:hover,
+textarea.form-control:hover,
+.form-control:active,
+.form-select:active,
+input.form-control:active,
+select.form-select:active,
+textarea.form-control:active {
+  border-color: #6c757d !important;
+  box-shadow: none !important;
+  outline: 0 !important;
 }
 
 /* Bootstrap 5.3 :focus-within input-group — anula bordes azules en todos los hijos */

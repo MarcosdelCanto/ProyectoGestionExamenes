@@ -224,8 +224,11 @@ export default function AgendaSemanal({
       try {
         setIsProcessingDrop(true);
 
+        // Extraer información de la celda donde se hizo drop
+        const { fecha, moduloId, salaId, modulo } = dropTargetCell;
+
         // Validar que tenemos un objeto módulo completo
-        if (!dropTargetCell.modulo || !dropTargetCell.modulo.ORDEN) {
+        if (!modulo || !modulo.ORDEN) {
           console.error(
             'Error: Datos incompletos en el módulo seleccionado',
             dropTargetCell
@@ -262,9 +265,6 @@ export default function AgendaSemanal({
             return;
           }
         }
-
-        // Extraer información de la celda donde se hizo drop
-        const { fecha, moduloId, salaId, modulo } = dropTargetCell;
 
         // Determinar los IDs de los módulos a utilizar
         const modulosIdsParaReserva = determinarModulosParaExamen(

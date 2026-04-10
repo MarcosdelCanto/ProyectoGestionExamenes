@@ -1,6 +1,6 @@
 // src/components/reservas/ReservaForm.jsx
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import Select from 'react-select';
 import AsyncSelect from 'react-select/async';
 import { duocSelectStyles } from '../../styles/duocSelectStyles';
@@ -30,6 +30,7 @@ import {
 } from '../../services/usuarioService';
 import { fetchAllSecciones } from '../../services/seccionService';
 import { checkFechaBloqueo } from '../../services/feriadoService';
+import { fetchPeriodosActivos } from '../../services/periodoReservasService';
 
 // --- Modales de Filtro ---
 import FilterModalSalas from '../calendario/FilterModalSalas';
@@ -80,10 +81,12 @@ const ReservaForm = ({
   const [defaultDocenteOptions, setDefaultDocenteOptions] = useState([]);
   const [loadingData, setLoadingData] = useState(true);
   const [loadingModules, setLoadingModules] = useState(false);
+  const [loadingPeriodos, setLoadingPeriodos] = useState(false);
   const [error, setError] = useState(null);
 
   // --- Estado de bloqueo por feriado ---
   const [feriadoInfo, setFeriadoInfo] = useState(null); // null = sin bloqueo
+  const [periodosActivos, setPeriodosActivos] = useState([]);
 
   // --- Estados para los filtros ---
   const [isSalaFilterOpen, setSalaFilterOpen] = useState(false);
@@ -108,6 +111,9 @@ const ReservaForm = ({
     selectedAsignatura: '',
     selectedEstado: '',
   });
+
+  const normalizeModuleIds = (ids) =>
+    (ids || []).map((id) => Number(id)).filter((id) => Number.isFinite(id));
 
   // --- Handlers para cambios en filtros de examen que resetean dependientes ---
   const handleExamenSedeChange = (value) => {
@@ -404,7 +410,16 @@ const ReservaForm = ({
           setOriginalFechaReserva(initialData.fechaReserva || '');
           setOriginalSalaValue(initialData.sala?.value || null);
 
-          setModulosIds(initialData.modulosIds || []);
+          setModulosIds(normalizeModuleIds(initialData.modulosIds));
+          if (Array.isArray(initialData.modulosDetalle)) {
+            setModulos(
+              initialData.modulosDetalle.map((m) => ({
+                ...m,
+                ID_MODULO: Number(m.ID_MODULO),
+                ORDEN: Number(m.ORDEN || 0),
+              }))
+            );
+          }
 
           console.log(
             '[ReservaForm Edit Mode] States after processing initialData:',
@@ -432,6 +447,14 @@ const ReservaForm = ({
       setLoadingData(false);
     }
   }, [isEditMode, initialData]); // Dejar solo estas dependencias si la carga de opciones es robusta
+
+  useEffect(() => {
+    setLoadingPeriodos(true);
+    fetchPeriodosActivos()
+      .then((data) => setPeriodosActivos(data || []))
+      .catch(() => setPeriodosActivos([]))
+      .finally(() => setLoadingPeriodos(false));
+  }, []);
 
   // --- Efectos dinámicos ---
   useEffect(() => {
@@ -482,6 +505,18 @@ const ReservaForm = ({
   }, [examen, isEditMode, initialData]); // 'docente' fue removido de las dependencias para evitar bucles si se setea aquí mismo.
 
   useEffect(() => {
+    if (fechaReserva && periodosActivos.length > 0) {
+      const dentroDePeriodo = periodosActivos.some(
+        (p) => fechaReserva >= p.FECHA_INICIO && fechaReserva <= p.FECHA_FIN
+      );
+      if (!dentroDePeriodo) {
+        setModulos([]);
+        setModulosIds([]);
+        setLoadingModules(false);
+        return;
+      }
+    }
+
     if (fechaReserva && sala?.value) {
       setLoadingModules(true);
       // No limpiar modulos aquí, se limpian más abajo si es necesario
@@ -532,9 +567,39 @@ const ReservaForm = ({
         isEditMode ? initialData?.ID_RESERVA : null
       )
         .then((data) => {
-          setModulos(data);
+          const disponiblesNormalizados = (data || []).map((m) => ({
+            ...m,
+            ID_MODULO: Number(m.ID_MODULO),
+            ORDEN: Number(m.ORDEN || 0),
+          }));
+
+          let modulosParaMostrar = disponiblesNormalizados;
+          if (isEditMode && Array.isArray(initialData?.modulosDetalle)) {
+            const moduloMap = new Map(
+              disponiblesNormalizados.map((m) => [Number(m.ID_MODULO), m])
+            );
+            initialData.modulosDetalle.forEach((m) => {
+              const id = Number(m.ID_MODULO);
+              if (!moduloMap.has(id)) {
+                moduloMap.set(id, {
+                  ...m,
+                  ID_MODULO: id,
+                  ORDEN: Number(m.ORDEN || 0),
+                });
+              }
+            });
+            modulosParaMostrar = Array.from(moduloMap.values()).sort(
+              (a, b) => Number(a.ORDEN || 0) - Number(b.ORDEN || 0)
+            );
+          }
+
+          setModulos(modulosParaMostrar);
           if (isEditMode && !resetearModulos && initialData?.modulosIds) {
-            setModulosIds(initialData.modulosIds);
+            const iniciales = normalizeModuleIds(initialData.modulosIds);
+            const disponibles = new Set(
+              modulosParaMostrar.map((m) => Number(m.ID_MODULO))
+            );
+            setModulosIds(iniciales.filter((id) => disponibles.has(id)));
           }
         })
         .catch((error) => {
@@ -558,6 +623,7 @@ const ReservaForm = ({
     originalFechaReserva,
     originalSalaValue,
     initialData,
+    periodosActivos,
     // resetearModulos, // Si resetearModulos se calcula dentro, no necesita ser dependencia
   ]); // Añadir dependencias relevantes
 
@@ -585,9 +651,23 @@ const ReservaForm = ({
     return now > moduleTime;
   };
 
-  // --- Lógica de Módulos ---
-  const isModuleDisabled = (currentModule) => {
-    // Bloqueo por feriado de módulos específicos
+  const todayStr = new Date().toISOString().split('T')[0];
+  const isFechaPasada = Boolean(fechaReserva) && fechaReserva < todayStr;
+
+  const isFechaFueraPeriodo = useMemo(() => {
+    if (!fechaReserva || !periodosActivos || periodosActivos.length === 0) {
+      return false;
+    }
+    return !periodosActivos.some(
+      (p) => fechaReserva >= p.FECHA_INICIO && fechaReserva <= p.FECHA_FIN
+    );
+  }, [fechaReserva, periodosActivos]);
+
+  const isBloqueadoPorTiempoOFeriado = (currentModule) => {
+    if (isFechaPasada) {
+      return true;
+    }
+
     if (
       feriadoInfo?.tipo === 'MODULOS' &&
       feriadoInfo.modulos_bloqueados?.includes(currentModule.ID_MODULO)
@@ -595,19 +675,29 @@ const ReservaForm = ({
       return true;
     }
 
-    // Validar si el módulo es para una fecha y hora pasada
     if (
-      fechaReserva === new Date().toISOString().split('T')[0] &&
+      fechaReserva === todayStr &&
       isTimePassed(currentModule.INICIO_MODULO)
     ) {
       return true;
     }
 
+    return false;
+  };
+
+  // --- Lógica de Módulos ---
+  const isModuleDisabled = (currentModule) => {
+    const currentModuleId = Number(currentModule.ID_MODULO);
+
+    if (isBloqueadoPorTiempoOFeriado(currentModule)) {
+      return true;
+    }
+
     if (modulosIds.length === 0) return false;
-    if (modulosIds.includes(currentModule.ID_MODULO)) return false; // Si ya está seleccionado, no está deshabilitado para deselección
+    if (modulosIds.includes(currentModuleId)) return false; // Si ya está seleccionado, no está deshabilitado para deselección
 
     const selectedModulesCurrent = modulos.filter((m) =>
-      modulosIds.includes(m.ID_MODULO)
+      modulosIds.includes(Number(m.ID_MODULO))
     );
     if (selectedModulesCurrent.length === 0) return false; // Si no hay nada seleccionado, nada está deshabilitado
 
@@ -626,6 +716,73 @@ const ReservaForm = ({
     );
   };
 
+  const sortedSelectedModules = useMemo(
+    () =>
+      modulos
+        .filter((m) => modulosIds.includes(Number(m.ID_MODULO)))
+        .sort((a, b) => Number(a.ORDEN) - Number(b.ORDEN)),
+    [modulos, modulosIds]
+  );
+
+  const handleAddModulo = () => {
+    const ordenados = [...modulos].sort(
+      (a, b) => Number(a.ORDEN) - Number(b.ORDEN)
+    );
+    if (ordenados.length === 0) return;
+
+    if (modulosIds.length === 0) {
+      const primerDisponible = ordenados.find(
+        (m) => !isBloqueadoPorTiempoOFeriado(m)
+      );
+      if (!primerDisponible) return;
+      setModulosIds([primerDisponible.ID_MODULO]);
+      return;
+    }
+
+    const selectedOrdens = sortedSelectedModules
+      .map((m) => Number(m.ORDEN))
+      .filter((o) => Number.isFinite(o) && o > 0);
+
+    let candidato = null;
+
+    if (selectedOrdens.length > 0) {
+      const minOrden = Math.min(...selectedOrdens);
+      const maxOrden = Math.max(...selectedOrdens);
+
+      const siguiente = ordenados.find((m) => Number(m.ORDEN) === maxOrden + 1);
+      if (siguiente && !isBloqueadoPorTiempoOFeriado(siguiente)) {
+        candidato = siguiente;
+      } else {
+        const anterior = ordenados.find(
+          (m) => Number(m.ORDEN) === minOrden - 1
+        );
+        if (anterior && !isBloqueadoPorTiempoOFeriado(anterior)) {
+          candidato = anterior;
+        }
+      }
+    }
+
+    if (!candidato) {
+      candidato = ordenados.find(
+        (m) =>
+          !modulosIds.includes(Number(m.ID_MODULO)) &&
+          !isBloqueadoPorTiempoOFeriado(m)
+      );
+    }
+
+    if (!candidato) return;
+
+    setModulosIds((prev) => [
+      ...new Set([...prev, Number(candidato.ID_MODULO)]),
+    ]);
+  };
+
+  const handleRemoveModulo = () => {
+    if (sortedSelectedModules.length === 0) return;
+    const ultimo = sortedSelectedModules[sortedSelectedModules.length - 1];
+    setModulosIds((prev) => prev.filter((id) => id !== ultimo.ID_MODULO));
+  };
+
   const handleModuloChange = (e) => {
     const clickedId = Number(e.target.value);
     const isChecked = e.target.checked;
@@ -634,19 +791,23 @@ const ReservaForm = ({
       // Al seleccionar, añadir el módulo
       setModulosIds((prev) =>
         [...new Set([...prev, clickedId])].sort((a, b) => {
-          const ordenA = modulos.find((m) => m.ID_MODULO === a)?.ORDEN || 0;
-          const ordenB = modulos.find((m) => m.ID_MODULO === b)?.ORDEN || 0;
+          const ordenA =
+            modulos.find((m) => Number(m.ID_MODULO) === Number(a))?.ORDEN || 0;
+          const ordenB =
+            modulos.find((m) => Number(m.ID_MODULO) === Number(b))?.ORDEN || 0;
           return Number(ordenA) - Number(ordenB);
         })
       );
     } else {
       // Al deseleccionar, lógica para mantener la consecutividad
-      const clickedModule = modulos.find((m) => m.ID_MODULO === clickedId);
+      const clickedModule = modulos.find(
+        (m) => Number(m.ID_MODULO) === Number(clickedId)
+      );
       if (!clickedModule) return;
 
       const clickedOrden = Number(clickedModule.ORDEN);
       const currentlySelectedModules = modulos
-        .filter((m) => modulosIds.includes(m.ID_MODULO))
+        .filter((m) => modulosIds.includes(Number(m.ID_MODULO)))
         .sort((a, b) => Number(a.ORDEN) - Number(b.ORDEN));
 
       const newSelectedIds = [];
@@ -690,7 +851,7 @@ const ReservaForm = ({
         // deseleccionar todos los que tengan un orden mayor al deseleccionado.
         setModulosIds(
           modulosIds.filter((id) => {
-            const mod = modulos.find((m) => m.ID_MODULO === id);
+            const mod = modulos.find((m) => Number(m.ID_MODULO) === Number(id));
             return mod && Number(mod.ORDEN) < clickedOrden;
           })
         );
@@ -814,6 +975,18 @@ const ReservaForm = ({
     // La validación de si es *obligatorio* en edición podría ser más compleja.
     if (!fechaReserva)
       return setError('Debe seleccionar una fecha de reserva.');
+
+    if (isFechaPasada) {
+      return setError(
+        'No se pueden seleccionar módulos para una fecha pasada.'
+      );
+    }
+
+    if (isFechaFueraPeriodo) {
+      return setError(
+        'La fecha seleccionada está fuera del período habilitado para reservas.'
+      );
+    }
 
     // Bloqueo por feriado: día completo
     if (feriadoInfo?.tipo === 'COMPLETO') {
@@ -974,6 +1147,18 @@ const ReservaForm = ({
                   : ' — Algunos módulos están bloqueados en esta fecha.'}
               </div>
             )}
+            {isFechaPasada && (
+              <div className="mt-2 p-2 rounded small bg-warning text-dark">
+                <i className="bi bi-clock-history me-1" />
+                La fecha seleccionada ya pasó. Los módulos quedan bloqueados.
+              </div>
+            )}
+            {isFechaFueraPeriodo && (
+              <div className="mt-2 p-2 rounded small bg-warning text-dark">
+                <i className="bi bi-calendar-range me-1" />
+                La fecha está fuera del período habilitado para reservas.
+              </div>
+            )}
           </Form.Group>
           <Form.Group as={Col} md={6}>
             <Form.Label>Sala</Form.Label>
@@ -1041,7 +1226,47 @@ const ReservaForm = ({
           )}
 
         <Form.Group className="mb-3">
-          <Form.Label>Módulos Disponibles</Form.Label>
+          <div className="d-flex justify-content-between align-items-center mb-1">
+            <Form.Label className="mb-0">Módulos Disponibles</Form.Label>
+            <div className="d-flex align-items-center gap-2">
+              <small className="text-muted">
+                Seleccionados: {modulosIds.length}
+              </small>
+              <Button
+                type="button"
+                size="sm"
+                variant="outline-secondary"
+                onClick={handleRemoveModulo}
+                disabled={
+                  isLoadingExternally ||
+                  loadingModules ||
+                  modulosIds.length === 0 ||
+                  isFechaPasada ||
+                  isFechaFueraPeriodo
+                }
+                title="Quitar último módulo"
+              >
+                <i className="bi bi-dash-lg" />
+              </Button>
+              <Button
+                type="button"
+                size="sm"
+                variant="outline-secondary"
+                onClick={handleAddModulo}
+                disabled={
+                  isLoadingExternally ||
+                  loadingModules ||
+                  !fechaReserva ||
+                  !sala?.value ||
+                  isFechaPasada ||
+                  isFechaFueraPeriodo
+                }
+                title="Agregar siguiente módulo"
+              >
+                <i className="bi bi-plus-lg" />
+              </Button>
+            </div>
+          </div>
           <div
             className="p-3 border rounded"
             style={{
@@ -1055,6 +1280,16 @@ const ReservaForm = ({
                 <Spinner animation="border" size="sm" />
                 <p className="text-muted mt-1">Buscando módulos...</p>
               </div>
+            ) : loadingPeriodos ? (
+              <p className="text-muted">Cargando períodos habilitados...</p>
+            ) : isFechaPasada ? (
+              <p className="text-muted">
+                La fecha elegida ya pasó. No se pueden seleccionar módulos.
+              </p>
+            ) : isFechaFueraPeriodo ? (
+              <p className="text-muted">
+                La fecha elegida está fuera del período habilitado.
+              </p>
             ) : !fechaReserva || !sala?.value ? (
               <p className="text-muted">
                 Seleccione una fecha y una sala para ver los módulos
@@ -1067,8 +1302,8 @@ const ReservaForm = ({
                   type="checkbox"
                   id={`modulo-${m.ID_MODULO}`}
                   label={`${m.NOMBRE_MODULO} (${m.INICIO_MODULO} - ${m.FIN_MODULO})`}
-                  value={m.ID_MODULO}
-                  checked={modulosIds.includes(m.ID_MODULO)}
+                  value={Number(m.ID_MODULO)}
+                  checked={modulosIds.includes(Number(m.ID_MODULO))}
                   onChange={handleModuloChange}
                   disabled={isLoadingExternally || isModuleDisabled(m)}
                 />

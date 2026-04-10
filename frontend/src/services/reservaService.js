@@ -343,3 +343,18 @@ export const fetchMisReservasConfirmadas = async () => {
     throw error;
   }
 };
+
+export const fetchReservasByCarrera = async () => {
+  const response = await api.get('/reserva/gestion/carrera');
+  return response.data;
+};
+
+export const fetchReservasBySeccion = async () => {
+  const response = await api.get('/reserva/gestion/seccion');
+  return response.data;
+};
+
+export const fetchAlumnosByReservaId = async (idReserva) => {
+  const response = await api.get(`/reserva/${idReserva}/alumnos`);
+  return response.data;
+};

@@ -339,6 +339,17 @@ export default function Layout({ children }) {
               />
             )}
 
+            {(hasPermission('VER TODAS LAS RESERVA') ||
+              hasPermission('GESTION RESERVA CARRERA') ||
+              hasPermission('GESTION RESERVA SECCION')) && (
+              <NavItem
+                to="/reservas/gestion"
+                icon="bi-calendar2-week-fill"
+                text="Gestión de Reservas"
+                id="gestion-reservas"
+              />
+            )}
+
             <NavItem
               to="/mis-reservas"
               icon="bi-calendar-check-fill"

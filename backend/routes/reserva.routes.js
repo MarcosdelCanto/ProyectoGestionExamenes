@@ -19,6 +19,9 @@ import {
   getMisAsignacionesDeReservas, // Controlador para GET /mis-asignaciones
   descartarReserva, // Importar el nuevo controlador
   getMisReservasConfirmadas, // Importar el controlador para obtener reservas confirmadas
+  getReservasByCarrera, // Gestión de reservas por carrera
+  getReservasBySeccion, // Gestión de reservas por sección
+  getAlumnosByReservaId,
 } from '../controllers/reserva.controller.js';
 
 const router = Router();
@@ -102,6 +105,17 @@ router.post(
   createReserva
 );
 router.get(
+  '/:id/alumnos',
+  authMiddleware,
+  checkPermission([
+    'VER TODAS LAS RESERVA',
+    'GESTION RESERVA CARRERA',
+    'GESTION RESERVA SECCION',
+    'VER DETALLE RESERVA',
+  ]),
+  getAlumnosByReservaId
+);
+router.get(
   '/:id',
   authMiddleware,
   checkPermission(['VER DETALLE RESERVA']), // Ej: Permiso para ver detalle de una reserva
@@ -121,12 +135,27 @@ router.delete(
   checkPermission(['ELIMINAR RESERVA']), // Ej: Permiso para eliminar cualquier reserva
   deleteReserva
 );
-// --- RUTA PARA DESCARTAR RESERVA ---
+// --- RUTAS PARA DESCARTAR RESERVA ---
 router.put(
   '/:idReserva/descartar',
   authMiddleware,
   checkPermission(['EDITAR RESERVA']), // Asumiendo que el mismo permiso de actualizar sirve para descartar
   descartarReserva
+);
+
+// --- RUTAS DE GESTIÓN SCOPED ---
+router.get(
+  '/gestion/carrera',
+  authMiddleware,
+  checkPermission(['GESTION RESERVA CARRERA', 'VER TODAS LAS RESERVA']),
+  getReservasByCarrera
+);
+
+router.get(
+  '/gestion/seccion',
+  authMiddleware,
+  checkPermission(['GESTION RESERVA SECCION', 'VER TODAS LAS RESERVA']),
+  getReservasBySeccion
 );
 
 export default router;

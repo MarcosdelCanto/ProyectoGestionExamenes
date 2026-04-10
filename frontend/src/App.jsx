@@ -29,6 +29,7 @@ import DocenteReservasPage from './pages/DocenteReservasPage';
 import CrearReservaPage from './pages/CrearReservaPage';
 import MisReservasAsignadasPage from './pages/MisReservasAsignadasPage.jsx';
 import FeriadosPage from './pages/FeriadosPage';
+import GestionReservasPage from './pages/GestionReservasPage';
 import ConsultaExamenes from './pages/ConsultaExamenes.jsx';
 import ConsultaExamenesTotem from './pages/ConsultaExamenesTotem.jsx';
 
@@ -97,6 +98,14 @@ function App() {
             }
           >
             <Route path="/reservas/crear" element={<CrearReservaPage />} />
+          </Route>
+
+          <Route
+            element={
+              <PrivateRoute requiredPermissions={['VER TODAS LAS RESERVA']} />
+            }
+          >
+            <Route path="/reservas/gestion" element={<GestionReservasPage />} />
           </Route>
 
           <Route

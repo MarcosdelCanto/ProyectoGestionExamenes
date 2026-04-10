@@ -77,41 +77,63 @@ const emitReservaActualizada = async (
   }
 };
 
+// ─── Helper: SELECT base para reservas ───────────────────────────────────────
+const RESERVA_SELECT = `
+  SELECT r.ID_RESERVA, r.FECHA_RESERVA,
+         e.ID_EXAMEN, e.NOMBRE_EXAMEN,
+         e.CANTIDAD_MODULOS_EXAMEN,
+         e.INSCRITOS_EXAMEN AS CANTIDAD_ALUMNOS_ASOCIADOS,
+         s.ID_SALA, s.NOMBRE_SALA,
+         est.ID_ESTADO, est.NOMBRE_ESTADO AS ESTADO_RESERVA,
+         r.ESTADO_CONFIRMACION_DOCENTE, r.OBSERVACIONES_DOCENTE,
+         c.ID_CARRERA, c.NOMBRE_CARRERA,
+         esc.ID_ESCUELA, esc.NOMBRE_ESCUELA,
+         esc.COLOR_BACKGROUND, esc.COLOR_BORDER,
+         sec.ID_SECCION, sec.NOMBRE_SECCION,
+         (SELECT COUNT(*)
+          FROM RESERVAMODULO rm
+          WHERE rm.RESERVA_ID_RESERVA = r.ID_RESERVA
+         ) AS CANTIDAD_MODULOS_RESERVA,
+         (SELECT MIN(m.INICIO_MODULO)
+          FROM RESERVAMODULO rm
+          JOIN MODULO m ON rm.MODULO_ID_MODULO = m.ID_MODULO
+          WHERE rm.RESERVA_ID_RESERVA = r.ID_RESERVA
+         ) AS HORA_INICIO_RESERVA,
+         (SELECT MAX(m.FIN_MODULO)
+          FROM RESERVAMODULO rm
+          JOIN MODULO m ON rm.MODULO_ID_MODULO = m.ID_MODULO
+          WHERE rm.RESERVA_ID_RESERVA = r.ID_RESERVA
+         ) AS HORA_FIN_RESERVA,
+         (SELECT u.NOMBRE_USUARIO
+          FROM RESERVA_DOCENTES rd
+          JOIN USUARIO u ON rd.USUARIO_ID_USUARIO = u.ID_USUARIO
+          WHERE rd.RESERVA_ID_RESERVA = r.ID_RESERVA AND ROWNUM = 1
+         ) AS NOMBRE_DOCENTE_ASIGNADO,
+         (SELECT LISTAGG(u2.NOMBRE_USUARIO, '||') WITHIN GROUP (ORDER BY u2.NOMBRE_USUARIO)
+          FROM RESERVA_DOCENTES rd2
+          JOIN USUARIO u2 ON rd2.USUARIO_ID_USUARIO = u2.ID_USUARIO
+          WHERE rd2.RESERVA_ID_RESERVA = r.ID_RESERVA
+         ) AS NOMBRES_DOCENTES,
+         (SELECT LISTAGG(TO_CHAR(rd3.USUARIO_ID_USUARIO), '||') WITHIN GROUP (ORDER BY rd3.USUARIO_ID_USUARIO)
+          FROM RESERVA_DOCENTES rd3
+          WHERE rd3.RESERVA_ID_RESERVA = r.ID_RESERVA
+         ) AS DOCENTES_IDS
+  FROM RESERVA r
+  JOIN EXAMEN e ON r.EXAMEN_ID_EXAMEN = e.ID_EXAMEN
+  JOIN SALA s ON r.SALA_ID_SALA = s.ID_SALA
+  JOIN ESTADO est ON r.ESTADO_ID_ESTADO = est.ID_ESTADO
+  JOIN SECCION sec ON e.SECCION_ID_SECCION = sec.ID_SECCION
+  JOIN ASIGNATURA a ON sec.ASIGNATURA_ID_ASIGNATURA = a.ID_ASIGNATURA
+  JOIN CARRERA c ON a.CARRERA_ID_CARRERA = c.ID_CARRERA
+  JOIN ESCUELA esc ON c.ESCUELA_ID_ESCUELA = esc.ID_ESCUELA
+`;
+
 export const getAllReservas = async (req, res) => {
   let conn;
   try {
     conn = await getConnection();
     const result = await conn.execute(
-      `SELECT r.ID_RESERVA, r.FECHA_RESERVA,
-              e.ID_EXAMEN, e.NOMBRE_EXAMEN,
-              s.ID_SALA, s.NOMBRE_SALA,
-              est.ID_ESTADO, est.NOMBRE_ESTADO AS ESTADO_RESERVA,
-              r.ESTADO_CONFIRMACION_DOCENTE, r.OBSERVACIONES_DOCENTE,
-              c.ID_CARRERA, c.NOMBRE_CARRERA,
-              esc.ID_ESCUELA, esc.NOMBRE_ESCUELA,
-              esc.COLOR_BACKGROUND, esc.COLOR_BORDER,
-              (SELECT u.NOMBRE_USUARIO
-               FROM RESERVA_DOCENTES rd
-               JOIN USUARIO u ON rd.USUARIO_ID_USUARIO = u.ID_USUARIO
-               WHERE rd.RESERVA_ID_RESERVA = r.ID_RESERVA AND ROWNUM = 1
-              ) AS NOMBRE_DOCENTE_ASIGNADO,
-              (SELECT LISTAGG(u2.NOMBRE_USUARIO, '||') WITHIN GROUP (ORDER BY u2.NOMBRE_USUARIO)
-               FROM RESERVA_DOCENTES rd2
-               JOIN USUARIO u2 ON rd2.USUARIO_ID_USUARIO = u2.ID_USUARIO
-               WHERE rd2.RESERVA_ID_RESERVA = r.ID_RESERVA
-              ) AS NOMBRES_DOCENTES,
-              (SELECT LISTAGG(TO_CHAR(rd3.USUARIO_ID_USUARIO), '||') WITHIN GROUP (ORDER BY rd3.USUARIO_ID_USUARIO)
-               FROM RESERVA_DOCENTES rd3
-               WHERE rd3.RESERVA_ID_RESERVA = r.ID_RESERVA
-              ) AS DOCENTES_IDS
-       FROM RESERVA r
-       JOIN EXAMEN e ON r.EXAMEN_ID_EXAMEN = e.ID_EXAMEN
-       JOIN SALA s ON r.SALA_ID_SALA = s.ID_SALA
-       JOIN ESTADO est ON r.ESTADO_ID_ESTADO = est.ID_ESTADO
-       JOIN SECCION sec ON e.SECCION_ID_SECCION = sec.ID_SECCION
-       JOIN ASIGNATURA a ON sec.ASIGNATURA_ID_ASIGNATURA = a.ID_ASIGNATURA
-       JOIN CARRERA c ON a.CARRERA_ID_CARRERA = c.ID_CARRERA
-       JOIN ESCUELA esc ON c.ESCUELA_ID_ESCUELA = esc.ID_ESCUELA
+      `${RESERVA_SELECT}
        ORDER BY r.FECHA_RESERVA DESC, r.ID_RESERVA DESC`,
       [],
       { outFormat: oracledb.OUT_FORMAT_OBJECT }
@@ -198,6 +220,53 @@ export const getReservaById = async (req, res) => {
         await conn.close();
       } catch (closeErr) {
         console.error('Error cerrando conexión en getReservaById:', closeErr);
+      }
+    }
+  }
+};
+
+export const getAlumnosByReservaId = async (req, res) => {
+  const { id } = req.params;
+  const reservaIdNum = parseInt(id, 10);
+  if (isNaN(reservaIdNum)) {
+    return handleError(res, null, 'El ID de la reserva no es válido.', 400);
+  }
+
+  let conn;
+  try {
+    conn = await getConnection();
+
+    const result = await conn.execute(
+      `SELECT DISTINCT
+              u.ID_USUARIO,
+              u.NOMBRE_USUARIO,
+              u.EMAIL_USUARIO,
+              sec.ID_SECCION,
+              sec.NOMBRE_SECCION
+       FROM RESERVA r
+       JOIN EXAMEN e ON r.EXAMEN_ID_EXAMEN = e.ID_EXAMEN
+       JOIN SECCION sec ON e.SECCION_ID_SECCION = sec.ID_SECCION
+       JOIN USUARIOSECCION us ON us.SECCION_ID_SECCION = sec.ID_SECCION
+       JOIN USUARIO u ON u.ID_USUARIO = us.USUARIO_ID_USUARIO
+       WHERE r.ID_RESERVA = :reservaId
+         AND u.ROL_ID_ROL = 3
+       ORDER BY UPPER(u.NOMBRE_USUARIO) ASC`,
+      { reservaId: reservaIdNum },
+      { outFormat: oracledb.OUT_FORMAT_OBJECT }
+    );
+
+    res.json(result.rows || []);
+  } catch (err) {
+    handleError(res, err, 'Error al obtener alumnos asociados a la reserva');
+  } finally {
+    if (conn) {
+      try {
+        await conn.close();
+      } catch (closeErr) {
+        console.error(
+          'Error cerrando conexión en getAlumnosByReservaId:',
+          closeErr
+        );
       }
     }
   }
@@ -1858,5 +1927,83 @@ export const getMisReservasConfirmadas = async (req, res) => {
         console.error('Error al cerrar la conexión:', err);
       }
     }
+  }
+};
+
+// ─── Gestión de reservas por carrera ─────────────────────────────────────────
+// GET /api/reserva/gestion/carrera
+// Devuelve reservas cuyas carreras están asociadas al usuario.
+// Administrador ve todo.
+export const getReservasByCarrera = async (req, res) => {
+  const { id_usuario, nombre_rol } = req.user;
+  const isAdmin = (nombre_rol || '').toUpperCase() === 'ADMINISTRADOR';
+  let conn;
+  try {
+    conn = await getConnection();
+
+    let sql;
+    let params = {};
+
+    if (isAdmin) {
+      sql =
+        RESERVA_SELECT + ` ORDER BY r.FECHA_RESERVA DESC, r.ID_RESERVA DESC`;
+    } else {
+      // Solo reservas cuya carrera esté en USUARIOCARRERA del usuario
+      sql =
+        RESERVA_SELECT +
+        ` WHERE c.ID_CARRERA IN (
+            SELECT CARRERA_ID_CARRERA FROM USUARIOCARRERA WHERE USUARIO_ID_USUARIO = :userId
+          )
+          ORDER BY r.FECHA_RESERVA DESC, r.ID_RESERVA DESC`;
+      params = { userId: id_usuario };
+    }
+
+    const result = await conn.execute(sql, params, {
+      outFormat: oracledb.OUT_FORMAT_OBJECT,
+    });
+    res.json(result.rows);
+  } catch (error) {
+    handleError(res, error, 'Error al obtener reservas por carrera');
+  } finally {
+    if (conn) await conn.close().catch(() => {});
+  }
+};
+
+// ─── Gestión de reservas por sección ─────────────────────────────────────────
+// GET /api/reserva/gestion/seccion
+// Devuelve reservas cuyas secciones están asociadas al usuario.
+// Administrador ve todo.
+export const getReservasBySeccion = async (req, res) => {
+  const { id_usuario, nombre_rol } = req.user;
+  const isAdmin = (nombre_rol || '').toUpperCase() === 'ADMINISTRADOR';
+  let conn;
+  try {
+    conn = await getConnection();
+
+    let sql;
+    let params = {};
+
+    if (isAdmin) {
+      sql =
+        RESERVA_SELECT + ` ORDER BY r.FECHA_RESERVA DESC, r.ID_RESERVA DESC`;
+    } else {
+      // Solo reservas cuya sección esté en USUARIOSECCION del usuario
+      sql =
+        RESERVA_SELECT +
+        ` WHERE sec.ID_SECCION IN (
+            SELECT SECCION_ID_SECCION FROM USUARIOSECCION WHERE USUARIO_ID_USUARIO = :userId
+          )
+          ORDER BY r.FECHA_RESERVA DESC, r.ID_RESERVA DESC`;
+      params = { userId: id_usuario };
+    }
+
+    const result = await conn.execute(sql, params, {
+      outFormat: oracledb.OUT_FORMAT_OBJECT,
+    });
+    res.json(result.rows);
+  } catch (error) {
+    handleError(res, error, 'Error al obtener reservas por sección');
+  } finally {
+    if (conn) await conn.close().catch(() => {});
   }
 };

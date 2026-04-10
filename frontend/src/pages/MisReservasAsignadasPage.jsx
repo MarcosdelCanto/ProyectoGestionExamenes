@@ -66,6 +66,50 @@ const MisReservasAsignadasPage = () => {
   const [reservaParaDescartar, setReservaParaDescartar] = useState(null);
   const [loadingDescartar, setLoadingDescartar] = useState(false);
 
+  const formatHoraCorta = (valor) => {
+    if (!valor) return '';
+    const text = String(valor);
+    const hhmm = text.match(/(\d{2}:\d{2})/);
+    return hhmm ? hhmm[1] : text;
+  };
+
+  const extraerHorasDesdeModulos = (reserva) => {
+    const fuenteArray = Array.isArray(reserva?.MODULOS_NOMBRES_ARRAY)
+      ? reserva.MODULOS_NOMBRES_ARRAY
+      : [];
+    const fuenteString = reserva?.MODULOS_DETALLES_STRING
+      ? String(reserva.MODULOS_DETALLES_STRING).split('; ')
+      : [];
+    const detalles = fuenteArray.length > 0 ? fuenteArray : fuenteString;
+
+    const horas = detalles
+      .map((txt) => String(txt).match(/(\d{2}:\d{2})\s*-\s*(\d{2}:\d{2})/))
+      .filter(Boolean)
+      .map((m) => ({ inicio: m[1], fin: m[2] }));
+
+    if (horas.length === 0) return { inicio: '', fin: '' };
+    return {
+      inicio: horas[0].inicio,
+      fin: horas[horas.length - 1].fin,
+    };
+  };
+
+  const getRangoHorario = (reserva) => {
+    let inicio = formatHoraCorta(reserva?.HORA_INICIO);
+    let fin = formatHoraCorta(reserva?.HORA_FIN);
+
+    if (!inicio || !fin) {
+      const desdeModulos = extraerHorasDesdeModulos(reserva);
+      inicio = inicio || desdeModulos.inicio;
+      fin = fin || desdeModulos.fin;
+    }
+
+    if (!inicio && !fin) return 'Sin horario';
+    if (!inicio) return `— ${fin}`;
+    if (!fin) return `${inicio} —`;
+    return `${inicio} - ${fin}`;
+  };
+
   // Efecto para manejar z-index cuando se abren modales
   useEffect(() => {
     const anyModalOpen =
@@ -454,9 +498,7 @@ const MisReservasAsignadasPage = () => {
                                 'es-CL'
                               )}
                             </td>
-                            <td>
-                              {res.HORA_INICIO} - {res.HORA_FIN}
-                            </td>
+                            <td>{getRangoHorario(res)}</td>
                             <td>{res.NOMBRE_SALA}</td>
                             <td className="text-center align-middle">
                               <Badge
@@ -511,9 +553,7 @@ const MisReservasAsignadasPage = () => {
                                 'es-CL'
                               )}
                             </td>
-                            <td>
-                              {res.HORA_INICIO} - {res.HORA_FIN}
-                            </td>
+                            <td>{getRangoHorario(res)}</td>
                             <td>{res.NOMBRE_SALA}</td>
                             <td className="text-center">
                               {res.OBSERVACIONES_DOCENTE && (
@@ -590,9 +630,7 @@ const MisReservasAsignadasPage = () => {
                                 'es-CL'
                               )}
                             </td>
-                            <td>
-                              {res.HORA_INICIO} - {res.HORA_FIN}
-                            </td>
+                            <td>{getRangoHorario(res)}</td>
                             <td>{res.NOMBRE_SALA}</td>
                             <td className="text-center align-middle">
                               <Button
@@ -694,8 +732,7 @@ const MisReservasAsignadasPage = () => {
                 {new Date(selectedReserva.FECHA_RESERVA).toLocaleDateString(
                   'es-CL'
                 )}
-                | <strong>Horario:</strong> {selectedReserva.HORA_INICIO} -
-                {selectedReserva.HORA_FIN}
+                | <strong>Horario:</strong> {getRangoHorario(selectedReserva)}
               </p>
               <p>
                 <strong>Sala:</strong> {selectedReserva.NOMBRE_SALA} (

@@ -718,6 +718,24 @@ END;
 COMMIT;
 
 -- ============================================================
+-- 17. PERMISOS GESTIÓN RESERVAS (CARRERA / SECCIÓN)
+-- ============================================================
+-- Idempotente: ignora ORA-00001 (clave duplicada) si ya existen
+BEGIN
+    EXECUTE IMMEDIATE q'[INSERT INTO PERMISOS (ID_PERMISO, NOMBRE_PERMISO, DESCRIPCION_PERMISO, GRUPO_PERMISO)
+        VALUES (33, 'GESTION RESERVA CARRERA', 'Gestionar reservas de las carreras asociadas al usuario', 'RESERVAS')]';
+EXCEPTION WHEN OTHERS THEN IF SQLCODE = -1 THEN NULL; ELSE RAISE; END IF;
+END;
+/
+BEGIN
+    EXECUTE IMMEDIATE q'[INSERT INTO PERMISOS (ID_PERMISO, NOMBRE_PERMISO, DESCRIPCION_PERMISO, GRUPO_PERMISO)
+        VALUES (34, 'GESTION RESERVA SECCION', 'Gestionar reservas de las secciones asociadas al usuario', 'RESERVAS')]';
+EXCEPTION WHEN OTHERS THEN IF SQLCODE = -1 THEN NULL; ELSE RAISE; END IF;
+END;
+/
+COMMIT;
+
+-- ============================================================
 -- FIN DEL SCRIPT
 -- ============================================================
 -- Credenciales del administrador:
