@@ -10,10 +10,10 @@ import {
 
 const router = express.Router();
 
-router.get('/',        authMiddleware, getAllPeriodos);
+router.get('/', authMiddleware, getAllPeriodos);
 router.get('/activos', authMiddleware, getPeriodosActivos);
-router.post('/',       authMiddleware, createPeriodo);
-router.put('/:id',     authMiddleware, updatePeriodo);
-router.delete('/:id',  authMiddleware, deletePeriodo);
+router.post('/', authMiddleware, createPeriodo);
+router.put('/:id', authMiddleware, updatePeriodo);
+router.delete('/:id', authMiddleware, deletePeriodo);
 
 export default router;

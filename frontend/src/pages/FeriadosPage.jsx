@@ -1,6 +1,15 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import Layout from '../components/Layout';
-import { Alert, Spinner, Badge, Form, Button, Row, Col, Nav } from 'react-bootstrap';
+import {
+  Alert,
+  Spinner,
+  Badge,
+  Form,
+  Button,
+  Row,
+  Col,
+  Nav,
+} from 'react-bootstrap';
 import {
   fetchAllFeriados,
   createFeriado,
@@ -206,11 +215,11 @@ function FeriadoForm({ initial, modulos, onSave, onCancel, isProcessing }) {
 // ─── Formulario de período ─────────────────────────────────────────────────
 function PeriodoForm({ initial, onSave, onCancel, isProcessing }) {
   const [form, setForm] = useState({
-    nombre_periodo:  initial?.NOMBRE_PERIODO  || '',
-    descripcion:     initial?.DESCRIPCION     || '',
-    fecha_inicio:    initial?.FECHA_INICIO    || '',
-    fecha_fin:       initial?.FECHA_FIN       || '',
-    activo:          initial?.ACTIVO ?? 1,
+    nombre_periodo: initial?.NOMBRE_PERIODO || '',
+    descripcion: initial?.DESCRIPCION || '',
+    fecha_inicio: initial?.FECHA_INICIO || '',
+    fecha_fin: initial?.FECHA_FIN || '',
+    activo: initial?.ACTIVO ?? 1,
   });
 
   const handleSubmit = (e) => {
@@ -225,7 +234,9 @@ function PeriodoForm({ initial, onSave, onCancel, isProcessing }) {
         <Form.Control
           type="text"
           value={form.nombre_periodo}
-          onChange={(e) => setForm((p) => ({ ...p, nombre_periodo: e.target.value }))}
+          onChange={(e) =>
+            setForm((p) => ({ ...p, nombre_periodo: e.target.value }))
+          }
           maxLength={200}
           required
         />
@@ -237,7 +248,9 @@ function PeriodoForm({ initial, onSave, onCancel, isProcessing }) {
           <Form.Control
             type="date"
             value={form.fecha_inicio}
-            onChange={(e) => setForm((p) => ({ ...p, fecha_inicio: e.target.value }))}
+            onChange={(e) =>
+              setForm((p) => ({ ...p, fecha_inicio: e.target.value }))
+            }
             required
           />
         </Form.Group>
@@ -247,7 +260,9 @@ function PeriodoForm({ initial, onSave, onCancel, isProcessing }) {
             type="date"
             value={form.fecha_fin}
             min={form.fecha_inicio || undefined}
-            onChange={(e) => setForm((p) => ({ ...p, fecha_fin: e.target.value }))}
+            onChange={(e) =>
+              setForm((p) => ({ ...p, fecha_fin: e.target.value }))
+            }
             required
           />
         </Form.Group>
@@ -259,7 +274,9 @@ function PeriodoForm({ initial, onSave, onCancel, isProcessing }) {
           as="textarea"
           rows={2}
           value={form.descripcion}
-          onChange={(e) => setForm((p) => ({ ...p, descripcion: e.target.value }))}
+          onChange={(e) =>
+            setForm((p) => ({ ...p, descripcion: e.target.value }))
+          }
           maxLength={500}
         />
       </Form.Group>
@@ -279,11 +296,22 @@ function PeriodoForm({ initial, onSave, onCancel, isProcessing }) {
       </Row>
 
       <div className="modal-footer px-0 pb-0">
-        <Button variant="secondary" onClick={onCancel} disabled={isProcessing} className="me-2">
+        <Button
+          variant="secondary"
+          onClick={onCancel}
+          disabled={isProcessing}
+          className="me-2"
+        >
           Cancelar
         </Button>
         <Button type="submit" className="btn-primary" disabled={isProcessing}>
-          {isProcessing ? <><Spinner size="sm" /> Guardando…</> : 'Guardar'}
+          {isProcessing ? (
+            <>
+              <Spinner size="sm" /> Guardando…
+            </>
+          ) : (
+            'Guardar'
+          )}
         </Button>
       </div>
     </Form>
@@ -306,7 +334,10 @@ export default function FeriadosPage() {
 
   // ── periodos ──
   const [periodos, setPeriodos] = useState([]);
-  const [periodoModal, setPeriodoModal] = useState({ type: null, entity: null });
+  const [periodoModal, setPeriodoModal] = useState({
+    type: null,
+    entity: null,
+  });
 
   const showMsg = (setter, msg, ms = 5000) => {
     setter(msg);
@@ -447,7 +478,12 @@ export default function FeriadosPage() {
         )}
 
         {/* Tabs */}
-        <Nav variant="tabs" activeKey={activeTab} onSelect={setActiveTab} className="mb-4">
+        <Nav
+          variant="tabs"
+          activeKey={activeTab}
+          onSelect={setActiveTab}
+          className="mb-4"
+        >
           <Nav.Item>
             <Nav.Link eventKey="feriados">
               <i className="bi bi-calendar-x me-2" />
@@ -518,14 +554,19 @@ export default function FeriadosPage() {
                             <strong>{f.FECHA_FERIADO}</strong>
                           </td>
                           <td>{f.NOMBRE_FERIADO}</td>
-                          <td className="text-muted" style={{ fontSize: '0.85rem' }}>
+                          <td
+                            className="text-muted"
+                            style={{ fontSize: '0.85rem' }}
+                          >
                             {f.DESCRIPCION_FERIADO || '—'}
                           </td>
                           <td>
                             {f.TIPO_BLOQUEO === 'COMPLETO' ? (
                               <Badge bg="danger">Día completo</Badge>
                             ) : (
-                              <Badge bg="warning" text="dark">Módulos</Badge>
+                              <Badge bg="warning" text="dark">
+                                Módulos
+                              </Badge>
                             )}
                           </td>
                           <td style={{ fontSize: '0.8rem' }}>
@@ -533,7 +574,10 @@ export default function FeriadosPage() {
                               <span className="text-muted">Todos</span>
                             ) : f.MODULOS.length > 0 ? (
                               f.MODULOS.map((m) => (
-                                <span key={m.MODULO_ID_MODULO} className="badge bg-secondary me-1">
+                                <span
+                                  key={m.MODULO_ID_MODULO}
+                                  className="badge bg-secondary me-1"
+                                >
                                   {m.NOMBRE_MODULO}
                                 </span>
                               ))
@@ -554,7 +598,9 @@ export default function FeriadosPage() {
                               variant="outline-secondary"
                               className="me-1"
                               title="Editar"
-                              onClick={() => setModal({ type: 'form', entity: f })}
+                              onClick={() =>
+                                setModal({ type: 'form', entity: f })
+                              }
                             >
                               <i className="bi bi-pencil" />
                             </Button>
@@ -562,7 +608,9 @@ export default function FeriadosPage() {
                               size="sm"
                               variant="outline-danger"
                               title="Eliminar"
-                              onClick={() => setModal({ type: 'delete', entity: f })}
+                              onClick={() =>
+                                setModal({ type: 'delete', entity: f })
+                              }
                             >
                               <i className="bi bi-trash" />
                             </Button>
@@ -583,14 +631,17 @@ export default function FeriadosPage() {
             <Row className="mb-3 align-items-center">
               <Col>
                 <p className="text-muted mb-0">
-                  Define los rangos de fechas en que los usuarios pueden agendar exámenes.
-                  Si no hay períodos activos, no se aplica restricción de fechas.
+                  Define los rangos de fechas en que los usuarios pueden agendar
+                  exámenes. Si no hay períodos activos, no se aplica restricción
+                  de fechas.
                 </p>
               </Col>
               <Col xs="auto">
                 <Button
                   className="btn-primary"
-                  onClick={() => setPeriodoModal({ type: 'form', entity: null })}
+                  onClick={() =>
+                    setPeriodoModal({ type: 'form', entity: null })
+                  }
                 >
                   <i className="bi bi-plus-lg me-1" />
                   Nuevo período
@@ -625,8 +676,13 @@ export default function FeriadosPage() {
                     ) : (
                       periodos.map((p) => (
                         <tr key={p.ID_PERIODO}>
-                          <td><strong>{p.NOMBRE_PERIODO}</strong></td>
-                          <td className="text-muted" style={{ fontSize: '0.85rem' }}>
+                          <td>
+                            <strong>{p.NOMBRE_PERIODO}</strong>
+                          </td>
+                          <td
+                            className="text-muted"
+                            style={{ fontSize: '0.85rem' }}
+                          >
                             {p.DESCRIPCION || '—'}
                           </td>
                           <td>{p.FECHA_INICIO}</td>
@@ -644,7 +700,9 @@ export default function FeriadosPage() {
                               variant="outline-secondary"
                               className="me-1"
                               title="Editar"
-                              onClick={() => setPeriodoModal({ type: 'form', entity: p })}
+                              onClick={() =>
+                                setPeriodoModal({ type: 'form', entity: p })
+                              }
                             >
                               <i className="bi bi-pencil" />
                             </Button>
@@ -652,7 +710,9 @@ export default function FeriadosPage() {
                               size="sm"
                               variant="outline-danger"
                               title="Eliminar"
-                              onClick={() => setPeriodoModal({ type: 'delete', entity: p })}
+                              onClick={() =>
+                                setPeriodoModal({ type: 'delete', entity: p })
+                              }
                             >
                               <i className="bi bi-trash" />
                             </Button>
@@ -714,7 +774,9 @@ export default function FeriadosPage() {
               disabled={isProcessing}
             >
               {isProcessing ? (
-                <><Spinner size="sm" /> Eliminando…</>
+                <>
+                  <Spinner size="sm" /> Eliminando…
+                </>
               ) : (
                 'Sí, eliminar'
               )}
@@ -726,7 +788,9 @@ export default function FeriadosPage() {
       {/* Modal Crear/Editar período */}
       {periodoModal.type === 'form' && (
         <Modal
-          title={periodoModal.entity ? 'Editar período' : 'Nuevo período habilitado'}
+          title={
+            periodoModal.entity ? 'Editar período' : 'Nuevo período habilitado'
+          }
           onClose={() => setPeriodoModal({ type: null, entity: null })}
           size="modal-lg"
         >
@@ -768,7 +832,9 @@ export default function FeriadosPage() {
               disabled={isProcessing}
             >
               {isProcessing ? (
-                <><Spinner size="sm" /> Eliminando…</>
+                <>
+                  <Spinner size="sm" /> Eliminando…
+                </>
               ) : (
                 'Sí, eliminar'
               )}

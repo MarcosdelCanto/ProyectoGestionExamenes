@@ -254,7 +254,9 @@ export default function AgendaSemanal({
             (p) => fecha >= p.FECHA_INICIO && fecha <= p.FECHA_FIN
           );
           if (!dentroDeAlgunPeriodo) {
-            toast.error('La fecha seleccionada está fuera del período habilitado para reservas.');
+            toast.error(
+              'La fecha seleccionada está fuera del período habilitado para reservas.'
+            );
             onDropProcessed();
             setIsProcessingDrop(false);
             return;

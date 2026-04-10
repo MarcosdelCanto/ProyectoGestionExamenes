@@ -4,9 +4,12 @@ import oracledb from 'oracledb';
 const handleError = (res, error, defaultMessage, statusCode = 500) => {
   console.error(`[PeriodoReservas] ${defaultMessage}:`, error);
   const errorDetails =
-    error?.message || (typeof error === 'string' ? error : 'Error desconocido.');
+    error?.message ||
+    (typeof error === 'string' ? error : 'Error desconocido.');
   if (!res.headersSent) {
-    res.status(statusCode).json({ error: defaultMessage, details: errorDetails });
+    res
+      .status(statusCode)
+      .json({ error: defaultMessage, details: errorDetails });
   }
 };
 
@@ -63,16 +66,21 @@ export const getPeriodosActivos = async (req, res) => {
 
 // POST /api/periodo-reservas — crear período
 export const createPeriodo = async (req, res) => {
-  const { nombre_periodo, descripcion, fecha_inicio, fecha_fin, activo } = req.body;
+  const { nombre_periodo, descripcion, fecha_inicio, fecha_fin, activo } =
+    req.body;
   if (!nombre_periodo || !fecha_inicio || !fecha_fin) {
     return res
       .status(400)
-      .json({ error: 'Faltan campos obligatorios: nombre, fecha_inicio, fecha_fin.' });
+      .json({
+        error: 'Faltan campos obligatorios: nombre, fecha_inicio, fecha_fin.',
+      });
   }
   if (fecha_fin < fecha_inicio) {
     return res
       .status(400)
-      .json({ error: 'La fecha de fin no puede ser anterior a la fecha de inicio.' });
+      .json({
+        error: 'La fecha de fin no puede ser anterior a la fecha de inicio.',
+      });
   }
   let conn;
   try {
@@ -82,16 +90,21 @@ export const createPeriodo = async (req, res) => {
        VALUES (:nombre, :descripcion, TO_DATE(:inicio, 'YYYY-MM-DD'), TO_DATE(:fin, 'YYYY-MM-DD'), :activo)
        RETURNING ID_PERIODO INTO :new_id`,
       {
-        nombre:      nombre_periodo,
+        nombre: nombre_periodo,
         descripcion: descripcion || null,
         inicio: fecha_inicio,
-        fin:    fecha_fin,
+        fin: fecha_fin,
         activo: activo ?? 1,
         new_id: { type: oracledb.NUMBER, dir: oracledb.BIND_OUT },
       }
     );
     await conn.commit();
-    res.status(201).json({ id_periodo: result.outBinds.new_id[0], message: 'Período creado.' });
+    res
+      .status(201)
+      .json({
+        id_periodo: result.outBinds.new_id[0],
+        message: 'Período creado.',
+      });
   } catch (error) {
     handleError(res, error, 'Error al crear el período.');
   } finally {
@@ -102,16 +115,21 @@ export const createPeriodo = async (req, res) => {
 // PUT /api/periodo-reservas/:id — actualizar período
 export const updatePeriodo = async (req, res) => {
   const { id } = req.params;
-  const { nombre_periodo, descripcion, fecha_inicio, fecha_fin, activo } = req.body;
+  const { nombre_periodo, descripcion, fecha_inicio, fecha_fin, activo } =
+    req.body;
   if (!nombre_periodo || !fecha_inicio || !fecha_fin) {
     return res
       .status(400)
-      .json({ error: 'Faltan campos obligatorios: nombre, fecha_inicio, fecha_fin.' });
+      .json({
+        error: 'Faltan campos obligatorios: nombre, fecha_inicio, fecha_fin.',
+      });
   }
   if (fecha_fin < fecha_inicio) {
     return res
       .status(400)
-      .json({ error: 'La fecha de fin no puede ser anterior a la fecha de inicio.' });
+      .json({
+        error: 'La fecha de fin no puede ser anterior a la fecha de inicio.',
+      });
   }
   let conn;
   try {
@@ -125,12 +143,12 @@ export const updatePeriodo = async (req, res) => {
            ACTIVO         = :activo
        WHERE ID_PERIODO = :id`,
       {
-        nombre:      nombre_periodo,
+        nombre: nombre_periodo,
         descripcion: descripcion || null,
         inicio: fecha_inicio,
-        fin:    fecha_fin,
+        fin: fecha_fin,
         activo: activo ?? 1,
-        id:     parseInt(id),
+        id: parseInt(id),
       }
     );
     if (result.rowsAffected === 0) {
