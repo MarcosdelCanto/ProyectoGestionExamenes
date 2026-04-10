@@ -30,6 +30,7 @@ import CrearReservaPage from './pages/CrearReservaPage';
 import MisReservasAsignadasPage from './pages/MisReservasAsignadasPage.jsx';
 import FeriadosPage from './pages/FeriadosPage';
 import GestionReservasPage from './pages/GestionReservasPage';
+import LoginBackgroundConfigPage from './pages/LoginBackgroundConfigPage';
 import ConsultaExamenes from './pages/ConsultaExamenes.jsx';
 import ConsultaExamenesTotem from './pages/ConsultaExamenesTotem.jsx';
 
@@ -154,6 +155,13 @@ function App() {
 
           <Route element={<PrivateRoute requiredPermissions={['VER ROLES']} />}>
             <Route path="/roles" element={<RolesPage />} />
+          </Route>
+
+          <Route element={<PrivateRoute requiredPermissions={['VER ROLES']} />}>
+            <Route
+              path="/configuracion/login"
+              element={<LoginBackgroundConfigPage />}
+            />
           </Route>
 
           <Route

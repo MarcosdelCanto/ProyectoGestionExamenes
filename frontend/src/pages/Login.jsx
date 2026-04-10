@@ -1,7 +1,8 @@
 // src/pages/Login.jsx
-import React, { useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { login } from '../services/authService';
+import { getLoginBackgroundConfig } from '../utils/loginBackgroundConfig';
 import './Login.css';
 
 const Login = () => {
@@ -9,7 +10,48 @@ const Login = () => {
   const [password_usuario, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false); // Estado para la visibilidad
   const [error, setError] = useState('');
+  const [bgConfig, setBgConfig] = useState(() => getLoginBackgroundConfig());
   const navigate = useNavigate();
+
+  useEffect(() => {
+    const syncConfig = () => setBgConfig(getLoginBackgroundConfig());
+    syncConfig();
+    window.addEventListener('storage', syncConfig);
+    return () => window.removeEventListener('storage', syncConfig);
+  }, []);
+
+  const hexToRgba = (hex, alpha) => {
+    const normalized = /^#[0-9A-Fa-f]{6}$/.test(hex) ? hex : '#ffffff';
+    const r = parseInt(normalized.slice(1, 3), 16);
+    const g = parseInt(normalized.slice(3, 5), 16);
+    const b = parseInt(normalized.slice(5, 7), 16);
+    return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+  };
+
+  const wrapperStyle = useMemo(() => {
+    if (!bgConfig?.imageUrl) return undefined;
+
+    const alpha = Number(bgConfig.overlayOpacity || 35) / 100;
+    return {
+      backgroundImage: `linear-gradient(rgba(0, 0, 0, ${alpha}), rgba(0, 0, 0, ${alpha})), url('${bgConfig.imageUrl}')`,
+      backgroundSize: 'cover',
+      backgroundPosition: 'center',
+      backgroundRepeat: 'no-repeat',
+    };
+  }, [bgConfig]);
+
+  const loginCardStyle = useMemo(
+    () => ({
+      minWidth: '400px',
+      maxWidth: '450px',
+      width: '100%',
+      backgroundColor: hexToRgba(
+        bgConfig?.cardColor || '#ffffff',
+        Number(bgConfig?.cardOpacity ?? 98) / 100
+      ),
+    }),
+    [bgConfig]
+  );
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -30,7 +72,10 @@ const Login = () => {
   };
 
   return (
-    <div className="login-wrapper d-flex align-items-center justify-content-center vh-100">
+    <div
+      className="login-wrapper d-flex align-items-center justify-content-center vh-100"
+      style={wrapperStyle}
+    >
       {/* Botón flotante para ir al tótem */}
       <Link
         to="/totem"
@@ -41,10 +86,7 @@ const Login = () => {
         Tótem
       </Link>
 
-      <div
-        className="card p-4 shadow login-card"
-        style={{ minWidth: '400px', maxWidth: '450px', width: '100%' }}
-      >
+      <div className="card p-4 shadow login-card" style={loginCardStyle}>
         <div className="text-center mb-4">
           <img
             src="/images/logoduoc.svg.png"

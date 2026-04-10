@@ -420,6 +420,15 @@ export default function Layout({ children }) {
               />
             )}
 
+            {hasPermission('VER ROLES') && (
+              <NavItem
+                to="/configuracion/login"
+                icon="bi-image-fill"
+                text="Configuración Login"
+                id="configuracion-login"
+              />
+            )}
+
             {hasPermission('VER CARGA DE DATOS') && (
               <NavItem
                 to="/carga-datos"
