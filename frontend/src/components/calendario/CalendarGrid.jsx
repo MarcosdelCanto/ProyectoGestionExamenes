@@ -1,4 +1,5 @@
-import React from 'react';
+import React, { useMemo } from 'react';
+import { format } from 'date-fns';
 import CalendarHeader from './CalendarHeader';
 import CalendarCell from './CalendarCell';
 import { useCalendarData } from '../../hooks/useCalendarData';
@@ -12,6 +13,7 @@ export default function CalendarGrid({
   fechas,
   modulos,
   feriadosData = [],
+  periodosActivos = [],
   selectedSala,
   selectedExam,
   reservas,
@@ -24,7 +26,6 @@ export default function CalendarGrid({
   draggedExamen = null,
   dropTargetCell = null,
   hoverTargetCell = null,
-  // setReservas, // Ya no se recibe como prop
   refreshExamenesDisponibles,
 }) {
   // ASEGURAR: Que estamos usando las reservas más actualizadas del store
@@ -42,7 +43,20 @@ export default function CalendarGrid({
     modulos,
   });
 
-  const dispatch = useDispatch(); // <-- OBTENER DISPATCH
+  const dispatch = useDispatch();
+
+  // Calcular fecha y hora actuales una sola vez por render
+  const todayStr = useMemo(() => format(new Date(), 'yyyy-MM-dd'), []);
+  const nowStr = useMemo(() => format(new Date(), 'HH:mm'), []);
+
+  // Helper: ¿está la fecha fuera de todos los períodos activos?
+  const esFueraPeriodo = useMemo(() => {
+    if (!periodosActivos || periodosActivos.length === 0) return () => false;
+    return (fecha) =>
+      !periodosActivos.some(
+        (p) => fecha >= p.FECHA_INICIO && fecha <= p.FECHA_FIN
+      );
+  }, [periodosActivos]);
 
   // Handler para cambios de estado de reservas - MEJORADO
   const handleReservaStateChange = (reservaId, nuevoEstado, info) => {
@@ -101,11 +115,9 @@ export default function CalendarGrid({
                 {modulo.INICIO_MODULO} - {modulo.FIN_MODULO}
               </td>
               {fechas.map(({ fecha, esSeleccionado }) => {
-                // USAR EL HOOK: Obtener datos pre-calculados
                 const cellData = getCellData(fecha, modulo.ORDEN);
                 const shouldRender = shouldRenderExamen(cellData);
 
-                // SEPARAR: hover preview vs drop target
                 const esHoverTarget =
                   hoverTargetCell?.fecha === fecha &&
                   hoverTargetCell?.modulo?.ORDEN === modulo.ORDEN;
@@ -113,6 +125,14 @@ export default function CalendarGrid({
                 const esDropTarget =
                   dropTargetCell?.fecha === fecha &&
                   dropTargetCell?.modulo?.ORDEN === modulo.ORDEN;
+
+                // Bloqueo por pasado: fecha anterior a hoy, o hoy con módulo ya iniciado
+                const isPasado =
+                  fecha < todayStr ||
+                  (fecha === todayStr && modulo.INICIO_MODULO <= nowStr);
+
+                // Bloqueo por período: fuera del rango habilitado (solo si no es pasado)
+                const fueraPeriodo = !isPasado && esFueraPeriodo(fecha);
 
                 return (
                   <CalendarCell
@@ -135,8 +155,9 @@ export default function CalendarGrid({
                     esDropTarget={esDropTarget}
                     esHoverTarget={esHoverTarget}
                     draggedExamen={draggedExamen}
-                    // ← PASAR EL HANDLER A CalendarCell
                     onReservaStateChange={handleReservaStateChange}
+                    isPasado={isPasado}
+                    fueraPeriodo={fueraPeriodo}
                   />
                 );
               })}

@@ -6,7 +6,7 @@ import ExamenPostIt from './ExamenPostIt';
 export default function CalendarCell({
   fecha,
   modulo,
-  salaId, // Asegurarse de que esta prop se pasa desde el componente padre
+  salaId,
   feriadoInfo = null,
   cellData,
   shouldRenderExamen,
@@ -19,20 +19,24 @@ export default function CalendarCell({
   esDropTarget,
   esHoverTarget,
   draggedExamen,
-  onReservaStateChange, // ← NUEVA PROP
+  onReservaStateChange,
+  isPasado = false,
+  fueraPeriodo = false,
 }) {
   const droppableId = `droppable-${fecha}-${modulo.ORDEN}`;
 
+  const isBlocked = isPasado || fueraPeriodo;
+
   const { setNodeRef } = useDroppable({
     id: droppableId,
-    // Incluir todos los datos necesarios para la creación de la reserva
+    disabled: isBlocked,
     data: {
       type: 'celda-calendario',
       fecha,
-      modulo: modulo, // Pasar el objeto completo del módulo
+      modulo: modulo,
       moduloId: modulo.ID_MODULO,
-      salaId, // Incluir el ID de la sala
-      orden: modulo.ORDEN, // Incluir el orden para facilitar la selección de módulos consecutivos
+      salaId,
+      orden: modulo.ORDEN,
     },
   });
 
@@ -58,6 +62,9 @@ export default function CalendarCell({
     )
       classes.push('feriado-modulo');
 
+    if (isPasado) classes.push('pasado');
+    else if (fueraPeriodo) classes.push('fuera-periodo');
+
     if (cellState.reservada) classes.push('reservado');
     else if (cellState.seleccionada) classes.push('seleccionado');
 
@@ -73,7 +80,8 @@ export default function CalendarCell({
 
   // SIMPLIFICAR: Manejador de clic
   const handleClick = () => {
-    if (feriadoInfo?.TIPO_BLOQUEO === 'COMPLETO') return; // bloquear día completo
+    if (feriadoInfo?.TIPO_BLOQUEO === 'COMPLETO') return;
+    if (isBlocked) return;
     if (!cellState.ocupada && onSelectModulo) {
       onSelectModulo(fecha, modulo.ORDEN);
     }

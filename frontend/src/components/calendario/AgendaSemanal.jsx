@@ -78,8 +78,17 @@ export default function AgendaSemanal({
   const [isProcessingDrop, setIsProcessingDrop] = useState(false);
   const [lastProcessedDrop, setLastProcessedDrop] = useState(null);
   const [feriadosData, setFeriadosData] = useState([]); // feriados activos de la semana visible
+  const [periodosActivos, setPeriodosActivos] = useState([]); // períodos habilitados para reservas
   const dispatch = useDispatch();
   const reservasFromStore = useSelector((state) => state.reservas.lista);
+
+  // Cargar períodos activos al montar (no dependen de la semana visible)
+  useEffect(() => {
+    import('../../services/periodoReservasService')
+      .then(({ fetchPeriodosActivos }) => fetchPeriodosActivos())
+      .then((data) => setPeriodosActivos(data || []))
+      .catch(() => setPeriodosActivos([]));
+  }, []);
 
   // Cargar feriados cuando cambian las fechas visibles
   useEffect(() => {
@@ -224,6 +233,32 @@ export default function AgendaSemanal({
           toast.error('No se pudo determinar el módulo seleccionado');
           onDropProcessed();
           return;
+        }
+
+        // --- VALIDAR FECHA/MÓDULO PASADO ---
+        const todayStr = format(new Date(), 'yyyy-MM-dd');
+        const nowStr = format(new Date(), 'HH:mm');
+        if (
+          fecha < todayStr ||
+          (fecha === todayStr && modulo.INICIO_MODULO <= nowStr)
+        ) {
+          toast.error('No se puede reservar en una fecha u hora pasada.');
+          onDropProcessed();
+          setIsProcessingDrop(false);
+          return;
+        }
+
+        // --- VALIDAR PERÍODO HABILITADO ---
+        if (periodosActivos.length > 0) {
+          const dentroDeAlgunPeriodo = periodosActivos.some(
+            (p) => fecha >= p.FECHA_INICIO && fecha <= p.FECHA_FIN
+          );
+          if (!dentroDeAlgunPeriodo) {
+            toast.error('La fecha seleccionada está fuera del período habilitado para reservas.');
+            onDropProcessed();
+            setIsProcessingDrop(false);
+            return;
+          }
         }
 
         // Extraer información de la celda donde se hizo drop
@@ -636,6 +671,7 @@ export default function AgendaSemanal({
                   fechas={fechas}
                   modulos={modulos}
                   feriadosData={feriadosData}
+                  periodosActivos={periodosActivos}
                   selectedSala={selectedSala}
                   selectedExam={selectedExamInternal}
                   reservas={reservas} // <-- ASEGURAR QUE USE 'reservas' (no 'reservasFromHook')
