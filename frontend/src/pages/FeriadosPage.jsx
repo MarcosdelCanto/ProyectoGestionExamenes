@@ -277,7 +277,7 @@ export default function FeriadosPage() {
 
   return (
     <Layout>
-      <div className="container mt-4">
+      <div className="container-fluid pt-4">
         {/* Encabezado */}
         <div className="d-flex justify-content-between align-items-center mb-3">
           <h2 className="display-6">
@@ -287,11 +287,6 @@ export default function FeriadosPage() {
         </div>
 
         <hr />
-
-        {/* Descripción */}
-        <p className="text-muted mb-3">
-          Gestiona los días en que no se pueden crear reservas.
-        </p>
 
         {/* Mensajes */}
         {error && (
@@ -316,11 +311,7 @@ export default function FeriadosPage() {
           </Col>
           <Col xs="auto">
             <Button
-              style={{
-                backgroundColor: '#1a1a1a',
-                borderColor: '#1a1a1a',
-                color: '#ffffff',
-              }}
+              className="btn-primary"
               onClick={() => setModal({ type: 'form', entity: null })}
             >
               <i className="bi bi-plus-lg me-1" />
@@ -337,7 +328,7 @@ export default function FeriadosPage() {
         ) : (
           <div className="table-responsive">
             <table className="table table-hover align-middle">
-              <thead style={{ backgroundColor: '#1a1a1a', color: '#fff' }}>
+              <thead>
                 <tr>
                   <th>Fecha</th>
                   <th>Nombre</th>
@@ -458,7 +449,11 @@ export default function FeriadosPage() {
             <strong>{modal.entity?.NOMBRE_FERIADO}</strong> del{' '}
             <strong>{modal.entity?.FECHA_FERIADO}</strong>?
           </p>
-          <div className="d-flex justify-content-end gap-2">
+          <Alert variant="danger">
+            <i className="bi bi-exclamation-triangle-fill me-2" />
+            Esta acción es irreversible.
+          </Alert>
+          <div className="modal-footer px-0 pb-0">
             <Button
               variant="secondary"
               onClick={() => setModal({ type: null, entity: null })}
@@ -476,7 +471,7 @@ export default function FeriadosPage() {
                   <Spinner size="sm" /> Eliminando…
                 </>
               ) : (
-                'Eliminar'
+                'Sí, eliminar'
               )}
             </Button>
           </div>
