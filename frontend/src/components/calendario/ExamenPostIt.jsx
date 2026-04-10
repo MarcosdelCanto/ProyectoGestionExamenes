@@ -18,7 +18,7 @@ import {
   cancelarReservaCompleta,
 } from '../../services/reservaService';
 import { toast } from 'react-toastify';
-import { searchDocentes } from '../../services/usuarioService';
+import { searchDocentes, fetchDocentesBySeccion } from '../../services/usuarioService';
 import { useDispatch } from 'react-redux';
 import { actualizarModulosReservaLocalmente } from '../../store/reservasSlice';
 import './styles/PostIt.css';
@@ -68,6 +68,9 @@ export default function ExamenPostIt({
   const [docenteSearchResults, setDocenteSearchResults] = useState([]);
   const [isSearchingDocentes, setIsSearchingDocentes] = useState(false);
   const [tempSelectedDocente, setTempSelectedDocente] = useState(null);
+
+  // Docentes de la sección del examen
+  const [docentesAsignados, setDocentesAsignados] = useState([]);
 
   const getEstadoConfirmacion = () => {
     return (
@@ -148,6 +151,19 @@ export default function ExamenPostIt({
       cargarDocenteInicial();
     }
   }, [examen, isPreview, isDragOverlay, examenAsignadoCompleto]);
+
+  useEffect(() => {
+    if (!showDocenteModal) return;
+    const seccionId = examen?.ID_SECCION;
+    if (!seccionId) return;
+    fetchDocentesBySeccion(seccionId)
+      .then((rows) => {
+        setDocentesAsignados(
+          rows.map((d) => ({ value: d.ID_USUARIO, label: d.NOMBRE_USUARIO }))
+        );
+      })
+      .catch(() => setDocentesAsignados([]));
+  }, [showDocenteModal, examen?.ID_SECCION]);
 
   const handleOpenDocenteModal = (e) => {
     e.stopPropagation();
@@ -586,22 +602,48 @@ export default function ExamenPostIt({
           <Modal.Title>Asignar Docente</Modal.Title>
         </Modal.Header>
         <Modal.Body>
+          {/* Docentes ya asignados a esta reserva */}
+          {docentesAsignados.length > 0 && (
+            <div className="mb-3">
+              <Form.Label className="fw-semibold">
+                Docentes de la sección
+              </Form.Label>
+              <ListGroup className="mb-1">
+                {docentesAsignados.map((docente) => (
+                  <ListGroup.Item
+                    key={docente.value ?? docente.label}
+                    action
+                    active={tempSelectedDocente?.value === docente.value && tempSelectedDocente?.label === docente.label}
+                    onClick={() => setTempSelectedDocente(docente)}
+                    className="d-flex justify-content-between align-items-center"
+                  >
+                    <span><i className="bi bi-person-check-fill me-2 text-success"></i>{docente.label}</span>
+                    {tempSelectedDocente?.value === docente.value && tempSelectedDocente?.label === docente.label && (
+                      <Badge bg="primary" pill>✓</Badge>
+                    )}
+                  </ListGroup.Item>
+                ))}
+              </ListGroup>
+              <hr className="my-2" />
+              <Form.Label className="fw-semibold">O buscar otro docente</Form.Label>
+            </div>
+          )}
           <Form.Group className="mb-3">
-            <Form.Label>Buscar por nombre</Form.Label>
+            {docentesAsignados.length === 0 && <Form.Label>Buscar por nombre</Form.Label>}
             <Form.Control
               type="text"
               placeholder="Comience a escribir para buscar..."
               value={docenteSearchTerm}
               onChange={(e) => handleDocenteSearch(e.target.value)}
-              autoFocus
+              autoFocus={docentesAsignados.length === 0}
             />
           </Form.Group>
           <ListGroup
             className="docente-search-results"
-            style={{ height: '250px', overflowY: 'auto' }}
+            style={{ maxHeight: '200px', overflowY: 'auto' }}
           >
             {isSearchingDocentes ? (
-              <ListGroup.Item className="text-center text-muted d-flex align-items-center justify-content-center h-100">
+              <ListGroup.Item className="text-center text-muted d-flex align-items-center justify-content-center">
                 <div>
                   <Spinner animation="border" size="sm" />
                   <span className="ms-2">Buscando...</span>
@@ -631,13 +673,15 @@ export default function ExamenPostIt({
                   )}
                 </ListGroup.Item>
               ))
-            ) : (
-              <ListGroup.Item className="text-center text-muted d-flex align-items-center justify-content-center h-100">
-                {docenteSearchTerm.length < 2
-                  ? 'Ingresa al menos 2 caracteres para buscar.'
-                  : 'No se encontraron docentes.'}
+            ) : docenteSearchTerm.length >= 2 ? (
+              <ListGroup.Item className="text-center text-muted">
+                No se encontraron docentes.
               </ListGroup.Item>
-            )}
+            ) : docentesAsignados.length === 0 ? (
+              <ListGroup.Item className="text-center text-muted">
+                Ingresa al menos 2 caracteres para buscar.
+              </ListGroup.Item>
+            ) : null}
           </ListGroup>
         </Modal.Body>
         <Modal.Footer>

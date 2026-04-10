@@ -368,87 +368,15 @@ export default function AgendaSemanal({
         }
         // --- FIN VERIFICACIÓN FERIADO ---
 
-        // BUSCAR EL ID DEL DOCENTE BASADO EN EL NOMBRE DEL EXAMEN
-        let docenteId = 1; // Valor por defecto temporal
-
-        // LOGGING DETALLADO PARA DEPURACIÓN
-        console.log('🔍 [DEBUG] Datos completos del examen arrastrado:', {
-          ID_EXAMEN: draggedExamen.ID_EXAMEN,
-          NOMBRE_EXAMEN: draggedExamen.NOMBRE_EXAMEN,
-          NOMBRE_DOCENTE: draggedExamen.NOMBRE_DOCENTE,
-          NOMBRE_ASIGNATURA: draggedExamen.NOMBRE_ASIGNATURA,
-          origen: 'draggedExamen desde drop',
-          objetoCompleto: draggedExamen,
-        });
-
-        try {
-          if (draggedExamen.NOMBRE_DOCENTE) {
-            console.log('🔍 Buscando docente:', draggedExamen.NOMBRE_DOCENTE);
-
-            // Importar searchDocentes desde usuarioService
-            const { searchDocentes } = await import(
-              '../../services/usuarioService'
-            );
-            const resultadoBusqueda = await searchDocentes(
-              draggedExamen.NOMBRE_DOCENTE
-            );
-
-            if (resultadoBusqueda.length > 0) {
-              // Buscar coincidencia exacta primero
-              const docenteExacto = resultadoBusqueda.find(
-                (d) => d.NOMBRE_USUARIO === draggedExamen.NOMBRE_DOCENTE
-              );
-
-              docenteId = docenteExacto
-                ? docenteExacto.ID_USUARIO
-                : resultadoBusqueda[0].ID_USUARIO;
-
-              console.log(
-                `✅ Docente encontrado: ${draggedExamen.NOMBRE_DOCENTE} (ID: ${docenteId})`
-              );
-              console.log('📊 [DEBUG] Resultado de búsqueda completo:', {
-                busqueda: draggedExamen.NOMBRE_DOCENTE,
-                resultados: resultadoBusqueda.length,
-                docenteExacto: docenteExacto,
-                docenteSeleccionado: {
-                  ID_USUARIO: docenteId,
-                  NOMBRE_USUARIO:
-                    docenteExacto?.NOMBRE_USUARIO ||
-                    resultadoBusqueda[0]?.NOMBRE_USUARIO,
-                },
-                todosLosResultados: resultadoBusqueda,
-              });
-            } else {
-              console.warn(
-                `⚠️ No se encontró docente: ${draggedExamen.NOMBRE_DOCENTE}, usando ID por defecto`
-              );
-            }
-          } else {
-            console.warn(
-              '⚠️ Examen sin NOMBRE_DOCENTE, usando docente por defecto'
-            );
-          }
-        } catch (error) {
-          console.error('Error buscando docente:', error);
-          console.warn('Usando docente por defecto debido al error');
-        }
-
-        // Preparar payload para la creación de la reserva
+        // Preparar payload para la creación de la reserva (sin docente pre-asignado)
         const payload = {
           examen_id_examen: draggedExamen.ID_EXAMEN,
           fecha_reserva: fecha,
           sala_id_sala: salaId || selectedSala.ID_SALA,
           modulos_ids: modulosIdsParaReserva,
-          docente_ids: [docenteId], // Usar el ID del docente encontrado
-          modulo_inicial: moduloInicial, // AGREGAR ESTA LÍNEA
+          docente_ids: [], // El docente se selecciona en el modal después de soltar
+          modulo_inicial: moduloInicial,
         };
-
-        console.log('🚀 [DEBUG] Payload completo para crear reserva:', payload);
-        console.log('📋 [DEBUG] Detalles del docente en payload:', {
-          docenteId: docenteId,
-          nombreDocenteOriginal: draggedExamen.NOMBRE_DOCENTE,
-          docente_ids: payload.docente_ids,
-        });
 
         // Llamar al servicio para crear la reserva
         const response = await crearReservaEnCursoService(payload);
@@ -458,14 +386,6 @@ export default function AgendaSemanal({
         // ASEGURAR QUE LA RESPUESTA TENGA EL MÓDULO INICIAL
         if (response && response.reserva) {
           response.reserva.MODULO_INICIAL_RESERVA = moduloInicial;
-
-          console.log('🔄 [DEBUG] Reserva antes de agregar a Redux:', {
-            ID_RESERVA: response.reserva.ID_RESERVA,
-            NOMBRE_DOCENTE_ASIGNADO: response.reserva.NOMBRE_DOCENTE_ASIGNADO,
-            NOMBRE_DOCENTE_PRINCIPAL: response.reserva.NOMBRE_DOCENTE_PRINCIPAL,
-            docenteEnviado: docenteId,
-            reservaCompleta: response.reserva,
-          });
 
           // Agregar al store de Redux
           dispatch(agregarReserva(response.reserva));

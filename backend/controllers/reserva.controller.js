@@ -94,7 +94,16 @@ export const getAllReservas = async (req, res) => {
                FROM RESERVA_DOCENTES rd
                JOIN USUARIO u ON rd.USUARIO_ID_USUARIO = u.ID_USUARIO
                WHERE rd.RESERVA_ID_RESERVA = r.ID_RESERVA AND ROWNUM = 1
-              ) AS NOMBRE_DOCENTE_ASIGNADO
+              ) AS NOMBRE_DOCENTE_ASIGNADO,
+              (SELECT LISTAGG(u2.NOMBRE_USUARIO, '||') WITHIN GROUP (ORDER BY u2.NOMBRE_USUARIO)
+               FROM RESERVA_DOCENTES rd2
+               JOIN USUARIO u2 ON rd2.USUARIO_ID_USUARIO = u2.ID_USUARIO
+               WHERE rd2.RESERVA_ID_RESERVA = r.ID_RESERVA
+              ) AS NOMBRES_DOCENTES,
+              (SELECT LISTAGG(TO_CHAR(rd3.USUARIO_ID_USUARIO), '||') WITHIN GROUP (ORDER BY rd3.USUARIO_ID_USUARIO)
+               FROM RESERVA_DOCENTES rd3
+               WHERE rd3.RESERVA_ID_RESERVA = r.ID_RESERVA
+              ) AS DOCENTES_IDS
        FROM RESERVA r
        JOIN EXAMEN e ON r.EXAMEN_ID_EXAMEN = e.ID_EXAMEN
        JOIN SALA s ON r.SALA_ID_SALA = s.ID_SALA
@@ -143,7 +152,16 @@ export const getReservaById = async (req, res) => {
                  FROM RESERVA_DOCENTES rd
                  JOIN USUARIO u ON rd.USUARIO_ID_USUARIO = u.ID_USUARIO
                  WHERE rd.RESERVA_ID_RESERVA = r.ID_RESERVA AND ROWNUM = 1
-              ) AS NOMBRE_DOCENTE_ASIGNADO
+              ) AS NOMBRE_DOCENTE_ASIGNADO,
+              (SELECT LISTAGG(u2.NOMBRE_USUARIO, '||') WITHIN GROUP (ORDER BY u2.NOMBRE_USUARIO)
+               FROM RESERVA_DOCENTES rd2
+               JOIN USUARIO u2 ON rd2.USUARIO_ID_USUARIO = u2.ID_USUARIO
+               WHERE rd2.RESERVA_ID_RESERVA = r.ID_RESERVA
+              ) AS NOMBRES_DOCENTES,
+              (SELECT LISTAGG(TO_CHAR(rd3.USUARIO_ID_USUARIO), '||') WITHIN GROUP (ORDER BY rd3.USUARIO_ID_USUARIO)
+               FROM RESERVA_DOCENTES rd3
+               WHERE rd3.RESERVA_ID_RESERVA = r.ID_RESERVA
+              ) AS DOCENTES_IDS
        FROM RESERVA r
        JOIN EXAMEN e ON r.EXAMEN_ID_EXAMEN = e.ID_EXAMEN
        JOIN SALA s ON r.SALA_ID_SALA = s.ID_SALA
@@ -1142,14 +1160,12 @@ export const crearReservaEnCurso = async (req, res) => {
       !fecha_reserva ||
       !sala_id_sala ||
       !modulos_ids ||
-      modulos_ids.length === 0 ||
-      !docente_ids ||
-      docente_ids.length === 0
+      modulos_ids.length === 0
     ) {
       return handleError(
         res,
         null,
-        'Faltan campos obligatorios: examen, fecha, sala, al menos un módulo y al menos un docente.',
+        'Faltan campos obligatorios: examen, fecha, sala y al menos un módulo.',
         400
       );
     }
@@ -1252,21 +1268,25 @@ export const crearReservaEnCurso = async (req, res) => {
       `[crearReservaEnCurso] ${modulos_ids.length} módulos insertados`
     );
 
-    const reservaDocentesSql = `
-      INSERT INTO RESERVA_DOCENTES (RESERVA_ID_RESERVA, USUARIO_ID_USUARIO)
-      VALUES (:reserva_id, :docente_id)
-    `;
-    await connection.executeMany(
-      reservaDocentesSql,
-      docente_ids.map((docenteId) => ({
-        reserva_id: generatedReservaId,
-        docente_id: parseInt(docenteId),
-      }))
-    );
+    if (docente_ids && docente_ids.length > 0) {
+      const reservaDocentesSql = `
+        INSERT INTO RESERVA_DOCENTES (RESERVA_ID_RESERVA, USUARIO_ID_USUARIO)
+        VALUES (:reserva_id, :docente_id)
+      `;
+      await connection.executeMany(
+        reservaDocentesSql,
+        docente_ids.map((docenteId) => ({
+          reserva_id: generatedReservaId,
+          docente_id: parseInt(docenteId),
+        }))
+      );
 
-    console.log(
-      `[crearReservaEnCurso] ${docente_ids.length} docentes asignados`
-    );
+      console.log(
+        `[crearReservaEnCurso] ${docente_ids.length} docentes asignados`
+      );
+    } else {
+      console.log(`[crearReservaEnCurso] Sin docentes asignados (se asignarán después)`);
+    }
 
     const updateExamenSql = `
       UPDATE EXAMEN
