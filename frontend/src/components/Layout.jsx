@@ -382,6 +382,15 @@ export default function Layout({ children }) {
               />
             )}
 
+            {hasPermission('GESTIONAR FERIADOS') && (
+              <NavItem
+                to="/feriados"
+                icon="bi-calendar-x-fill"
+                text="Feriados y Bloqueos"
+                id="feriados"
+              />
+            )}
+
             {hasPermission('VER USUARIOS') && (
               <NavItem
                 to="/usuarios"

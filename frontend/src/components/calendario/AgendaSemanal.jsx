@@ -23,6 +23,7 @@ import {
   crearReservaParaExamenExistenteService,
   crearReservaEnCursoService, // ← AGREGAR ESTA IMPORTACIÓN
 } from '../../services/reservaService';
+import { checkFechaBloqueo } from '../../services/feriadoService';
 import {
   agregarReserva,
   actualizarModulosReservaLocalmente,
@@ -76,8 +77,20 @@ export default function AgendaSemanal({
   const [modulosSeleccionados, setModulosSeleccionados] = useState([]);
   const [isProcessingDrop, setIsProcessingDrop] = useState(false);
   const [lastProcessedDrop, setLastProcessedDrop] = useState(null);
+  const [feriadosData, setFeriadosData] = useState([]); // feriados activos de la semana visible
   const dispatch = useDispatch();
   const reservasFromStore = useSelector((state) => state.reservas.lista);
+
+  // Cargar feriados cuando cambian las fechas visibles
+  useEffect(() => {
+    if (!fechas || fechas.length === 0) return;
+    const fi = fechas[0].fecha;
+    const ff = fechas[fechas.length - 1].fecha;
+    import('../../services/feriadoService')
+      .then(({ fetchFeriadosByRango }) => fetchFeriadosByRango(fi, ff))
+      .then((data) => setFeriadosData(data || []))
+      .catch(() => setFeriadosData([]));
+  }, [fechas]);
 
   // CREAR RESERVAS COMBINADAS: Usar hook como base, actualizar con store
   const reservas = useMemo(() => {
@@ -323,6 +336,37 @@ export default function AgendaSemanal({
           '✅ Sin conflictos detectados. Procediendo a crear reserva.'
         );
         // --- FIN DE LÓGICA DE DETECCIÓN DE CONFLICTOS ---
+
+        // --- VERIFICAR BLOQUEO POR FERIADO ---
+        try {
+          const bloqueo = await checkFechaBloqueo(fecha);
+          if (bloqueo.bloqueado) {
+            if (bloqueo.tipo === 'COMPLETO') {
+              toast.error(
+                `No se puede reservar: "${bloqueo.nombre}" — día completo bloqueado.`
+              );
+              onDropProcessed();
+              setIsProcessingDrop(false);
+              return;
+            }
+            if (bloqueo.tipo === 'MODULOS') {
+              const conflictoModulo = modulosIdsParaReserva.some((id) =>
+                bloqueo.modulos_bloqueados?.includes(id)
+              );
+              if (conflictoModulo) {
+                toast.error(
+                  `No se puede reservar: "${bloqueo.nombre}" — uno o más módulos seleccionados están bloqueados.`
+                );
+                onDropProcessed();
+                setIsProcessingDrop(false);
+                return;
+              }
+            }
+          }
+        } catch {
+          // Si falla la consulta de feriado, continuar con la reserva normal
+        }
+        // --- FIN VERIFICACIÓN FERIADO ---
 
         // BUSCAR EL ID DEL DOCENTE BASADO EN EL NOMBRE DEL EXAMEN
         let docenteId = 1; // Valor por defecto temporal
@@ -671,6 +715,7 @@ export default function AgendaSemanal({
                 <CalendarGrid
                   fechas={fechas}
                   modulos={modulos}
+                  feriadosData={feriadosData}
                   selectedSala={selectedSala}
                   selectedExam={selectedExamInternal}
                   reservas={reservas} // <-- ASEGURAR QUE USE 'reservas' (no 'reservasFromHook')

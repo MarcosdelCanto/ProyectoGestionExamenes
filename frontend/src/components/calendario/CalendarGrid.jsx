@@ -11,6 +11,7 @@ import {
 export default function CalendarGrid({
   fechas,
   modulos,
+  feriadosData = [],
   selectedSala,
   selectedExam,
   reservas,
@@ -91,7 +92,7 @@ export default function CalendarGrid({
   return (
     <div className="table-wrapper">
       <table className="calendar-table">
-        <CalendarHeader fechas={fechas} />
+        <CalendarHeader fechas={fechas} feriadosData={feriadosData} />
         <tbody>
           {modulos.map((modulo) => (
             <tr key={modulo.ID_MODULO}>
@@ -118,6 +119,10 @@ export default function CalendarGrid({
                     key={`${fecha}-${modulo.ID_MODULO}`}
                     fecha={fecha}
                     modulo={modulo}
+                    feriadoInfo={
+                      feriadosData.find((f) => f.FECHA_FERIADO === fecha) ||
+                      null
+                    }
                     salaId={selectedSala?.ID_SALA}
                     cellData={cellData}
                     shouldRenderExamen={shouldRender}

@@ -7,6 +7,7 @@ export default function CalendarCell({
   fecha,
   modulo,
   salaId, // Asegurarse de que esta prop se pasa desde el componente padre
+  feriadoInfo = null,
   cellData,
   shouldRenderExamen,
   esDiaSeleccionado,
@@ -49,6 +50,14 @@ export default function CalendarCell({
   const getCellClassName = () => {
     const classes = ['calendar-cell'];
 
+    if (feriadoInfo?.TIPO_BLOQUEO === 'COMPLETO')
+      classes.push('feriado-completo');
+    else if (
+      feriadoInfo?.TIPO_BLOQUEO === 'MODULOS' &&
+      feriadoInfo.MODULOS_IDS?.includes(modulo.ID_MODULO)
+    )
+      classes.push('feriado-modulo');
+
     if (cellState.reservada) classes.push('reservado');
     else if (cellState.seleccionada) classes.push('seleccionado');
 
@@ -64,6 +73,7 @@ export default function CalendarCell({
 
   // SIMPLIFICAR: Manejador de clic
   const handleClick = () => {
+    if (feriadoInfo?.TIPO_BLOQUEO === 'COMPLETO') return; // bloquear día completo
     if (!cellState.ocupada && onSelectModulo) {
       onSelectModulo(fecha, modulo.ORDEN);
     }

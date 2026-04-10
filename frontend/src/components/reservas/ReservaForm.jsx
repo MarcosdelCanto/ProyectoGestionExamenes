@@ -29,6 +29,7 @@ import {
   fetchDocentesBySeccion,
 } from '../../services/usuarioService';
 import { fetchAllSecciones } from '../../services/seccionService';
+import { checkFechaBloqueo } from '../../services/feriadoService';
 
 // --- Modales de Filtro ---
 import FilterModalSalas from '../calendario/FilterModalSalas';
@@ -80,6 +81,9 @@ const ReservaForm = ({
   const [loadingData, setLoadingData] = useState(true);
   const [loadingModules, setLoadingModules] = useState(false);
   const [error, setError] = useState(null);
+
+  // --- Estado de bloqueo por feriado ---
+  const [feriadoInfo, setFeriadoInfo] = useState(null); // null = sin bloqueo
 
   // --- Estados para los filtros ---
   const [isSalaFilterOpen, setSalaFilterOpen] = useState(false);
@@ -557,6 +561,17 @@ const ReservaForm = ({
     // resetearModulos, // Si resetearModulos se calcula dentro, no necesita ser dependencia
   ]); // Añadir dependencias relevantes
 
+  // --- Efecto: verificar si la fecha tiene un feriado/bloqueo activo ---
+  useEffect(() => {
+    if (!fechaReserva) {
+      setFeriadoInfo(null);
+      return;
+    }
+    checkFechaBloqueo(fechaReserva)
+      .then((data) => setFeriadoInfo(data.bloqueado ? data : null))
+      .catch(() => setFeriadoInfo(null));
+  }, [fechaReserva]);
+
   // --- Funciones auxiliares ---
   const isTimePassed = (moduleStartTimeString) => {
     if (!moduleStartTimeString) return false;
@@ -572,6 +587,14 @@ const ReservaForm = ({
 
   // --- Lógica de Módulos ---
   const isModuleDisabled = (currentModule) => {
+    // Bloqueo por feriado de módulos específicos
+    if (
+      feriadoInfo?.tipo === 'MODULOS' &&
+      feriadoInfo.modulos_bloqueados?.includes(currentModule.ID_MODULO)
+    ) {
+      return true;
+    }
+
     // Validar si el módulo es para una fecha y hora pasada
     if (
       fechaReserva === new Date().toISOString().split('T')[0] &&
@@ -792,6 +815,13 @@ const ReservaForm = ({
     if (!fechaReserva)
       return setError('Debe seleccionar una fecha de reserva.');
 
+    // Bloqueo por feriado: día completo
+    if (feriadoInfo?.tipo === 'COMPLETO') {
+      return setError(
+        `La fecha seleccionada está bloqueada por el feriado "${feriadoInfo.nombre}". No se pueden crear reservas en este día.`
+      );
+    }
+
     // CORREGIR: Usar los nombres que espera el backend
     const payload = {
       fecha_reserva: fechaReserva,
@@ -927,7 +957,23 @@ const ReservaForm = ({
               onChange={(e) => setFechaReserva(e.target.value)}
               required
               disabled={isLoadingExternally}
+              isInvalid={feriadoInfo?.tipo === 'COMPLETO'}
             />
+            {feriadoInfo && (
+              <div
+                className={`mt-2 p-2 rounded small ${
+                  feriadoInfo.tipo === 'COMPLETO'
+                    ? 'bg-danger text-white'
+                    : 'bg-warning text-dark'
+                }`}
+              >
+                <i className="bi bi-calendar-x me-1" />
+                <strong>{feriadoInfo.nombre}</strong>
+                {feriadoInfo.tipo === 'COMPLETO'
+                  ? ' — Día completo bloqueado. No se pueden crear reservas.'
+                  : ' — Algunos módulos están bloqueados en esta fecha.'}
+              </div>
+            )}
           </Form.Group>
           <Form.Group as={Col} md={6}>
             <Form.Label>Sala</Form.Label>

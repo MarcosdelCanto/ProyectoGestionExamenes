@@ -28,6 +28,7 @@ import ReportesPage from './pages/ReportesPage';
 import DocenteReservasPage from './pages/DocenteReservasPage';
 import CrearReservaPage from './pages/CrearReservaPage';
 import MisReservasAsignadasPage from './pages/MisReservasAsignadasPage.jsx';
+import FeriadosPage from './pages/FeriadosPage';
 import ConsultaExamenes from './pages/ConsultaExamenes.jsx';
 import ConsultaExamenesTotem from './pages/ConsultaExamenesTotem.jsx';
 
@@ -118,6 +119,14 @@ function App() {
             element={<PrivateRoute requiredPermissions={['VER MODULOS']} />}
           >
             <Route path="/modulos" element={<ModulosPage />} />
+          </Route>
+
+          <Route
+            element={
+              <PrivateRoute requiredPermissions={['GESTIONAR FERIADOS']} />
+            }
+          >
+            <Route path="/feriados" element={<FeriadosPage />} />
           </Route>
 
           <Route

@@ -36,6 +36,7 @@ import dashboardRoutes from './routes/dashboard.routes.js';
 import reservaRoutes from './routes/reserva.routes.js';
 import reportsRoutes from './routes/reports.routes.js';
 import publicRoutes from './routes/public.routes.js';
+import feriadoRoutes from './routes/feriado.routes.js';
 
 const app = express();
 
@@ -252,6 +253,7 @@ async function startServer() {
     app.use('/api/reserva', reservaRoutes);
     app.use('/api/reports', reportsRoutes);
     app.use('/api/public', publicRoutes);
+    app.use('/api/feriado', feriadoRoutes);
 
     const PORT = process.env.PORT || 3000;
     server.listen(PORT, () =>
