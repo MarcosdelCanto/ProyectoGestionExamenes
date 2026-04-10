@@ -496,6 +496,7 @@ CREATE TABLE CARRERA_PLAN_ESTUDIO (
     ID_CARRERA_PLAN_ESTUDIO         NUMBER NOT NULL,
     CARRERA_ID_CARRERA              NUMBER NOT NULL,
     PLAN_ESTUDIO_ID_PLAN_ESTUDIO    NUMBER NOT NULL,
+    FECHA_ASOCIACION                TIMESTAMP,
     CONSTRAINT PK_CARRERA_PLAN_ESTUDIO PRIMARY KEY (ID_CARRERA_PLAN_ESTUDIO),
     CONSTRAINT FK_CPE_CARRERA      FOREIGN KEY (CARRERA_ID_CARRERA)           REFERENCES CARRERA(ID_CARRERA),
     CONSTRAINT FK_CPE_PLAN_ESTUDIO FOREIGN KEY (PLAN_ESTUDIO_ID_PLAN_ESTUDIO) REFERENCES PLAN_ESTUDIO(ID_PLAN_ESTUDIO)
@@ -666,6 +667,26 @@ INSERT INTO PERMISOS (ID_PERMISO, NOMBRE_PERMISO, DESCRIPCION_PERMISO, GRUPO_PER
 
 -- Asignar permiso al Administrador (ID_ROL = 1)
 INSERT INTO PERMISOSROL (ID_PERMISOSROL, ID_ROL, ID_PERMISO) VALUES (41, 1, 32);
+
+COMMIT;
+
+-- ============================================================
+-- 15. MIGRACIONES (columnas añadidas para soporte de carga masiva)
+-- ============================================================
+-- Añade FECHA_ASOCIACION a CARRERA_PLAN_ESTUDIO si no existe.
+-- El bloque maneja el ORA-01430 (columna ya existente) para que
+-- el script sea idempotente en instancias re-ejecutadas.
+BEGIN
+    EXECUTE IMMEDIATE 'ALTER TABLE CARRERA_PLAN_ESTUDIO ADD FECHA_ASOCIACION TIMESTAMP';
+EXCEPTION
+    WHEN OTHERS THEN
+        IF SQLCODE = -1430 THEN
+            NULL; -- La columna ya existe, ignorar
+        ELSE
+            RAISE;
+        END IF;
+END;
+/
 
 COMMIT;
 

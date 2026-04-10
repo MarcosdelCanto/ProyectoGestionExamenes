@@ -150,7 +150,7 @@ export default function UsuariosPage() {
 
   // --- MANEJADORES DE ACCIONES CON MODALES PERSONALIZADAS ---
   const handleDeleteConfirmed = useCallback(async () => {
-    const usuariosToDelete = modalState.data;
+    const usuariosToDelete = selectedUsuarios;
     if (!usuariosToDelete || usuariosToDelete.length === 0) {
       closeCustomModal();
       return;
@@ -191,7 +191,7 @@ export default function UsuariosPage() {
     } finally {
       setIsProcessingAction(false);
     }
-  }, [fetchUsuarios, modalState.data, closeCustomModal, modalState.action]);
+  }, [fetchUsuarios, selectedUsuarios, closeCustomModal]);
 
   const handleResetPassword = useCallback(
     async (id) => {
@@ -544,7 +544,7 @@ export default function UsuariosPage() {
               <button
                 type="button"
                 className="btn btn-danger"
-                onClick={modalState.action}
+                onClick={handleDeleteConfirmed}
                 disabled={isProcessingAction}
               >
                 {isProcessingAction ? (

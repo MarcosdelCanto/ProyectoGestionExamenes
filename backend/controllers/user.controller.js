@@ -45,12 +45,19 @@ export const deleteUser = async (req, res) => {
       `Intentando eliminar asociaciones de ADMIN.RESERVA_DOCENTES para el usuario ID: ${id}`
     );
     await conn.execute(
-      `DELETE FROM ADMIN.RESERVA_DOCENTES WHERE USUARIO_ID_USUARIO = :userId`, // Asume que la FK se llama USUARIO_ID_USUARIO
+      `DELETE FROM ADMIN.RESERVA_DOCENTES WHERE USUARIO_ID_USUARIO = :userId`,
       { userId: id },
       { autoCommit: false }
     );
 
-    // 4. Eliminar el usuario de la tabla ADMIN.USUARIO
+    // 4. Desvincular de CARRERA si el usuario era coordinador
+    await conn.execute(
+      `UPDATE ADMIN.CARRERA SET USUARIO_ID_USUARIO = NULL WHERE USUARIO_ID_USUARIO = :userId`,
+      { userId: id },
+      { autoCommit: false }
+    );
+
+    // 5. Eliminar el usuario de la tabla ADMIN.USUARIO
     console.log(`Intentando eliminar el USUARIO con ID: ${id}`);
     const deleteUserResult = await conn.execute(
       `DELETE FROM ADMIN.USUARIO WHERE ID_USUARIO = :userId`,
@@ -139,7 +146,14 @@ export const deleteMultipleUsers = async (req, res) => {
 
         // ¡NUEVO! Eliminar asociaciones en ADMIN.RESERVA_DOCENTES
         await conn.execute(
-          `DELETE FROM ADMIN.RESERVA_DOCENTES WHERE USUARIO_ID_USUARIO = :userId`, // Asume que la FK se llama USUARIO_ID_USUARIO
+          `DELETE FROM ADMIN.RESERVA_DOCENTES WHERE USUARIO_ID_USUARIO = :userId`,
+          { userId: id },
+          { autoCommit: false }
+        );
+
+        // Desvincular de CARRERA si el usuario era coordinador
+        await conn.execute(
+          `UPDATE ADMIN.CARRERA SET USUARIO_ID_USUARIO = NULL WHERE USUARIO_ID_USUARIO = :userId`,
           { userId: id },
           { autoCommit: false }
         );

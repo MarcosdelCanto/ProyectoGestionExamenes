@@ -290,9 +290,8 @@ export const handleCargaMasiva = async (req, res) => {
       const rutDocenteRaw = String(fila['Rut Docente'] ?? '').trim();
       if (rutDocenteRaw) {
         try {
-          const nombreCompletoDocente = String(
-            fila['Instruct.(den.)'] ?? ''
-          ).trim();
+          const nombreCompletoDocente =
+            String(fila['Instruct.(den.)'] ?? '').trim() || 'Sin Nombre';
           const rutLimpioParaDB = rutDocenteRaw
             .replace(/\./g, '')
             .replace('-', '');
@@ -368,7 +367,7 @@ export const handleCargaMasiva = async (req, res) => {
           const inscritosExamen =
             fila['Cant. ins.'] != null && !isNaN(Number(fila['Cant. ins.']))
               ? Number(fila['Cant. ins.'])
-              : null;
+              : 0;
           const cantidadModulos = 3;
           const idEvento =
             fila['ID evento'] != null && !isNaN(Number(fila['ID evento']))
