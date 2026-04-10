@@ -38,6 +38,7 @@ import reportsRoutes from './routes/reports.routes.js';
 import publicRoutes from './routes/public.routes.js';
 import feriadoRoutes from './routes/feriado.routes.js';
 import periodoReservasRoutes from './routes/periodoReservas.routes.js';
+import ayudaRoutes from './routes/ayuda.routes.js';
 
 const app = express();
 
@@ -256,6 +257,7 @@ async function startServer() {
     app.use('/api/public', publicRoutes);
     app.use('/api/feriado', feriadoRoutes);
     app.use('/api/periodo-reservas', periodoReservasRoutes);
+    app.use('/api/ayuda', ayudaRoutes);
 
     const PORT = process.env.PORT || 3000;
     server.listen(PORT, () =>

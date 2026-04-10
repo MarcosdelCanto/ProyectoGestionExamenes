@@ -2,6 +2,7 @@ import React, { useState, useCallback, useRef } from 'react';
 import { Modal, Button, Form, Alert, Spinner, Table } from 'react-bootstrap';
 import * as XLSX from 'xlsx';
 import carreraService from '../../services/carreraService';
+import HelpModalTitle from '../help/HelpModalTitle';
 
 const VALID_FILE_EXTENSIONS = ['.xlsx', '.xls'];
 const MAX_PREVIEW_ROWS = 5;
@@ -236,7 +237,9 @@ function UpdateCarreraPlanModal({ show, handleClose, onUpdateComplete }) {
       keyboard={false}
     >
       <Modal.Header closeButton className="mb-0">
-        <Modal.Title>Actualizar Planes de Estudio de Carreras</Modal.Title>
+        <HelpModalTitle helpKey="modal_actualizar_carrera_plan">
+          Actualizar Planes de Estudio de Carreras
+        </HelpModalTitle>
       </Modal.Header>
       <Modal.Body>
         <Alert

@@ -1,6 +1,7 @@
 import React from 'react';
 import { Modal, Button, Form, Spinner, Row, Col, Card } from 'react-bootstrap';
 import Select from 'react-select'; // Importar react-select
+import HelpModalTitle from '../../help/HelpModalTitle';
 
 const ALUMNO_ROLE_NAME = 'ALUMNO';
 const DOCENTE_ROLE_NAME = 'DOCENTE';
@@ -61,11 +62,11 @@ function UsuarioSeccionModal({
   return (
     <Modal show={show} onHide={onHide} size="xl" backdrop="static" centered>
       <Modal.Header closeButton>
-        <Modal.Title>
+        <HelpModalTitle helpKey="modal_usuario_seccion">
           {editingUser
             ? `Editar Asociaciones de Sección para ${editingUser.NOMBRE_USUARIO}`
             : 'Asociar Usuario a Sección(es)'}
-        </Modal.Title>
+        </HelpModalTitle>
       </Modal.Header>
       <Modal.Body>
         <Row>

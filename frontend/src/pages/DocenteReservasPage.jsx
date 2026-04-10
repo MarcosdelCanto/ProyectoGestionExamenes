@@ -15,6 +15,7 @@ import {
 } from 'react-bootstrap';
 import Layout from '../components/Layout'; // Ajusta la ruta a tu Layout principal
 import ReservaForm from '../components/reservas/ReservaForm'; // Importa el formulario reutilizable
+import HelpModalTitle from '../components/help/HelpModalTitle';
 import * as authService from '../services/authService'; // Importa el servicio de autenticación
 // Se importan todos los servicios de reserva necesarios
 import {
@@ -390,9 +391,9 @@ const MisReservasAsignadasPage = () => {
           centered
         >
           <Modal.Header closeButton>
-            <Modal.Title>
+            <HelpModalTitle helpKey="modal_docente_editar_reserva">
               Editar Reserva #{currentReservaToEdit.ID_RESERVA}
-            </Modal.Title>
+            </HelpModalTitle>
           </Modal.Header>
           <Modal.Body>
             {modalEditError && (
@@ -428,9 +429,9 @@ const MisReservasAsignadasPage = () => {
           centered
         >
           <Modal.Header closeButton>
-            <Modal.Title>
+            <HelpModalTitle helpKey="modal_docente_revisar_reserva">
               Revisar Reserva: {selectedReserva.NOMBRE_EXAMEN}
-            </Modal.Title>
+            </HelpModalTitle>
           </Modal.Header>
           <Modal.Body>
             <h5>Detalles de la Reserva</h5>

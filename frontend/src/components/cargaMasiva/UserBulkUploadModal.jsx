@@ -4,6 +4,7 @@ import { Modal, Button, Form, Alert, Table, Spinner } from 'react-bootstrap';
 import cargaDocenteService from '../../services/cargaDocenteService';
 import cargaAlumnoService from '../../services/cargaAlumnoService';
 import { fetchAllRoles } from '../../services/rolService';
+import HelpModalTitle from '../help/HelpModalTitle';
 
 const VALID_FILE_EXTENSIONS = ['.xlsx', '.xls'];
 const MAX_PREVIEW_ROWS = 5;
@@ -199,7 +200,9 @@ export default function UserBulkUploadModal({
         backdrop="static"
       >
         <Modal.Header closeButton>
-          <Modal.Title>Carga Masiva</Modal.Title>
+          <HelpModalTitle helpKey="carga_masiva_usuarios">
+            Carga Masiva
+          </HelpModalTitle>
         </Modal.Header>
         <Modal.Body>
           <Form.Group className="mb-3">

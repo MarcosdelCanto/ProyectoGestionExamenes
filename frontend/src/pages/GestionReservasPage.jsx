@@ -12,6 +12,7 @@ import {
 } from 'react-bootstrap';
 import Select from 'react-select';
 import ReservaForm from '../components/reservas/ReservaForm';
+import HelpModalTitle from '../components/help/HelpModalTitle';
 import { usePermission } from '../hooks/usePermission';
 import {
   fetchAllReservas,
@@ -656,10 +657,10 @@ export default function GestionReservasPage() {
         centered
       >
         <Modal.Header closeButton>
-          <Modal.Title>
+          <HelpModalTitle helpKey="modal_nueva_reserva">
             <i className="bi bi-plus-circle me-2" />
             Nueva Reserva
-          </Modal.Title>
+          </HelpModalTitle>
         </Modal.Header>
         <Modal.Body>
           {newModal && (
@@ -687,10 +688,10 @@ export default function GestionReservasPage() {
         centered
       >
         <Modal.Header closeButton>
-          <Modal.Title>
+          <HelpModalTitle helpKey="modal_editar_reserva">
             <i className="bi bi-pencil-square me-2" />
             Editar Reserva #{editModal.reserva?.ID_RESERVA}
-          </Modal.Title>
+          </HelpModalTitle>
         </Modal.Header>
         <Modal.Body>
           {editModal.open && editModal.initialData && (
@@ -718,9 +719,9 @@ export default function GestionReservasPage() {
         centered
       >
         <Modal.Header closeButton>
-          <Modal.Title>
+          <HelpModalTitle helpKey="modal_cancelar_reserva">
             Cancelar reserva #{cancelModal.reserva?.ID_RESERVA}
-          </Modal.Title>
+          </HelpModalTitle>
         </Modal.Header>
         <Modal.Body>
           <p>
@@ -765,10 +766,10 @@ export default function GestionReservasPage() {
         centered
       >
         <Modal.Header closeButton>
-          <Modal.Title>
+          <HelpModalTitle helpKey="modal_alumnos_reserva">
             <i className="bi bi-people-fill me-2" />
             Alumnos Asociados - Reserva #{alumnosModal.reserva?.ID_RESERVA}
-          </Modal.Title>
+          </HelpModalTitle>
         </Modal.Header>
         <Modal.Body>
           <Form.Control
@@ -900,10 +901,10 @@ export default function GestionReservasPage() {
         centered
       >
         <Modal.Header closeButton className="bg-light">
-          <Modal.Title>
+          <HelpModalTitle helpKey="modal_detalle_reserva">
             <i className="bi bi-eye-fill me-2 text-white" />
             Detalle de Reserva #{detalleModal.reserva?.ID_RESERVA}
-          </Modal.Title>
+          </HelpModalTitle>
         </Modal.Header>
         <Modal.Body>
           {detalleModal.loading ? (

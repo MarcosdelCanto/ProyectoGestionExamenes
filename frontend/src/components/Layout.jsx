@@ -5,6 +5,7 @@ import { getCurrentUser, logout as authLogout } from '../services/authService';
 import { usePermission } from '../hooks/usePermission';
 import { Offcanvas } from 'bootstrap';
 import { OverlayTrigger, Tooltip } from 'react-bootstrap';
+import GlobalHelpFab from './help/GlobalHelpFab';
 
 export default function Layout({ children }) {
   const navigate = useNavigate();
@@ -284,6 +285,7 @@ export default function Layout({ children }) {
         }}
       >
         {children}
+        <GlobalHelpFab />
       </main>
 
       <div
@@ -426,6 +428,15 @@ export default function Layout({ children }) {
                 icon="bi-image-fill"
                 text="Configuración Login"
                 id="configuracion-login"
+              />
+            )}
+
+            {hasPermission('VER ROLES') && (
+              <NavItem
+                to="/configuracion/ayuda"
+                icon="bi-question-circle-fill"
+                text="Configuración Ayuda"
+                id="configuracion-ayuda"
               />
             )}
 
