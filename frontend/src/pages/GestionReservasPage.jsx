@@ -141,6 +141,11 @@ export default function GestionReservasPage() {
     page: 1,
     pageSize: 10,
   });
+  const [detalleModal, setDetalleModal] = useState({
+    open: false,
+    reserva: null,
+    loading: false,
+  });
 
   const showMsg = (setter, msg, ms = 5000) => {
     setter(msg);
@@ -318,6 +323,30 @@ export default function GestionReservasPage() {
       page: 1,
       pageSize: 10,
     });
+  };
+
+  const handleOpenDetalle = async (reserva) => {
+    setDetalleModal({ open: true, reserva, loading: true });
+    try {
+      const detalle = await fetchReservaById(reserva.ID_RESERVA);
+      // Merge: keep all list-row fields (NOMBRE_SECCION, HORA_INICIO_RESERVA, etc.)
+      // and add MODULOS + any extra fields from the detail endpoint
+      setDetalleModal({
+        open: true,
+        reserva: { ...reserva, ...detalle },
+        loading: false,
+      });
+    } catch (err) {
+      setError(
+        err?.response?.data?.error ||
+          'Error al cargar el detalle de la reserva.'
+      );
+      setDetalleModal({ open: false, reserva: null, loading: false });
+    }
+  };
+
+  const handleCloseDetalle = () => {
+    setDetalleModal({ open: false, reserva: null, loading: false });
   };
 
   // -- Filtrado ---------------------------------------------------------------
@@ -567,6 +596,16 @@ export default function GestionReservasPage() {
                           {confirmacionBadge(r.ESTADO_CONFIRMACION_DOCENTE)}
                         </td>
                         <td>
+                          <Button
+                            size="sm"
+                            variant="outline-warning"
+                            className="me-1"
+                            title="Ver detalle de reserva"
+                            style={{ color: '#fd7e14', borderColor: '#fd7e14' }}
+                            onClick={() => handleOpenDetalle(r)}
+                          >
+                            <i className="bi bi-eye" />
+                          </Button>
                           {canEdit && (
                             <Button
                               size="sm"
@@ -852,6 +891,236 @@ export default function GestionReservasPage() {
             </div>
           )}
         </Modal.Body>
+      </Modal>
+      {/* -- Modal detalle reserva --------------------------------------------- */}
+      <Modal
+        show={detalleModal.open}
+        onHide={handleCloseDetalle}
+        size="lg"
+        centered
+      >
+        <Modal.Header closeButton className="bg-light">
+          <Modal.Title>
+            <i className="bi bi-eye-fill me-2 text-white" />
+            Detalle de Reserva #{detalleModal.reserva?.ID_RESERVA}
+          </Modal.Title>
+        </Modal.Header>
+        <Modal.Body>
+          {detalleModal.loading ? (
+            <div className="text-center py-5">
+              <Spinner animation="border" style={{ color: '#FFB81C' }} />
+            </div>
+          ) : detalleModal.reserva ? (
+            (() => {
+              const r = detalleModal.reserva;
+              const docentes = r.DOCENTES_IDS
+                ? String(r.DOCENTES_IDS)
+                    .split('||')
+                    .filter(Boolean)
+                    .map((id, i) => {
+                      const nombres = r.NOMBRES_DOCENTES
+                        ? String(r.NOMBRES_DOCENTES).split('||')
+                        : [];
+                      return nombres[i] || `Docente ${id}`;
+                    })
+                : r.NOMBRE_DOCENTE_ASIGNADO
+                  ? [r.NOMBRE_DOCENTE_ASIGNADO]
+                  : [];
+              const modulos = Array.isArray(r.MODULOS) ? r.MODULOS : [];
+              const inicio =
+                r.HORA_INICIO_RESERVA ||
+                r.HORA_INICIO ||
+                (modulos.length > 0
+                  ? modulos.reduce(
+                      (min, m) =>
+                        m.INICIO_MODULO && (!min || m.INICIO_MODULO < min)
+                          ? m.INICIO_MODULO
+                          : min,
+                      null
+                    )
+                  : null);
+              const fin =
+                r.HORA_FIN_RESERVA ||
+                r.HORA_FIN ||
+                (modulos.length > 0
+                  ? modulos.reduce(
+                      (max, m) =>
+                        m.FIN_MODULO && (!max || m.FIN_MODULO > max)
+                          ? m.FIN_MODULO
+                          : max,
+                      null
+                    )
+                  : null);
+              return (
+                <div className="vstack gap-2">
+                  {/* Examen */}
+                  <div className="border rounded p-2">
+                    <div className="small fw-bold text-primary mb-1">
+                      <i className="bi bi-file-earmark-text me-1" />
+                      Examen
+                    </div>
+                    <div className="fw-semibold">{r.NOMBRE_EXAMEN || '—'}</div>
+                    <div className="small text-muted mt-1">
+                      Sección:{' '}
+                      <span className="text-dark">
+                        {r.NOMBRE_SECCION || '—'}
+                      </span>
+                    </div>
+                    <div className="small text-muted">
+                      Carrera:{' '}
+                      <span className="text-dark">
+                        {r.NOMBRE_CARRERA || '—'}
+                      </span>
+                    </div>
+                    <div className="small text-muted">
+                      Escuela:{' '}
+                      <span className="text-dark">
+                        {r.NOMBRE_ESCUELA || '—'}
+                      </span>
+                    </div>
+                    {r.INSCRITOS_EXAMEN != null && (
+                      <div className="small text-muted">
+                        Inscritos:{' '}
+                        <span className="text-dark">
+                          <i className="bi bi-people me-1" />
+                          {r.INSCRITOS_EXAMEN}
+                        </span>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Docentes */}
+                  <div className="border rounded p-2">
+                    <div className="small fw-bold text-secondary mb-1">
+                      <i className="bi bi-person-badge me-1" />
+                      Docente(s) Asignado(s)
+                    </div>
+                    {docentes.length === 0 ? (
+                      <span className="small text-muted fst-italic">
+                        Sin asignar
+                      </span>
+                    ) : (
+                      <ul className="mb-0 ps-3 small">
+                        {docentes.map((d, i) => (
+                          <li key={i}>{d}</li>
+                        ))}
+                      </ul>
+                    )}
+                  </div>
+
+                  {/* Fila inferior: datos de la reserva */}
+                  <div className="border rounded p-2">
+                    <div className="small fw-bold text-success mb-1">
+                      <i className="bi bi-calendar2-check me-1" />
+                      Reserva
+                    </div>
+                    <Row className="g-1">
+                      <Col xs={6} sm={3}>
+                        <div className="small text-muted">Fecha</div>
+                        <div className="small fw-semibold">
+                          {formatFecha(r.FECHA_RESERVA)}
+                        </div>
+                      </Col>
+                      <Col xs={6} sm={3}>
+                        <div className="small text-muted">Horario</div>
+                        <div className="small">
+                          {formatHora(inicio)} — {formatHora(fin)}
+                        </div>
+                      </Col>
+                      <Col xs={6} sm={3}>
+                        <div className="small text-muted">Sala</div>
+                        <div className="small">{r.NOMBRE_SALA || '—'}</div>
+                      </Col>
+                      <Col xs={6} sm={3}>
+                        <div className="small text-muted">Módulos</div>
+                        <div className="small">
+                          {r.CANTIDAD_MODULOS_RESERVA ??
+                            (modulos.length > 0
+                              ? modulos.length
+                              : (r.CANTIDAD_MODULOS_EXAMEN ?? '—'))}
+                        </div>
+                      </Col>
+                      <Col xs={6} sm={4}>
+                        <div className="small text-muted">Estado</div>
+                        <div>{estadoBadge(r.ESTADO_RESERVA)}</div>
+                      </Col>
+                      <Col xs={6} sm={4}>
+                        <div className="small text-muted">
+                          Confirmación docente
+                        </div>
+                        <div>
+                          {confirmacionBadge(r.ESTADO_CONFIRMACION_DOCENTE)}
+                        </div>
+                      </Col>
+                    </Row>
+                  </div>
+
+                  {/* Módulos (solo si hay datos) */}
+                  {modulos.length > 0 && (
+                    <div className="border rounded p-2">
+                      <div className="small fw-bold text-warning mb-1">
+                        <i className="bi bi-clock me-1" />
+                        Módulos asignados
+                      </div>
+                      <table className="table table-sm table-bordered mb-0">
+                        <thead className="table-light">
+                          <tr>
+                            <th style={{ width: 36 }}>#</th>
+                            <th>Módulo</th>
+                            <th>Inicio</th>
+                            <th>Fin</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {modulos.map((m, idx) => (
+                            <tr key={m.ID_MODULO ?? idx}>
+                              <td>{idx + 1}</td>
+                              <td>
+                                {m.NOMBRE_MODULO || `Módulo ${m.ID_MODULO}`}
+                              </td>
+                              <td>{formatHora(m.INICIO_MODULO)}</td>
+                              <td>{formatHora(m.FIN_MODULO)}</td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  )}
+
+                  {/* Observaciones */}
+                  {(r.OBSERVACIONES_DOCENTE || r.OBSERVACIONES || r.NOTAS) && (
+                    <div className="border rounded p-2">
+                      <div className="small fw-bold mb-1">
+                        <i className="bi bi-chat-left-text me-1" />
+                        Observaciones
+                      </div>
+                      <p className="small mb-0">
+                        {r.OBSERVACIONES_DOCENTE || r.OBSERVACIONES || r.NOTAS}
+                      </p>
+                    </div>
+                  )}
+                </div>
+              );
+            })()
+          ) : null}
+        </Modal.Body>
+        <Modal.Footer>
+          <Button variant="secondary" onClick={handleCloseDetalle}>
+            Cerrar
+          </Button>
+          {canEdit && detalleModal.reserva && (
+            <Button
+              variant="outline-secondary"
+              onClick={() => {
+                handleCloseDetalle();
+                handleOpenEdit(detalleModal.reserva);
+              }}
+            >
+              <i className="bi bi-pencil me-1" />
+              Editar
+            </Button>
+          )}
+        </Modal.Footer>
       </Modal>
     </Layout>
   );

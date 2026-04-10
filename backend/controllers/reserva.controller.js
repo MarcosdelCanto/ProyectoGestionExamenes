@@ -170,6 +170,7 @@ export const getReservaById = async (req, res) => {
               c.ID_CARRERA, c.NOMBRE_CARRERA,
               esc.ID_ESCUELA, esc.NOMBRE_ESCUELA,
               esc.COLOR_BACKGROUND, esc.COLOR_BORDER,
+              sec.NOMBRE_SECCION,
               (SELECT u.NOMBRE_USUARIO
                  FROM RESERVA_DOCENTES rd
                  JOIN USUARIO u ON rd.USUARIO_ID_USUARIO = u.ID_USUARIO
