@@ -369,6 +369,23 @@
   font-size: 8px !important;
 }
 
+/* === LISTA DE DOCENTES EN MODAL === */
+.docente-list-item {
+  cursor: pointer;
+  transition: background-color 0.15s ease;
+}
+.docente-list-item:hover {
+  background-color: #f5f5f5 !important;
+}
+.docente-list-item--selected {
+  background-color: #fff8e1 !important;
+  border-left: 3px solid #ffb81c !important;
+  color: #1a1a1a !important;
+}
+.docente-list-item--selected:hover {
+  background-color: #fff0c2 !important;
+}
+
 /* Para PostIts de 1 módulo, mostrar el selector en la información compacta */
 .postit-reorganized.modulos-1 .postit-compact-details .docente-info {
   color: #28a745;

@@ -612,29 +612,28 @@ export default function ExamenPostIt({
                 Docentes de la sección
               </Form.Label>
               <ListGroup className="mb-1">
-                {docentesAsignados.map((docente) => (
-                  <ListGroup.Item
-                    key={docente.value ?? docente.label}
-                    action
-                    active={
-                      tempSelectedDocente?.value === docente.value &&
-                      tempSelectedDocente?.label === docente.label
-                    }
-                    onClick={() => setTempSelectedDocente(docente)}
-                    className="d-flex justify-content-between align-items-center"
-                  >
-                    <span>
-                      <i className="bi bi-person-check-fill me-2 text-success"></i>
-                      {docente.label}
-                    </span>
-                    {tempSelectedDocente?.value === docente.value &&
-                      tempSelectedDocente?.label === docente.label && (
+                {docentesAsignados.map((docente) => {
+                  const isSelected =
+                    tempSelectedDocente?.value === docente.value &&
+                    tempSelectedDocente?.label === docente.label;
+                  return (
+                    <ListGroup.Item
+                      key={docente.value ?? docente.label}
+                      onClick={() => setTempSelectedDocente(docente)}
+                      className={`d-flex justify-content-between align-items-center docente-list-item${isSelected ? ' docente-list-item--selected' : ''}`}
+                    >
+                      <span>
+                        <i className="bi bi-person-check-fill me-2 text-success"></i>
+                        {docente.label}
+                      </span>
+                      {isSelected && (
                         <Badge bg="primary" pill>
                           ✓
                         </Badge>
                       )}
-                  </ListGroup.Item>
-                ))}
+                    </ListGroup.Item>
+                  );
+                })}
               </ListGroup>
               <hr className="my-2" />
               <Form.Label className="fw-semibold">
@@ -666,29 +665,30 @@ export default function ExamenPostIt({
                 </div>
               </ListGroup.Item>
             ) : docenteSearchResults.length > 0 ? (
-              docenteSearchResults.map((docente) => (
-                <ListGroup.Item
-                  key={docente.value}
-                  action
-                  active={tempSelectedDocente?.value === docente.value}
-                  onClick={() => setTempSelectedDocente(docente)}
-                  className="d-flex justify-content-between align-items-start"
-                >
-                  <div className="ms-2 me-auto">
-                    <div className="fw-bold">{docente.label}</div>
-                    {docente.secciones && (
-                      <small className="text-muted">
-                        Secciones: {docente.secciones}
-                      </small>
+              docenteSearchResults.map((docente) => {
+                const isSelected = tempSelectedDocente?.value === docente.value;
+                return (
+                  <ListGroup.Item
+                    key={docente.value}
+                    onClick={() => setTempSelectedDocente(docente)}
+                    className={`d-flex justify-content-between align-items-start docente-list-item${isSelected ? ' docente-list-item--selected' : ''}`}
+                  >
+                    <div className="ms-2 me-auto">
+                      <div className="fw-bold">{docente.label}</div>
+                      {docente.secciones && (
+                        <small className="text-muted">
+                          Secciones: {docente.secciones}
+                        </small>
+                      )}
+                    </div>
+                    {isSelected && (
+                      <Badge bg="primary" pill>
+                        ✓
+                      </Badge>
                     )}
-                  </div>
-                  {tempSelectedDocente?.value === docente.value && (
-                    <Badge bg="primary" pill>
-                      ✓
-                    </Badge>
-                  )}
-                </ListGroup.Item>
-              ))
+                  </ListGroup.Item>
+                );
+              })
             ) : docenteSearchTerm.length >= 2 ? (
               <ListGroup.Item className="text-center text-muted">
                 No se encontraron docentes.
