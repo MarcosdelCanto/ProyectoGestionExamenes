@@ -27,6 +27,10 @@ api.interceptors.request.use(
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
     }
+    // Evitar que el navegador cachee respuestas GET
+    if (!config.method || config.method.toLowerCase() === 'get') {
+      config.headers['Cache-Control'] = 'no-store';
+    }
     return config;
   },
   (error) => Promise.reject(error)
